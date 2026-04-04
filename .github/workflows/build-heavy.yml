@@ -1,0 +1,64 @@
+name: Build Heavy Backbones
+
+on:
+  schedule:
+    # 1st of January and July at 04:00 UTC (after light builds)
+    - cron: '0 4 1 1,7 *'
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: 'Backend to build'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - col
+          - gbif
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    strategy:
+      fail-fast: false
+      max-parallel: 1  # Heavy builds: one at a time on self-hosted
+      matrix:
+        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["col", "gbif"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'col')) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backbone
+        run: |
+          "C:\Program Files\R\R-4.5.2\bin\Rscript.exe" build_all.R ${{ matrix.backend }} output
+        shell: bash
+
+      - name: Compute version
+        id: version
+        run: echo "version=$(date +%Y.%m)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create release and upload
+        run: |
+          TAG="${{ matrix.backend }}-${{ steps.version.outputs.version }}"
+
+          gh release delete "$TAG" --repo ${{ github.repository }} --yes 2>/dev/null || true
+          git push --delete origin "$TAG" 2>/dev/null || true
+
+          gh release create "$TAG" \
+            --repo ${{ github.repository }} \
+            --title "$(echo ${{ matrix.backend }} | tr '[:lower:]' '[:upper:]') v${{ steps.version.outputs.version }}" \
+            --notes "${{ matrix.backend }} backbone v${{ steps.version.outputs.version }}"
+
+          for f in output/${{ matrix.backend }}/${{ matrix.backend }}.vtr \
+                   output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta \
+                   output/${{ matrix.backend }}/${{ matrix.backend }}.meta; do
+            if [ -f "$f" ]; then
+              gh release upload "$TAG" "$f" --repo ${{ github.repository }} --clobber
+            fi
+          done
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,129 @@
+name: Check Enrichment Source Versions
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.5.2'
+
+      - name: Install dependencies
+        run: install.packages("jsonlite", repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+
+      - name: Check enrichment versions
+        id: check
+        run: |
+          output=$(Rscript shared/check_versions.R manifest/manifest.json 2>check_log.txt)
+          echo "$output" > version_results.json
+          cat check_log.txt >&2
+
+          # Parse outdated count
+          outdated=$(echo "$output" | Rscript -e '
+            r <- jsonlite::fromJSON(readLines("stdin"))
+            cat(sum(!is.na(r$outdated) & r$outdated, na.rm = TRUE))
+          ')
+          echo "outdated_count=$outdated" >> $GITHUB_OUTPUT
+
+      - name: Build issue body
+        if: steps.check.outputs.outdated_count != '0'
+        id: issue
+        run: |
+          Rscript -e '
+            results <- jsonlite::fromJSON("version_results.json")
+            outdated <- results[!is.na(results$outdated) & results$outdated, ]
+            unknown <- results[is.na(results$outdated), ]
+
+            lines <- c(
+              "## Outdated Enrichment Sources",
+              "",
+              "The following enrichment sources have newer versions available upstream.",
+              "",
+              "| Enrichment | Local Version | Upstream Version | Check URL |",
+              "|---|---|---|---|"
+            )
+
+            for (i in seq_len(nrow(outdated))) {
+              url <- if (!is.na(outdated$check_url[i])) {
+                sprintf("[link](%s)", outdated$check_url[i])
+              } else {
+                "—"
+              }
+              lines <- c(lines, sprintf(
+                "| `%s` | %s | **%s** | %s |",
+                outdated$name[i],
+                outdated$source_version[i],
+                outdated$upstream_version[i],
+                url
+              ))
+            }
+
+            if (nrow(unknown) > 0L) {
+              lines <- c(lines, "", "### Could not check", "")
+              for (i in seq_len(nrow(unknown))) {
+                lines <- c(lines, sprintf("- `%s`: %s",
+                                           unknown$name[i], unknown$note[i]))
+              }
+            }
+
+            lines <- c(lines, "",
+              sprintf("*Last checked: %s UTC*", format(Sys.time(), "%%Y-%%m-%%d %%H:%%M")),
+              "",
+              "---",
+              "To rebuild outdated enrichments, run `build_enrichments.R` or trigger the enrichment build workflow."
+            )
+
+            writeLines(paste(lines, collapse = "\n"), "issue_body.md")
+          '
+
+      - name: Create or update issue
+        if: steps.check.outputs.outdated_count != '0'
+        run: |
+          BODY=$(cat issue_body.md)
+          EXISTING=$(gh issue list --repo ${{ github.repository }} \
+            --label "enrichment-outdated" --state open --json number -q '.[0].number')
+
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" \
+              --repo ${{ github.repository }} \
+              --body "$BODY"
+            echo "Updated issue #$EXISTING"
+          else
+            gh issue create \
+              --repo ${{ github.repository }} \
+              --title "Enrichment sources outdated" \
+              --body "$BODY" \
+              --label "enrichment-outdated"
+            echo "Created new issue"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Close issue if all current
+        if: steps.check.outputs.outdated_count == '0'
+        run: |
+          EXISTING=$(gh issue list --repo ${{ github.repository }} \
+            --label "enrichment-outdated" --state open --json number -q '.[0].number')
+
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" \
+              --repo ${{ github.repository }} \
+              --comment "All enrichment sources are up to date as of $(date -u +%Y-%m-%d)."
+            echo "Closed issue #$EXISTING"
+          else
+            echo "No open issue to close"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

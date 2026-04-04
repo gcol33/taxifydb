@@ -1,0 +1,126 @@
+{
+  "schema_version": 2,
+  "backends": {
+    "wfo": {
+      "latest": "2024.12",
+      "full_url": "https://zenodo.org/records/PLACEHOLDER/files/wfo_2024.12.vtr",
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://zenodo.org/records/14538251/files/_DwC_backbone_R.zip"
+    },
+    "col": {
+      "latest": "2024.11",
+      "full_url": "https://zenodo.org/records/PLACEHOLDER/files/col_2024.11.vtr",
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://download.checklistbank.org/col/annual/2025_dwca.zip"
+    },
+    "gbif": {
+      "latest": "2024.10",
+      "full_url": "https://zenodo.org/records/PLACEHOLDER/files/gbif_2024.10.vtr",
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz"
+    },
+    "itis": {
+      "latest": null,
+      "full_url": null,
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://www.itis.gov/downloads/itisSqlite.zip"
+    },
+    "ncbi": {
+      "latest": null,
+      "full_url": null,
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump.tar.gz"
+    },
+    "otl": {
+      "latest": null,
+      "full_url": null,
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz"
+    },
+    "worms": {
+      "latest": null,
+      "full_url": null,
+      "full_size": null,
+      "full_sha256": null,
+      "nrow": null,
+      "source_url": "https://api.checklistbank.org/dataset/2011/archive"
+    }
+  },
+  "enrichments": {
+    "conservation_status": {
+      "latest": "2026.04",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/conservation_status.vtr",
+      "nrow": 59583,
+      "license": "Factual data (not copyrightable)",
+      "source_doi": null
+    },
+    "griis": {
+      "latest": "2026.04",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/griis.vtr",
+      "nrow": 98131,
+      "license": "CC BY 4.0",
+      "source_doi": "10.15468/6jcu0q"
+    },
+    "wcvp": {
+      "latest": "2026.04",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/wcvp.vtr",
+      "nrow": 1973234,
+      "license": "CC BY",
+      "source_doi": "10.1038/s41597-021-00997-6"
+    },
+    "eive": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/eive.vtr",
+      "nrow": 14835,
+      "license": "CC BY 4.0",
+      "source_doi": "10.3897/VCS.98324"
+    },
+    "elton_traits": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/elton_traits.vtr",
+      "nrow": 15394,
+      "license": "CC0",
+      "source_doi": "10.6084/m9.figshare.c.3306933.v1"
+    },
+    "avonet": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/avonet.vtr",
+      "nrow": 11009,
+      "license": "CC BY 4.0",
+      "source_doi": "10.6084/m9.figshare.16586228.v5"
+    },
+    "pantheria": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/pantheria.vtr",
+      "nrow": 5416,
+      "license": "CC0",
+      "source_doi": "10.1890/08-1494.1"
+    },
+    "amphibio": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/amphibio.vtr",
+      "nrow": 6776,
+      "license": "CC BY 4.0",
+      "source_doi": "10.6084/m9.figshare.4644424.v5"
+    },
+    "common_names": {
+      "latest": "2026.04",
+      "full_url": "https://github.com/gcol33/taxify-backbones/releases/download/enrichment-2026.04/common_names.vtr",
+      "nrow": 650480,
+      "license": "CC0",
+      "source_doi": null
+    }
+  }
+}

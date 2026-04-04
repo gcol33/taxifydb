@@ -1,0 +1,36 @@
+backend: worms
+name: "World Register of Marine Species"
+
+source:
+  url: "https://api.checklistbank.org/dataset/2011/archive"
+  format: dwca
+  size_mb: ~200
+
+version:
+  # WoRMS updates continuously; we stamp with YYYY.MM of build date
+  pattern: "{year}.{month}"
+
+schema:
+  # DwC-A (same format family as COL)
+  main_file: Taxon.tsv
+  col_map:
+    taxon_id: taxonID             # may be LSID, stripped to numeric AphiaID
+    canonical_name: canonicalName # computed: scientificName minus authorship
+    taxon_rank: taxonRank
+    taxonomic_status: taxonomicStatus  # "accepted"/"unaccepted" → ACCEPTED/SYNONYM
+    accepted_name_usage_id: acceptedNameUsageID  # may be LSID
+    family: family                # denormalized, no hierarchy walk needed
+    genus: genus                  # denormalized
+    specific_epithet: specificEpithet
+    authorship: scientificNameAuthorship
+    infraspecific_epithet: infraspecificEpithet
+
+  extra_files:
+    - SpeciesProfile.tsv          # marine/brackish/freshwater/terrestrial/extinct
+
+notes: |
+  WoRMS is the authoritative taxonomy for marine species. Accessed via
+  GBIF ChecklistBank (dataset key 2d59e5db-57ad-41ff-97d6-11f5fb264527).
+  Classification columns are denormalized (no hierarchy walk needed).
+  Status uses "accepted"/"unaccepted" (mapped to standard ACCEPTED/SYNONYM).
+  taxonID and acceptedNameUsageID may be LSIDs — numeric AphiaIDs extracted.

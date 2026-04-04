@@ -1,0 +1,120 @@
+name: Build Light Backbones
+
+on:
+  schedule:
+    # 1st of January and July at 02:00 UTC
+    - cron: '0 2 1 1,7 *'
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: 'Backend to build (or "all")'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - itis
+          - ncbi
+          - otl
+          - worms
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "otl", "worms"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.5.2'
+
+      - name: Install dependencies
+        run: |
+          install.packages(c("vectra", "digest", "jsonlite"), repos = "https://cloud.r-project.org")
+          if ("${{ matrix.backend }}" == "itis") {
+            install.packages(c("DBI", "RSQLite"), repos = "https://cloud.r-project.org")
+          }
+        shell: Rscript {0}
+
+      - name: Install xdelta3
+        run: sudo apt-get install -y xdelta3
+
+      - name: Download previous release (for delta)
+        continue-on-error: true
+        run: |
+          PREV_TAG=$(gh release list --repo ${{ github.repository }} --limit 50 | grep "^${{ matrix.backend }}-" | head -1 | awk '{print $1}')
+          if [ -n "$PREV_TAG" ]; then
+            mkdir -p output/${{ matrix.backend }}_prev
+            gh release download "$PREV_TAG" \
+              --repo ${{ github.repository }} \
+              --pattern "${{ matrix.backend }}.vtr" \
+              --dir output/${{ matrix.backend }}_prev || true
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build backbone
+        run: Rscript build_all.R ${{ matrix.backend }} output
+
+      - name: Compute version
+        id: version
+        run: echo "version=$(date +%Y.%m)" >> $GITHUB_OUTPUT
+
+      - name: Create release
+        run: |
+          TAG="${{ matrix.backend }}-${{ steps.version.outputs.version }}"
+          NOTES="${{ matrix.backend }} backbone v${{ steps.version.outputs.version }}"
+
+          # Delete existing release with same tag if present
+          gh release delete "$TAG" --repo ${{ github.repository }} --yes 2>/dev/null || true
+          git push --delete origin "$TAG" 2>/dev/null || true
+
+          # Create release
+          gh release create "$TAG" \
+            --repo ${{ github.repository }} \
+            --title "$(echo ${{ matrix.backend }} | tr '[:lower:]' '[:upper:]') v${{ steps.version.outputs.version }}" \
+            --notes "$NOTES"
+
+          # Upload artifacts
+          for f in output/${{ matrix.backend }}/${{ matrix.backend }}.vtr \
+                   output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta \
+                   output/${{ matrix.backend }}/${{ matrix.backend }}.meta; do
+            if [ -f "$f" ]; then
+              gh release upload "$TAG" "$f" --repo ${{ github.repository }} --clobber
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update manifest
+        run: |
+          Rscript -e '
+            source("shared/build.R")
+            source("shared/publish.R")
+            update_manifest(
+              "manifest/manifest.json",
+              "${{ matrix.backend }}",
+              "${{ steps.version.outputs.version }}",
+              "output/${{ matrix.backend }}/${{ matrix.backend }}.vtr",
+              delta_path = if (file.exists("output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta"))
+                "output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta" else NULL
+            )
+          '
+
+      - name: Commit manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest/manifest.json
+          git diff --staged --quiet || git commit -m "Update manifest: ${{ matrix.backend }} v${{ steps.version.outputs.version }}"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

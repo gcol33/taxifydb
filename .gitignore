@@ -1,0 +1,22 @@
+# Build outputs
+output/
+
+# Raw downloads
+raw/
+*.zip
+*.tar.gz
+*.tgz
+*.gz
+*.sqlite
+
+# Scratch/dev scripts
+.run-*
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user
+
+# OS
+.DS_Store
+Thumbs.db

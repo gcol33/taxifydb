@@ -6,7 +6,7 @@
 # Examples:
 #   Rscript build_all.R itis output/itis
 #   Rscript build_all.R ncbi output/ncbi
-#   Rscript build_all.R otl  output/otl
+#   Rscript build_all.R ott  output/ott
 #   Rscript build_all.R all  output        # builds all backends
 #
 # After building, optionally:
@@ -27,14 +27,14 @@ source("shared/publish.R")
 backend_scripts <- list(
   itis  = "backends/itis/convert.R",
   ncbi  = "backends/ncbi/convert.R",
-  otl   = "backends/otl/convert.R",
+  ott   = "backends/ott/convert.R",
   worms = "backends/worms/convert.R"
 )
 
 backend_builders <- list(
   itis  = function(out) { source("backends/itis/convert.R"); build_itis(out) },
   ncbi  = function(out) { source("backends/ncbi/convert.R"); build_ncbi(out) },
-  otl   = function(out) { source("backends/otl/convert.R"); build_otl(out) },
+  ott   = function(out) { source("backends/ott/convert.R"); build_ott(out) },
   worms = function(out) { source("backends/worms/convert.R"); build_worms(out) }
 )
 

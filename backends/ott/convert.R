@@ -1,6 +1,6 @@
-# ---- Open Tree of Life (OTL): taxonomy.tsv -> normalized df -> .vtr ----
+# ---- Open Tree Taxonomy (OTT): taxonomy.tsv -> normalized df -> .vtr ----
 #
-# OTL publishes a synthetic taxonomy (OTT) as a TSV tarball. Key file:
+# OTT is published by Open Tree of Life as a TSV tarball. Key file:
 #   taxonomy.tsv: uid | parent_uid | name | rank | sourceinfo | uniqname | flags
 #
 # Notable features:
@@ -14,11 +14,11 @@ source("shared/precompute.R")
 source("shared/build.R")
 
 # Updated to latest available version
-.otl_url <- "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz"
-.otl_version_default <- "3.7.3"
+.ott_url <- "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz"
+.ott_version_default <- "3.7.3"
 
 # Ranks to keep
-.otl_keep_ranks <- c(
+.ott_keep_ranks <- c(
   "species", "genus", "family", "order", "class", "phylum", "kingdom",
   "domain", "subspecies", "variety", "forma", "infraspecies",
   "subfamily", "superfamily", "suborder", "subclass", "subphylum",
@@ -26,29 +26,29 @@ source("shared/build.R")
 )
 
 # Flags indicating the taxon should be treated as non-accepted
-.otl_synonym_flags <- c(
+.ott_synonym_flags <- c(
   "merged", "was_container", "inconsistent", "major_rank_conflict"
 )
 
 # Flags indicating the taxon should be excluded entirely
-.otl_exclude_flags <- c(
+.ott_exclude_flags <- c(
   "not_otu", "environmental", "environmental_inherited",
   "hidden", "hidden_inherited", "barren"
 )
 
 
-#' Download and extract OTL taxonomy
+#' Download and extract OTT taxonomy
 #'
 #' @param dest Character. Destination directory.
 #' @param verbose Logical.
 #' @return Path to the extraction directory containing taxonomy.tsv.
-download_otl <- function(dest = tempdir(), verbose = TRUE) {
+download_ott <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
   tgz_path <- file.path(dest, "ott.tgz")
 
-  if (verbose) message("Downloading OTL taxonomy (~106 MB)...")
-  utils::download.file(.otl_url, tgz_path, mode = "wb", quiet = !verbose)
+  if (verbose) message("Downloading OTT taxonomy (~106 MB)...")
+  utils::download.file(.ott_url, tgz_path, mode = "wb", quiet = !verbose)
 
   if (verbose) message("Extracting...")
   utils::untar(tgz_path, exdir = dest)
@@ -57,7 +57,7 @@ download_otl <- function(dest = tempdir(), verbose = TRUE) {
   tsv_files <- list.files(dest, pattern = "^taxonomy\\.tsv$",
                           recursive = TRUE, full.names = TRUE)
   if (length(tsv_files) == 0L) {
-    stop("taxonomy.tsv not found in OTL download.")
+    stop("taxonomy.tsv not found in OTT download.")
   }
 
   unlink(tgz_path)
@@ -65,7 +65,7 @@ download_otl <- function(dest = tempdir(), verbose = TRUE) {
 }
 
 
-#' Parse OTL flags column into a character vector
+#' Parse OTT flags column into a character vector
 #'
 #' @param flags_str Character. Comma-separated flag string.
 #' @return Character vector of flags.
@@ -75,23 +75,23 @@ parse_flags <- function(flags_str) {
 }
 
 
-#' Read and normalize the OTL taxonomy
+#' Read and normalize the OTT taxonomy
 #'
-#' @param otl_dir Character. Path to the extracted OTL directory.
+#' @param ott_dir Character. Path to the extracted OTT directory.
 #' @param verbose Logical.
 #' @return A normalized data.frame.
-read_otl <- function(otl_dir, verbose = TRUE) {
+read_ott <- function(ott_dir, verbose = TRUE) {
   # ---- 1. Read taxonomy.tsv ----
   if (verbose) message("Reading taxonomy.tsv...")
-  tsv_path <- file.path(otl_dir, "taxonomy.tsv")
-  # OTL taxonomy.tsv is tab-separated (despite some docs saying pipe-delimited,
+  tsv_path <- file.path(ott_dir, "taxonomy.tsv")
+  # OTT taxonomy.tsv is tab-separated (despite some docs saying pipe-delimited,
   # the actual file uses plain tabs with pipe in column values like sourceinfo)
   df <- utils::read.delim(tsv_path, stringsAsFactors = FALSE,
                           quote = "", comment.char = "")
 
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
 
-  # Standardize column names (OTL uses uid, not id)
+  # Standardize column names (OTT uses uid, not id)
   if ("uid" %in% names(df)) names(df)[names(df) == "uid"] <- "id"
   if ("parent_uid" %in% names(df)) {
     names(df)[names(df) == "parent_uid"] <- "parent_id"
@@ -106,9 +106,9 @@ read_otl <- function(otl_dir, verbose = TRUE) {
   )
 
   # Exclude rows with exclusion flags
-  exclude_regex <- paste(.otl_exclude_flags, collapse = "|")
+  exclude_regex <- paste(.ott_exclude_flags, collapse = "|")
   has_exclude <- vapply(flag_list, function(f) {
-    any(trimws(f) %in% .otl_exclude_flags)
+    any(trimws(f) %in% .ott_exclude_flags)
   }, logical(1L))
   df <- df[!has_exclude, ]
   flag_list <- flag_list[!has_exclude]
@@ -117,7 +117,7 @@ read_otl <- function(otl_dir, verbose = TRUE) {
                                format(nrow(df), big.mark = ",")))
 
   # Filter by rank
-  df <- df[!is.na(df$rank) & df$rank %in% .otl_keep_ranks, ]
+  df <- df[!is.na(df$rank) & df$rank %in% .ott_keep_ranks, ]
   if (verbose) message(sprintf("  After rank filter: %s rows",
                                format(nrow(df), big.mark = ",")))
 
@@ -128,12 +128,12 @@ read_otl <- function(otl_dir, verbose = TRUE) {
     ",", fixed = TRUE
   )
   has_syn_flag <- vapply(flag_list_filtered, function(f) {
-    any(trimws(f) %in% .otl_synonym_flags)
+    any(trimws(f) %in% .ott_synonym_flags)
   }, logical(1L))
   df$taxonomic_status <- ifelse(has_syn_flag, "SYNONYM", "ACCEPTED")
 
   # ---- 4. Read forwards.tsv for merged taxa ----
-  forwards_path <- file.path(otl_dir, "forwards.tsv")
+  forwards_path <- file.path(ott_dir, "forwards.tsv")
   if (file.exists(forwards_path)) {
     if (verbose) message("Reading forwards.tsv (merged IDs)...")
     fwd <- utils::read.delim(forwards_path, stringsAsFactors = FALSE,
@@ -216,28 +216,28 @@ read_otl <- function(otl_dir, verbose = TRUE) {
 }
 
 
-#' Build the OTL backbone .vtr
+#' Build the OTT backbone .vtr
 #'
 #' @param output_dir Character.
 #' @param version Character or NULL.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
-build_otl <- function(output_dir = "output/otl", version = NULL,
+build_ott <- function(output_dir = "output/ott", version = NULL,
                       verbose = TRUE) {
-  if (is.null(version)) version <- .otl_version_default
+  if (is.null(version)) version <- .ott_version_default
 
-  tmp <- tempfile("otl_")
+  tmp <- tempfile("ott_")
   dir.create(tmp, recursive = TRUE)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
-  otl_dir <- download_otl(dest = tmp, verbose = verbose)
-  df <- read_otl(otl_dir, verbose = verbose)
+  ott_dir <- download_ott(dest = tmp, verbose = verbose)
+  df <- read_ott(ott_dir, verbose = verbose)
 
   if (verbose) message("Precomputing keys and embedding synonyms...")
   df <- precompute_backbone(df)
 
-  vtr_path <- file.path(output_dir, "otl.vtr")
-  build_vtr(df, vtr_path, "otl", version, .otl_url)
+  vtr_path <- file.path(output_dir, "ott.vtr")
+  build_vtr(df, vtr_path, "ott", version, .ott_url)
 
   invisible(vtr_path)
 }
@@ -245,7 +245,7 @@ build_otl <- function(output_dir = "output/otl", version = NULL,
 
 if (sys.nframe() == 0L) {
   args <- commandArgs(trailingOnly = TRUE)
-  output_dir <- if (length(args) >= 1L) args[1L] else "output/otl"
+  output_dir <- if (length(args) >= 1L) args[1L] else "output/ott"
   version <- if (length(args) >= 2L) args[2L] else NULL
-  build_otl(output_dir, version)
+  build_ott(output_dir, version)
 }

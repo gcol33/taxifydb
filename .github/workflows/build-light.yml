@@ -15,7 +15,7 @@ on:
           - all
           - itis
           - ncbi
-          - otl
+          - ott
           - worms
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "otl", "worms"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
+        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
 
     steps:
       - name: Checkout

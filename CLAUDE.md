@@ -28,7 +28,7 @@ shared/publish.R            — GitHub Release upload + manifest update
 |---------|--------|---------------|------|-------|
 | itis | SQLite | Yes (parent_tsn) | ~212 MB | RSQLite required |
 | ncbi | .dmp (pipe-delimited) | Yes (parent_id) | ~141 MB | Aggressive noise filtering |
-| otl | TSV (pipe-delimited) | Yes (parent_uid) | ~106 MB | Synthetic taxonomy (NCBI+GBIF+WoRMS+IRMNG) |
+| ott | TSV (pipe-delimited) | Yes (parent_uid) | ~106 MB | Synthetic taxonomy (NCBI+GBIF+WoRMS+IRMNG) |
 | worms | DwC-A (TSV) | No (denormalized) | ~200 MB | Marine taxa, via GBIF ChecklistBank |
 
 WFO, COL, GBIF backbones are built from the taxify package's own `taxify_download()` methods (not in this repo).

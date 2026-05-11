@@ -78,7 +78,7 @@ normalize_backbone <- function(df, col_map, extra_cols = NULL) {
 
 #' Resolve family/genus by walking a parent-child hierarchy
 #'
-#' Many backends (ITIS, NCBI, OTL) store taxonomy as a parent-child tree
+#' Many backends (ITIS, NCBI, OTT) store taxonomy as a parent-child tree
 #' without explicit family/genus columns. This function walks up the tree
 #' to find the nearest ancestor at each target rank.
 #'

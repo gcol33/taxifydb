@@ -82,6 +82,21 @@ enrichment_registry <- list(
     script  = "enrichment/common_names/convert.R",
     builder = "build_common_names",
     desc    = "GBIF vernacular names (multi-language)"
+  ),
+  funguild = list(
+    script  = "enrichment/funguild/convert.R",
+    builder = "build_funguild",
+    desc    = "FUNGuild fungal trophic mode and ecological guild"
+  ),
+  fishbase = list(
+    script  = "enrichment/fishbase/convert.R",
+    builder = "build_fishbase",
+    desc    = "FishBase species + ecology traits (via rfishbase)"
+  ),
+  anage = list(
+    script  = "enrichment/anage/convert.R",
+    builder = "build_anage",
+    desc    = "AnAge longevity and life-history traits"
   )
 )
 

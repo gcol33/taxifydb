@@ -26,10 +26,26 @@ resolve_enrichment_names <- function(df,
                                      backends = c("wfo", "col", "gbif",
                                                   "itis", "ncbi", "ott",
                                                   "worms"),
-                                     verbose = TRUE) {
+                                     verbose = TRUE,
+                                     use_lookup = TRUE) {
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
+
+  # Fast path: hash-join against pre-built per-backbone lookup tables
+  # (5-10s for ~50k names vs hours via taxify::taxify per name per backend).
+  if (use_lookup) {
+    lookup_paths <- .find_lookup_paths(backends)
+    if (length(lookup_paths) > 0L) {
+      return(.resolve_via_lookup(df, group_cols, lookup_paths, verbose))
+    }
+    if (verbose) {
+      message("  No name_lookup.vtr files found; falling back to ",
+              "per-backend taxify(). Run shared/build_name_lookup.R to ",
+              "enable the fast path.")
+    }
+  }
+
 
   if (!requireNamespace("taxify", quietly = TRUE)) {
     stop("taxify package required for cross-backbone name resolution. ",
@@ -135,6 +151,142 @@ resolve_enrichment_names <- function(df,
   if (verbose) {
     message(sprintf(
       "  Final enrichment: %s rows (was %s)",
+      format(nrow(expanded), big.mark = ","),
+      format(nrow(df), big.mark = ",")
+    ))
+  }
+
+  expanded
+}
+
+
+# ---- Fast-path internals ----------------------------------------------------
+
+#' Find pre-built name_lookup.vtr files in the user's taxify data dir
+#' @noRd
+.find_lookup_paths <- function(backends) {
+  data_root <- file.path(Sys.getenv("APPDATA"), "R", "data", "R", "taxify")
+  paths <- character()
+  for (b in backends) {
+    p <- file.path(data_root, b, "latest", sprintf("%s_name_lookup.vtr", b))
+    if (file.exists(p)) paths <- c(paths, stats::setNames(p, b))
+  }
+  paths
+}
+
+
+#' Lowercase + collapse internal whitespace; matches the convention used
+#' by precompute_keys() to build backbone `key_ci` values.
+#' @noRd
+.to_key_ci <- function(x) {
+  x <- as.character(x)
+  x <- tolower(x)
+  x <- gsub("\\s+", " ", x)
+  trimws(x)
+}
+
+
+#' Resolve enrichment names via hash-joins against per-backbone lookup .vtr.
+#'
+#' Replaces the per-name-per-backend taxify() loop. Two-column lookups
+#' (key_ci -> accepted_name) are pre-built by shared/build_name_lookup.R.
+#' @noRd
+.resolve_via_lookup <- function(df, group_cols, lookup_paths, verbose) {
+  unique_names <- unique(df$canonical_name)
+  unique_names <- unique_names[!is.na(unique_names) & nzchar(unique_names)]
+  query_keys <- .to_key_ci(unique_names)
+  query_df <- data.frame(
+    canonical_name = unique_names,
+    key_ci         = query_keys,
+    stringsAsFactors = FALSE
+  )
+
+  if (verbose) {
+    message(sprintf(
+      "  [fast-path] resolving %s names against %d lookup tables",
+      format(length(unique_names), big.mark = ","), length(lookup_paths)
+    ))
+  }
+
+  all_mappings <- vector("list", length(lookup_paths))
+
+  for (i in seq_along(lookup_paths)) {
+    nm <- names(lookup_paths)[i]
+    p  <- lookup_paths[i]
+    t0 <- proc.time()
+    matched <- tryCatch({
+      vectra::tbl(p) |>
+        vectra::filter(key_ci %in% query_keys) |>
+        vectra::select("key_ci", "accepted_name") |>
+        vectra::collect()
+    }, error = function(e) {
+      warning(sprintf("Lookup [%s] failed: %s", nm, conditionMessage(e)),
+              call. = FALSE)
+      data.frame(key_ci = character(), accepted_name = character(),
+                 stringsAsFactors = FALSE)
+    })
+    elapsed <- (proc.time() - t0)["elapsed"]
+    if (verbose) {
+      message(sprintf("    [%d/%d] %-6s %s matches in %.1fs",
+                      i, length(lookup_paths), nm,
+                      format(nrow(matched), big.mark = ","),
+                      elapsed))
+    }
+    all_mappings[[i]] <- matched
+  }
+
+  # canonical_name (input) -> accepted_name (resolved across backbones)
+  raw <- do.call(rbind, all_mappings)
+  raw <- raw[!is.na(raw$accepted_name) & nzchar(raw$accepted_name), ]
+  raw <- unique(raw)
+
+  # Map raw key_ci -> input canonical_name (case-preserving)
+  mapping <- merge(query_df, raw, by = "key_ci")
+  mapping <- mapping[, c("canonical_name", "accepted_name")]
+  names(mapping) <- c("input_name", "accepted_name")
+  mapping <- unique(mapping)
+
+  # Self-map unresolved names
+  resolved_set <- unique(mapping$input_name)
+  unresolved <- setdiff(unique_names, resolved_set)
+  if (length(unresolved) > 0L) {
+    mapping <- rbind(
+      mapping,
+      data.frame(input_name = unresolved, accepted_name = unresolved,
+                 stringsAsFactors = FALSE)
+    )
+  }
+
+  n_acc <- length(unique(mapping$accepted_name))
+  if (verbose) {
+    message(sprintf(
+      "  [fast-path] %s source -> %s unique accepted (%.2fx)",
+      format(length(unique_names), big.mark = ","),
+      format(n_acc, big.mark = ","),
+      n_acc / max(length(unique_names), 1L)
+    ))
+  }
+
+  expanded <- merge(df, mapping,
+                    by.x = "canonical_name", by.y = "input_name",
+                    all.x = TRUE)
+  has_resolved <- !is.na(expanded$accepted_name)
+  expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
+  expanded$accepted_name <- NULL
+
+  if (!is.null(group_cols) && length(group_cols) > 0L) {
+    dedup_key <- do.call(paste,
+                         c(expanded[c("canonical_name", group_cols)],
+                           list(sep = "\x1f")))
+  } else {
+    dedup_key <- expanded$canonical_name
+  }
+  expanded <- expanded[!duplicated(dedup_key), ]
+  rownames(expanded) <- NULL
+
+  if (verbose) {
+    message(sprintf(
+      "  [fast-path] final: %s rows (was %s)",
       format(nrow(expanded), big.mark = ","),
       format(nrow(df), big.mark = ",")
     ))

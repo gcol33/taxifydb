@@ -122,13 +122,24 @@ read_worms <- function(worms_dir, verbose = TRUE) {
   if (any(has_both)) {
     sn <- canonical[has_both]
     au <- authorship[has_both]
-    sn_len <- nchar(sn)
-    au_len <- nchar(au)
-    strip_len <- sn_len - au_len
-    can_strip <- strip_len > 0L
-    canonical[has_both][can_strip] <- trimws(
-      substr(sn[can_strip], 1L, strip_len[can_strip])
-    )
+    # Only strip when scientificName actually ends with the authorship.
+    # The previous arithmetic strip (sn_len - au_len) silently truncated
+    # to a tiny prefix when the suffix didn't match, producing 60k+ bogus
+    # one-letter canonical_name values like "A", "B", ...
+    suffix_match <- endsWith(sn, au)
+    if (any(suffix_match)) {
+      sn_match <- sn[suffix_match]
+      au_match <- au[suffix_match]
+      stripped <- trimws(substr(sn_match, 1L,
+                                 nchar(sn_match) - nchar(au_match)))
+      # Sanity guard: keep the original scientificName when the strip
+      # produces something obviously degenerate (empty, single char, or
+      # short with no space).
+      degenerate <- !nzchar(stripped) |
+                    (nchar(stripped) < 3L & !grepl(" ", stripped))
+      stripped[degenerate] <- sn_match[degenerate]
+      canonical[has_both][suffix_match] <- stripped
+    }
   }
   df$canonicalName <- canonical
 

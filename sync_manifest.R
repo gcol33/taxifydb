@@ -1,8 +1,8 @@
-# ---- Sync enrichment metadata from built output to taxify inst/manifest.json ----
+# Sync enrichment metadata from built output to taxify's bundled manifest.json.
 #
-# After building enrichments with build_enrichments.R, run this script to
-# update the taxify package's manifest with nrow and available_groups from
-# the built meta.json sidecars.
+# After running build_enrichments.R, this script propagates nrow and
+# available_groups from each enrichment's meta.json sidecar into the
+# taxify package's inst/manifest.json.
 #
 # Usage:
 #   Rscript sync_manifest.R [taxify_manifest_path] [output_dir]
@@ -27,7 +27,6 @@ if (is.null(manifest$enrichments)) {
   stop("No 'enrichments' section in manifest.")
 }
 
-# Scan built enrichments for meta.json sidecars
 enrichment_dirs <- list.dirs(output_dir, recursive = FALSE, full.names = TRUE)
 updated <- character(0L)
 
@@ -39,19 +38,18 @@ for (enr_dir in enrichment_dirs) {
   meta <- jsonlite::read_json(meta_path, simplifyVector = TRUE)
   entry <- manifest$enrichments[[name]]
   if (is.null(entry)) {
-    message(sprintf("  [skip] '%s' not in taxify manifest — add it manually first", name))
+    message(sprintf("  [skip] '%s' not in taxify manifest -- add it manually first",
+                    name))
     next
   }
 
   changed <- FALSE
 
-  # Sync nrow
   if (!is.null(meta$nrow) && !identical(entry$nrow, meta$nrow)) {
     entry$nrow <- meta$nrow
     changed <- TRUE
   }
 
-  # Sync available_groups
   if (!is.null(meta$available_groups)) {
     if (!identical(entry$available_groups, as.list(meta$available_groups))) {
       entry$available_groups <- as.list(meta$available_groups)
@@ -66,12 +64,12 @@ for (enr_dir in enrichment_dirs) {
 }
 
 if (length(updated) == 0L) {
-  message("Nothing to sync — all entries are current.")
+  message("Nothing to sync -- all entries are current.")
 } else {
   jsonlite::write_json(manifest, taxify_manifest, pretty = TRUE,
                        auto_unbox = TRUE)
-  message(sprintf("Updated %d enrichment(s) in %s:", length(updated),
-                  taxify_manifest))
+  message(sprintf("Updated %d enrichment(s) in %s:",
+                  length(updated), taxify_manifest))
   for (name in updated) {
     message(sprintf("  %s", name))
   }

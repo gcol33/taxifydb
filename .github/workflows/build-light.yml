@@ -36,12 +36,17 @@ jobs:
         with:
           r-version: '4.5.2'
 
-      - name: Install dependencies
+      - name: Install taxifydb dependencies
         run: |
-          install.packages(c("vectra", "digest", "jsonlite"), repos = "https://cloud.r-project.org")
+          install.packages(c("vectra", "digest", "jsonlite", "curl", "devtools"),
+                           repos = "https://cloud.r-project.org")
           if ("${{ matrix.backend }}" == "itis") {
             install.packages(c("DBI", "RSQLite"), repos = "https://cloud.r-project.org")
           }
+        shell: Rscript {0}
+
+      - name: Install taxifydb (local)
+        run: devtools::install_local(".", upgrade = "never")
         shell: Rscript {0}
 
       - name: Install xdelta3
@@ -62,28 +67,44 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build backbone
-        run: Rscript build_all.R ${{ matrix.backend }} output
+        run: |
+          taxifydb::build_backend(
+            "${{ matrix.backend }}",
+            output_dir = file.path("output", "${{ matrix.backend }}")
+          )
+        shell: Rscript {0}
 
       - name: Compute version
         id: version
         run: echo "version=$(date +%Y.%m)" >> $GITHUB_OUTPUT
+
+      - name: Create delta vs previous
+        continue-on-error: true
+        run: |
+          prev <- file.path("output", "${{ matrix.backend }}_prev",
+                             "${{ matrix.backend }}.vtr")
+          new  <- file.path("output", "${{ matrix.backend }}",
+                             "${{ matrix.backend }}.vtr")
+          delta <- file.path("output", "${{ matrix.backend }}",
+                              "${{ matrix.backend }}.xdelta")
+          if (file.exists(prev) && file.exists(new)) {
+            taxifydb::create_delta(prev, new, delta)
+          }
+        shell: Rscript {0}
 
       - name: Create release
         run: |
           TAG="${{ matrix.backend }}-${{ steps.version.outputs.version }}"
           NOTES="${{ matrix.backend }} backbone v${{ steps.version.outputs.version }}"
 
-          # Delete existing release with same tag if present
           gh release delete "$TAG" --repo ${{ github.repository }} --yes 2>/dev/null || true
           git push --delete origin "$TAG" 2>/dev/null || true
 
-          # Create release
           gh release create "$TAG" \
             --repo ${{ github.repository }} \
             --title "$(echo ${{ matrix.backend }} | tr '[:lower:]' '[:upper:]') v${{ steps.version.outputs.version }}" \
             --notes "$NOTES"
 
-          # Upload artifacts
           for f in output/${{ matrix.backend }}/${{ matrix.backend }}.vtr \
                    output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta \
                    output/${{ matrix.backend }}/${{ matrix.backend }}.meta; do
@@ -96,18 +117,19 @@ jobs:
 
       - name: Update manifest
         run: |
-          Rscript -e '
-            source("shared/build.R")
-            source("shared/publish.R")
-            update_manifest(
-              "manifest/manifest.json",
-              "${{ matrix.backend }}",
-              "${{ steps.version.outputs.version }}",
-              "output/${{ matrix.backend }}/${{ matrix.backend }}.vtr",
-              delta_path = if (file.exists("output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta"))
-                "output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta" else NULL
-            )
-          '
+          taxifydb::update_manifest(
+            "manifest/manifest.json",
+            "${{ matrix.backend }}",
+            "${{ steps.version.outputs.version }}",
+            file.path("output", "${{ matrix.backend }}",
+                      "${{ matrix.backend }}.vtr"),
+            delta_path = {
+              p <- file.path("output", "${{ matrix.backend }}",
+                              "${{ matrix.backend }}.xdelta")
+              if (file.exists(p)) p else NULL
+            }
+          )
+        shell: Rscript {0}
 
       - name: Commit manifest
         run: |

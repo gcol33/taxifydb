@@ -19,74 +19,75 @@ jobs:
         with:
           r-version: '4.5.2'
 
-      - name: Install dependencies
-        run: install.packages("jsonlite", repos = "https://cloud.r-project.org")
+      - name: Install taxifydb dependencies
+        run: install.packages(c("jsonlite", "curl", "vectra", "digest", "devtools"),
+                              repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
+
+      - name: Install taxifydb (local)
+        run: devtools::install_local(".", upgrade = "never")
         shell: Rscript {0}
 
       - name: Check enrichment versions
         id: check
         run: |
-          output=$(Rscript shared/check_versions.R manifest/manifest.json 2>check_log.txt)
-          echo "$output" > version_results.json
-          cat check_log.txt >&2
-
-          # Parse outdated count
-          outdated=$(echo "$output" | Rscript -e '
-            r <- jsonlite::fromJSON(readLines("stdin"))
-            cat(sum(!is.na(r$outdated) & r$outdated, na.rm = TRUE))
-          ')
-          echo "outdated_count=$outdated" >> $GITHUB_OUTPUT
+          results <- taxifydb::check_all_enrichment_versions("manifest/manifest.json")
+          jsonlite::write_json(results, "version_results.json",
+                               pretty = TRUE, auto_unbox = TRUE)
+          outdated <- sum(!is.na(results$outdated) & results$outdated, na.rm = TRUE)
+          writeLines(sprintf("outdated_count=%d", outdated),
+                     con = file(Sys.getenv("GITHUB_OUTPUT"), open = "a"))
+        shell: Rscript {0}
 
       - name: Build issue body
         if: steps.check.outputs.outdated_count != '0'
         id: issue
         run: |
-          Rscript -e '
-            results <- jsonlite::fromJSON("version_results.json")
-            outdated <- results[!is.na(results$outdated) & results$outdated, ]
-            unknown <- results[is.na(results$outdated), ]
+          results <- jsonlite::fromJSON("version_results.json")
+          outdated <- results[!is.na(results$outdated) & results$outdated, ]
+          unknown <- results[is.na(results$outdated), ]
 
-            lines <- c(
-              "## Outdated Enrichment Sources",
-              "",
-              "The following enrichment sources have newer versions available upstream.",
-              "",
-              "| Enrichment | Local Version | Upstream Version | Check URL |",
-              "|---|---|---|---|"
-            )
+          lines <- c(
+            "## Outdated Enrichment Sources",
+            "",
+            "The following enrichment sources have newer versions available upstream.",
+            "",
+            "| Enrichment | Local Version | Upstream Version | Check URL |",
+            "|---|---|---|---|"
+          )
 
-            for (i in seq_len(nrow(outdated))) {
-              url <- if (!is.na(outdated$check_url[i])) {
-                sprintf("[link](%s)", outdated$check_url[i])
-              } else {
-                "—"
-              }
-              lines <- c(lines, sprintf(
-                "| `%s` | %s | **%s** | %s |",
-                outdated$name[i],
-                outdated$source_version[i],
-                outdated$upstream_version[i],
-                url
-              ))
+          for (i in seq_len(nrow(outdated))) {
+            url <- if (!is.na(outdated$check_url[i])) {
+              sprintf("[link](%s)", outdated$check_url[i])
+            } else {
+              "-"
             }
+            lines <- c(lines, sprintf(
+              "| `%s` | %s | **%s** | %s |",
+              outdated$name[i],
+              outdated$source_version[i],
+              outdated$upstream_version[i],
+              url
+            ))
+          }
 
-            if (nrow(unknown) > 0L) {
-              lines <- c(lines, "", "### Could not check", "")
-              for (i in seq_len(nrow(unknown))) {
-                lines <- c(lines, sprintf("- `%s`: %s",
-                                           unknown$name[i], unknown$note[i]))
-              }
+          if (nrow(unknown) > 0L) {
+            lines <- c(lines, "", "### Could not check", "")
+            for (i in seq_len(nrow(unknown))) {
+              lines <- c(lines, sprintf("- `%s`: %s",
+                                        unknown$name[i], unknown$note[i]))
             }
+          }
 
-            lines <- c(lines, "",
-              sprintf("*Last checked: %s UTC*", format(Sys.time(), "%%Y-%%m-%%d %%H:%%M")),
-              "",
-              "---",
-              "To rebuild outdated enrichments, run `build_enrichments.R` or trigger the enrichment build workflow."
-            )
+          lines <- c(lines, "",
+            sprintf("*Last checked: %s UTC*", format(Sys.time(), "%Y-%m-%d %H:%M")),
+            "",
+            "---",
+            "To rebuild outdated enrichments, run `Rscript build_enrichments.R <name>` or trigger the enrichment build workflow."
+          )
 
-            writeLines(paste(lines, collapse = "\n"), "issue_body.md")
-          '
+          writeLines(paste(lines, collapse = "\n"), "issue_body.md")
+        shell: Rscript {0}
 
       - name: Create or update issue
         if: steps.check.outputs.outdated_count != '0'

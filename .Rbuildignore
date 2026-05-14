@@ -1,0 +1,16 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^output$
+^raw$
+^scripts$
+^manifest$
+^\.github$
+^build_all\.R$
+^build_enrichments\.R$
+^build_ott_from_local\.R$
+^sync_manifest\.R$
+^CLAUDE\.md$
+^LICENSE\.md$
+^\.gitignore$
+^README\.md$
+^\.run-.*\.R$

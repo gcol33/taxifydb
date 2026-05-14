@@ -5,10 +5,16 @@
 # themselves by adding a case in `.backend_builders`.
 
 .backend_builders <- list(
-  itis  = function(...) build_itis(...),
-  ncbi  = function(...) build_ncbi(...),
-  ott   = function(...) build_ott(...),
-  worms = function(...) build_worms(...)
+  itis      = function(...) build_itis(...),
+  ncbi      = function(...) build_ncbi(...),
+  ott       = function(...) build_ott(...),
+  worms     = function(...) build_worms(...),
+  wfo       = function(...) build_wfo(...),
+  col       = function(...) build_col(...),
+  gbif      = function(...) build_gbif(...),
+  euromed   = function(...) build_euromed(...),
+  fungorum  = function(...) build_fungorum(...),
+  algaebase = function(...) build_algaebase(...)
 )
 
 

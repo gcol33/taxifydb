@@ -110,7 +110,7 @@ read_wfo <- function(txt_path, verbose = TRUE) {
   }
 
   # WFO-specific: extra normalized name column kept alongside canonical
-  df$normalizedName <- normalize_epithets(df$scientificName)
+  df$normalizedName <- taxify::normalize_epithets(df$scientificName)
 
   if (verbose) message("Normalizing to unified schema...")
   col_map <- list(

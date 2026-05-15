@@ -22,6 +22,7 @@ Imports:
     curl,
     digest,
     jsonlite,
+    taxify,
     utils,
     vectra
 Suggests:
@@ -29,8 +30,9 @@ Suggests:
     openxlsx2,
     rfishbase,
     RSQLite,
-    taxify,
     testthat (>= 3.0.0)
+Remotes:
+    gcol33/taxify
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

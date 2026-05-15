@@ -15,5 +15,7 @@ precompute_backbone(df, synonym_pattern = "SYNONYM")
 The data.frame ready for \code{build_vtr()}.
 }
 \description{
-Full precompute pipeline: keys + synonym embedding
+Adds the matching-key columns and embedded synonym info that taxify's
+runtime expects. Operates on a normalized backbone (column names from
+\code{\link[=normalize_backbone]{normalize_backbone()}}).
 }

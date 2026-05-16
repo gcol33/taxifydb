@@ -25,8 +25,11 @@
   "name_published_in", "issues"
 )
 
-# Extra columns preserved for add_gbif_info() at runtime
+# Extra columns preserved for add_gbif_info() and resolve_kingdom_via_gbif() at
+# runtime. parent_key is required by taxify::resolve_kingdom_via_gbif() to walk
+# the GBIF hierarchy upward from a genus row to its KINGDOM-rank ancestor.
 .gbif_extra_cols <- c(
+  "parent_key",
   "notho_type",
   "nom_status",
   "bracket_authorship",

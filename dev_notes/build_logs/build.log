@@ -47,3 +47,10 @@ Denormalizing family names via self-join...
   Filtered 1,342,723 rows (7,746,724 -> 6,404,001)
 Normalizing to unified schema...
 Precomputing keys and embedding synonyms...
+[gbif] Built gbif.vtr: 6404001 rows, 1741.7 MB
+[00:01:58] <<< GBIF build  (7.0 min)
+[wfo] schema OK (29 cols)
+[col] schema OK (37 cols)
+[gbif] schema OK (29 cols)
+
+All done in 15.0 min.

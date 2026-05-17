@@ -1,0 +1,21 @@
+ℹ Loading taxifydb
+
+=== Publishing wfo v2024-12-r1 ===
+Release wfo-2024-12-r1 already exists — uploading assets only.
+Published release: wfo-2024-12-r1 (1 artifacts)
+Manifest updated: wfo v2024-12-r1
+Manifest updated: wfo v2024-12-r1
+
+=== Publishing col v2025-r1 ===
+Release col-2025-r1 already exists — uploading assets only.
+Published release: col-2025-r1 (2 artifacts)
+Manifest updated: col v2025-r1
+Manifest updated: col v2025-r1
+
+=== Publishing gbif v2026.05 ===
+Release gbif-2026.05 already exists — uploading assets only.
+Published release: gbif-2026.05 (1 artifacts)
+Manifest updated: gbif v2026.05
+Manifest updated: gbif v2026.05
+
+All three published. Review manifest/manifest.json and commit.

@@ -17,15 +17,40 @@ source_urls <- list(
   gbif = "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz"
 )
 
+# Sidecar artifacts published alongside the main .vtr. The runtime
+# downloader pulls these into the same versioned dir.
+extras <- list(
+  wfo  = character(0L),
+  col  = "output/col/col_species_profile.vtr",
+  gbif = character(0L)
+)
+
+# Update both the taxify-backbones build-side manifest and the taxify
+# runtime-side bundled manifest (which is what the downloader fetches via
+# raw.githubusercontent.com). update_manifest() merges into existing
+# entries, so citation blocks in taxify/inst/manifest.json are preserved.
+manifests <- c(
+  "manifest/manifest.json",
+  "../taxify/inst/manifest.json"
+)
+
 for (bb in c("wfo", "col", "gbif")) {
   vtr <- file.path("output", bb, paste0(bb, ".vtr"))
   if (!file.exists(vtr)) stop("missing: ", vtr)
   ver <- versions[[bb]]
+  ex  <- extras[[bb]]
 
   message(sprintf("\n=== Publishing %s v%s ===", bb, ver))
-  publish_release(bb, ver, vtr)
-  update_manifest("manifest/manifest.json", bb, ver, vtr,
-                  source_url = source_urls[[bb]])
+  publish_release(bb, ver, vtr, extras = ex)
+  for (mf in manifests) {
+    if (!file.exists(mf)) {
+      message(sprintf("  (skipping missing manifest: %s)", mf))
+      next
+    }
+    update_manifest(mf, bb, ver, vtr,
+                    extras = ex,
+                    source_url = source_urls[[bb]])
+  }
 }
 
 message("\nAll three published. Review manifest/manifest.json and commit.")

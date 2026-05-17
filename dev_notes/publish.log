@@ -1,0 +1,14 @@
+ℹ Loading taxifydb
+
+=== Publishing wfo v2024-12-r1 ===
+Release wfo-2024-12-r1 already exists — uploading assets only.
+HTTP 404: Not Found (https://uploads.github.com/repos/gcol33/taxify-backbones/releases/323778717/assets?label=&name=wfo.vtr)
+Error: gh release upload failed for wfo-2024-12-r1 (exit 1)
+In addition: Warning message:
+In system2("gh", c("release", "upload", tag, artifacts, "--repo",  :
+  running command '"gh" release upload wfo-2024-12-r1 output/wfo/wfo.vtr --repo gcol33/taxify-backbones --clobber' haPublished release: col-2025-r1 (2 artifacts)
+Manifest updated: col v2025-r1
+Manifest updated: col v2025-r1
+
+=== Publishing gbif v2026.05 ===
+https://github.com/gcol33/taxify-backbones/releases/tag/gbif-2026.05

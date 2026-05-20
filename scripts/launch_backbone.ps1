@@ -4,7 +4,7 @@
 param(
   [Parameter(Mandatory = $true)]
   [string]$Name,
-  [string]$Repo = "C:\Users\Gilles Colling\Documents\dev\taxify-backbones"
+  [string]$Repo = "C:\Users\Gilles Colling\Documents\dev\taxifydb"
 )
 
 $ErrorActionPreference = "Stop"

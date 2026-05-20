@@ -648,12 +648,19 @@ parse_diaz_traits <- function(path) {
   name_col <- intersect(
     names(df),
     c("Species", "species", "SpecName", "Taxon", "Scientific_name",
-      "AccSpeciesName")
+      "AccSpeciesName", "Species name standardized against TPL")
   )
   if (length(name_col) == 0L) {
-    name_col <- grep("spec|taxon|name", names(df), ignore.case = TRUE,
-                     value = TRUE)
-    if (length(name_col) == 0L) name_col <- names(df)[1L]
+    cands <- grep("species.*name|standardized|scientific.*name|^name$|taxon.*name",
+                  names(df), ignore.case = TRUE, value = TRUE)
+    cands <- setdiff(cands, grep("\\bid\\b|_id$|^id_|number|count|\\bn\\.o\\.",
+                                  cands, ignore.case = TRUE, value = TRUE))
+    if (length(cands) == 0L) {
+      cands <- grep("species|taxon", names(df), ignore.case = TRUE, value = TRUE)
+      cands <- setdiff(cands, grep("\\bid\\b|_id$|^id_|number|count|\\bn\\.o\\.|level|status|group",
+                                    cands, ignore.case = TRUE, value = TRUE))
+    }
+    name_col <- if (length(cands) > 0L) cands else names(df)[1L]
   }
   name_col <- name_col[1L]
 

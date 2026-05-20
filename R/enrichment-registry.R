@@ -149,13 +149,16 @@
   ),
 
   diaz_traits = list(
-    source_url  = "https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-022-05606-z/MediaObjects/41586_2022_5606_MOESM3_ESM.xlsx",
-    source_doi  = "10.1038/s41586-022-05606-z",
+    source_url  = "https://raw.githubusercontent.com/kydahl/biodiv-hotspots/main/data/raw/Trait_data_TRY_Diaz_2022/Dataset/Species_mean_traits.xlsx",
+    source_doi  = "10.1038/s41597-022-01774-9",
     version     = "2022.1",
-    license     = "CC BY 3.0",
-    attribution = "Diaz S et al. (2022) The global spectrum of plant form and function: enhanced species-level trait data. Nature.",
+    license     = "CC BY 4.0",
+    attribution = "Diaz S et al. (2022) The global spectrum of plant form and function: enhanced species-level trait dataset. Scientific Data 9:755.",
     download_fn = function(url, dest) {
-      download_curl_file(url, dest, "Diaz_2022_traits.xlsx")
+      download_curl_file(
+        url, dest, "Species_mean_traits.xlsx",
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/120.0"
+      )
     },
     parse_fn    = function(path) parse_diaz_traits(path),
     group_col   = NULL,
@@ -177,15 +180,16 @@
   ),
 
   alien_first_records = list(
-    source_url  = "https://doi.org/10.6084/m9.figshare.c.3924424.v3",
-    source_doi  = "10.6084/m9.figshare.c.3924424.v3",
+    source_url  = "https://zenodo.org/records/10039630/files/GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx",
+    source_doi  = "10.5281/zenodo.10039630",
     version     = "3.1",
     license     = "CC BY 4.0",
-    attribution = "Seebens H et al. (2017) No saturation in the accumulation of alien species worldwide. Nature Communications 8, 14435.",
+    attribution = "Seebens H et al. (2017) No saturation in the accumulation of alien species worldwide. Nature Communications 8, 14435. Zenodo release v3.1.",
     download_fn = function(url, dest) {
       download_curl_file(
         url, dest,
-        "GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx"
+        "GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx",
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/120.0"
       )
     },
     parse_fn    = function(path) parse_alien_first_records(path),

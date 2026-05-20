@@ -14,8 +14,8 @@ Description: Build pipeline for the 'taxify' package. Downloads raw source
     access, parsing, schema normalization) from runtime concerns so that
     'taxify' itself stays lean.
 License: MIT + file LICENSE
-URL: https://github.com/gcol33/taxify-backbones
-BugReports: https://github.com/gcol33/taxify-backbones/issues
+URL: https://github.com/gcol33/taxifydb
+BugReports: https://github.com/gcol33/taxifydb/issues
 Depends:
     R (>= 4.1.0)
 Imports:

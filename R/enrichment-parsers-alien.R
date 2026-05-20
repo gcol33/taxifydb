@@ -328,12 +328,15 @@ parse_alien_first_records <- function(path) {
 
   df$country_code <- .seebens_region_map[df$Region]
 
+  ref_col <- if ("Reference" %in% names(df)) df$Reference else rep(NA_character_, nrow(df))
+  src_col <- if ("Source"    %in% names(df)) df$Source    else rep(NA_character_, nrow(df))
+
   out <- data.frame(
     canonical_name              = trimws(df$TaxonName),
     country_code                = df$country_code,
     alien_first_record          = as.integer(df$FirstRecord),
-    alien_first_record_source   = df$Source,
-    alien_first_record_reference = df$Reference,
+    alien_first_record_source   = src_col,
+    alien_first_record_reference = ref_col,
     stringsAsFactors = FALSE
   )
 

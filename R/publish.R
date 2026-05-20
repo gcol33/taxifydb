@@ -13,14 +13,14 @@
 #'   (e.g., `col_species_profile.vtr`) that should be uploaded with the
 #'   release and recorded in the manifest. Must exist on disk; basenames
 #'   are used as the manifest entry names.
-#' @param repo Character. GitHub repo (e.g., "gcol33/taxify-backbones").
+#' @param repo Character. GitHub repo (e.g., "gcol33/taxifydb").
 #' @param notes Character. Release notes.
 #' @return The release tag (invisibly).
 #' @export
 publish_release <- function(backend_name, version, vtr_path,
                             delta_path = NULL, meta_path = NULL,
                             extras = character(0L),
-                            repo = "gcol33/taxify-backbones",
+                            repo = "gcol33/taxifydb",
                             notes = NULL) {
   tag <- sprintf("%s-%s", backend_name, version)
 
@@ -126,7 +126,7 @@ update_manifest <- function(manifest_path, backend_name, version,
                             vtr_path, delta_path = NULL,
                             delta_from = NULL,
                             extras = character(0L),
-                            repo = "gcol33/taxify-backbones",
+                            repo = "gcol33/taxifydb",
                             source_url = NULL) {
   if (file.exists(manifest_path)) {
     manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
@@ -212,7 +212,7 @@ update_manifest <- function(manifest_path, backend_name, version,
 #' @return The updated manifest (invisibly).
 #' @export
 update_enrichment_manifest <- function(manifest_path, name, vtr_path,
-                                       repo = "gcol33/taxify-backbones") {
+                                       repo = "gcol33/taxifydb") {
   meta_path <- file.path(dirname(vtr_path), "meta.json")
   if (!file.exists(meta_path)) {
     stop(sprintf("No meta.json found at: %s", meta_path))

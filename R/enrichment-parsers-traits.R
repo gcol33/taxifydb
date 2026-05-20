@@ -227,7 +227,9 @@ parse_fungal_traits <- function(path) {
     trimws(x)
   }
 
-  out <- data.frame(genus = trimws(df[[genus_col]]),
+  genus_clean <- trimws(df[[genus_col]])
+  out <- data.frame(canonical_name = genus_clean,
+                    genus          = genus_clean,
                     stringsAsFactors = FALSE)
 
   if (!is.na(primary_col))    out$primary_lifestyle    <- safe_char(df[[primary_col]])

@@ -1,4 +1,4 @@
-# taxify-backbones — Build Pipeline (`taxifydb` package)
+# taxifydb — Build Pipeline (`taxifydb` package)
 
 ## What This Is
 

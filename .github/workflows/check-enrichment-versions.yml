@@ -24,16 +24,24 @@ jobs:
           r-version: '4.5.2'
           use-public-rspm: true
 
-      - name: Install package dependencies
+      - name: Install version-check dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: local::.
+          extra-packages: any::jsonlite, any::curl
           cache-version: 1
 
       - name: Check enrichment versions
         id: check
         run: |
-          results <- taxifydb::check_all_enrichment_versions("manifest/manifest.json")
+          # The version checker uses only base R, jsonlite, and curl.
+          # We source it directly rather than installing the full taxifydb
+          # package: the package's Imports include taxify (private repo)
+          # which would require a cross-repo PAT, but this workflow only
+          # polls upstream Zenodo/Figshare/Dryad/GBIF APIs and has no need
+          # for the build pipeline that uses taxify.
+          source("R/utils.R")          # provides %||%
+          source("R/check_versions.R")
+          results <- check_all_enrichment_versions("manifest/manifest.json")
           jsonlite::write_json(results, "version_results.json",
                                pretty = TRUE, auto_unbox = TRUE)
           outdated <- sum(!is.na(results$outdated) & results$outdated, na.rm = TRUE)

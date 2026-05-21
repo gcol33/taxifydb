@@ -25,10 +25,13 @@ jobs:
           use-public-rspm: true
 
       - name: Install version-check dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::jsonlite, any::curl
-          cache-version: 1
+        # The full package has a private Remote (gcol33/taxify) that
+        # setup-r-dependencies cannot resolve without a cross-repo PAT,
+        # so we install only the two CRAN packages this workflow needs.
+        # use-public-rspm on setup-r already configured RSPM as the
+        # default repo, so this pulls Ubuntu Noble binaries directly.
+        run: install.packages(c("jsonlite", "curl"))
+        shell: Rscript {0}
 
       - name: Check enrichment versions
         id: check

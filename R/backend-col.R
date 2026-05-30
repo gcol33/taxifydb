@@ -126,8 +126,8 @@ read_col <- function(col_dir, verbose = TRUE) {
 
   # Build canonical name (strip authorship from scientificName)
   if (all(c("scientificName", "scientificNameAuthorship") %in% names(df))) {
-    df$canonicalName <- col_strip_authorship(df$scientificName,
-                                             df$scientificNameAuthorship)
+    df$canonicalName <- strip_authorship(df$scientificName,
+                                         df$scientificNameAuthorship)
   } else {
     df$canonicalName <- df$scientificName
   }
@@ -264,28 +264,4 @@ col_resolve_family <- function(df) {
   }
 
   family
-}
-
-
-#' Strip authorship from COL scientificName to produce canonical name
-#'
-#' @param sci_name Character vector of scientificName values.
-#' @param authorship Character vector of scientificNameAuthorship values.
-#' @return Character vector of canonical names.
-#' @noRd
-col_strip_authorship <- function(sci_name, authorship) {
-  canonical <- sci_name
-  has_both <- !is.na(sci_name) & !is.na(authorship) & nzchar(authorship)
-  if (any(has_both)) {
-    sn <- sci_name[has_both]
-    au <- authorship[has_both]
-    sn_len <- nchar(sn)
-    au_len <- nchar(au)
-    strip_len <- sn_len - au_len
-    can_strip <- strip_len > 0L
-    canonical[has_both][can_strip] <- trimws(
-      substr(sn[can_strip], 1L, strip_len[can_strip])
-    )
-  }
-  canonical
 }

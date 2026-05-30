@@ -101,24 +101,7 @@ read_worms <- function(worms_dir, verbose = TRUE) {
     NA_character_
   }
 
-  canonical <- df$scientificName
-  has_both <- !is.na(canonical) & !is.na(authorship) & nzchar(authorship)
-  if (any(has_both)) {
-    sn <- canonical[has_both]
-    au <- authorship[has_both]
-    suffix_match <- endsWith(sn, au)
-    if (any(suffix_match)) {
-      sn_match <- sn[suffix_match]
-      au_match <- au[suffix_match]
-      stripped <- trimws(substr(sn_match, 1L,
-                                nchar(sn_match) - nchar(au_match)))
-      degenerate <- !nzchar(stripped) |
-        (nchar(stripped) < 3L & !grepl(" ", stripped))
-      stripped[degenerate] <- sn_match[degenerate]
-      canonical[has_both][suffix_match] <- stripped
-    }
-  }
-  df$canonicalName <- canonical
+  df$canonicalName <- strip_authorship(df$scientificName, authorship)
 
   if (verbose) message("Mapping taxonomic status...")
   raw_status <- tolower(df$taxonomicStatus)

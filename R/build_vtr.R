@@ -26,15 +26,16 @@ build_vtr <- function(df, vtr_path, backend_name, version, source_url,
   vectra::create_index(vtr_path, "canonical_name")
   vectra::create_index(vtr_path, "key_ci")
 
+  # Field names follow the .meta contract taxify reads: download_date /
+  # download_timestamp / url (the publish date of the built artifact).
   meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
   lines <- c(
     paste0("backend=", backend_name),
     paste0("version=", version),
-    paste0("build_date=", format(Sys.time(), "%Y-%m-%d")),
-    paste0("build_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-    paste0("source_url=", source_url),
-    paste0("nrow=", nrow(df)),
-    paste0("ncol=", ncol(df))
+    paste0("download_date=", format(Sys.time(), "%Y-%m-%d")),
+    paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
+    paste0("url=", source_url),
+    paste0("nrow=", nrow(df))
   )
   writeLines(lines, meta_path)
 

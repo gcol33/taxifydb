@@ -2,18 +2,18 @@
   "schema_version": 2,
   "backends": {
     "wfo": {
-      "latest": "2024-12-r1",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2024-12-r1/wfo.vtr",
-      "full_size": 785460165,
-      "full_sha256": "98bdcec43e165d647c481b8a053128ba653be9f4f97a7a383b4e1e78f40b72a4",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.06/wfo.vtr",
+      "full_size": 797072257,
+      "full_sha256": "5aa21a5f3885c07972e84117c7485457d8b63496d1f1f80cca14a133f63de77c",
       "nrow": 1638552,
       "source_url": "https://zenodo.org/records/14538251/files/_DwC_backbone_R.zip"
     },
     "col": {
-      "latest": "2025-r1",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2025-r1/col.vtr",
-      "full_size": 1905932197,
-      "full_sha256": "3faeb4657e9cec7ca8bfbe37e5dbbb9a658498dba5ea15afd9f9045fe3cfc0fd",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.06/col.vtr",
+      "full_size": 1960087252,
+      "full_sha256": "3f22e0feeb9d49b3db874a40a787cb374399823e7a4d7ed0eb5cf2dd6fae06ff",
       "nrow": 5302873,
       "source_url": "https://download.checklistbank.org/col/annual/2025_dwca.zip",
       "extras": [
@@ -26,18 +26,18 @@
       ]
     },
     "gbif": {
-      "latest": "2026.05",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.05/gbif.vtr",
-      "full_size": 1826343308,
-      "full_sha256": "cd8674a4aaea9276160b082ed65b720eac59d6ddf7bcb5c0c402525bbe60f1a5",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.06/gbif.vtr",
+      "full_size": 1854505287,
+      "full_sha256": "485ed8266cd7331dfc98d447f0d75e2e938d7d8c787aa26d15c3e690ea9c47e5",
       "nrow": 6404001,
       "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz"
     },
     "itis": {
-      "latest": "2026.05",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/itis-2026.05/itis.vtr",
-      "full_size": 193418497,
-      "full_sha256": "c429a04fcecd41aef7ff0f114a4bec9bb2d06f7b1936c8039a38632959a1100a",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/itis-2026.06/itis.vtr",
+      "full_size": 204660526,
+      "full_sha256": "b95f0e4f32145e44156c01cc4700a695fbd7299e1f703c289606cabdb4595de1",
       "nrow": 991868,
       "source_url": "https://www.itis.gov/downloads/itisSqlite.zip"
     },
@@ -58,10 +58,10 @@
       "source_url": "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz"
     },
     "worms": {
-      "latest": "2026.05",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.05/worms.vtr",
-      "full_size": 307882539,
-      "full_sha256": "aa87fdf337ee86d6c7cd637e8de89636e8cf479d80a9a844cabbdfe5b1d734f6",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.06/worms.vtr",
+      "full_size": 325840921,
+      "full_sha256": "47751d25670a3fc4589231293f0460b486af18f470c972bb042c540570857577",
       "nrow": 1547836,
       "source_url": "https://api.checklistbank.org/dataset/2011/archive",
       "extras": [
@@ -74,24 +74,24 @@
       ]
     },
     "euromed": {
-      "latest": "2020",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2020/euromed.vtr",
-      "full_size": 29766266,
-      "full_sha256": "a1140a7800878116833bc8349152e2a84f759ac28632e80676e43b1a3ab45cf7",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.06/euromed.vtr",
+      "full_size": 30389373,
+      "full_sha256": "6ff976b2f056f65034684a4c2d26a5426ea0a40a58a8c11664220f2a4a9b6757",
       "nrow": 133426
     },
     "fungorum": {
-      "latest": "2026.05",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.05/fungorum.vtr",
-      "full_size": 67392812,
-      "full_sha256": "f8e1b860938080caf32e2209421100d6143743a10582cd6534ce257d21029451",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.06/fungorum.vtr",
+      "full_size": 71353563,
+      "full_sha256": "d33b6e42643f0846578e95d95f6a78c9de22cc7628109ed8063d33a05e25af0f",
       "nrow": 315037
     },
     "algaebase": {
-      "latest": "2026.05",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.05/algaebase.vtr",
-      "full_size": 34632272,
-      "full_sha256": "cfc63e3e946db32bbfa4915f5e5d77398d8751443a7c3582dd236506e12688ca",
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.06/algaebase.vtr",
+      "full_size": 36264066,
+      "full_sha256": "de17ce3538d0b225cebdb2a874cb4f67e334b86304bd68f881d12ccb096a6261",
       "nrow": 172351
     }
   },

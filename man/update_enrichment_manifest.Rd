@@ -8,7 +8,7 @@ update_enrichment_manifest(
   manifest_path,
   name,
   vtr_path,
-  repo = "gcol33/taxify-backbones"
+  repo = "gcol33/taxifydb"
 )
 }
 \arguments{

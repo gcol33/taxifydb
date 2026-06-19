@@ -102,10 +102,9 @@ download_gbif_api_pages <- function(base_url, params, limit = 1000L,
   all_rows <- vector("list", max_pages)
   offset <- 0L
   page <- 1L
-  max_offset <- 9999L
 
   repeat {
-    if (page > max_pages || offset > max_offset) break
+    if (page > max_pages) break
 
     query <- c(params, list(limit = limit, offset = offset))
     query_str <- paste(

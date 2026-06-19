@@ -10,7 +10,8 @@ publish_release(
   vtr_path,
   delta_path = NULL,
   meta_path = NULL,
-  repo = "gcol33/taxify-backbones",
+  extras = character(0L),
+  repo = "gcol33/taxifydb",
   notes = NULL
 )
 }
@@ -19,13 +20,18 @@ publish_release(
 
 \item{version}{Character. Version string.}
 
-\item{vtr_path}{Character. Path to the .vtr file.}
+\item{vtr_path}{Character. Path to the main \code{.vtr} file.}
 
-\item{delta_path}{Character or NULL. Path to the .xdelta file.}
+\item{delta_path}{Character or NULL. Path to the \code{.xdelta} file.}
 
-\item{meta_path}{Character. Path to the .meta sidecar.}
+\item{meta_path}{Character or NULL. Path to the \code{.meta} sidecar.}
 
-\item{repo}{Character. GitHub repo (e.g., "gcol33/taxify-backbones").}
+\item{extras}{Character vector. Paths to additional sidecar artifacts
+(e.g., \code{col_species_profile.vtr}) that should be uploaded with the
+release and recorded in the manifest. Must exist on disk; basenames
+are used as the manifest entry names.}
+
+\item{repo}{Character. GitHub repo (e.g., "gcol33/taxifydb").}
 
 \item{notes}{Character. Release notes.}
 }

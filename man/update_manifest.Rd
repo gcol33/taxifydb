@@ -11,7 +11,8 @@ update_manifest(
   vtr_path,
   delta_path = NULL,
   delta_from = NULL,
-  repo = "gcol33/taxify-backbones",
+  extras = character(0L),
+  repo = "gcol33/taxifydb",
   source_url = NULL
 )
 }
@@ -27,6 +28,11 @@ update_manifest(
 \item{delta_path}{Character or NULL.}
 
 \item{delta_from}{Character or NULL. Previous version the delta is from.}
+
+\item{extras}{Character vector. Paths to sidecar artifacts uploaded with
+the release. Recorded as \verb{extras: [\{name, url, size, sha256\}]} in the
+manifest entry; the runtime downloader fetches each into the same
+versioned directory as the main \code{.vtr}.}
 
 \item{repo}{Character. GitHub repo for URL construction.}
 

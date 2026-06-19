@@ -48,13 +48,18 @@ all 7 backbones.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/gcol33/taxify-backbones}
-  \item Report bugs at \url{https://github.com/gcol33/taxify-backbones/issues}
+  \item \url{https://github.com/gcol33/taxifydb}
+  \item Report bugs at \url{https://github.com/gcol33/taxifydb/issues}
 }
 
 }
 \author{
 \strong{Maintainer}: Gilles Colling \email{gilles.colling051@gmail.com} (\href{https://orcid.org/0000-0003-3070-6066}{ORCID}) [copyright holder]
+
+Authors:
+\itemize{
+  \item Gilles Colling \email{gilles.colling051@gmail.com} (\href{https://orcid.org/0000-0003-3070-6066}{ORCID}) [copyright holder]
+}
 
 }
 \keyword{internal}

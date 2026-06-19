@@ -198,21 +198,17 @@
   ),
 
   conservation_status = list(
-    source_url  = "https://api.gbif.org/v1/species/search",
+    source_url  = "https://hosted-datasets.gbif.org/datasets/iucn/iucn-latest.zip",
     source_doi  = NULL,
     version     = format(Sys.Date(), "%Y.%m"),
-    license     = "Factual data (not copyrightable)",
-    attribution = "Conservation status from GBIF Backbone Taxonomy (IUCN Red List categories).",
+    license     = "CC BY 4.0",
+    attribution = "IUCN Red List of Threatened Species, published on GBIF as a Darwin Core Archive (dataset 19491596-35ae-4a91-9a98-85cf505f1bd3).",
     download_fn = function(url, dest) {
-      # API-based: no file download; return a dummy marker path.
-      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-      marker <- file.path(dest, ".api_source")
-      writeLines("gbif_species_search", marker)
-      marker
+      download_and_unzip(url, dest, pattern = NULL)
     },
     parse_fn    = function(path) parse_conservation_status(path),
     group_col   = NULL,
-    requires    = character(0)
+    requires    = "data.table"
   ),
 
   wcvp = list(

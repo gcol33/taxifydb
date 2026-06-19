@@ -352,91 +352,106 @@ parse_alien_first_records <- function(path) {
 }
 
 
-#' Parse conservation status from GBIF species search API
+#' Parse IUCN Red List conservation status from the GBIF Darwin Core Archive
 #'
-#' Pulls species lists by IUCN threat category from the GBIF API and combines
-#' them. Splits large categories by rank to bypass the GBIF 9999-offset cap.
+#' Reads the IUCN Red List archive published on GBIF (taxon.txt core plus the
+#' Distribution extension that carries `threatStatus`) and returns one global
+#' Red List category per accepted species-rank name. Reading the archive
+#' directly avoids the GBIF `species/search` endpoint, whose threat facet spans
+#' every checklist (so a name picks up conflicting categories from regional or
+#' erroneous lists) and whose offset ceiling truncates the large categories.
 #'
-#' @param dummy_path Character. Ignored — the API is queried directly. Kept
-#'   for interface symmetry with file-based parsers.
+#' @param dir_path Character. Directory holding the extracted IUCN archive
+#'   (`taxon.txt`, `distribution.txt`).
 #' @return data.frame with canonical_name + conservation_status.
 #' @export
-parse_conservation_status <- function(dummy_path) {
-  iucn_categories <- c(
-    "LEAST_CONCERN"          = "LC",
-    "NEAR_THREATENED"        = "NT",
-    "VULNERABLE"             = "VU",
-    "ENDANGERED"             = "EN",
-    "CRITICALLY_ENDANGERED"  = "CR",
-    "EXTINCT_IN_THE_WILD"    = "EW",
-    "EXTINCT"                = "EX",
-    "DATA_DEFICIENT"         = "DD"
-  )
-
-  base_url <- "https://api.gbif.org/v1/species/search"
-  all_data <- list()
-
-  for (category in names(iucn_categories)) {
-    abbrev <- iucn_categories[[category]]
-    message(sprintf("  Fetching %s (%s)...", category, abbrev))
-
-    results <- download_gbif_api_pages(
-      base_url,
-      params = list(threat = category),
-      limit = 1000L,
-      max_pages = 100L
-    )
-
-    if (nrow(results) == 0L) next
-
-    names_vec <- results$canonicalName
-    if (is.null(names_vec)) {
-      names_vec <- sub("\\s+[A-Z].*$", "", results$scientificName)
-    }
-
-    rows <- data.frame(
-      canonical_name      = names_vec,
-      conservation_status = abbrev,
-      stringsAsFactors = FALSE
-    )
-
-    if (!is.null(results) && nrow(results) >= 9000L) {
-      for (rank in c("SPECIES", "SUBSPECIES", "VARIETY")) {
-        extra <- download_gbif_api_pages(
-          base_url,
-          params = list(threat = category, rank = rank),
-          limit = 1000L,
-          max_pages = 100L
-        )
-        if (nrow(extra) > 0L) {
-          extra_names <- extra$canonicalName
-          if (is.null(extra_names)) {
-            extra_names <- sub("\\s+[A-Z].*$", "", extra$scientificName)
-          }
-          rows <- rbind(rows, data.frame(
-            canonical_name      = extra_names,
-            conservation_status = abbrev,
-            stringsAsFactors = FALSE
-          ))
-        }
-      }
-    }
-
-    all_data[[category]] <- rows
-    message(sprintf("    %s species", format(nrow(rows), big.mark = ",")))
+parse_conservation_status <- function(dir_path) {
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("Package 'data.table' is required to parse the IUCN Red List archive.",
+         call. = FALSE)
   }
 
-  out <- do.call(function(...) rbind(..., make.row.names = FALSE), all_data)
+  find_one <- function(name) {
+    p <- file.path(dir_path, name)
+    if (file.exists(p)) return(p)
+    hits <- list.files(dir_path, pattern = paste0("^", name, "$"),
+                       full.names = TRUE, recursive = TRUE)
+    if (length(hits) > 0L) hits[1L] else NA_character_
+  }
+  tax_file  <- find_one("taxon.txt")
+  dist_file <- find_one("distribution.txt")
+  if (is.na(tax_file) || is.na(dist_file)) {
+    stop("IUCN archive is missing taxon.txt or distribution.txt.", call. = FALSE)
+  }
 
+  # Darwin Core Archive: tab-separated, no field quoting, no header row
+  # (meta.xml maps columns by position). threatStatus lives in the Distribution
+  # extension (index 5), keyed to the core taxon by coreid (index 0).
+  dist <- data.table::fread(
+    dist_file, sep = "\t", header = FALSE, quote = "", fill = TRUE,
+    select = c(1L, 5L, 6L),
+    col.names = c("taxon_id", "locality", "threat_status"),
+    colClasses = "character", showProgress = FALSE
+  )
+  dist <- dist[!is.na(dist$threat_status) & nzchar(dist$threat_status), ]
+  # Every assessment in this archive is global; keep Global rows defensively.
+  glob <- dist$locality == "Global"
+  if (any(glob)) dist <- dist[glob, ]
+
+  status_map <- c(
+    "least concern"          = "LC",
+    "near threatened"        = "NT",
+    "conservation dependent" = "NT",
+    "vulnerable"             = "VU",
+    "endangered"             = "EN",
+    "critically endangered"  = "CR",
+    "extinct in the wild"    = "EW",
+    "extinct"                = "EX",
+    "data deficient"         = "DD"
+  )
+  dist$status <- status_map[tolower(trimws(dist$threat_status))]
+  dist <- dist[!is.na(dist$status), ]
+
+  # Core taxon table: id (0), genus (7), specificEpithet (8),
+  # infraspecificEpithet (11), taxonomicStatus (12).
+  tax <- data.table::fread(
+    tax_file, sep = "\t", header = FALSE, quote = "", fill = TRUE,
+    select = c(1L, 8L, 9L, 12L, 13L),
+    col.names = c("taxon_id", "genus", "specific_epithet",
+                  "infraspecific_epithet", "taxonomic_status"),
+    colClasses = "character", showProgress = FALSE
+  )
+  tax <- tax[tolower(tax$taxonomic_status) == "accepted", ]
+  tax <- tax[!is.na(tax$genus) & nzchar(tax$genus) &
+             !is.na(tax$specific_epithet) & nzchar(tax$specific_epithet), ]
+
+  tax$canonical_name <- gsub("\\s+", " ", trimws(paste(
+    tax$genus, tax$specific_epithet,
+    ifelse(is.na(tax$infraspecific_epithet), "", tax$infraspecific_epithet)
+  )))
+
+  tax$conservation_status <- dist$status[match(tax$taxon_id, dist$taxon_id)]
+  tax <- tax[!is.na(tax$conservation_status), ]
+
+  out <- data.frame(
+    canonical_name      = tax$canonical_name,
+    conservation_status = tax$conservation_status,
+    stringsAsFactors = FALSE
+  )
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
 
-  severity <- c("EX" = 1L, "EW" = 2L, "CR" = 3L, "EN" = 4L, "VU" = 5L,
-                "NT" = 6L, "LC" = 7L, "DD" = 8L)
-  out$sev <- severity[out$conservation_status]
+  # A binomial can recur (an accepted infrataxon, or a cross-kingdom homonym).
+  # Keep the most severe EXTANT assessment, accepting EW/EX only when no extant
+  # assessment exists for that name, so a genuine Least Concern is never hidden
+  # by an extinct relative sharing the name.
+  priority <- c("CR" = 1L, "EN" = 2L, "VU" = 3L, "NT" = 4L, "LC" = 5L,
+                "DD" = 6L, "EW" = 7L, "EX" = 8L)
+  out$sev <- priority[out$conservation_status]
   out <- out[order(out$canonical_name, out$sev), ]
   out <- out[!duplicated(out$canonical_name), ]
   out$sev <- NULL
 
+  rownames(out) <- NULL
   out
 }
 

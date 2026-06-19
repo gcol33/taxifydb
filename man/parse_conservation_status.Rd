@@ -2,18 +2,22 @@
 % Please edit documentation in R/enrichment-parsers-alien.R
 \name{parse_conservation_status}
 \alias{parse_conservation_status}
-\title{Parse conservation status from GBIF species search API}
+\title{Parse IUCN Red List conservation status from the GBIF Darwin Core Archive}
 \usage{
-parse_conservation_status(dummy_path)
+parse_conservation_status(dir_path)
 }
 \arguments{
-\item{dummy_path}{Character. Ignored — the API is queried directly. Kept
-for interface symmetry with file-based parsers.}
+\item{dir_path}{Character. Directory holding the extracted IUCN archive
+(\code{taxon.txt}, \code{distribution.txt}).}
 }
 \value{
 data.frame with canonical_name + conservation_status.
 }
 \description{
-Pulls species lists by IUCN threat category from the GBIF API and combines
-them. Splits large categories by rank to bypass the GBIF 9999-offset cap.
+Reads the IUCN Red List archive published on GBIF (taxon.txt core plus the
+Distribution extension that carries \code{threatStatus}) and returns one global
+Red List category per accepted species-rank name. Reading the archive
+directly avoids the GBIF \code{species/search} endpoint, whose threat facet spans
+every checklist (so a name picks up conflicting categories from regional or
+erroneous lists) and whose offset ceiling truncates the large categories.
 }

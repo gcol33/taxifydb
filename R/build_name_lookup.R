@@ -1,11 +1,21 @@
 # Build per-backbone name-equivalence lookup tables.
 #
-# Each backbone .vtr already contains the resolution row -> (key_ci,
-# accepted_name). A "name lookup" is the projection (key_ci, accepted_name)
-# from the backbone, deduplicated, becoming a hash-joinable table that maps
-# any input name (case-insensitive, including synonyms) to the resolved
-# accepted name in that backbone. Used by resolve_enrichment_names() to
-# replace the per-name-per-backend taxify() loop with a sub-second hash join.
+# A "name lookup" maps any input name (case-insensitive, including synonyms)
+# to the single accepted name that taxify() resolves it to in that backbone:
+# a hash-joinable (key_ci, accepted_name) table used by
+# resolve_enrichment_names() in place of the per-name-per-backend taxify()
+# loop.
+#
+# A name without authorship can match several backbone rows (homonym synonyms
+# published by different authors) pointing to DIFFERENT accepted taxa -- e.g.
+# `Pinus resinosa` resolves to Pinus resinosa but also appears as a synonym of
+# Pinus sylvestris and Pinus ponderosa. Keeping every (key_ci, accepted_name)
+# pair would fan one source name onto unrelated neighbours, contaminating any
+# enrichment joined through the lookup. So each key is collapsed to the single
+# best accepted name using the same priority taxify() applies
+# (taxify::score_candidates): ACCEPTED > SYNONYM, SPECIES > higher ranks,
+# nomenclaturally Valid, epithet-preserving accepted target, then lowest
+# taxon_id.
 
 #' Build a name-lookup .vtr from a backbone .vtr
 #'
@@ -21,21 +31,41 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
 
   if (verbose) message(sprintf("[lookup] reading %s", basename(bb_path)))
 
+  schema <- names(vectra::tbl(bb_path) |> utils::head(1L) |> vectra::collect())
+  required <- c("key_ci", "accepted_name", "taxonomic_status", "taxon_rank",
+                "taxon_id", "canonical_name")
+  missing <- setdiff(required, schema)
+  if (length(missing) > 0L) {
+    stop(sprintf("backbone .vtr %s missing columns: %s",
+                 basename(bb_path), paste(missing, collapse = ", ")),
+         call. = FALSE)
+  }
+  sel <- c(required, intersect("nomenclaturalStatus", schema))
+
   bb <- vectra::tbl(bb_path) |>
-    vectra::select("key_ci", "accepted_name") |>
+    vectra::select(!!!lapply(sel, as.name)) |>
     vectra::collect()
 
   before <- nrow(bb)
 
   bb <- bb[!is.na(bb$key_ci) & nzchar(bb$key_ci) &
            !is.na(bb$accepted_name) & nzchar(bb$accepted_name), ]
-  bb <- bb[!duplicated(bb[, c("key_ci", "accepted_name")]), ]
-  bb <- bb[order(bb$key_ci), ]
+
+  # Collapse each key to taxify()'s single best accepted name, reusing the
+  # runtime scoring so the lookup is identical to taxify()'s own resolution.
+  bb$taxonomicStatus  <- bb$taxonomic_status
+  bb$taxonRank        <- bb$taxon_rank
+  bb$matched_name_std <- bb$canonical_name
+  s <- taxify::score_candidates(bb)
+  ord <- order(bb$key_ci, s$status_score, s$rank_score, s$valid_score,
+               s$epithet_score, bb$taxon_id)
+  bb <- bb[ord, , drop = FALSE]
+  bb <- bb[!duplicated(bb$key_ci), c("key_ci", "accepted_name"), drop = FALSE]
   rownames(bb) <- NULL
 
   if (verbose) {
     message(sprintf(
-      "[lookup] %s -> %s rows (was %s)",
+      "[lookup] %s -> %s keys (was %s backbone rows)",
       basename(bb_path), format(nrow(bb), big.mark = ","),
       format(before, big.mark = ",")
     ))

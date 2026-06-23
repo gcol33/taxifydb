@@ -3,9 +3,10 @@
 ## Scrape-only sources
 
 * Added a catalog of trait sources that taxifydb does not build into `.vtr`
-  files, for two reasons: BiolFlor (permission-gated) and Pignatti
-  (copyrighted) cannot be redistributed; Ecoflora's CC BY-NC-SA licence would
-  allow it but ecoflora.org.uk has no bulk download (per-species access only).
+  files: Pignatti (copyrighted) cannot be redistributed; BiolFlor is usable
+  with acknowledgement + citation (BioFresh metadata statement) but has no
+  obtainable bulk copy while the UFZ site is offline; Ecoflora's CC BY-NC-SA
+  licence would allow it but ecoflora.org.uk has no bulk download.
   `list_scrape_only_enrichments()` lists them. taxify accesses these on demand
   via the TR8 package (`add_ecoflora()`, `add_biolflor()`, `add_pignatti()`);
   nothing is redistributed by taxify.

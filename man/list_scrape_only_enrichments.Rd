@@ -11,10 +11,11 @@ A data.frame with columns \code{name}, \code{tr8_db}, \code{taxify_fn}, \code{li
 and \code{reason}.
 }
 \description{
-taxifydb does not build a \code{.vtr} for these sources: BiolFlor and Pignatti
-cannot be redistributed (permission-gated and copyrighted, respectively),
-while Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has
-no bulk download. They are accessed on demand by taxify's \code{add_ecoflora()},
+taxifydb does not build a \code{.vtr} for these sources: Pignatti is copyrighted;
+BiolFlor is usable with acknowledgement and citation (BioFresh metadata
+statement) but has no obtainable bulk copy while the UFZ site is offline; and
+Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has no bulk
+download. They are accessed on demand by taxify's \code{add_ecoflora()},
 \code{add_biolflor()}, and \code{add_pignatti()} via the TR8 package. This returns the
 catalog of those sources.
 }

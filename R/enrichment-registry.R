@@ -513,12 +513,13 @@
 
 # On-demand trait sources: NOT built into a `.vtr` by taxifydb.
 #
-# Two distinct reasons keep these out of .enrichment_build_registry:
-#   * BiolFlor (permission-gated, no open license) and Pignatti (copyrighted)
-#     cannot be redistributed at all.
-#   * Ecoflora's CC BY-NC-SA licence WOULD permit a redistributed `.vtr`, but
-#     ecoflora.org.uk has no bulk download -- data is reachable only one
-#     species at a time -- so per-species fetch is the natural access mode.
+# Each is kept out of .enrichment_build_registry for its own reason:
+#   * Pignatti is from a copyrighted publication and cannot be redistributed.
+#   * BiolFlor may be used without restrictions if acknowledged and cited
+#     (BioFresh metadata statement) -- redistributable in principle -- but no
+#     bulk copy is obtainable while the UFZ site is offline.
+#   * Ecoflora's CC BY-NC-SA licence would permit a redistributed `.vtr`, but
+#     ecoflora.org.uk has no bulk download (per-species access only).
 # All three are accessed on the user's own machine by taxify's add_ecoflora() /
 # add_biolflor() / add_pignatti() through the TR8 package (BiolFlor and Ecoflora
 # by live per-species query; Pignatti by reading TR8's bundled copy). This
@@ -535,8 +536,8 @@
   biolflor = list(
     tr8_db      = "BiolFlor",
     taxify_fn   = "add_biolflor",
-    license     = "permission-gated",
-    reason      = "no open redistribution license; permission required from rights holder",
+    license     = "free use with acknowledgement + citation (BioFresh metadata statement)",
+    reason      = "no bulk copy obtainable while the UFZ site is offline (redistributable in principle, with citation)",
     attribution = "Klotz S, Kuehn I, Durka W (2002) BIOLFLOR. Schriftenreihe fuer Vegetationskunde 38."
   ),
   pignatti = list(
@@ -551,10 +552,11 @@
 
 #' List scrape-only (non-redistributed) trait sources
 #'
-#' taxifydb does not build a `.vtr` for these sources: BiolFlor and Pignatti
-#' cannot be redistributed (permission-gated and copyrighted, respectively),
-#' while Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has
-#' no bulk download. They are accessed on demand by taxify's `add_ecoflora()`,
+#' taxifydb does not build a `.vtr` for these sources: Pignatti is copyrighted;
+#' BiolFlor is usable with acknowledgement and citation (BioFresh metadata
+#' statement) but has no obtainable bulk copy while the UFZ site is offline; and
+#' Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has no bulk
+#' download. They are accessed on demand by taxify's `add_ecoflora()`,
 #' `add_biolflor()`, and `add_pignatti()` via the TR8 package. This returns the
 #' catalog of those sources.
 #'

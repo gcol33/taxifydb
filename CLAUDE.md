@@ -64,9 +64,10 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 25 enrichments registered in `.enrichment_build_registry`. A further 3
 on-demand sources (Ecoflora, BiolFlor, Pignatti) are NOT built into `.vtr`
-files: BiolFlor (permission-gated) and Pignatti (copyrighted) cannot be
-redistributed, while Ecoflora's CC BY-NC-SA licence would allow it but
-ecoflora.org.uk has no bulk download (per-species access only). They are
+files: Pignatti (copyrighted) cannot be redistributed; BiolFlor is usable with
+acknowledgement + citation (BioFresh metadata statement) but has no obtainable
+bulk copy while the UFZ site is offline; Ecoflora's CC BY-NC-SA licence would
+allow it but ecoflora.org.uk has no bulk download (per-species access only). They are
 catalogued in `.enrichment_scrape_only` (`list_scrape_only_enrichments()`) and
 accessed on demand by taxify's `add_ecoflora()`/`add_biolflor()`/`add_pignatti()`
 via the TR8 package. Every built enrichment goes through cross-backbone name

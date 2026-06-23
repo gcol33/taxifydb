@@ -509,3 +509,63 @@
     requires    = "openxlsx2"
   )
 )
+
+
+# Scrape-only trait sources: NOT built or redistributed.
+#
+# These cannot be redistributed under an open license (Ecoflora is
+# CC BY-NC-SA with no bulk download; BiolFlor is permission-gated; Pignatti is
+# from a copyrighted publication), so taxifydb never produces a `.vtr` for
+# them. They are fetched on demand on the user's own machine by taxify's
+# add_ecoflora() / add_biolflor() / add_pignatti() through the TR8 package,
+# which redistributes nothing. This catalog records them for completeness and
+# documents why they are absent from .enrichment_build_registry.
+#' @noRd
+.enrichment_scrape_only <- list(
+  ecoflora = list(
+    tr8_db      = "Ecoflora",
+    taxify_fn   = "add_ecoflora",
+    license     = "CC BY-NC-SA 4.0",
+    reason      = "no bulk download; non-commercial share-alike",
+    attribution = "Fitter AH, Peat HJ (1994) The Ecological Flora Database. Journal of Ecology 82:415-425."
+  ),
+  biolflor = list(
+    tr8_db      = "BiolFlor",
+    taxify_fn   = "add_biolflor",
+    license     = "permission-gated",
+    reason      = "no open redistribution license; permission required from rights holder",
+    attribution = "Klotz S, Kuehn I, Durka W (2002) BIOLFLOR. Schriftenreihe fuer Vegetationskunde 38."
+  ),
+  pignatti = list(
+    tr8_db      = "Pignatti",
+    taxify_fn   = "add_pignatti",
+    license     = "copyrighted",
+    reason      = "values originate in a copyrighted publication",
+    attribution = "Pignatti S, Menegoni P, Pietrosanti S (2005) Bioindicazione attraverso le piante vascolari. Braun-Blanquetia 39."
+  )
+)
+
+
+#' List scrape-only (non-redistributed) trait sources
+#'
+#' Some trait sources cannot be redistributed under an open license, so
+#' taxifydb does not build a `.vtr` for them. They are fetched on demand by
+#' taxify's `add_ecoflora()`, `add_biolflor()`, and `add_pignatti()` via the
+#' TR8 package. This returns the catalog of those sources.
+#'
+#' @return A data.frame with columns `name`, `tr8_db`, `taxify_fn`, `license`,
+#'   and `reason`.
+#' @export
+list_scrape_only_enrichments <- function() {
+  do.call(rbind, lapply(names(.enrichment_scrape_only), function(n) {
+    e <- .enrichment_scrape_only[[n]]
+    data.frame(
+      name      = n,
+      tr8_db    = e$tr8_db,
+      taxify_fn = e$taxify_fn,
+      license   = e$license,
+      reason    = e$reason,
+      stringsAsFactors = FALSE
+    )
+  }))
+}

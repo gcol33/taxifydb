@@ -62,8 +62,13 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 ## Enrichments
 
-25 enrichments registered in `.enrichment_build_registry`. Every enrichment
-goes through cross-backbone name resolution before its `.vtr` is written:
+25 enrichments registered in `.enrichment_build_registry`. A further 3
+scrape-only sources (Ecoflora, BiolFlor, Pignatti) cannot be redistributed
+under an open license and are therefore NOT built into `.vtr` files; they are
+catalogued in `.enrichment_scrape_only` (`list_scrape_only_enrichments()`) and
+fetched on demand by taxify's `add_ecoflora()`/`add_biolflor()`/`add_pignatti()`
+via the TR8 package. Every built enrichment goes through cross-backbone name
+resolution before its `.vtr` is written:
 
 1. `parse_<name>()` cleans the source to `canonical_name` + trait columns
 2. `resolve_enrichment_names()` expands each name across the 7 backbones

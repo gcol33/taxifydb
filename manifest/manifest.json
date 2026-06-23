@@ -1346,6 +1346,14 @@
       "source_url": "https://static-content.springer.com/esm/art%3A10.1007%2Fs13225-020-00466-2/MediaObjects/13225_2020_466_MOESM4_ESM.xlsx",
       "source_doi": "10.1007/s13225-020-00466-2",
       "license": "CC BY 4.0"
+    },
+    "baseflor": {
+      "latest": "2023.10",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/baseflor.vtr",
+      "nrow": 8469,
+      "source_url": "http://web.archive.org/web/20231002005253id_/https://philippe.julve.pagesperso-orange.fr/baseflor.xlsx",
+      "source_doi": null,
+      "license": "ODbL 1.0 / CC BY-SA 2.0"
     }
   }
 }

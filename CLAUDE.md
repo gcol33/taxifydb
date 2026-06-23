@@ -62,7 +62,7 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 ## Enrichments
 
-24 enrichments registered in `.enrichment_build_registry`. Every enrichment
+25 enrichments registered in `.enrichment_build_registry`. Every enrichment
 goes through cross-backbone name resolution before its `.vtr` is written:
 
 1. `parse_<name>()` cleans the source to `canonical_name` + trait columns

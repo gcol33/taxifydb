@@ -1046,3 +1046,149 @@ parse_glonaf <- function(dir_path) {
   out <- out[!is.na(out$region_id) & nchar(out$region_id) > 0L, ]
   out[!duplicated(paste(out$canonical_name, out$region_id)), ]
 }
+
+
+#' Fold French accented characters to ASCII
+#'
+#' Locale-independent accent removal (chartr, character-for-character) so
+#' value matching does not depend on source encoding or the running locale.
+#' @param x Character vector.
+#' @return `x` with accented Latin-1 letters mapped to their ASCII base.
+#' @noRd
+fold_accents <- function(x) {
+  # Latin-1 code points for: e-acute e-grave e-circ e-uml a-grave a-circ
+  # a-uml i-uml i-circ o-circ o-uml u-grave u-circ u-uml c-cedilla
+  from <- intToUtf8(c(0xE9, 0xE8, 0xEA, 0xEB, 0xE0, 0xE2, 0xE4, 0xEF,
+                      0xEE, 0xF4, 0xF6, 0xF9, 0xFB, 0xFC, 0xE7))
+  chartr(from, "eeeeaaaiioouuuc", x)
+}
+
+
+#' Parse Baseflor (Catminat / Julve) French flora trait spreadsheet
+#'
+#' Reads the `baseflor` sheet of Julve's `baseflor.xlsx`, builds a clean
+#' binomial `canonical_name` from the `nomH`/`nomB`/`nomA` columns, splits the
+#' `floraison` flowering-period field into begin/end months, and recodes the
+#' French categorical traits (pollination vector, dispersal mode, breeding
+#' system, flower colour, fruit type, woody growth form) to English. Also keeps
+#' the two Ellenberg-style axes absent from EIVE: continentality and salinity.
+#'
+#' Indicator values L/T/M/R/N are intentionally not emitted here (the
+#' European-calibration EIVE enrichment already covers them); Raunkiaer life
+#' form is left to the `leda` enrichment for the same flora; maximum vegetative
+#' height is omitted because the source column is empty.
+#'
+#' @param path Character. Path to the downloaded `baseflor.xlsx`.
+#' @return data.frame with `canonical_name` + 10 trait columns.
+#' @export
+parse_baseflor <- function(path) {
+  if (!requireNamespace("openxlsx2", quietly = TRUE)) {
+    stop("Package 'openxlsx2' is required to parse Baseflor XLSX.",
+         call. = FALSE)
+  }
+  wb <- openxlsx2::wb_load(path)
+  sheets <- openxlsx2::wb_get_sheet_names(wb)
+  pick <- sheets[tolower(sheets) == "baseflor"]
+  if (length(pick) == 0L) pick <- sheets[1L]
+  df <- openxlsx2::wb_to_df(wb, sheet = pick[1L], col_names = TRUE)
+
+  # Resolve columns by accent-folded, lower-cased name so the source stays
+  # ASCII and matching is independent of locale/encoding.
+  cn <- names(df)
+  cn_key <- fold_accents(tolower(cn))
+  gc <- function(key) {
+    i <- which(cn_key == key)
+    if (length(i) == 0L) return(rep(NA, nrow(df)))
+    df[[cn[i[1L]]]]
+  }
+
+  # --- canonical name: clean binomial, coalescing nomH -> nomB -> nomA ------
+  clean_nm <- function(x) {
+    x <- as.character(x)
+    x <- gsub("&amp", "&", x, fixed = TRUE)
+    x <- gsub(";", "", x, fixed = TRUE)
+    x <- gsub("\\s+\\*$", "", x)
+    x <- gsub("\\s+[HBA]$", "", x)
+    x <- trimws(x)
+    x[x == ""] <- NA_character_
+    x
+  }
+  nm <- clean_nm(gc("nomh"))
+  nb <- clean_nm(gc("nomb"))
+  na_ <- clean_nm(gc("noma"))
+  empty <- is.na(nm); nm[empty] <- nb[empty]
+  empty <- is.na(nm); nm[empty] <- na_[empty]
+
+  # --- flowering months from "floraison" ("M" or "M-M", may wrap e.g. 10-6) -
+  fl <- as.character(gc("floraison"))
+  beg <- suppressWarnings(as.integer(sub("^([0-9]{1,2}).*$", "\\1", fl)))
+  end <- suppressWarnings(as.integer(sub("^[0-9]{1,2}-([0-9]{1,2})$", "\\1", fl)))
+  no_dash <- !is.na(fl) & !grepl("-", fl)
+  end[no_dash] <- beg[no_dash]
+  beg[is.na(beg) | beg < 1L | beg > 12L] <- NA_integer_
+  end[is.na(end) | end < 1L | end > 12L] <- NA_integer_
+
+  # --- categorical recodes (folded, lower-cased French token -> English) ----
+  recode_multi <- function(x, map) {
+    vapply(as.character(x), function(v) {
+      if (is.na(v) || !nzchar(v)) return(NA_character_)
+      toks <- fold_accents(tolower(trimws(strsplit(v, ",")[[1L]])))
+      mapped <- unname(map[toks])
+      mapped[is.na(mapped)] <- toks[is.na(mapped)]
+      paste(unique(mapped), collapse = ", ")
+    }, character(1L), USE.NAMES = FALSE)
+  }
+  recode_single <- function(x, map) {
+    v <- fold_accents(tolower(trimws(as.character(x))))
+    unname(map[v])
+  }
+
+  poll_map <- c(anemogame = "wind", autogame = "self", entomogame = "insect",
+                hydrogame = "water", apogame = "apogamy")
+  disp_map <- c(barochore = "barochory", anemochore = "anemochory",
+                epizoochore = "epizoochory", endozoochore = "endozoochory",
+                myrmecochore = "myrmecochory", hydrochore = "hydrochory",
+                autochore = "autochory", dyszoochore = "dyszoochory")
+  breed_map <- c(hermaphrodite = "hermaphroditic", monoique = "monoecious",
+                 dioique = "dioecious", gynodioique = "gynodioecious",
+                 androdioique = "androdioecious", polygame = "polygamous",
+                 gynomonoique = "gynomonoecious")
+  colour_map <- c(jaune = "yellow", blanc = "white", rose = "pink",
+                  vert = "green", bleu = "blue", marron = "brown",
+                  noir = "black")
+  fruit_map <- c(akene = "achene", capsule = "capsule", caryopse = "caryopsis",
+                 drupe = "drupe", gousse = "legume", silique = "silique",
+                 baie = "berry", follicule = "follicle", cone = "cone",
+                 samare = "samara", pyxide = "pyxid")
+  growth_map <- c("sous-arbrisseau" = "subshrub", arbrisseau = "shrub",
+                  arbuste = "bush", "petit arbre" = "small tree",
+                  "grand arbre" = "large tree", arbre = "tree",
+                  liane = "liana", parasite = "parasite")
+
+  safe_int <- function(key, lo, hi) {
+    v <- suppressWarnings(as.integer(gc(key)))
+    v[is.na(v) | v < lo | v > hi] <- NA_integer_
+    v
+  }
+
+  out <- data.frame(
+    canonical_name     = nm,
+    flower_begin_month = beg,
+    flower_end_month   = end,
+    pollination_vector = recode_multi(gc("pollinisation"), poll_map),
+    dispersal_mode     = recode_multi(gc("dissemination"), disp_map),
+    breeding_system    = recode_multi(gc("sexualite"), breed_map),
+    flower_colour      = recode_multi(gc("couleur_fleur"), colour_map),
+    fruit_type         = recode_single(gc("fruit"), fruit_map),
+    woody_growth_form  = recode_single(gc("type_ligneux"), growth_map),
+    continentality     = safe_int("continentalite", 1L, 9L),
+    salinity           = safe_int("salinite", 0L, 9L),
+    stringsAsFactors   = FALSE
+  )
+
+  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
+  trait_cols <- setdiff(names(out), "canonical_name")
+  has_data <- rowSums(!is.na(out[, trait_cols, drop = FALSE])) > 0L
+  out <- out[has_data, ]
+  out[!duplicated(out$canonical_name), ]
+}

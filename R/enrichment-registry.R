@@ -483,5 +483,29 @@
     parse_fn    = function(path) parse_arthropod_traits(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  baseflor = list(
+    source_url  = paste0("http://web.archive.org/web/20231002005253id_/",
+                         "https://philippe.julve.pagesperso-orange.fr/baseflor.xlsx"),
+    source_doi  = NULL,
+    version     = "2023.10",
+    license     = "ODbL 1.0 / CC BY-SA 2.0",
+    attribution = paste0(
+      "Julve, Ph. (1998 ff.) baseflor. Index botanique, ecologique et ",
+      "chorologique de la Flore de France. Programme Catminat. Data under ",
+      "ODbL 1.0 / CC BY-SA 2.0; archived snapshot 2023-10-02 of ",
+      "philippe.julve.pagesperso-orange.fr (Orange host now retired; current ",
+      "releases via tela-botanica.org phytosociologie porte-documents)."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(
+        url, dest, "baseflor.xlsx",
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/120.0"
+      )
+    },
+    parse_fn    = function(path) parse_baseflor(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
   )
 )

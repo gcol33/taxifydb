@@ -1,6 +1,6 @@
 Package: taxifydb
 Title: Build Backbones and Enrichments for the 'taxify' Package
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("Gilles", "Colling", , "gilles.colling051@gmail.com",
            role = c("aut", "cre", "cph"),

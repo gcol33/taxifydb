@@ -11,8 +11,10 @@ A data.frame with columns \code{name}, \code{tr8_db}, \code{taxify_fn}, \code{li
 and \code{reason}.
 }
 \description{
-Some trait sources cannot be redistributed under an open license, so
-taxifydb does not build a \code{.vtr} for them. They are fetched on demand by
-taxify's \code{add_ecoflora()}, \code{add_biolflor()}, and \code{add_pignatti()} via the
-TR8 package. This returns the catalog of those sources.
+taxifydb does not build a \code{.vtr} for these sources: BiolFlor and Pignatti
+cannot be redistributed (permission-gated and copyrighted, respectively),
+while Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has
+no bulk download. They are accessed on demand by taxify's \code{add_ecoflora()},
+\code{add_biolflor()}, and \code{add_pignatti()} via the TR8 package. This returns the
+catalog of those sources.
 }

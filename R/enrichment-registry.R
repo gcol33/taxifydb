@@ -511,22 +511,25 @@
 )
 
 
-# Scrape-only trait sources: NOT built or redistributed.
+# On-demand trait sources: NOT built into a `.vtr` by taxifydb.
 #
-# These cannot be redistributed under an open license (Ecoflora is
-# CC BY-NC-SA with no bulk download; BiolFlor is permission-gated; Pignatti is
-# from a copyrighted publication), so taxifydb never produces a `.vtr` for
-# them. They are fetched on demand on the user's own machine by taxify's
-# add_ecoflora() / add_biolflor() / add_pignatti() through the TR8 package,
-# which redistributes nothing. This catalog records them for completeness and
-# documents why they are absent from .enrichment_build_registry.
+# Two distinct reasons keep these out of .enrichment_build_registry:
+#   * BiolFlor (permission-gated, no open license) and Pignatti (copyrighted)
+#     cannot be redistributed at all.
+#   * Ecoflora's CC BY-NC-SA licence WOULD permit a redistributed `.vtr`, but
+#     ecoflora.org.uk has no bulk download -- data is reachable only one
+#     species at a time -- so per-species fetch is the natural access mode.
+# All three are accessed on the user's own machine by taxify's add_ecoflora() /
+# add_biolflor() / add_pignatti() through the TR8 package (BiolFlor and Ecoflora
+# by live per-species query; Pignatti by reading TR8's bundled copy). This
+# catalog records them for completeness.
 #' @noRd
 .enrichment_scrape_only <- list(
   ecoflora = list(
     tr8_db      = "Ecoflora",
     taxify_fn   = "add_ecoflora",
     license     = "CC BY-NC-SA 4.0",
-    reason      = "no bulk download; non-commercial share-alike",
+    reason      = "licence permits redistribution, but no bulk download (per-species access only)",
     attribution = "Fitter AH, Peat HJ (1994) The Ecological Flora Database. Journal of Ecology 82:415-425."
   ),
   biolflor = list(
@@ -548,10 +551,12 @@
 
 #' List scrape-only (non-redistributed) trait sources
 #'
-#' Some trait sources cannot be redistributed under an open license, so
-#' taxifydb does not build a `.vtr` for them. They are fetched on demand by
-#' taxify's `add_ecoflora()`, `add_biolflor()`, and `add_pignatti()` via the
-#' TR8 package. This returns the catalog of those sources.
+#' taxifydb does not build a `.vtr` for these sources: BiolFlor and Pignatti
+#' cannot be redistributed (permission-gated and copyrighted, respectively),
+#' while Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has
+#' no bulk download. They are accessed on demand by taxify's `add_ecoflora()`,
+#' `add_biolflor()`, and `add_pignatti()` via the TR8 package. This returns the
+#' catalog of those sources.
 #'
 #' @return A data.frame with columns `name`, `tr8_db`, `taxify_fn`, `license`,
 #'   and `reason`.

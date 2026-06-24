@@ -298,6 +298,106 @@ parse_fungal_traits <- function(path) {
 }
 
 
+#' Standardize a raw FungalRoot per-observation mycorrhiza type label
+#'
+#' Collapses the FungalRoot `Mycorrhiza type` vocabulary (which uses commas and
+#' free text inside single cells) to a small set of standard mycorrhizal type
+#' tokens: `AM`, `EcM`, `ErM`, `OM`, `NM`, the dual forms `EcM-AM` / `ErM-EcM`
+#' / `ErM-AM`, `Other`, and `uncertain`.
+#'
+#' @param v Character vector of raw labels.
+#' @return Character vector of standardized tokens (`NA` for unrecognized).
+#' @noRd
+.fungalroot_std_type <- function(v) {
+  v <- trimws(v)
+  out <- rep(NA_character_, length(v))
+  out[v == "AM"]                                    <- "AM"
+  out[v == "AM-like (non-vascular plants)"]         <- "AM"
+  out[v == "non-mycorrhizal"]                       <- "NM"
+  out[v == "EcM, AM undetermined"]                  <- "EcM"
+  out[v == "EcM, no AM colonization"]               <- "EcM"
+  out[v == "EcM,AM"]                                <- "EcM-AM"
+  out[v == "ErM"]                                   <- "ErM"
+  out[v == "ErM,EcM"]                               <- "ErM-EcM"
+  out[v == "ErM,AM"]                                <- "ErM-AM"
+  out[v == "OM"]                                    <- "OM"
+  out[v == "Other"]                                 <- "Other"
+  out[v == "non-ectomycorrhizal (AM undetermined)"] <- "uncertain"
+  out
+}
+
+
+#' Parse the FungalRoot database (GBIF Darwin Core Archive) to genus-level types
+#'
+#' Reads the FungalRoot occurrence core (`occurrences.csv`) and its
+#' MeasurementOrFact extension (`measurements.csv`), keeps the per-observation
+#' `Mycorrhiza type` measurements, standardizes them to a small set of type
+#' tokens, and reduces them to one row per plant genus by
+#' majority consensus. Mycorrhizal type is phylogenetically conserved at the
+#' genus level, which is the resolution FungalRoot itself recommends for
+#' inference; the per-genus value here is the most frequent standardized type
+#' across that genus's observations (taxifydb's own aggregation, not
+#' FungalRoot's published per-genus assignment).
+#'
+#' @param path Character. Directory holding the extracted FungalRoot DwC-A.
+#' @return data.frame keyed on `genus` (also copied to `canonical_name`) with
+#'   `mycorrhizal_type`, `mycorrhizal_status`, and `mycorrhizal_records`.
+#' @export
+parse_fungalroot <- function(path) {
+  find_csv <- function(want_cols) {
+    csvs <- list.files(path, pattern = "\\.csv$", full.names = TRUE,
+                       recursive = TRUE, ignore.case = TRUE)
+    for (f in csvs) {
+      hdr <- names(utils::read.csv(f, nrows = 1L, check.names = FALSE,
+                                   stringsAsFactors = FALSE))
+      if (all(want_cols %in% hdr)) return(f)
+    }
+    stop(sprintf("FungalRoot: no CSV with columns %s found in %s",
+                 paste(want_cols, collapse = ", "), path), call. = FALSE)
+  }
+
+  occ_file <- find_csv(c("ID", "genus", "scientificName"))
+  mea_file <- find_csv(c("Core ID", "measurementType", "measurementValue"))
+
+  occ <- utils::read.csv(occ_file, check.names = FALSE, stringsAsFactors = FALSE)
+  mea <- utils::read.csv(mea_file, check.names = FALSE, stringsAsFactors = FALSE)
+
+  myc <- mea[mea$measurementType == "Mycorrhiza type", , drop = FALSE]
+  myc$genus <- occ$genus[match(myc[["Core ID"]], occ$ID)]
+  myc$type  <- .fungalroot_std_type(myc$measurementValue)
+  myc <- myc[!is.na(myc$genus) & nzchar(trimws(myc$genus)) & !is.na(myc$type), ,
+             drop = FALSE]
+  myc$genus <- trimws(myc$genus)
+
+  if (nrow(myc) == 0L) {
+    stop("FungalRoot: no usable Mycorrhiza type observations after join.",
+         call. = FALSE)
+  }
+
+  # Genus-level majority consensus: per-genus most frequent standardized type
+  tab   <- table(myc$genus, myc$type)
+  pick  <- max.col(tab, ties.method = "first")
+  n_rec <- rowSums(tab)
+
+  genus  <- rownames(tab)
+  type   <- colnames(tab)[pick]
+  status <- ifelse(type == "NM", "non-mycorrhizal",
+                   ifelse(type %in% c("Other", "uncertain"), "uncertain",
+                          "mycorrhizal"))
+
+  out <- data.frame(
+    canonical_name      = genus,
+    genus               = genus,
+    mycorrhizal_type    = type,
+    mycorrhizal_status  = status,
+    mycorrhizal_records = as.integer(n_rec),
+    stringsAsFactors    = FALSE
+  )
+  rownames(out) <- NULL
+  out
+}
+
+
 #' Parse AlgaeTraits macroalgal traits (WoRMS ZIP export)
 #' @param path Character. Directory holding CSV/TXT/XLSX files extracted from
 #'   the AlgaeTraits archive.

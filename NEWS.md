@@ -1,3 +1,17 @@
+# taxifydb 0.1.4
+
+## New features
+
+* `parse_fungalroot()` builds a genus-level mycorrhizal type enrichment from the
+  FungalRoot database (Soudzilovskaia et al. 2020), published on GBIF as a
+  Darwin Core Archive (doi:10.15468/a7ujmj, CC BY-NC 4.0). It reads the
+  occurrence core plus its MeasurementOrFact extension, standardizes the
+  per-observation `Mycorrhiza type` labels to `AM` / `EcM` / `ErM` / `OM` / `NM`
+  (plus dual types, `Other`, `uncertain`), and reduces them to one row per plant
+  genus by majority consensus (`mycorrhizal_type`, `mycorrhizal_status`,
+  `mycorrhizal_records`). Registered in `.enrichment_build_registry` as a
+  genus-keyed enrichment (`name_col = "genus"`).
+
 # taxifydb 0.1.3
 
 ## New features

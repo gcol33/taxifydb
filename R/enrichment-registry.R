@@ -360,6 +360,28 @@
     requires    = "openxlsx2"
   ),
 
+  fungalroot = list(
+    source_url  = paste0("https://orphans.gbif.org/EE/",
+                         "744edc21-8dd2-474e-8a0b-b8c3d56a3c2d.232.zip"),
+    source_doi  = "10.15468/a7ujmj",
+    version     = "2020.1",
+    license     = "CC BY-NC 4.0",
+    attribution = paste0(
+      "Soudzilovskaia NA et al. (2020) FungalRoot: global online database of ",
+      "plant mycorrhizal associations. New Phytologist 227:955-966. Taxon ",
+      "occurrence data published on GBIF as a Darwin Core Archive ",
+      "(doi:10.15468/a7ujmj). Genus-level mycorrhizal type is a majority ",
+      "consensus computed by taxifydb from the per-observation labels."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, pattern = NULL)
+    },
+    parse_fn    = function(path) parse_fungalroot(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = character(0)
+  ),
+
   algae_traits = list(
     source_url  = "https://mda.vliz.be/download.php?file=VLIZ_00000308_62bf06138859e409561556",
     source_doi  = "10.14284/574",

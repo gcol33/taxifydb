@@ -126,17 +126,7 @@ resolve_enrichment_names <- function(df,
   expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
   expanded$accepted_name <- NULL
 
-  if (!is.null(group_cols) && length(group_cols) > 0L) {
-    dedup_key <- do.call(
-      paste,
-      c(expanded[c("canonical_name", group_cols)], list(sep = "\x1f"))
-    )
-  } else {
-    dedup_key <- expanded$canonical_name
-  }
-  expanded <- expanded[!duplicated(dedup_key), ]
-
-  rownames(expanded) <- NULL
+  expanded <- .dedup_keep_richest(expanded, group_cols)
 
   if (verbose) {
     message(sprintf(
@@ -146,6 +136,35 @@ resolve_enrichment_names <- function(df,
     ))
   }
 
+  expanded
+}
+
+
+# ---- Dedup helper ----------------------------------------------------------
+
+#' Collapse to one row per accepted name (plus group columns), keeping richest
+#'
+#' When several source taxa resolve to the same accepted name (subspecies and
+#' synonyms collapsing onto a species), keep the best-populated source record
+#' rather than an arbitrary first one, so trait-rich data is not discarded.
+#' @noRd
+.dedup_keep_richest <- function(expanded, group_cols = NULL) {
+  key <- if (!is.null(group_cols) && length(group_cols) > 0L) {
+    do.call(paste, c(expanded[c("canonical_name", group_cols)],
+                     list(sep = "\x1f")))
+  } else {
+    expanded$canonical_name
+  }
+  trait_cols <- setdiff(names(expanded), c("canonical_name", group_cols))
+  n_traits <- if (length(trait_cols)) {
+    rowSums(!is.na(expanded[, trait_cols, drop = FALSE]))
+  } else {
+    rep(0L, nrow(expanded))
+  }
+  ord <- order(-n_traits)
+  expanded <- expanded[ord, , drop = FALSE]
+  expanded <- expanded[!duplicated(key[ord]), , drop = FALSE]
+  rownames(expanded) <- NULL
   expanded
 }
 
@@ -265,15 +284,7 @@ resolve_enrichment_names <- function(df,
   expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
   expanded$accepted_name <- NULL
 
-  if (!is.null(group_cols) && length(group_cols) > 0L) {
-    dedup_key <- do.call(paste,
-                         c(expanded[c("canonical_name", group_cols)],
-                           list(sep = "\x1f")))
-  } else {
-    dedup_key <- expanded$canonical_name
-  }
-  expanded <- expanded[!duplicated(dedup_key), ]
-  rownames(expanded) <- NULL
+  expanded <- .dedup_keep_richest(expanded, group_cols)
 
   if (verbose) {
     message(sprintf(

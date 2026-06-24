@@ -1,6 +1,54 @@
 # Remaining trait parsers: FUNGuild, FishBase, FungalTraits, AlgaeTraits,
 # lizard traits, LepTraits, AnimalTraits, NW European arthropod traits,
-# AnAge, GloNAF.
+# AnAge, GloNAF, Ecoflora, FloraWeb.
+
+
+# ---- shared helpers for the scrape-sourced plant trait parsers -------------
+
+#' Is a scraped cell a "no data" sentinel?
+#'
+#' FloraWeb renders absent traits as German placeholders ("keine Angaben",
+#' "nicht bewertet", ...). Treat those, blanks, and NA as missing.
+#' @noRd
+.trait_is_nodata <- function(v) {
+  v2 <- tolower(trimws(v))
+  is.na(v) | !nzchar(v2) |
+    grepl("^(keine|kein |keiner|keinem|keine angabe)", v2) |
+    grepl("nicht bewertet|nicht vergeben|keine angaben", v2)
+}
+
+#' Median of ";"-separated numeric tokens (non-numeric flags stripped)
+#' @noRd
+.trait_num_median <- function(x) {
+  vapply(as.character(x), function(s) {
+    if (is.na(s) || !nzchar(s)) return(NA_real_)
+    toks <- strsplit(s, ";")[[1L]]
+    nums <- suppressWarnings(as.numeric(gsub("[^0-9.+-]", "", toks)))
+    nums <- nums[is.finite(nums)]
+    if (!length(nums)) NA_real_ else stats::median(nums)
+  }, numeric(1L), USE.NAMES = FALSE)
+}
+
+#' Collapse ";"-separated tokens to unique, NA-dropped, "; "-joined string
+#' @noRd
+.trait_collapse_uniq <- function(x) {
+  vapply(as.character(x), function(s) {
+    if (is.na(s) || !nzchar(s)) return(NA_character_)
+    toks <- trimws(strsplit(s, ";")[[1L]])
+    toks <- toks[nzchar(toks) & toks != "NA"]
+    if (!length(toks)) NA_character_ else paste(unique(toks), collapse = "; ")
+  }, character(1L), USE.NAMES = FALSE)
+}
+
+#' Drop name-less and trait-less rows, dedup by canonical_name
+#' @noRd
+.trait_finalize <- function(out) {
+  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
+  tc <- setdiff(names(out), "canonical_name")
+  has <- rowSums(!is.na(out[, tc, drop = FALSE])) > 0L
+  out <- out[has, ]
+  out[!duplicated(out$canonical_name), , drop = FALSE]
+}
 
 
 #' Parse FUNGuild JSON database dump
@@ -1191,4 +1239,198 @@ parse_baseflor <- function(path) {
   has_data <- rowSums(!is.na(out[, trait_cols, drop = FALSE])) > 0L
   out <- out[has_data, ]
   out[!duplicated(out$canonical_name), ]
+}
+
+
+#' Parse the Ecoflora scrape snapshot (British Isles plant traits)
+#'
+#' Reads the per-species Ecoflora scrape (`results.csv`, one row per species,
+#' trait columns named by their Ecoflora short codes) and returns a clean wide
+#' data.frame keyed on `canonical_name`. Numeric fields (heights, seed weight,
+#' flowering months) take the median of any multiple scraped values;
+#' categorical fields keep the unique values joined with "; ". Every trait
+#' column carries a `_uk` suffix to mark the British-flora calibration and to
+#' avoid collisions when chained with other plant-trait enrichments.
+#'
+#' Ecoflora (Fitter & Peat 1994) has no bulk download or API; the snapshot was
+#' collected one species at a time and is redistributed under the source
+#' licence (CC BY-NC-SA 4.0).
+#'
+#' @param path Character. Path to the Ecoflora `results.csv` snapshot.
+#' @return data.frame with `canonical_name` + 18 `_uk` trait columns.
+#' @export
+parse_ecoflora <- function(path) {
+  df <- utils::read.csv(path, stringsAsFactors = FALSE, na.strings = "NA",
+                        colClasses = "character")
+  chr <- function(col) {
+    if (!col %in% names(df)) return(rep(NA_character_, nrow(df)))
+    .trait_collapse_uniq(df[[col]])
+  }
+  num <- function(col) {
+    if (!col %in% names(df)) return(rep(NA_real_, nrow(df)))
+    .trait_num_median(df[[col]])
+  }
+  int_month <- function(col) {
+    v <- num(col)
+    v[is.na(v) | v < 1 | v > 12] <- NA_real_
+    as.integer(round(v))
+  }
+
+  out <- data.frame(
+    canonical_name            = trimws(df$species),
+    height_max_mm_uk          = num("h_max"),
+    height_min_mm_uk          = num("h_min"),
+    leaf_area_uk              = chr("le_area"),
+    leaf_longevity_uk         = chr("le_long"),
+    root_system_uk            = chr("root_system"),
+    photosynthetic_pathway_uk = chr("phot_path"),
+    life_form_uk              = chr("li_form"),
+    reproduction_uk           = chr("reprod_meth"),
+    flower_begin_month_uk     = int_month("flw_early"),
+    flower_end_month_uk       = int_month("flw_late"),
+    pollination_vector_uk     = chr("poll_vect"),
+    seed_weight_mg_uk         = num("seed_wght"),
+    propagule_uk              = chr("propag"),
+    ell_light_uk              = chr("ell_light_uk"),
+    ell_moisture_uk           = chr("ell_moist_uk"),
+    ell_reaction_uk           = chr("ell_pH_uk"),
+    ell_nitrogen_uk           = chr("ell_N"),
+    ell_salt_uk               = chr("ell_S"),
+    stringsAsFactors          = FALSE
+  )
+  .trait_finalize(out)
+}
+
+
+# FloraWeb label -> output column map. Curated from the four scraped trait
+# pages (biologie / morphologie / oekologie / verbreitung), covering the full
+# set of per-species scalar traits. The latitudinal-zone areal-matrix rows,
+# the numeric chromosome-count distribution rows, and the per-subspecies
+# "Chromosomen Anz. Nachweise" rows are intentionally excluded (cross-tab
+# noise, not per-species traits). All output columns carry a `_de` suffix.
+.floraweb_label_map <- c(
+  # morphology
+  "Wuchshöhe (Rothmaler)"                          = "height_de",
+  "Lebensform – jew. Lebensdauer"                  = "life_form_de",
+  "Blattform"                                           = "leaf_shape_de",
+  "Blattanatomie"                                       = "leaf_anatomy_de",
+  "Blattausdauer"                                       = "leaf_persistence_de",
+  "Speicherorgane, Spross- und Wurzelmetamorphosen"     = "storage_organs_de",
+  "Blühmonate (Rothmaler)"                         = "flowering_months_de",
+  "Blühmonate (BiolFlor)"                          = "flowering_months_biolflor_de",
+  "Blühphase"                                      = "flowering_phase_de",
+  "Phänologische Jahreszeit"                       = "phenological_season_de",
+  "Beschreibung"                                        = "description_de",
+  # biology
+  "Bestäubung (Pollenvektoren)"                    = "pollination_vector_de",
+  "Bestäuber"                                      = "pollinator_de",
+  "Belohnung für Bestäuber"                   = "pollinator_reward_de",
+  "Blumentyp (nach Kugler 1970)"                        = "flower_type_de",
+  "Blumenklasse (nach Müller 1881)"                = "flower_class_de",
+  "Ausbreitungstyp"                                     = "dispersal_type_de",
+  "Diasporentyp (Ausbreitungseinheit)"                  = "diaspore_type_de",
+  "Germinulentyp (Keimungsheinheit)"                    = "germinule_type_de",
+  "Reproduktionstyp"                                    = "reproduction_type_de",
+  "Vegetative Ausbreitung"                              = "vegetative_spread_de",
+  "Befruchtungstyp"                                     = "fertilization_type_de",
+  "Apomixis"                                            = "apomixis_de",
+  "Diklinie (räumliche Geschlechtertrennung)"      = "dicliny_de",
+  "Dichogamie (zeitliche Geschlechtertrennung)"         = "dichogamy_de",
+  "SI-Reaktion"                                         = "self_incompatibility_de",
+  "SI-Mechanismus"                                      = "si_mechanism_de",
+  "Ploidiegrad"                                         = "ploidy_de",
+  "Chromosomenzahl (BiolFlor)"                          = "chromosome_number_de",
+  "Häufigkeitsverteilung der Chromosomenzahlen"    = "chromosome_freq_de",
+  "Chromosomen"                                         = "chromosomes_de",
+  # ecology (Ellenberg indicator values + community / hemeroby bindings)
+  "Lichtzahl"                                           = "ell_light_de",
+  "Temperaturzahl"                                      = "ell_temperature_de",
+  "Kontinentalitätszahl"                           = "ell_continentality_de",
+  "Feuchtezahl"                                         = "ell_moisture_de",
+  "Feuchtewechsel"                                      = "ell_moisture_variability_de",
+  "Reaktionszahl"                                       = "ell_reaction_de",
+  "Stickstoffzahl"                                      = "ell_nitrogen_de",
+  "Salzzahl"                                            = "ell_salt_de",
+  "Schwermetallresistenz"                               = "heavy_metal_resistance_de",
+  "Ökologischer Strategietyp"                      = "strategy_type_de",
+  "Standort"                                            = "habitat_site_de",
+  "Formation"                                           = "formation_de",
+  "Bindung an Pflanzengesellschaften"                   = "plant_community_de",
+  "Biotoptyp"                                           = "biotope_type_de",
+  "Bindung an Wald"                                     = "forest_binding_de",
+  "Hemerobie (menschlicher Einfluss)"                   = "hemeroby_de",
+  "Urbanität (Bindung an Siedlungen)"              = "urbanity_de",
+  # distribution
+  "Florengebiete"                                       = "floristic_zones_de",
+  "Arealformel"                                         = "areal_formula_de",
+  "Arealtyp (Oberdorfer, 1983)"                         = "areal_type_de",
+  "Ozeanität"                                      = "oceanity_de",
+  "Arealzentrum"                                        = "range_centre_de",
+  "Größe des Weltareals"                      = "world_range_size_de",
+  "Häufigkeit im Weltareal"                        = "world_range_frequency_de",
+  "Lage im Weltareal"                                   = "world_range_position_de",
+  "Gefährdung im Weltareal"                        = "world_range_hazard_de",
+  "Arealanteil Deutschlands"                            = "germany_range_share_de",
+  "Verantwortlichkeit Deutschlands"                     = "germany_responsibility_de",
+  "Höhenstufen (Florenzonen)"                      = "altitude_belts_de"
+)
+
+
+#' Parse the FloraWeb scrape snapshot (German-flora plant traits)
+#'
+#' Reads the long-format FloraWeb scrape (`results_long.csv`, one row per
+#' species/page/label/value) and pivots it to a clean wide data.frame keyed on
+#' `canonical_name`. German "no data" placeholders are dropped, multiple values
+#' for one trait are collapsed to unique values joined with "; ", and the
+#' German trait labels are mapped to English column names (each with a `_de`
+#' suffix). Covers morphology, reproductive biology, the nine Ellenberg
+#' indicator values, ploidy and chromosome number, and chorological
+#' distribution.
+#'
+#' FloraWeb (Bundesamt fuer Naturschutz) is the live portal carrying the
+#' BiolFlor trait data (Klotz, Kuehn & Durka 2002) plus Rothmaler morphology
+#' and Ellenberg indicator values. It has no bulk export or API, so the
+#' snapshot was scraped per species; the access date is its version.
+#'
+#' @param path Character. Path to the FloraWeb `results_long.csv` snapshot.
+#' @return data.frame with `canonical_name` + the mapped `_de` trait columns.
+#' @export
+parse_floraweb <- function(path) {
+  d <- utils::read.csv(path, stringsAsFactors = FALSE, colClasses = "character",
+                       encoding = "UTF-8")
+  d$col <- .floraweb_label_map[d$label]
+  d <- d[!is.na(d$col), , drop = FALSE]
+  d <- d[!.trait_is_nodata(d$value), , drop = FALSE]
+  d$value <- trimws(gsub("\\s+", " ", d$value))
+  d <- d[nzchar(d$value), , drop = FALSE]
+
+  ids   <- unique(d$name_usage_id)
+  canon <- d$canonical_name[match(ids, d$name_usage_id)]
+  id_idx <- match(d$name_usage_id, ids)
+
+  out <- data.frame(canonical_name = trimws(canon), stringsAsFactors = FALSE)
+  for (cc in intersect(unname(.floraweb_label_map), unique(d$col))) {
+    sel <- d$col == cc
+    agg <- tapply(d$value[sel], id_idx[sel],
+                  function(v) paste(unique(v), collapse = "; "))
+    vec <- rep(NA_character_, length(ids))
+    vec[as.integer(names(agg))] <- agg
+    out[[cc]] <- vec
+  }
+
+  # The BiolFlor chromosome-number cell stacks base ("1n = 9") and somatic
+  # ("2n = 18") counts; whitespace collapse fuses them ("1n = 92n = 18"). Split
+  # them back apart, and strip the boilerplate prefix from the count tables.
+  if ("chromosome_number_de" %in% names(out)) {
+    out$chromosome_number_de <- gsub("([0-9])\\s*([12]n\\s*=)", "\\1; \\2",
+                                     out$chromosome_number_de)
+  }
+  for (cc in c("chromosome_freq_de", "chromosomes_de")) {
+    if (cc %in% names(out)) {
+      out[[cc]] <- trimws(sub("^Chromosomen Anz\\. Nachweise\\s*", "",
+                              out[[cc]]))
+    }
+  }
+
+  .trait_finalize(out)
 }

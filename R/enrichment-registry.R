@@ -507,39 +507,68 @@
     parse_fn    = function(path) parse_baseflor(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  ecoflora = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "scrape-snapshots-2026.06/ecoflora_raw_2026-06-23.csv"),
+    source_doi  = NULL,
+    version     = "2026.06",
+    license     = "CC BY-NC-SA 4.0",
+    attribution = paste0(
+      "Fitter, A.H. & Peat, H.J. (1994) The Ecological Flora Database. ",
+      "Journal of Ecology 82:415-425. https://www.ecoflora.org.uk/ ",
+      "Ecoflora has no bulk download or API; the frozen snapshot was scraped ",
+      "one species at a time (accessed 2026-06-23), and the access date is ",
+      "the dataset version."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "ecoflora_raw.csv")
+    },
+    parse_fn    = function(path) parse_ecoflora(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  floraweb = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "scrape-snapshots-2026.06/floraweb_raw_2026-06-24.csv"),
+    source_doi  = NULL,
+    version     = "2026.06",
+    license     = "free use with acknowledgement + citation (BioFresh metadata statement)",
+    attribution = paste0(
+      "FloraWeb. Daten und Informationen zu Wildpflanzen und zur Vegetation ",
+      "Deutschlands. Bundesamt fuer Naturschutz, Bonn. ",
+      "https://www.floraweb.de/ (accessed 2026-06-24). Trait data largely ",
+      "derive from BiolFlor (Klotz, S., Kuehn, I. & Durka, W. 2002. BIOLFLOR. ",
+      "Schriftenreihe fuer Vegetationskunde 38, Bundesamt fuer Naturschutz, ",
+      "Bonn), with Rothmaler morphology and Ellenberg indicator values. ",
+      "FloraWeb has no bulk export or API; the frozen snapshot was scraped ",
+      "per species and the access date is the dataset version."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "floraweb_raw.csv")
+    },
+    parse_fn    = function(path) parse_floraweb(path),
+    group_col   = NULL,
+    requires    = character(0)
   )
 )
 
 
 # On-demand trait sources: NOT built into a `.vtr` by taxifydb.
 #
-# Each is kept out of .enrichment_build_registry for its own reason:
-#   * Pignatti is from a copyrighted publication and cannot be redistributed.
-#   * BiolFlor may be used without restrictions if acknowledged and cited
-#     (BioFresh metadata statement) -- redistributable in principle -- but no
-#     bulk copy is obtainable while the UFZ site is offline.
-#   * Ecoflora's CC BY-NC-SA licence would permit a redistributed `.vtr`, but
-#     ecoflora.org.uk has no bulk download (per-species access only).
-# All three are accessed on the user's own machine by taxify's add_ecoflora() /
-# add_biolflor() / add_pignatti() through the TR8 package (BiolFlor and Ecoflora
-# by live per-species query; Pignatti by reading TR8's bundled copy). This
-# catalog records them for completeness.
+# Pignatti's values originate in a copyrighted publication and cannot be
+# redistributed, so taxifydb builds no `.vtr` for it; taxify's add_pignatti()
+# reads the copy bundled in the TR8 package on the user's own machine.
+#
+# (Ecoflora and FloraWeb were previously here too. Both are now built into
+# `.vtr` files by .enrichment_build_registry from frozen scrape snapshots:
+# Ecoflora's CC BY-NC-SA licence permits redistribution, and FloraWeb -- the
+# live BfN portal carrying the BiolFlor data -- may be used with
+# acknowledgement and citation per the BioFresh metadata statement.)
 #' @noRd
 .enrichment_scrape_only <- list(
-  ecoflora = list(
-    tr8_db      = "Ecoflora",
-    taxify_fn   = "add_ecoflora",
-    license     = "CC BY-NC-SA 4.0",
-    reason      = "licence permits redistribution, but no bulk download (per-species access only)",
-    attribution = "Fitter AH, Peat HJ (1994) The Ecological Flora Database. Journal of Ecology 82:415-425."
-  ),
-  biolflor = list(
-    tr8_db      = "BiolFlor",
-    taxify_fn   = "add_biolflor",
-    license     = "free use with acknowledgement + citation (BioFresh metadata statement)",
-    reason      = "no bulk copy obtainable while the UFZ site is offline (redistributable in principle, with citation)",
-    attribution = "Klotz S, Kuehn I, Durka W (2002) BIOLFLOR. Schriftenreihe fuer Vegetationskunde 38."
-  ),
   pignatti = list(
     tr8_db      = "Pignatti",
     taxify_fn   = "add_pignatti",
@@ -552,13 +581,11 @@
 
 #' List scrape-only (non-redistributed) trait sources
 #'
-#' taxifydb does not build a `.vtr` for these sources: Pignatti is copyrighted;
-#' BiolFlor is usable with acknowledgement and citation (BioFresh metadata
-#' statement) but has no obtainable bulk copy while the UFZ site is offline; and
-#' Ecoflora's CC BY-NC-SA licence would allow it but ecoflora.org.uk has no bulk
-#' download. They are accessed on demand by taxify's `add_ecoflora()`,
-#' `add_biolflor()`, and `add_pignatti()` via the TR8 package. This returns the
-#' catalog of those sources.
+#' taxifydb builds no `.vtr` for these sources because they cannot be
+#' redistributed. Pignatti's values originate in a copyrighted publication and
+#' are accessed on demand by taxify's `add_pignatti()` through the TR8 package
+#' (which ships a copy under its own licence). This returns the catalog of
+#' those sources.
 #'
 #' @return A data.frame with columns `name`, `tr8_db`, `taxify_fn`, `license`,
 #'   and `reason`.

@@ -1,3 +1,31 @@
+# taxifydb 0.1.3
+
+## New features
+
+* `parse_ecoflora()` and `parse_floraweb()` build the Ecoflora (British Isles)
+  and FloraWeb (German flora) plant-trait enrichments from frozen scrape
+  snapshots. Both are registered in `.enrichment_build_registry` and produce
+  bundled `.vtr` files (Ecoflora 18 `_uk` columns; FloraWeb 59 `_de` columns
+  spanning morphology, reproductive biology, the nine Ellenberg indicator
+  values, ploidy and chromosome number, and chorological distribution).
+  Ecoflora is redistributed under CC BY-NC-SA 4.0; FloraWeb carries the
+  BiolFlor data (Klotz, Kuehn & Durka 2002), usable with acknowledgement and
+  citation per the BioFresh metadata statement. The raw per-species snapshots
+  are hosted in the `scrape-snapshots-2026.06` release; the access date is the
+  dataset version.
+
+## Changes
+
+* `resolve_enrichment_names()` now keeps the best-populated source record when
+  several taxa resolve to the same accepted name (subspecies and synonyms
+  collapsing onto a species) rather than an arbitrary first row. This recovers
+  trait data that could previously be discarded for widely-circumscribed
+  species.
+
+* Ecoflora and BiolFlor are removed from `.enrichment_scrape_only`; only
+  Pignatti (copyrighted, not redistributable) remains there.
+
+
 # taxifydb 0.1.2
 
 ## Scrape-only sources

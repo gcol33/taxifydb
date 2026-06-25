@@ -42,11 +42,11 @@
       "source_url": "https://www.itis.gov/downloads/itisSqlite.zip"
     },
     "ncbi": {
-      "latest": "2026.05",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/ncbi-2026.05/ncbi.vtr",
-      "full_size": 510291103,
-      "full_sha256": "81a482f304c276011ba7913a5b8aef988b241575958ce73fd140cf0c3575ef02",
-      "nrow": 2739317,
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/ncbi-2026.06/ncbi.vtr",
+      "full_size": 514271185,
+      "full_sha256": "8db142ab21d93240f71f51972c69e15ec484b19cf915ea4bb08c239348a637b3",
+      "nrow": 2759103,
       "source_url": "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump.tar.gz"
     },
     "ott": {

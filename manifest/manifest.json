@@ -28,8 +28,8 @@
     "gbif": {
       "latest": "2026.06",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.06/gbif.vtr",
-      "full_size": 1854505287,
-      "full_sha256": "485ed8266cd7331dfc98d447f0d75e2e938d7d8c787aa26d15c3e690ea9c47e5",
+      "full_size": 1854505874,
+      "full_sha256": "9871c9619e5e13c1d1095c5eb93301ef8df12cb2cb8024a7f6e5492c62dfacd7",
       "nrow": 6404001,
       "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz"
     },
@@ -68,8 +68,8 @@
     "euromed": {
       "latest": "2026.06",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.06/euromed.vtr",
-      "full_size": 30389373,
-      "full_sha256": "6ff976b2f056f65034684a4c2d26a5426ea0a40a58a8c11664220f2a4a9b6757",
+      "full_size": 30389481,
+      "full_sha256": "ef5a1ac9dd206885b834d8fafd06a76863b59933bb8b2195d0a586aeb5813a32",
       "nrow": 133426
     },
     "fungorum": {

@@ -39,12 +39,14 @@ jobs:
 
       - name: Install taxifydb (local)
         run: |
-          "C:\Program Files\R\R-4.5.2\bin\Rscript.exe" -e "devtools::install_local('.', upgrade = 'never')"
+          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
+          "$RSCRIPT" -e "devtools::install_local('.', upgrade = 'never')"
         shell: bash
 
       - name: Build backbone
         run: |
-          "C:\Program Files\R\R-4.5.2\bin\Rscript.exe" -e "taxifydb::build_backend('${{ matrix.backend }}', output_dir = file.path('output', '${{ matrix.backend }}'))"
+          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
+          "$RSCRIPT" -e "taxifydb::build_backend('${{ matrix.backend }}', output_dir = file.path('output', '${{ matrix.backend }}'))"
         shell: bash
 
       - name: Compute version
@@ -75,18 +77,28 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update manifest
+      - name: Update and commit manifest
         run: |
-          "C:\Program Files\R\R-4.5.2\bin\Rscript.exe" -e "taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output', '${{ matrix.backend }}', '${{ matrix.backend }}.vtr'))"
-        shell: bash
-
-      - name: Commit manifest
-        run: |
+          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifest/manifest.json
-          git diff --staged --quiet || git commit -m "Update manifest: ${{ matrix.backend }} v${{ steps.version.outputs.version }}"
-          git push
+          for i in $(seq 1 10); do
+            # Re-apply this backend's manifest entry on top of the latest remote,
+            # so jobs pinned to the trigger SHA never clobber each other.
+            git fetch origin main
+            git reset --hard origin/main
+            "$RSCRIPT" -e "taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output', '${{ matrix.backend }}', '${{ matrix.backend }}.vtr'))"
+            git add manifest/manifest.json
+            if git diff --staged --quiet; then
+              echo "manifest unchanged"; break
+            fi
+            git commit -m "Update manifest: ${{ matrix.backend }} v${{ steps.version.outputs.version }}"
+            if git push origin HEAD:main; then
+              echo "manifest pushed"; break
+            fi
+            echo "push raced (attempt $i); retrying on latest main"
+            sleep $((RANDOM % 6 + 2))
+          done
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

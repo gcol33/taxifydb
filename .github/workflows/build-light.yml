@@ -116,28 +116,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update manifest
-        run: |
-          taxifydb::update_manifest(
-            "manifest/manifest.json",
-            "${{ matrix.backend }}",
-            "${{ steps.version.outputs.version }}",
-            file.path("output", "${{ matrix.backend }}",
-                      "${{ matrix.backend }}.vtr"),
-            delta_path = {
-              p <- file.path("output", "${{ matrix.backend }}",
-                              "${{ matrix.backend }}.xdelta")
-              if (file.exists(p)) p else NULL
-            }
-          )
-        shell: Rscript {0}
-
-      - name: Commit manifest
+      - name: Update and commit manifest
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifest/manifest.json
-          git diff --staged --quiet || git commit -m "Update manifest: ${{ matrix.backend }} v${{ steps.version.outputs.version }}"
-          git push
+          for i in $(seq 1 10); do
+            # Re-apply this backend's manifest entry on top of the latest remote,
+            # so parallel matrix jobs never clobber each other's updates.
+            git fetch origin main
+            git reset --hard origin/main
+            Rscript -e "p <- file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.xdelta'); taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.vtr'), delta_path = if (file.exists(p)) p else NULL)"
+            git add manifest/manifest.json
+            if git diff --staged --quiet; then
+              echo "manifest unchanged"; break
+            fi
+            git commit -m "Update manifest: ${{ matrix.backend }} v${{ steps.version.outputs.version }}"
+            if git push origin HEAD:main; then
+              echo "manifest pushed"; break
+            fi
+            echo "push raced (attempt $i); retrying on latest main"
+            sleep $((RANDOM % 6 + 2))
+          done
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

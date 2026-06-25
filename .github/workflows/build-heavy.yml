@@ -20,6 +20,9 @@ on:
           - fungorum
           - algaebase
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: self-hosted

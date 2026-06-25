@@ -1,3 +1,16 @@
+# taxifydb 0.1.5
+
+## New features
+
+* Aggregate markers are normalized to one canonical `aggr.` form at build time,
+  so taxify recognizes species aggregates uniformly across every backbone and
+  enrichment. `precompute_backbone()` folds backbone aggregate names and
+  aggregate-rank rows (via `taxify::normalize_aggregate_name()`);
+  `resolve_enrichment_names()` keeps aggregate source rows out of cross-backbone
+  expansion (which would otherwise leak an aggregate's traits onto the binomial
+  species key); `build_enrichment_vtr()` normalizes the enrichment join key.
+  Requires taxify (>= 0.3.0).
+
 # taxifydb 0.1.4
 
 ## New features

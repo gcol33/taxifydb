@@ -35,6 +35,48 @@ resolve_enrichment_names <- function(df,
     stop("df must have a 'canonical_name' column")
   }
 
+  # Aggregate source rows are kept out of cross-backbone expansion: a backbone
+  # without the aggregate taxon would resolve them to the bare binomial, leaking
+  # the aggregate's traits onto the species key. Their key is instead folded to
+  # the canonical "<binomial> aggr." form and they rejoin at the end.
+  is_agg <- taxify::is_aggregate_name(df$canonical_name)
+  is_agg[is.na(is_agg)] <- FALSE
+  agg_df <- df[is_agg, , drop = FALSE]
+  rest   <- df[!is_agg, , drop = FALSE]
+
+  resolved <- if (nrow(rest) > 0L) {
+    .resolve_species_names(rest, group_cols, backends, verbose, use_lookup)
+  } else {
+    rest
+  }
+
+  if (nrow(agg_df) > 0L) {
+    agg_df$canonical_name <-
+      taxify::normalize_aggregate_name(agg_df$canonical_name)
+    combined <- rbind(resolved, agg_df[names(resolved)])
+    return(.dedup_keep_richest(combined, group_cols))
+  }
+  resolved
+}
+
+
+#' Resolve non-aggregate enrichment names against all taxify backends
+#'
+#' Internal worker for [resolve_enrichment_names()]; expands each name to all
+#' unique accepted names across the requested backends. See the wrapper for the
+#' aggregate-handling contract.
+#' @noRd
+.resolve_species_names <- function(df,
+                                   group_cols = NULL,
+                                   backends = c("wfo", "col", "gbif",
+                                                "itis", "ncbi", "ott",
+                                                "worms"),
+                                   verbose = TRUE,
+                                   use_lookup = TRUE) {
+  if (!"canonical_name" %in% names(df)) {
+    stop("df must have a 'canonical_name' column")
+  }
+
   if (use_lookup) {
     lookup_paths <- .find_lookup_paths(backends)
     if (length(lookup_paths) > 0L) {

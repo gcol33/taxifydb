@@ -30,6 +30,10 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     stop("Enrichment data.frame must have a 'canonical_name' column.")
   }
 
+  # Fold any aggregate marker spelling on the join key to one canonical form, so
+  # the enrichment join lines up with aggregate accepted names from any backbone.
+  df$canonical_name <- taxify::normalize_aggregate_name(df$canonical_name)
+
   df <- df[order(df$canonical_name, na.last = TRUE), ]
   rownames(df) <- NULL
   df <- df[!is.na(df$canonical_name), ]

@@ -1,6 +1,6 @@
 Package: taxifydb
 Title: Build Backbones and Enrichments for the 'taxify' Package
-Version: 0.1.4
+Version: 0.1.5
 Authors@R:
     person("Gilles", "Colling", , "gilles.colling051@gmail.com",
            role = c("aut", "cre", "cph"),
@@ -22,7 +22,7 @@ Imports:
     curl,
     digest,
     jsonlite,
-    taxify,
+    taxify (>= 0.3.0),
     utils,
     vectra
 Suggests:

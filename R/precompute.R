@@ -21,6 +21,14 @@
 #' @return The data.frame ready for `build_vtr()`.
 #' @export
 precompute_backbone <- function(df, synonym_pattern = "SYNONYM") {
+  # Fold every aggregate marker spelling (and aggregate-rank rows that carry no
+  # marker) to one canonical "<binomial> aggr." form before keys and accepted
+  # names are computed, so taxify recognizes aggregates uniformly across
+  # backbones. Single definition lives in taxify.
+  df$canonical_name <- taxify::normalize_aggregate_name(
+    df$canonical_name, df$taxon_rank
+  )
+
   df <- taxify::precompute_keys(
     df,
     name_col    = "canonical_name",

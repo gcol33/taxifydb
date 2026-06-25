@@ -60,18 +60,10 @@
     "worms": {
       "latest": "2026.06",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.06/worms.vtr",
-      "full_size": 325840921,
-      "full_sha256": "47751d25670a3fc4589231293f0460b486af18f470c972bb042c540570857577",
-      "nrow": 1547836,
-      "source_url": "https://api.checklistbank.org/dataset/2011/archive",
-      "extras": [
-        {
-          "name": "worms_species_profile.vtr",
-          "url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.05/worms_species_profile.vtr",
-          "size": 78609521,
-          "sha256": "ade818f1fdedbb10640d623960ceaf35f44b18d4e191147c635e574deeb03c37"
-        }
-      ]
+      "full_size": 357254644,
+      "full_sha256": "ed28d863edbfccc2e58918f169121692cca3ac0af9d237d8a8a47255361f6164",
+      "nrow": 1559455,
+      "source_url": "https://api.checklistbank.org/dataset/2011/archive"
     },
     "euromed": {
       "latest": "2026.06",
@@ -1352,7 +1344,7 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/baseflor.vtr",
       "nrow": 8469,
       "source_url": "http://web.archive.org/web/20231002005253id_/https://philippe.julve.pagesperso-orange.fr/baseflor.xlsx",
-      "source_doi": null,
+      "source_doi": {},
       "license": "ODbL 1.0 / CC BY-SA 2.0"
     }
   }

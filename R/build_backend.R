@@ -14,7 +14,9 @@
   gbif      = function(...) build_gbif(...),
   euromed   = function(...) build_euromed(...),
   fungorum  = function(...) build_fungorum(...),
-  algaebase = function(...) build_algaebase(...)
+  algaebase = function(...) build_algaebase(...),
+  fishbase    = function(...) build_fishbase(...),
+  sealifebase = function(...) build_sealifebase(...)
 )
 
 

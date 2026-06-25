@@ -45,7 +45,7 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 ## Backends
 
-10 backends. All built via the same `build_backend(name)` entrypoint.
+12 backends. All built via the same `build_backend(name)` entrypoint.
 
 | Backend | Format | Notes |
 |---------|--------|-------|
@@ -59,18 +59,17 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 | euromed | semicolon CSV | Euro+Med PlantBase 2020 snapshot |
 | fungorum | (depends) | Index Fungorum |
 | algaebase | ChecklistBank /nameusage/search | paginated API; /archive disabled (CC BY-NC) |
+| fishbase | rfishbase `load_taxa()` + `synonyms()` | fishes; shared reader `.read_rfishbase_backbone()`; needs rfishbase |
+| sealifebase | rfishbase (server = sealifebase) | non-fish aquatic; same shared reader |
 
 ## Enrichments
 
-25 enrichments registered in `.enrichment_build_registry`. A further 3
-on-demand sources (Ecoflora, BiolFlor, Pignatti) are NOT built into `.vtr`
-files: Pignatti (copyrighted) cannot be redistributed; BiolFlor is usable with
-acknowledgement + citation (BioFresh metadata statement) but has no obtainable
-bulk copy while the UFZ site is offline; Ecoflora's CC BY-NC-SA licence would
-allow it but ecoflora.org.uk has no bulk download (per-species access only). They are
-catalogued in `.enrichment_scrape_only` (`list_scrape_only_enrichments()`) and
-accessed on demand by taxify's `add_ecoflora()`/`add_biolflor()`/`add_pignatti()`
-via the TR8 package. Every built enrichment goes through cross-backbone name
+30 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
+`sealifebase`, and `groot`). Ecoflora and FloraWeb are built into `.vtr` files
+from frozen per-species scrape snapshots. Only 1 on-demand source remains
+(Pignatti, copyrighted), catalogued in `.enrichment_scrape_only`
+(`list_scrape_only_enrichments()`) and accessed by taxify's `add_pignatti()` via
+the TR8 package. Every built enrichment goes through cross-backbone name
 resolution before its `.vtr` is written:
 
 1. `parse_<name>()` cleans the source to `canonical_name` + trait columns

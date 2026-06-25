@@ -574,6 +574,46 @@
     parse_fn    = function(path) parse_floraweb(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  sealifebase = list(
+    source_url  = "https://sealifebase.ropensci.org",
+    source_doi  = NULL,
+    version     = format(Sys.Date(), "%Y.%m"),
+    license     = "CC BY-NC 3.0",
+    attribution = "Palomares MLD, Pauly D (eds.) (2024) SeaLifeBase. World Wide Web electronic publication, https://www.sealifebase.org.",
+    download_fn = function(url, dest) {
+      # rfishbase fetches data directly; dest exists only so the interface
+      # is uniform with file-based parsers.
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      dest
+    },
+    parse_fn    = function(path) parse_sealifebase(path),
+    group_col   = NULL,
+    requires    = "rfishbase"
+  ),
+
+  groot = list(
+    source_url  = paste0("https://raw.githubusercontent.com/GRooT-Database/",
+                         "GRooT-Data/master/DataFiles/",
+                         "GRooTAggregateSpeciesVersion.zip"),
+    source_doi  = "10.1111/geb.13179",
+    version     = "2021.1",
+    license     = "Free use with data-paper citation (no formal license stated)",
+    attribution = paste0(
+      "Guerrero-Ramirez NR et al. (2021) Global root traits (GRooT) ",
+      "database. Global Ecology and Biogeography 30:25-37. Data are publicly ",
+      "available from github.com/GRooT-Database/GRooT-Data and are used here ",
+      "with the data-paper citation requested by the authors (no formal ",
+      "licence is stated on the repository). Species-level means of the nine ",
+      "best-populated key root traits."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, "GRooTAggregateSpeciesVersion\\.csv$")
+    },
+    parse_fn    = function(path) parse_groot(path),
+    group_col   = NULL,
+    requires    = character(0)
   )
 )
 

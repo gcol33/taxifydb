@@ -160,38 +160,54 @@ parse_funguild <- function(path) {
 }
 
 
-#' Parse FishBase species and ecology tables (via rfishbase)
+#' Build a canonical_name + trait table from an rfishbase server
 #'
-#' Pulls the `species` and `ecology` tables from rfishbase, joins them, and
-#' builds a `canonical_name` + trait data.frame.
+#' Shared engine for [parse_fishbase()] and [parse_sealifebase()]. The binomial
+#' `canonical_name` comes from `load_taxa()` (whose `Species` column is the full
+#' binomial); the `species` table in rfishbase 5.x no longer carries a
+#' species-epithet column, so the name must come from `load_taxa()` and be
+#' joined to traits by `SpecCode`. Traits come from the `species` table (length,
+#' mass, depth range, vulnerability, habitat, importance) and trophic level from
+#' `ecology` (`DietTroph`). Missing columns degrade to NA.
 #'
-#' @param path Character. Not used (rfishbase fetches data directly), kept
-#'   for interface consistency.
-#' @return data.frame with canonical_name + body/depth/diet columns.
-#' @export
-parse_fishbase <- function(path) {
+#' @param server Either "fishbase" or "sealifebase".
+#' @return data.frame keyed on `canonical_name` with eight trait columns.
+#' @noRd
+.rfishbase_trait_table <- function(server) {
   if (!requireNamespace("rfishbase", quietly = TRUE)) {
-    stop("rfishbase is required to build the FishBase enrichment from source.\n",
+    stop("rfishbase is required to build the ", server,
+         " enrichment from source.\n",
          "Install it with: install.packages(\"rfishbase\")", call. = FALSE)
   }
 
-  sp <- rfishbase::species(server = "fishbase")
-  eco <- rfishbase::ecology(server = "fishbase")
+  tx <- as.data.frame(rfishbase::load_taxa(server = server),
+                      stringsAsFactors = FALSE)
+  bino <- data.frame(
+    SpecCode       = tx$SpecCode,
+    canonical_name = trimws(as.character(tx$Species)),
+    stringsAsFactors = FALSE
+  )
+  bino <- bino[!duplicated(bino$SpecCode), , drop = FALSE]
 
-  sp$canonical_name <- trimws(paste(sp$Genus, sp$Species))
+  sp <- as.data.frame(rfishbase::species(server = server),
+                      stringsAsFactors = FALSE)
+  merged <- merge(sp, bino, by = "SpecCode", all.x = FALSE)
 
-  eco_sub <- eco[, intersect(
-    names(eco),
-    c("SpecCode", "FeedingType", "DietTroph")
-  ), drop = FALSE]
-  eco_sub <- eco_sub[!duplicated(eco_sub$SpecCode), ]
-  merged <- merge(sp, eco_sub, by = "SpecCode", all.x = TRUE)
+  eco <- tryCatch(
+    as.data.frame(rfishbase::ecology(server = server), stringsAsFactors = FALSE),
+    error = function(e) NULL
+  )
+  if (!is.null(eco) && "SpecCode" %in% names(eco)) {
+    eco_sub <- eco[, intersect(names(eco), c("SpecCode", "DietTroph")),
+                   drop = FALSE]
+    eco_sub <- eco_sub[!duplicated(eco_sub$SpecCode), , drop = FALSE]
+    merged <- merge(merged, eco_sub, by = "SpecCode", all.x = TRUE)
+  }
 
   safe_num <- function(col_name) {
     if (!col_name %in% names(merged)) return(rep(NA_real_, nrow(merged)))
     suppressWarnings(as.numeric(merged[[col_name]]))
   }
-
   safe_chr <- function(col_name) {
     if (!col_name %in% names(merged)) return(rep(NA_character_, nrow(merged)))
     x <- as.character(merged[[col_name]])
@@ -212,8 +228,89 @@ parse_fishbase <- function(path) {
     stringsAsFactors = FALSE
   )
 
-  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  out[!duplicated(out$canonical_name), ]
+  # Keep binomials only (a space separates genus and epithet).
+  out <- out[!is.na(out$canonical_name) & grepl(" ", out$canonical_name), ,
+             drop = FALSE]
+  out[!duplicated(out$canonical_name), , drop = FALSE]
+}
+
+
+#' Parse FishBase species traits (via rfishbase)
+#'
+#' @param path Character. Not used (rfishbase fetches data directly), kept
+#'   for interface consistency.
+#' @return data.frame with canonical_name + body/depth/diet columns.
+#' @export
+parse_fishbase <- function(path) {
+  .rfishbase_trait_table("fishbase")
+}
+
+
+#' Parse SeaLifeBase species traits (via rfishbase)
+#'
+#' Non-fish companion to [parse_fishbase()] (molluscs, crustaceans,
+#' echinoderms, marine mammals, reptiles, etc.). Shares the same trait columns.
+#'
+#' @param path Ignored; rfishbase fetches data directly.
+#' @return data.frame keyed on `canonical_name` with eight trait columns.
+#' @export
+parse_sealifebase <- function(path) {
+  .rfishbase_trait_table("sealifebase")
+}
+
+
+#' Parse the GRooT species-aggregate root-trait table
+#'
+#' GRooT ships a long-format CSV (`GRooTAggregateSpeciesVersion.csv`): one row
+#' per species x trait, with per-species mean, median and quartiles. This
+#' pivots the nine best-populated key traits to wide format, one row per
+#' species, using the per-species mean (`meanSpecies`). The species name is
+#' the TNRS-resolved `genusTNRS` + `speciesTNRS`.
+#'
+#' @param path Character. Path to `GRooTAggregateSpeciesVersion.csv`.
+#' @return data.frame keyed on `canonical_name` with nine root-trait columns.
+#' @export
+parse_groot <- function(path) {
+  df <- utils::read.csv(
+    path,
+    fileEncoding = "latin1",
+    stringsAsFactors = FALSE,
+    check.names = FALSE,
+    na.strings = c("", "NA")
+  )
+
+  # GRooT trait label -> output column (the nine key traits the data paper
+  # highlights). The mycorrhizal-colonization label carries a space, not an
+  # underscore, in the source file.
+  key_traits <- c(
+    "Mean_Root_diameter"            = "root_diameter",
+    "Specific_root_length"          = "specific_root_length",
+    "Root_tissue_density"           = "root_tissue_density",
+    "Root_N_concentration"          = "root_n_concentration",
+    "Root_C_concentration"          = "root_c_concentration",
+    "Root_mass_fraction"            = "root_mass_fraction",
+    "Lateral_spread"                = "lateral_spread",
+    "Root_mycorrhizal colonization" = "root_mycorrhizal_colonization",
+    "Rooting_depth"                 = "rooting_depth"
+  )
+
+  df <- df[!is.na(df$speciesTNRS) & nzchar(trimws(df$speciesTNRS)) &
+             df$traitName %in% names(key_traits), , drop = FALSE]
+  df$canonical_name <- trimws(paste(df$genusTNRS, df$speciesTNRS))
+  df$value <- suppressWarnings(as.numeric(df$meanSpecies))
+
+  out <- data.frame(
+    canonical_name = sort(unique(df$canonical_name)),
+    stringsAsFactors = FALSE
+  )
+  for (tn in names(key_traits)) {
+    sub <- df[df$traitName == tn, c("canonical_name", "value")]
+    vals <- tapply(sub$value, sub$canonical_name,
+                   function(x) mean(x, na.rm = TRUE))
+    out[[key_traits[[tn]]]] <- as.numeric(vals[out$canonical_name])
+  }
+
+  out
 }
 
 

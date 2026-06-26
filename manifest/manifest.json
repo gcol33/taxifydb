@@ -85,6 +85,22 @@
       "full_size": 36264066,
       "full_sha256": "de17ce3538d0b225cebdb2a874cb4f67e334b86304bd68f881d12ccb096a6261",
       "nrow": 172351
+    },
+    "fishbase": {
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fishbase-2026.06/fishbase.vtr",
+      "full_size": 19036291,
+      "full_sha256": "099f478fbbc346441237807109d3925a9010b74e98753ed18b5b3d9b0967b0ed",
+      "nrow": 102703,
+      "source_url": "https://fishbase.ropensci.org"
+    },
+    "sealifebase": {
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/sealifebase-2026.06/sealifebase.vtr",
+      "full_size": 28922945,
+      "full_sha256": "db74b3e49aa84fb10149dbda301bffb72ffee53751de6bda6a9774a96766d7c4",
+      "nrow": 134031,
+      "source_url": "https://sealifebase.ropensci.org"
     }
   },
   "enrichments": {

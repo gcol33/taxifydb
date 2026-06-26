@@ -1362,6 +1362,43 @@
       "source_url": "http://web.archive.org/web/20231002005253id_/https://philippe.julve.pagesperso-orange.fr/baseflor.xlsx",
       "source_doi": {},
       "license": "ODbL 1.0 / CC BY-SA 2.0"
+    },
+    "fungalroot": {
+      "latest": "2020.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/fungalroot.vtr",
+      "nrow": 4188,
+      "source_url": "https://orphans.gbif.org/EE/744edc21-8dd2-474e-8a0b-b8c3d56a3c2d.232.zip",
+      "source_doi": "10.15468/a7ujmj",
+      "license": "CC BY-NC 4.0"
+    },
+    "ecoflora": {
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/ecoflora.vtr",
+      "nrow": 3077,
+      "source_url": "https://github.com/gcol33/taxifydb/releases/download/scrape-snapshots-2026.06/ecoflora_raw_2026-06-23.csv",
+      "license": "CC BY-NC-SA 4.0"
+    },
+    "floraweb": {
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/floraweb.vtr",
+      "nrow": 5594,
+      "source_url": "https://github.com/gcol33/taxifydb/releases/download/scrape-snapshots-2026.06/floraweb_raw_2026-06-24.csv",
+      "license": "free use with acknowledgement + citation (BioFresh metadata statement)"
+    },
+    "groot": {
+      "latest": "2021.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/groot.vtr",
+      "nrow": 7009,
+      "source_url": "https://raw.githubusercontent.com/GRooT-Database/GRooT-Data/master/DataFiles/GRooTAggregateSpeciesVersion.zip",
+      "source_doi": "10.1111/geb.13179",
+      "license": "Free use with data-paper citation (no formal license stated)"
+    },
+    "sealifebase": {
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/sealifebase.vtr",
+      "nrow": 110985,
+      "source_url": "https://sealifebase.ropensci.org",
+      "license": "CC BY-NC 3.0"
     }
   }
 }

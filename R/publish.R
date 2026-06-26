@@ -205,13 +205,25 @@ update_manifest <- function(manifest_path, backend_name, version,
 
 #' Update manifest.json enrichment entry from built meta.json
 #'
+#' Enrichment `.vtr` files are published under a single rolling release tag
+#' (e.g. `enrichment-2026.06`) regardless of the dataset's own version. The
+#' manifest entry therefore records two distinct versions: `latest` holds the
+#' dataset version (from the meta sidecar) while the download URL points at the
+#' rolling release. Pass `release_version` to set the release tag explicitly;
+#' when omitted it falls back to the dataset version (correct only when the two
+#' happen to coincide).
+#'
 #' @param manifest_path Character. Path to manifest.json.
 #' @param name Character. Enrichment identifier.
 #' @param vtr_path Character. Path to the built .vtr file.
+#' @param release_version Character or NULL. Rolling release version used in the
+#'   download URL tag (`enrichment-<release_version>`). Defaults to the dataset
+#'   version from the meta sidecar.
 #' @param repo Character. GitHub repo for URL construction.
 #' @return The updated manifest (invisibly).
 #' @export
 update_enrichment_manifest <- function(manifest_path, name, vtr_path,
+                                       release_version = NULL,
                                        repo = "gcol33/taxifydb") {
   meta_path <- file.path(dirname(vtr_path), "meta.json")
   if (!file.exists(meta_path)) {
@@ -227,7 +239,12 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   }
   if (is.null(manifest$enrichments)) manifest$enrichments <- list()
 
-  tag <- sprintf("enrichment-%s", meta$version)
+  release_tag_version <- if (is.null(release_version)) {
+    meta$version
+  } else {
+    release_version
+  }
+  tag <- sprintf("enrichment-%s", release_tag_version)
   base_url <- sprintf(
     "https://github.com/%s/releases/download/%s", repo, tag
   )

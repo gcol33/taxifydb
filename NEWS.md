@@ -1,3 +1,19 @@
+# taxifydb 0.1.6
+
+## New features
+
+* `build_reptiledb()` builds the Reptile Database backbone (`reptiledb`): the
+  reptarium taxa export plus the synonym snapshot and checklist, normalized to
+  the unified backbone schema (~12.6k accepted reptile species + ~34k
+  synonyms, stamped Animalia/Chordata/Reptilia). Registered in
+  `build_backend()` and the `build-light` workflow. License CC-BY 4.0.
+* The ReptTraits enrichment is renamed `lizard_traits` -> `repttraits` to match
+  its source (it covers all reptiles, not lizards), with the citation corrected
+  to Oskyrko et al. (2024). `parse_repttraits()` maps source headers explicitly
+  and adds the distribution block (biogeographic realm, microhabitat, habitat
+  type, elevation range, mean annual temperature, insular/endemic) that the
+  previous morphology-only parser dropped.
+
 # taxifydb 0.1.5
 
 ## New features

@@ -61,6 +61,7 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 | algaebase | ChecklistBank /nameusage/search | paginated API; /archive disabled (CC BY-NC) |
 | fishbase | rfishbase `load_taxa()` + `synonyms()` | fishes; shared reader `.read_rfishbase_backbone()`; needs rfishbase |
 | sealifebase | rfishbase (server = sealifebase) | non-fish aquatic; same shared reader |
+| reptiledb | taxa.csv + synonyms.xlsx + checklist.xlsx | reptiles; CC-BY; synonyms from 2023-04 snapshot, order via family->order map; needs openxlsx2 |
 
 ## Enrichments
 

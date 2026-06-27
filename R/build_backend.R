@@ -16,7 +16,8 @@
   fungorum  = function(...) build_fungorum(...),
   algaebase = function(...) build_algaebase(...),
   fishbase    = function(...) build_fishbase(...),
-  sealifebase = function(...) build_sealifebase(...)
+  sealifebase = function(...) build_sealifebase(...),
+  reptiledb   = function(...) build_reptiledb(...)
 )
 
 

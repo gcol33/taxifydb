@@ -410,16 +410,16 @@
     requires    = character(0)
   ),
 
-  lizard_traits = list(
+  repttraits = list(
     source_url  = "https://ndownloader.figshare.com/files/45408133",
     source_doi  = "10.6084/m9.figshare.24572683",
     version     = "1.2",
     license     = "CC BY 4.0",
-    attribution = "Etard A et al. (2024) ReptTraits: a comprehensive dataset of ecological traits in reptiles. Scientific Data 11:243.",
+    attribution = "Oskyrko O, Mi C, Meiri S, Du W (2024) ReptTraits: a comprehensive dataset of ecological traits in reptiles. Scientific Data 11:243.",
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "ReptTraits_v1-2.xlsx")
     },
-    parse_fn    = function(path) parse_lizard_traits(path),
+    parse_fn    = function(path) parse_repttraits(path),
     group_col   = NULL,
     requires    = "openxlsx2"
   ),

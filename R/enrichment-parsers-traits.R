@@ -696,11 +696,19 @@ parse_algae_traits <- function(path) {
 }
 
 
-#' Parse Meiri (2018) lizard traits (XLSX from Figshare)
-#' @param path Character. Path to the ReptTraits/Meiri XLSX (or CSV/TSV).
-#' @return data.frame with canonical_name + lizard trait columns.
+#' Parse ReptTraits (Etard et al. 2024) reptile traits (XLSX from Figshare)
+#'
+#' ReptTraits is the global ecological-trait dataset for reptiles, built on the
+#' Reptile Database taxonomy. The header names are mapped explicitly (not by
+#' fuzzy pattern) so the distribution/environment block and the morphology block
+#' resolve to the correct source columns. Columns surface a per-species range
+#' signal (biogeographic realm, elevation, climate) plus body-size and
+#' life-history traits across all reptiles (not lizards only).
+#'
+#' @param path Character. Path to the ReptTraits XLSX (or CSV/TSV).
+#' @return data.frame with canonical_name + reptile trait columns.
 #' @export
-parse_lizard_traits <- function(path) {
+parse_repttraits <- function(path) {
   ext <- tolower(tools::file_ext(path))
   if (ext == "csv") {
     df <- utils::read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
@@ -709,11 +717,11 @@ parse_lizard_traits <- function(path) {
                             check.names = FALSE)
   } else {
     if (!requireNamespace("openxlsx2", quietly = TRUE)) {
-      stop("Package 'openxlsx2' is required to parse lizard traits XLSX.",
+      stop("Package 'openxlsx2' is required to parse ReptTraits XLSX.",
            call. = FALSE)
     }
     sheets <- openxlsx2::wb_get_sheet_names(openxlsx2::wb_load(path))
-    pick <- sheets[tolower(sheets) %in% c("data", "data sheet", "trait data")]
+    pick <- sheets[tolower(sheets) == "data"]
     if (length(pick) == 0L) {
       ncols <- vapply(sheets, function(s) {
         h <- tryCatch(openxlsx2::read_xlsx(path, sheet = s, rows = 1:1),
@@ -722,51 +730,60 @@ parse_lizard_traits <- function(path) {
       }, integer(1L))
       pick <- sheets[which.max(ncols)]
     }
-    df <- openxlsx2::read_xlsx(path, sheet = pick[1L])
+    df <- suppressWarnings(openxlsx2::read_xlsx(path, sheet = pick[1L]))
   }
 
-  find_col <- function(patterns) {
-    for (p in patterns) {
-      m <- grep(p, names(df), ignore.case = TRUE, value = TRUE)
-      if (length(m) > 0L) return(m[1L])
+  # Several ReptTraits headers carry trailing whitespace (e.g. "Diet ").
+  names(df) <- trimws(names(df))
+  hdr <- names(df)
+  # Resolve a source column by exact name or, when exact = FALSE, by ASCII
+  # prefix. The prefix form avoids embedding non-ASCII header text (the degree
+  # sign in the temperature column) and the long quoted SVL/SCL header.
+  pick_col <- function(label, exact = FALSE) {
+    if (exact) {
+      m <- which(hdr == label)
+    } else {
+      m <- which(startsWith(hdr, label))
     }
-    NULL
+    if (length(m) == 0L) return(NULL)
+    hdr[m[1L]]
   }
-
-  name_col <- find_col(c("^species$", "^binomial$", "^scientific.?name$"))
-  if (is.null(name_col)) name_col <- names(df)[1L]
-
-  safe_num <- function(col_name) {
-    if (is.null(col_name)) return(rep(NA_real_, nrow(df)))
-    suppressWarnings(as.numeric(df[[col_name]]))
+  safe_num <- function(label, exact = FALSE) {
+    cn <- pick_col(label, exact)
+    if (is.null(cn)) return(rep(NA_real_, nrow(df)))
+    suppressWarnings(as.numeric(df[[cn]]))
   }
-
-  safe_chr <- function(col_name) {
-    if (is.null(col_name)) return(rep(NA_character_, nrow(df)))
-    x <- as.character(df[[col_name]])
-    x[x == "" | x == "NA"] <- NA_character_
+  safe_chr <- function(label, exact = FALSE) {
+    cn <- pick_col(label, exact)
+    if (is.null(cn)) return(rep(NA_character_, nrow(df)))
+    x <- as.character(df[[cn]])
+    x[x %in% c("", "NA", "No")] <- NA_character_
     trimws(x)
   }
 
+  name_col <- pick_col("Species", exact = TRUE)
+  if (is.null(name_col)) name_col <- hdr[1L]
+
   out <- data.frame(
-    canonical_name    = trimws(gsub("_", " ", df[[name_col]])),
-    body_mass_g       = safe_num(find_col(c("mass", "body.?mass", "weight"))),
-    svl_mm            = safe_num(find_col(c("SVL", "snout.?vent", "SVL_mm"))),
-    tail_length_mm    = safe_num(find_col(c("tail", "tail.?length"))),
-    clutch_size       = safe_num(find_col(c("clutch.?size", "litter.?size",
-                                            "litter.?clutch"))),
-    clutch_frequency  = safe_num(find_col(c("clutch.?freq", "clutches.?per",
-                                            "reproductive.?freq"))),
-    longevity_yr      = safe_num(find_col(c("longevity", "max.?age",
-                                            "maximum.?longevity"))),
-    diet              = safe_chr(find_col(c("^diet$", "diet.?type",
-                                            "trophic"))),
-    habitat           = safe_chr(find_col(c("^habitat$", "habitat.?type",
-                                            "microhabitat"))),
-    activity_time     = safe_chr(find_col(c("activity", "activity.?time",
-                                            "diel"))),
-    foraging_mode     = safe_chr(find_col(c("foraging", "foraging.?mode",
-                                            "forage"))),
+    canonical_name      = trimws(gsub("_", " ", df[[name_col]])),
+    # ---- distribution / environment (the per-species range signal) ----
+    biogeographic_realm = safe_chr("Main biogeographic region"),
+    microhabitat        = safe_chr("Microhabitat"),
+    habitat_type        = safe_chr("Habitat type"),
+    elevation_min_m     = safe_num("Minimal elevation"),
+    elevation_max_m     = safe_num("Maximum elevation"),
+    mean_annual_temp_c  = safe_num("Mean Annual Temperature"),
+    insular_endemic     = safe_chr("Insular/endemic"),
+    # ---- morphology / life history (all reptiles) ----
+    body_mass_g         = safe_num("Maximum body mass"),
+    svl_mm              = safe_num("Maximum length"),
+    total_length_mm     = safe_num("Maximum total length"),
+    longevity_yr        = safe_num("Maximum Longevity"),
+    diet                = safe_chr("Diet", exact = TRUE),
+    reproductive_mode   = safe_chr("Reproductive mode"),
+    clutch_size         = safe_num("Mean number of offspring"),
+    active_time         = safe_chr("Active time"),
+    foraging_mode       = safe_chr("Foraging mode"),
     stringsAsFactors = FALSE
   )
 

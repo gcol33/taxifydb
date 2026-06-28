@@ -1631,6 +1631,14 @@
       "source_url": "https://zenodo.org/api/records/8102913",
       "source_doi": "10.5281/zenodo.8102913",
       "license": "CC BY-SA 4.0"
+    },
+    "eupolltrait": {
+      "latest": "2025.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/eupolltrait.vtr",
+      "nrow": 3275,
+      "source_url": "https://zenodo.org/api/records/18032357",
+      "source_doi": "10.5281/zenodo.18032357",
+      "license": "CC BY 4.0"
     }
   }
 }

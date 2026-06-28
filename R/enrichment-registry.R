@@ -1285,6 +1285,41 @@
     parse_fn    = function(path) parse_zooplankton(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  eupolltrait = list(
+    source_url  = "https://zenodo.org/api/records/18032357",
+    source_doi  = "10.5281/zenodo.18032357",
+    version     = "2025.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Milicic M et al. (2025) EuPollTrait: a trait database for European bees ",
+      "and hoverflies. Zenodo (doi:10.5281/zenodo.18032357), CC BY 4.0. ",
+      "Darwin Core measurement-or-fact records joined to the taxon core and ",
+      "reduced to species-level by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      zu <- r$files$links$self[grepl("\\.zip$", r$files$key)][1]
+      zp <- file.path(dest, "src.zip")
+      if (!file.exists(zp)) {
+        h <- curl::new_handle(); curl::handle_setopt(h, followlocation = TRUE)
+        curl::curl_download(zu, zp, handle = h)
+      }
+      ex <- file.path(dest, "ex")
+      if (!dir.exists(ex)) { dir.create(ex); utils::unzip(zp, exdir = ex) }
+      mof <- list.files(ex, pattern = "dwc_MOF.*\\.csv$", recursive = TRUE,
+                        full.names = TRUE)[1]
+      tax <- list.files(ex, pattern = "dwc_taxon_core_bees_hoverflies\\.csv$",
+                        recursive = TRUE, full.names = TRUE)[1]
+      file.copy(mof, file.path(dest, "mof.csv"), overwrite = TRUE)
+      file.copy(tax, file.path(dest, "taxon.csv"), overwrite = TRUE)
+      dest
+    },
+    parse_fn    = function(path) parse_eupolltrait(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

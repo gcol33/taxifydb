@@ -547,3 +547,41 @@ parse_zooplankton <- function(path) {
   )
   .trait_finalize(.pivot_species_traits(long, spec))
 }
+
+
+#' Parse EuPollTrait (European bees + hoverflies)
+#'
+#' Long-format Darwin Core measurement-or-fact table joined to the taxon core
+#' (genus + specific epithet) for clean binomials; reduced to one row per species
+#' for a curated set of morphological, biogeographic and ecological traits.
+#'
+#' @param path Directory holding mof.csv and taxon.csv.
+#' @return data.frame with canonical_name + pollinator traits.
+#' @export
+parse_eupolltrait <- function(path) {
+  mof <- data.table::fread(file.path(path, "mof.csv"), encoding = "Latin-1",
+                           data.table = FALSE)
+  tax <- data.table::fread(file.path(path, "taxon.csv"), encoding = "Latin-1",
+                           data.table = FALSE)
+  binom <- trimws(paste(tax$genus, tax$specificEpithet))
+  nm <- binom[match(mof$taxonID, tax$taxonID)]
+  long <- data.frame(
+    name  = nm,
+    trait = as.character(mof$measurementType),
+    value = as.character(mof$measurementValue),
+    stringsAsFactors = FALSE
+  )
+  spec <- list(
+    itd_mm                       = list(trait = "intertegular_distance", type = "num"),
+    tongue_length_mm             = list(trait = "tongue_length", type = "num"),
+    species_temperature_index    = list(trait = "STI_(Species_temperature_index)", type = "num"),
+    species_continentality_index = list(trait = "SCI_(Species_continentality_index)", type = "num"),
+    area_of_occupancy            = list(trait = "AOO_(Area_of_occupancy)", type = "num"),
+    extent_of_occurrence         = list(trait = "EOO_(Extent_of_occurrence)", type = "num"),
+    sociality                    = list(trait = "Sociality", type = "cat"),
+    nest                         = list(trait = "Nest", type = "cat"),
+    larval_nutrition             = list(trait = "Larval_nutrition", type = "cat"),
+    body_length_category         = list(trait = "Body_length_(categories)", type = "cat")
+  )
+  .trait_finalize(.pivot_species_traits(long, spec))
+}

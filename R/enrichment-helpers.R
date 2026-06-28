@@ -244,10 +244,14 @@ download_gbif_api_pages <- function(base_url, params, limit = 1000L,
     }
     el <- max(1L, as.integer(as.numeric(difftime(Sys.time(), t0, "secs")) * 1000))
 
+    # Anubis is the same proof-of-work software wherever it is deployed (Dryad,
+    # PHAIDRA, ...); the pass-challenge endpoint lives on the same host as the
+    # protected URL, so derive it from stream_url rather than hard-coding Dryad.
+    host <- sub("^(https?://[^/]+)/.*$", "\\1", stream_url)
     pass <- sprintf(paste0(
-      "https://datadryad.org/.within.website/x/cmd/anubis/api/pass-challenge",
+      "%s/.within.website/x/cmd/anubis/api/pass-challenge",
       "?id=%s&response=%s&nonce=%d&redir=%s&elapsedTime=%d"),
-      utils::URLencode(id, reserved = TRUE), hash, nonce,
+      host, utils::URLencode(id, reserved = TRUE), hash, nonce,
       utils::URLencode(stream_url, reserved = TRUE), el)
 
     r2 <- curl::curl_fetch_memory(pass, handle = h)

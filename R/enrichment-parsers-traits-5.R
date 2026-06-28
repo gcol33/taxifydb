@@ -672,6 +672,43 @@ parse_nztd <- function(path) {
 }
 
 
+#' Parse Arctic Traits Database (marine benthos)
+#'
+#' Long-format fuzzy-coded traits (taxon x trait x category affinity); each trait
+#' is reduced to its dominant category per species, using the database's own
+#' category labels.
+#'
+#' @param path Path to the Arctic Traits CSV.
+#' @return data.frame with canonical_name + benthic traits.
+#' @export
+parse_arctic <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  d$traitvalue <- suppressWarnings(as.numeric(d$traitvalue))
+  d$taxon <- trimws(as.character(d$taxon))
+  traits <- c(feeding_habit = "Feeding Habit", skeleton = "Skeleton",
+              reproduction = "Reproduction", larval_development = "Larval development",
+              size = "Size", living_habit = "Living habit", body_form = "Body Form",
+              mobility = "Mobility", bioturbation = "Bioturbation",
+              depth_range = "Depth Range", trophic_level = "Trophic Level",
+              fragility = "Fragility", sociability = "Sociability",
+              longevity = "Longevity/Life Span")
+  taxa <- sort(unique(d$taxon))
+  out <- data.frame(canonical_name = taxa, stringsAsFactors = FALSE)
+  for (oc in names(traits)) {
+    sub <- d[d$trait == traits[[oc]] & !is.na(d$traitvalue), , drop = FALSE]
+    if (!nrow(sub)) { out[[oc]] <- NA_character_; next }
+    dom <- tapply(seq_len(nrow(sub)), sub$taxon, function(ix) {
+      ss <- sub[ix, , drop = FALSE]
+      if (all(ss$traitvalue == 0, na.rm = TRUE)) return(NA_character_)
+      ss$category[which.max(ss$traitvalue)]
+    })
+    out[[oc]] <- as.character(dom[taxa])
+  }
+  out <- out[!is.na(out$canonical_name) & grepl(" ", out$canonical_name), , drop = FALSE]
+  .trait_finalize(out)
+}
+
+
 #' Parse HomeRange mammal home-range database
 #'
 #' Per-individual home-range records reduced to species medians (home range in

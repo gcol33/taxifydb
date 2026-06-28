@@ -1679,6 +1679,14 @@
       "source_url": "https://api.figshare.com/v2/articles/21939647",
       "source_doi": "10.6084/m9.figshare.21939647",
       "license": "CC BY 4.0"
+    },
+    "arctic_traits": {
+      "latest": "2019.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/arctic_traits.vtr",
+      "nrow": 455,
+      "source_url": "https://phaidra.univie.ac.at/api/object/o:861474/octets",
+      "source_doi": "10.25365/phaidra.49",
+      "license": "CC BY 4.0"
     }
   }
 }

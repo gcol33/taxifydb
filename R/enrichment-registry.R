@@ -1429,6 +1429,32 @@
     parse_fn    = function(path) parse_nztd(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  arctic_traits = list(
+    source_url  = "https://phaidra.univie.ac.at/api/object/o:861474/octets",
+    source_doi  = "10.25365/phaidra.49",
+    version     = "2019.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Degen R, Faulwetter S (2019) The Arctic Traits Database. University of ",
+      "Vienna (PHAIDRA doi:10.25365/phaidra.49), CC BY 4.0. Long-format ",
+      "fuzzy-coded traits reduced to the dominant category per species by ",
+      "taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      p <- file.path(dest, "arctic.csv")
+      if (!file.exists(p) || file.size(p) < 1000) {
+        ua <- paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36")
+        writeBin(.anubis_fetch(url, ua), p)
+      }
+      p
+    },
+    parse_fn    = function(path) parse_arctic(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

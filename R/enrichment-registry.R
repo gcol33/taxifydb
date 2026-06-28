@@ -973,6 +973,46 @@
     parse_fn    = function(path) parse_bird_nest(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  octocoral = list(
+    source_url  = paste0("https://zenodo.org/records/14228404/files/",
+                         "OctocoralTraits_v2_2.zip?download=1"),
+    source_doi  = "10.5281/zenodo.14228404",
+    version     = "2.2",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Octocoral Trait Database v2.2 (Gomez-Gras et al.). Zenodo ",
+      "(doi:10.5281/zenodo.14228404), CC BY 4.0. Long-format trait records ",
+      "reduced to species-level values by taxifydb (numeric by median, ",
+      "categorical by mode); geographic/bioregion fields are not carried."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, "OctocoralTraits_v2_2\\.csv$")
+    },
+    parse_fn    = function(path) parse_octocoral(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  rimet_phyto = list(
+    source_url  = paste0("https://zenodo.org/records/1164834/files/",
+                         "Appendix-1-Phytoplankton%20metrics%20database-",
+                         "revised.xlsx?download=1"),
+    source_doi  = "10.5281/zenodo.1164834",
+    version     = "2018.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Rimet F, Druart JC (2018) A trait database for phytoplankton of ",
+      "temperate lakes. Zenodo (doi:10.5281/zenodo.1164834), CC BY 4.0. ",
+      "Cell-level morphometrics, one row per taxon."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "rimet_phyto.xlsx")
+    },
+    parse_fn    = function(path) parse_rimet_phyto(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
   )
 )
 

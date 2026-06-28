@@ -1527,6 +1527,22 @@
       "source_url": "https://zenodo.org/records/10128906/files/NestTrait_v2.csv?download=1",
       "source_doi": "10.1038/s41597-023-02837-1",
       "license": "CC BY 4.0"
+    },
+    "octocoral": {
+      "latest": "2.2",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/octocoral.vtr",
+      "nrow": 3629,
+      "source_url": "https://zenodo.org/records/14228404/files/OctocoralTraits_v2_2.zip?download=1",
+      "source_doi": "10.5281/zenodo.14228404",
+      "license": "CC BY 4.0"
+    },
+    "rimet_phyto": {
+      "latest": "2018.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/rimet_phyto.vtr",
+      "nrow": 1413,
+      "source_url": "https://zenodo.org/records/1164834/files/Appendix-1-Phytoplankton%20metrics%20database-revised.xlsx?download=1",
+      "source_doi": "10.5281/zenodo.1164834",
+      "license": "CC BY 4.0"
     }
   }
 }

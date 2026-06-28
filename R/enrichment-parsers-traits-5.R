@@ -585,3 +585,27 @@ parse_eupolltrait <- function(path) {
   )
   .trait_finalize(.pivot_species_traits(long, spec))
 }
+
+
+#' Parse HomeRange mammal home-range database
+#'
+#' Per-individual home-range records reduced to species medians (home range in
+#' km2, body mass in kg).
+#'
+#' @param path Path to HomeRangeData CSV.
+#' @return data.frame with canonical_name + home_range_km2 + body_mass_kg.
+#' @export
+parse_homerange <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  df <- data.frame(
+    canonical_name = gsub("_", " ", trimws(as.character(d$Species))),
+    home_range_km2 = suppressWarnings(as.numeric(d$Home_Range_km2)),
+    body_mass_kg   = suppressWarnings(as.numeric(d$Body_mass_kg)),
+    stringsAsFactors = FALSE
+  )
+  df <- df[!is.na(df$canonical_name) & grepl(" ", df$canonical_name), , drop = FALSE]
+  cols <- c("home_range_km2", "body_mass_kg")
+  res <- stats::aggregate(df[cols], by = list(canonical_name = df$canonical_name),
+    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  .trait_finalize(res)
+}

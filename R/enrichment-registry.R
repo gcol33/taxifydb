@@ -1320,6 +1320,25 @@
     parse_fn    = function(path) parse_eupolltrait(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  homerange = list(
+    source_url  = "10.5061/dryad.d2547d85x",
+    source_doi  = "10.5061/dryad.d2547d85x",
+    version     = "2023.1",
+    license     = "CC0",
+    attribution = paste0(
+      "Broekman MJE et al. (2023) HomeRange: a global database of mammalian ",
+      "home ranges. Dryad (doi:10.5061/dryad.d2547d85x), CC0. Per-individual ",
+      "records reduced to species-level medians by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      download_dryad_file(url, dest, "homerange.csv",
+                          file_pattern = "HomeRangeData")
+    },
+    parse_fn    = function(path) parse_homerange(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

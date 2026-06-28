@@ -1639,6 +1639,14 @@
       "source_url": "https://zenodo.org/api/records/18032357",
       "source_doi": "10.5281/zenodo.18032357",
       "license": "CC BY 4.0"
+    },
+    "homerange": {
+      "latest": "2023.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/homerange.vtr",
+      "nrow": 1051,
+      "source_url": "10.5061/dryad.d2547d85x",
+      "source_doi": "10.5061/dryad.d2547d85x",
+      "license": "CC0"
     }
   }
 }

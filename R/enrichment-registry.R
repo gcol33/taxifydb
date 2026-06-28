@@ -1061,6 +1061,36 @@
     parse_fn    = function(path) parse_bee_ostwald(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  pottier = list(
+    source_url  = "https://zenodo.org/api/records/6565454",
+    source_doi  = "10.1038/s41597-022-01704-9",
+    version     = "1.0",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Pottier P et al. (2022) A comprehensive database of amphibian heat ",
+      "tolerance. Scientific Data 9:600 (doi:10.1038/s41597-022-01704-9; data ",
+      "Zenodo doi:10.5281/zenodo.6565454), CC BY 4.0. Per-measurement upper ",
+      "thermal limits reduced to species-level medians by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      zu <- r$files$links$self[grepl("\\.zip$", r$files$key)][1]
+      zp <- file.path(dest, "src.zip")
+      if (!file.exists(zp)) {
+        h <- curl::new_handle(); curl::handle_setopt(h, followlocation = TRUE)
+        curl::curl_download(zu, zp, handle = h)
+      }
+      ex <- file.path(dest, "ex")
+      if (!dir.exists(ex)) { dir.create(ex); utils::unzip(zp, exdir = ex) }
+      list.files(ex, pattern = "Curated_data\\.csv$", recursive = TRUE,
+                 full.names = TRUE)[1]
+    },
+    parse_fn    = function(path) parse_pottier(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

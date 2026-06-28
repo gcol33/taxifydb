@@ -254,3 +254,35 @@ parse_bee_ostwald <- function(path) {
   )
   .trait_finalize(.pivot_species_traits(long, spec))
 }
+
+
+#' Parse Pottier amphibian heat tolerance
+#'
+#' Per-measurement upper thermal-limit records reduced to species medians.
+#'
+#' @param path Path to Curated_data.csv.
+#' @return data.frame with canonical_name + thermal/size traits.
+#' @export
+parse_pottier <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  num <- function(col) {
+    if (!col %in% names(d)) return(rep(NA_real_, nrow(d)))
+    suppressWarnings(as.numeric(d[[col]]))
+  }
+  df <- data.frame(
+    canonical_name     = trimws(as.character(d$species)),
+    heat_tolerance_c   = num("mean_HT"),
+    acclimation_temp_c = num("acclimation_temp"),
+    svl_mm             = num("SVL"),
+    body_mass_g        = num("body_mass"),
+    stringsAsFactors   = FALSE
+  )
+  df <- df[!is.na(df$canonical_name) & nzchar(df$canonical_name) &
+           grepl(" ", df$canonical_name), , drop = FALSE]
+  cols <- c("heat_tolerance_c", "acclimation_temp_c", "svl_mm", "body_mass_g")
+  res <- stats::aggregate(
+    df[cols], by = list(canonical_name = df$canonical_name),
+    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) }
+  )
+  .trait_finalize(res)
+}

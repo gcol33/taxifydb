@@ -1559,6 +1559,14 @@
       "source_url": "https://zenodo.org/records/13366989/files/Sup%20Table%204%20Morphological%20Dataset%20Revised.csv?download=1",
       "source_doi": "10.5281/zenodo.13366989",
       "license": "CC BY 4.0"
+    },
+    "pottier": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/pottier.vtr",
+      "nrow": 667,
+      "source_url": "https://zenodo.org/api/records/6565454",
+      "source_doi": "10.1038/s41597-022-01704-9",
+      "license": "CC BY 4.0"
     }
   }
 }

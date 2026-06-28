@@ -286,3 +286,40 @@ parse_pottier <- function(path) {
   )
   .trait_finalize(res)
 }
+
+
+#' Parse Quimbayo reef-fish traits
+#'
+#' Wide table, one row per reef-fish species; a curated set of size, ecology,
+#' depth, trophic and behavioural traits is kept.
+#'
+#' @param path Path to the Fish_aspects CSV.
+#' @return data.frame with canonical_name + reef-fish traits.
+#' @export
+parse_quimbayo <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+  chr <- function(c) {
+    if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
+    x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
+  }
+  out <- data.frame(
+    canonical_name         = trimws(paste(d$Genus, d$Species)),
+    body_size_max_cm       = num("Body_size_max"),
+    aspect_ratio           = num("Aspect_ratio"),
+    trophic_level          = num("Trophic_level"),
+    depth_min_m            = num("Depth_min"),
+    depth_max_m            = num("Depth_max"),
+    temp_occurrence_mean_c = num("TempOccurrence_mean"),
+    home_range             = chr("Home_range"),
+    diel_activity          = chr("Diel_activity"),
+    water_level            = chr("Level_water"),
+    body_shape             = chr("Body_shape"),
+    mouth_position         = chr("Mouth_position"),
+    diet                   = chr("Diet"),
+    spawning               = chr("Spawning"),
+    size_group             = chr("Size_group"),
+    stringsAsFactors       = FALSE
+  )
+  .trait_finalize(out)
+}

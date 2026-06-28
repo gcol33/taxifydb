@@ -1567,6 +1567,14 @@
       "source_url": "https://zenodo.org/api/records/6565454",
       "source_doi": "10.1038/s41597-022-01704-9",
       "license": "CC BY 4.0"
+    },
+    "quimbayo": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/quimbayo.vtr",
+      "nrow": 2293,
+      "source_url": "https://zenodo.org/api/records/4455016",
+      "source_doi": "10.5281/zenodo.4455016",
+      "license": "Open (ESA Ecology data policy)"
     }
   }
 }

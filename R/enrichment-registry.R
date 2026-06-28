@@ -1091,6 +1091,36 @@
     parse_fn    = function(path) parse_pottier(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  quimbayo = list(
+    source_url  = "https://zenodo.org/api/records/4455016",
+    source_doi  = "10.5281/zenodo.4455016",
+    version     = "1.0",
+    license     = "Open (ESA Ecology data policy)",
+    attribution = paste0(
+      "Quimbayo JP et al. (2021) Life-history traits, geographical range, and ",
+      "conservation aspects of reef fishes from the Atlantic and Eastern ",
+      "Pacific. Ecology (ESA data paper); data Zenodo ",
+      "(doi:10.5281/zenodo.4455016). One row per species."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      zu <- r$files$links$self[grepl("\\.zip$", r$files$key)][1]
+      zp <- file.path(dest, "src.zip")
+      if (!file.exists(zp)) {
+        h <- curl::new_handle(); curl::handle_setopt(h, followlocation = TRUE)
+        curl::curl_download(zu, zp, handle = h)
+      }
+      ex <- file.path(dest, "ex")
+      if (!dir.exists(ex)) { dir.create(ex); utils::unzip(zp, exdir = ex) }
+      list.files(ex, pattern = "Fish_aspects.*\\.csv$", recursive = TRUE,
+                 full.names = TRUE)[1]
+    },
+    parse_fn    = function(path) parse_quimbayo(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

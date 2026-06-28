@@ -587,6 +587,51 @@ parse_eupolltrait <- function(path) {
 }
 
 
+#' Parse DISPERSE European aquatic-invertebrate dispersal traits
+#'
+#' Genus-level fuzzy-coded traits. Each fuzzy trait group (body size, life cycle,
+#' reproductive cycles, dispersal strategy, adult life span, female wing length,
+#' wing-pair type, fecundity) is reduced to its dominant modality, labelled with
+#' the database's own modality descriptions.
+#'
+#' @param path Path to the DISPERSE xlsx.
+#' @return data.frame with canonical_name (genus) + dominant-modality traits.
+#' @export
+parse_disperse <- function(path) {
+  raw <- openxlsx2::read_xlsx(path, sheet = "Data", col_names = FALSE)
+  labels <- as.character(unlist(raw[2, ], use.names = FALSE))
+  codes  <- as.character(unlist(raw[3, ], use.names = FALSE))
+  gi <- which(grepl("^Genus", codes))[1]
+  body <- raw[-(1:3), , drop = FALSE]
+  genus <- trimws(as.character(body[[gi]]))
+  groups <- c(
+    disperse_body_size_cm   = "^s[0-9]+$",
+    disperse_life_cycle     = "^cd[0-9]+$",
+    disperse_repro_cycles   = "^cy[0-9]+$",
+    disperse_dispersal      = "^dis[0-9]+$",
+    disperse_adult_lifespan = "^life[0-9]+$",
+    disperse_female_wing_mm = "^fwl[0-9]+$",
+    disperse_wing_type      = "^wnb[0-9]+$",
+    disperse_fecundity      = "^egg[0-9]+$"
+  )
+  out <- data.frame(canonical_name = genus, stringsAsFactors = FALSE)
+  for (oc in names(groups)) {
+    cols <- which(grepl(groups[[oc]], codes))
+    if (!length(cols)) { out[[oc]] <- NA_character_; next }
+    lab <- labels[cols]
+    m <- suppressWarnings(matrix(as.numeric(as.matrix(body[, cols, drop = FALSE])),
+                                 ncol = length(cols)))
+    out[[oc]] <- vapply(seq_len(nrow(m)), function(i) {
+      r <- m[i, ]
+      if (all(is.na(r)) || all(r == 0 | is.na(r))) return(NA_character_)
+      lab[which.max(replace(r, is.na(r), -Inf))]
+    }, character(1L))
+  }
+  out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name), , drop = FALSE]
+  .trait_finalize(out)
+}
+
+
 #' Parse HomeRange mammal home-range database
 #'
 #' Per-individual home-range records reduced to species medians (home range in

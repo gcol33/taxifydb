@@ -1383,6 +1383,30 @@
     parse_fn    = function(path) parse_brot(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  disperse = list(
+    source_url  = "https://api.figshare.com/v2/articles/12417251",
+    source_doi  = "10.6084/m9.figshare.c.5000633",
+    version     = "2020.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Sarremejane R et al. (2020) DISPERSE, a trait database to assess the ",
+      "dispersal potential of European aquatic macroinvertebrates. Scientific ",
+      "Data 7:386 (figshare collection doi:10.6084/m9.figshare.c.5000633), ",
+      "CC BY 4.0. Genus-level fuzzy codes reduced to the dominant modality ",
+      "(with the database's own labels) by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      fu <- r$files$download_url[grepl("\\.xlsx$", r$files$name)][1]
+      download_curl_file(fu, dest, "disperse.xlsx")
+    },
+    parse_fn    = function(path) parse_disperse(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = "openxlsx2"
   )
 )
 

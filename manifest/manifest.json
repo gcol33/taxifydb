@@ -1663,6 +1663,14 @@
       "source_url": "https://api.figshare.com/v2/articles/5280868",
       "source_doi": "10.6084/m9.figshare.c.3843841",
       "license": "CC BY 4.0"
+    },
+    "disperse": {
+      "latest": "2020.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/disperse.vtr",
+      "nrow": 462,
+      "source_url": "https://api.figshare.com/v2/articles/12417251",
+      "source_doi": "10.6084/m9.figshare.c.5000633",
+      "license": "CC BY 4.0"
     }
   }
 }

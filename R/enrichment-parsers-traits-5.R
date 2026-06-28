@@ -477,3 +477,39 @@ parse_parravicini <- function(path) {
   out <- out[!is.na(out$trophic_guild), , drop = FALSE]
   .trait_finalize(out)
 }
+
+
+#' Parse Beukhof marine fish traits
+#'
+#' Per-region records (one row per species x marine region) reduced to
+#' species-level values (numeric by median, categorical by mode).
+#'
+#' @param path Path to the Beukhof trait xlsx.
+#' @return data.frame with canonical_name + marine-fish traits.
+#' @export
+parse_beukhof <- function(path) {
+  d <- openxlsx2::read_xlsx(path, sheet = 1)
+  sp <- trimws(as.character(d$taxon))
+  num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+  chr <- function(c) {
+    if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
+    x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
+  }
+  base <- data.frame(canonical_name = sp, stringsAsFactors = FALSE,
+    trophic_level = num("tl"), aspect_ratio = num("AR"),
+    offspring_size = num("offspring.size"), age_maturity = num("age.maturity"),
+    fecundity = num("fecundity"), length_infinity_cm = num("length.infinity"),
+    growth_coefficient = num("growth.coefficient"), length_max_cm = num("length.max"),
+    habitat = chr("habitat"), feeding_mode = chr("feeding.mode"),
+    body_shape = chr("body.shape"), fin_shape = chr("fin.shape"),
+    spawning_type = chr("spawning.type"))
+  base <- base[!is.na(base$canonical_name) & grepl(" ", base$canonical_name), , drop = FALSE]
+  num_cols <- c("trophic_level", "aspect_ratio", "offspring_size", "age_maturity",
+                "fecundity", "length_infinity_cm", "growth_coefficient", "length_max_cm")
+  cat_cols <- c("habitat", "feeding_mode", "body_shape", "fin_shape", "spawning_type")
+  na <- stats::aggregate(base[num_cols], by = list(canonical_name = base$canonical_name),
+    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  ca <- stats::aggregate(base[cat_cols], by = list(canonical_name = base$canonical_name),
+    FUN = function(z) { z <- z[!is.na(z)]; if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1] })
+  .trait_finalize(merge(na, ca, by = "canonical_name"))
+}

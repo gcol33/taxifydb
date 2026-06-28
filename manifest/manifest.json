@@ -1615,6 +1615,14 @@
       "source_url": "10.5061/dryad.15pm5qc",
       "source_doi": "10.5061/dryad.15pm5qc",
       "license": "CC BY 4.0"
+    },
+    "beukhof": {
+      "latest": "2019.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/beukhof.vtr",
+      "nrow": 1793,
+      "source_url": "https://doi.pangaea.de/10.1594/PANGAEA.900866?format=textfile",
+      "source_doi": "10.1594/PANGAEA.900866",
+      "license": "CC BY 4.0"
     }
   }
 }

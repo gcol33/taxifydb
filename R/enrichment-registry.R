@@ -1228,6 +1228,33 @@
     parse_fn    = function(path) parse_parravicini(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  beukhof = list(
+    source_url  = "https://doi.pangaea.de/10.1594/PANGAEA.900866?format=textfile",
+    source_doi  = "10.1594/PANGAEA.900866",
+    version     = "2019.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Beukhof E, Dencker TS, Palomares MLD, Maureaud A (2019) A trait ",
+      "collection of marine fish species from North Atlantic and Northeast ",
+      "Pacific continental shelf seas. PANGAEA (doi:10.1594/PANGAEA.900866), ",
+      "CC BY 4.0. Per-region records reduced to species-level by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      p <- file.path(dest, "beukhof.xlsx")
+      if (!file.exists(p)) {
+        h <- curl::new_handle()
+        curl::handle_setopt(h, followlocation = TRUE, accept_encoding = "gzip")
+        curl::handle_setheaders(h, "User-Agent" = "Mozilla/5.0 taxifydb")
+        curl::curl_download(url, p, handle = h)
+      }
+      p
+    },
+    parse_fn    = function(path) parse_beukhof(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
   )
 )
 

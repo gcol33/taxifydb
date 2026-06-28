@@ -16,27 +16,50 @@
 #' @param filename Character. Output filename.
 #' @param referer Character or `NULL`. Optional Referer header.
 #' @param user_agent Character or `NULL`. Override the default User-Agent.
+#' @param max_tries Integer. Download attempts before giving up. Large live
+#'   exports (e.g. the World Spider Trait database) intermittently drop the TLS
+#'   connection mid-transfer; each retry uses exponential backoff.
 #' @return Path to the downloaded file.
 #' @export
 download_curl_file <- function(url, dest_dir, filename, referer = NULL,
-                               user_agent = NULL) {
+                               user_agent = NULL, max_tries = 4L) {
   dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
   dest <- file.path(dest_dir, filename)
   if (file.exists(dest) && file.size(dest) > 100L) return(dest)
 
-  h <- curl::new_handle()
-  curl::handle_setopt(h, followlocation = TRUE, maxredirs = 10L)
   ua <- user_agent %||% "Mozilla/5.0 (compatible; taxifydb/0.1)"
-  headers <- list("User-Agent" = ua)
-  if (!is.null(referer)) headers[["Referer"]] <- referer
-  do.call(curl::handle_setheaders, c(list(h), headers))
-  curl::curl_download(url, dest, handle = h)
+  tmp <- paste0(dest, ".part")
 
-  if (!file.exists(dest) || file.size(dest) < 100L) {
-    stop(sprintf("Download failed or produced empty file: %s", url),
-         call. = FALSE)
+  last_err <- NULL
+  for (try in seq_len(max_tries)) {
+    h <- curl::new_handle()
+    curl::handle_setopt(h, followlocation = TRUE, maxredirs = 10L,
+                        tcp_keepalive = 1L, connecttimeout = 60L,
+                        timeout = 0L, low_speed_limit = 1L,
+                        low_speed_time = 120L)
+    headers <- list("User-Agent" = ua)
+    if (!is.null(referer)) headers[["Referer"]] <- referer
+    do.call(curl::handle_setheaders, c(list(h), headers))
+
+    ok <- tryCatch({
+      curl::curl_download(url, tmp, handle = h)
+      TRUE
+    }, error = function(e) {
+      last_err <<- conditionMessage(e)
+      FALSE
+    })
+
+    if (ok && file.exists(tmp) && file.size(tmp) > 100L) {
+      file.rename(tmp, dest)
+      return(dest)
+    }
+    if (file.exists(tmp)) unlink(tmp)
+    if (try < max_tries) Sys.sleep(2L * try)
   }
-  dest
+
+  stop(sprintf("Download failed after %d tries: %s%s", max_tries, url,
+               if (!is.null(last_err)) paste0(" (", last_err, ")") else ""),
+       call. = FALSE)
 }
 
 
@@ -156,4 +179,142 @@ download_gbif_api_pages <- function(base_url, params, limit = 1000L,
     })
     do.call(rbind, flat2)
   }
+}
+
+
+#' Solve an Anubis proof-of-work challenge and read the body
+#'
+#' Dryad serves file downloads behind an Anubis "Proof-of-Work" bot challenge:
+#' a plain GET of `file_stream` returns an HTML page carrying a JSON challenge
+#' (`randomData` + `difficulty`). The fast algorithm requires a nonce such that
+#' `sha256(randomData + nonce)` begins with `difficulty` hex zeros. Submitting
+#' the solution to the `pass-challenge` endpoint returns the file body. The
+#' difficulty is small (4), so the loop completes in well under a second.
+#'
+#' @param stream_url Character. The `/downloads/file_stream/<id>` URL.
+#' @param user_agent Character. A browser-like User-Agent (the challenge is
+#'   served only to non-browser agents).
+#' @return Raw vector of the file body.
+#' @noRd
+.anubis_fetch <- function(stream_url, user_agent, max_tries = 6L) {
+  h <- curl::new_handle()
+  curl::handle_setopt(h, followlocation = TRUE, maxredirs = 10L,
+                      cookiefile = "", cookiejar = "")
+  curl::handle_setheaders(h, "User-Agent" = user_agent)
+
+  is_file <- function(resp) {
+    resp$status_code == 200L &&
+      length(resp$content) > 100L &&
+      !grepl("text/html", resp$type %||% "")
+  }
+
+  for (try in seq_len(max_tries)) {
+    resp <- curl::curl_fetch_memory(stream_url, handle = h)
+    if (is_file(resp)) return(resp$content)
+
+    html <- rawToChar(resp$content)
+    p <- regexpr('id="anubis_challenge"', html, fixed = TRUE)
+    if (p < 0L) {
+      # 202 / empty interstitial: the cookie may now be primed; back off.
+      Sys.sleep(2L * try)
+      next
+    }
+
+    rest <- substring(html, p + attr(p, "match.length"))
+    rest <- substring(rest, regexpr(">", rest, fixed = TRUE) + 1L)
+    json <- substring(rest, 1L, regexpr("</script>", rest, fixed = TRUE) - 1L)
+    ch <- jsonlite::fromJSON(json)
+
+    rd     <- ch$challenge$randomData
+    diff   <- ch$rules$difficulty
+    id     <- ch$challenge$id
+    prefix <- paste(rep("0", diff), collapse = "")
+
+    t0 <- Sys.time()
+    nonce <- 0L
+    hash <- ""
+    repeat {
+      hash <- digest::digest(paste0(rd, nonce), algo = "sha256",
+                             serialize = FALSE)
+      if (startsWith(hash, prefix)) break
+      nonce <- nonce + 1L
+      if (nonce > 5e7L) {
+        stop("Anubis solve exceeded nonce budget.", call. = FALSE)
+      }
+    }
+    el <- max(1L, as.integer(as.numeric(difftime(Sys.time(), t0, "secs")) * 1000))
+
+    pass <- sprintf(paste0(
+      "https://datadryad.org/.within.website/x/cmd/anubis/api/pass-challenge",
+      "?id=%s&response=%s&nonce=%d&redir=%s&elapsedTime=%d"),
+      utils::URLencode(id, reserved = TRUE), hash, nonce,
+      utils::URLencode(stream_url, reserved = TRUE), el)
+
+    r2 <- curl::curl_fetch_memory(pass, handle = h)
+    if (is_file(r2)) return(r2$content)
+    # Cookie now set on the handle; re-fetch the stream directly.
+    r3 <- curl::curl_fetch_memory(stream_url, handle = h)
+    if (is_file(r3)) return(r3$content)
+    Sys.sleep(2L * try)
+  }
+  stop("Dryad download did not yield a file after ", max_tries,
+       " attempts (Anubis challenge throttled).", call. = FALSE)
+}
+
+
+#' Download a Dryad data file (handles the Anubis bot challenge)
+#'
+#' Resolves the newest version of a Dryad dataset DOI to a data file matching
+#' `file_pattern`, then downloads it through [.anubis_fetch()]. Cached: skips the
+#' download if `dest_dir/filename` already exists and is non-empty.
+#'
+#' @param doi Character. Dryad dataset DOI (e.g. `"10.5061/dryad.1cv08"`).
+#' @param dest_dir Character. Directory to save into. Created if missing.
+#' @param filename Character. Output filename.
+#' @param file_pattern Character. Regex to pick the file from the version's file
+#'   list (matched against the file path, case-insensitive).
+#' @return Path to the downloaded file.
+#' @export
+download_dryad_file <- function(doi, dest_dir, filename,
+                                file_pattern = "\\.csv$") {
+  dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+  dest <- file.path(dest_dir, filename)
+  if (file.exists(dest) && file.size(dest) > 100L) return(dest)
+
+  ua <- paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ",
+               "(KHTML, like Gecko) Chrome/120 Safari/537.36")
+
+  ver_url <- sprintf(
+    "https://datadryad.org/api/v2/datasets/doi%%3A%s/versions",
+    utils::URLencode(doi, reserved = TRUE))
+  ver <- jsonlite::fromJSON(rawToChar(
+    curl::curl_fetch_memory(ver_url)$content), simplifyVector = FALSE)
+  versions <- ver$`_embedded`$`stash:versions`
+  if (!length(versions)) {
+    stop(sprintf("No Dryad versions for DOI %s.", doi), call. = FALSE)
+  }
+  self <- versions[[length(versions)]]$`_links`$self$href
+
+  files_url <- paste0("https://datadryad.org", self, "/files")
+  fl <- jsonlite::fromJSON(rawToChar(
+    curl::curl_fetch_memory(files_url)$content), simplifyVector = FALSE)
+  files <- fl$`_embedded`$`stash:files`
+  paths <- vapply(files, function(f) f$path %||% "", character(1L))
+  hit <- which(grepl(file_pattern, paths, ignore.case = TRUE))
+  if (!length(hit)) {
+    stop(sprintf("No Dryad file matching '%s' (have: %s).",
+                 file_pattern, paste(paths, collapse = ", ")), call. = FALSE)
+  }
+  dl <- files[[hit[1L]]]$`_links`$`stash:download`$href
+  file_id <- sub(".*/files/(\\d+)/download.*", "\\1", dl)
+  stream_url <- sprintf("https://datadryad.org/downloads/file_stream/%s",
+                        file_id)
+
+  body <- .anubis_fetch(stream_url, ua)
+  writeBin(body, dest)
+  if (!file.exists(dest) || file.size(dest) < 100L) {
+    stop(sprintf("Dryad download produced empty file for %s.", doi),
+         call. = FALSE)
+  }
+  dest
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/enrichment-parsers-traits.R
 \name{parse_fishbase}
 \alias{parse_fishbase}
-\title{Parse FishBase species and ecology tables (via rfishbase)}
+\title{Parse FishBase species traits (via rfishbase)}
 \usage{
 parse_fishbase(path)
 }
@@ -14,6 +14,5 @@ for interface consistency.}
 data.frame with canonical_name + body/depth/diet columns.
 }
 \description{
-Pulls the \code{species} and \code{ecology} tables from rfishbase, joins them, and
-builds a \code{canonical_name} + trait data.frame.
+Parse FishBase species traits (via rfishbase)
 }

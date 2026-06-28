@@ -961,14 +961,6 @@
       "source_doi": "10.6084/m9.figshare.14891412",
       "license": "CC BY 4.0"
     },
-    "lizard_traits": {
-      "latest": "1.2",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.05/lizard_traits.vtr",
-      "nrow": 12202,
-      "source_url": "https://ndownloader.figshare.com/files/45408133",
-      "source_doi": "10.6084/m9.figshare.24572683",
-      "license": "CC BY 4.0"
-    },
     "glonaf": {
       "latest": "2024.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.05/glonaf.vtr",
@@ -1399,6 +1391,118 @@
       "nrow": 110985,
       "source_url": "https://sealifebase.ropensci.org",
       "license": "CC BY-NC 3.0"
+    },
+    "globtherm": {
+      "latest": "2018.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/globtherm.vtr",
+      "nrow": 2366,
+      "source_url": "10.5061/dryad.1cv08",
+      "source_doi": "10.1038/sdata.2018.22",
+      "license": "CC0"
+    },
+    "madin": {
+      "latest": "2020.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/madin.vtr",
+      "nrow": 16746,
+      "source_url": "https://raw.githubusercontent.com/bacteria-archaea-traits/bacteria-archaea-traits/master/output/condensed_species_NCBI.csv",
+      "source_doi": "10.1038/s41597-020-0497-4",
+      "license": "CC BY 4.0"
+    },
+    "coral_traits": {
+      "latest": "1.1.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/coral_traits.vtr",
+      "nrow": 1813,
+      "source_url": "https://ndownloader.figshare.com/files/3678603",
+      "source_doi": "10.1038/sdata.2016.17",
+      "license": "CC BY 4.0"
+    },
+    "amniote": {
+      "latest": "2015.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/amniote.vtr",
+      "nrow": 23332,
+      "source_url": "https://ndownloader.figshare.com/files/8067269",
+      "source_doi": "10.1890/15-0846R.1",
+      "license": "CC0"
+    },
+    "combine": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/combine.vtr",
+      "nrow": 6731,
+      "source_url": "https://ndownloader.figshare.com/files/27703263",
+      "source_doi": "10.1002/ecy.3344",
+      "license": "CC0"
+    },
+    "austraits": {
+      "latest": "7.0.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/austraits.vtr",
+      "nrow": 34531,
+      "source_url": "https://zenodo.org/api/records/15718081/files/austraits-7.0.0.zip/content",
+      "source_doi": "10.1038/s41597-021-01006-6",
+      "license": "CC BY 4.0"
+    },
+    "gwdd": {
+      "latest": "2.2",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/gwdd.vtr",
+      "nrow": 18430,
+      "source_url": "https://zenodo.org/api/records/18262736/files/gwddagg_v2.2_species.csv/content",
+      "source_doi": "10.1111/nph.70860",
+      "license": "CC BY 4.0"
+    },
+    "bet": {
+      "latest": "2023.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/bet.vtr",
+      "nrow": 2025,
+      "source_url": "https://www.envidat.ch/dataset/4865a082-169d-40d1-920b-fc20ad0acad2/resource/d2d2f958-051c-4638-a808-88547cc64d92/download/betdata.txt",
+      "source_doi": "10.16904/envidat.348",
+      "license": "CC BY-SA 4.0"
+    },
+    "phylacine": {
+      "latest": "1.2",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/phylacine.vtr",
+      "nrow": 6380,
+      "source_url": "https://raw.githubusercontent.com/MegaPast2Future/PHYLACINE_1.2/master/Data/Traits/Trait_data.csv",
+      "source_doi": "10.1002/ecy.2443",
+      "license": "CC0"
+    },
+    "chelonians": {
+      "latest": "2025.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/chelonians.vtr",
+      "nrow": 362,
+      "source_url": "https://ndownloader.figshare.com/files/53840531",
+      "source_doi": "10.6084/m9.figshare.28828241",
+      "license": "CC BY 4.0"
+    },
+    "birdbase": {
+      "latest": "2025.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/birdbase.vtr",
+      "nrow": 13067,
+      "source_url": "https://ndownloader.figshare.com/files/55634729",
+      "source_doi": "10.1038/s41597-025-05615-3",
+      "license": "CC BY 4.0"
+    },
+    "useful_plants": {
+      "latest": "2020.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/useful_plants.vtr",
+      "nrow": 42217,
+      "source_url": "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn:uuid:e576e4b7-845a-422a-8472-b5eb078e08eb",
+      "source_doi": "10.5063/F1CV4G34",
+      "license": "CC BY 4.0"
+    },
+    "tree_of_sex": {
+      "latest": "2014.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/tree_of_sex.vtr",
+      "nrow": 39825,
+      "source_url": "10.5061/dryad.v1908",
+      "source_doi": "10.1038/sdata.2014.15",
+      "license": "CC0"
+    },
+    "repttraits": {
+      "latest": "1.2",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/repttraits.vtr",
+      "nrow": 12196,
+      "source_url": "https://ndownloader.figshare.com/files/45408133",
+      "source_doi": "10.6084/m9.figshare.24572683",
+      "license": "CC BY 4.0"
     }
   }
 }

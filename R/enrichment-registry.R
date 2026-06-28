@@ -614,6 +614,325 @@
     parse_fn    = function(path) parse_groot(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  globtherm = list(
+    source_url  = "10.5061/dryad.1cv08",
+    source_doi  = "10.1038/sdata.2018.22",
+    version     = "2018.1",
+    license     = "CC0",
+    attribution = paste0(
+      "Bennett JM et al. (2018) GlobTherm, a database on the thermal ",
+      "tolerance for aquatic and terrestrial organisms. Scientific Data ",
+      "5:180022. Data deposited under CC0 on Dryad (doi:10.5061/dryad.1cv08)."
+    ),
+    download_fn = function(url, dest) {
+      download_dryad_file(url, dest, "GlobalTherm.csv",
+                          file_pattern = "GlobalTherm.*\\.csv$")
+    },
+    parse_fn    = function(path) parse_globtherm(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  madin = list(
+    source_url  = paste0("https://raw.githubusercontent.com/",
+                         "bacteria-archaea-traits/bacteria-archaea-traits/",
+                         "master/output/condensed_species_NCBI.csv"),
+    source_doi  = "10.1038/s41597-020-0497-4",
+    version     = "2020.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Madin JS et al. (2020) A synthesis of bacterial and archaeal ",
+      "phenotypic trait data. Scientific Data 7:170. Species-aggregated ",
+      "table (condensed_species_NCBI.csv) from ",
+      "github.com/bacteria-archaea-traits/bacteria-archaea-traits."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "condensed_species_NCBI.csv")
+    },
+    parse_fn    = function(path) parse_madin(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  coral_traits = list(
+    source_url  = "https://ndownloader.figshare.com/files/3678603",
+    source_doi  = "10.1038/sdata.2016.17",
+    version     = "1.1.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Madin JS et al. (2016) The Coral Trait Database, a curated database ",
+      "of trait information for coral species from the global oceans. ",
+      "Scientific Data 3:160017. Release ctdb_1.1.1 ",
+      "(figshare doi:10.6084/m9.figshare.2067414.v1). Species-level values ",
+      "are aggregated by taxifydb from the long-format observation table ",
+      "(numeric traits by median, categorical traits by mode)."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, "ctdb.*_data\\.csv$")
+    },
+    parse_fn    = function(path) parse_coral_traits(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  spider_traits = list(
+    source_url  = paste0(
+      "https://spidertraits.sci.muni.cz/backend/data/export/csv/",
+      "family/*/genus/*/species/*/original-name/*/trait-category/*/trait/*/",
+      "method/*/location/*/country/*/dataset/*/authors/*/reference/*/",
+      "row-link/*"),
+    source_doi  = "10.1093/database/baab064",
+    version     = format(Sys.Date(), "%Y.%m"),
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Pekar S et al. (2021) The World Spider Trait database: a centralized ",
+      "global open repository for curated data on spider traits. Database ",
+      "2021:baab064. spidertraits.sci.muni.cz. Access-restricted records are ",
+      "dropped; species-level values are aggregated by taxifydb (numeric by ",
+      "median, categorical by mode). The live export is unversioned, so the ",
+      "access date is the dataset version."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "wst_export.csv")
+    },
+    parse_fn    = function(path) parse_spider_traits(path),
+    group_col   = NULL,
+    requires    = "data.table"
+  ),
+
+  amniote = list(
+    source_url  = "https://ndownloader.figshare.com/files/8067269",
+    source_doi  = "10.1890/15-0846R.1",
+    version     = "2015.1",
+    license     = "CC0",
+    attribution = paste0(
+      "Myhrvold NP et al. (2015) An amniote life-history database to perform ",
+      "comparative analyses with birds, mammals, and reptiles. Ecology ",
+      "96:3109. Data deposited under CC0 ",
+      "(figshare doi:10.6084/m9.figshare.3563457). The -999 missing-value ",
+      "sentinel is converted to NA."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, "Amniote_Database_Aug_2015\\.csv$")
+    },
+    parse_fn    = function(path) parse_amniote(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  combine = list(
+    source_url  = "https://ndownloader.figshare.com/files/27703263",
+    source_doi  = "10.1002/ecy.3344",
+    version     = "1.0",
+    license     = "CC0",
+    attribution = paste0(
+      "Soria CD et al. (2021) COMBINE: a coalesced mammal database of ",
+      "intrinsic and extrinsic traits. Ecology 102:e03344 ",
+      "(figshare doi:10.6084/m9.figshare.13028255). Reported (not imputed) ",
+      "values, keyed on the IUCN 2020 binomial. COMBINE coalesces several ",
+      "sources; it is shipped as its own enrichment, not as a replacement ",
+      "for PanTHERIA or EltonTraits."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "trait_data_reported.csv")
+    },
+    parse_fn    = function(path) parse_combine(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  austraits = list(
+    source_url  = paste0("https://zenodo.org/api/records/15718081/files/",
+                         "austraits-7.0.0.zip/content"),
+    source_doi  = "10.1038/s41597-021-01006-6",
+    version     = "7.0.0",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Falster D et al. (2021) AusTraits, a curated plant trait database for ",
+      "the Australian flora. Scientific Data 8:254. Release 7.0.0 ",
+      "(Zenodo doi:10.5281/zenodo.15718081). Species-level values are ",
+      "aggregated by taxifydb from the long traits table (numeric by median, ",
+      "categorical by mode)."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, "traits\\.csv$")
+    },
+    parse_fn    = function(path) parse_austraits(path),
+    group_col   = NULL,
+    requires    = "data.table"
+  ),
+
+  gwdd = list(
+    source_url  = paste0("https://zenodo.org/api/records/18262736/files/",
+                         "gwddagg_v2.2_species.csv/content"),
+    source_doi  = "10.1111/nph.70860",
+    version     = "2.2",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Fischer FJ et al. (2026) The Global Wood Density Database version 2. ",
+      "New Phytologist (doi:10.1111/nph.70860); data Zenodo ",
+      "doi:10.5281/zenodo.18262736. Species-aggregated wood specific gravity ",
+      "(oven-dry mass / green volume, equal to g/cm3). Bark density is not in ",
+      "the aggregated files and is not included."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "gwddagg_v2.2_species.csv")
+    },
+    parse_fn    = function(path) parse_gwdd(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  bet = list(
+    source_url  = paste0("https://www.envidat.ch/dataset/",
+                         "4865a082-169d-40d1-920b-fc20ad0acad2/resource/",
+                         "d2d2f958-051c-4638-a808-88547cc64d92/download/",
+                         "betdata.txt"),
+    source_doi  = "10.16904/envidat.348",
+    version     = "2023.1",
+    license     = "CC BY-SA 4.0",
+    attribution = paste0(
+      "van Zuijlen K et al. (2023) Bryophytes of Europe Traits (BET): a ",
+      "fundamental dataset for European bryophyte ecology. EnviDat ",
+      "(doi:10.16904/envidat.348)."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "betdata.txt")
+    },
+    parse_fn    = function(path) parse_bet(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  phylacine = list(
+    source_url  = paste0("https://raw.githubusercontent.com/MegaPast2Future/",
+                         "PHYLACINE_1.2/master/Data/Traits/Trait_data.csv"),
+    source_doi  = "10.1002/ecy.2443",
+    version     = "1.2",
+    license     = "CC0",
+    attribution = paste0(
+      "Faurby S et al. (2018) PHYLACINE 1.2: The Phylogenetic Atlas of Mammal ",
+      "Macroecology. Ecology 99:2626. Data under CC0 ",
+      "(doi:10.5061/dryad.bp26v20); built from the authors' GitHub mirror ",
+      "(MegaPast2Future/PHYLACINE_1.2). Includes recently and prehistorically ",
+      "extinct mammals."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "Trait_data.csv")
+    },
+    parse_fn    = function(path) parse_phylacine(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  chelonians = list(
+    source_url  = "https://ndownloader.figshare.com/files/53840531",
+    source_doi  = "10.6084/m9.figshare.28828241",
+    version     = "2025.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Wang Y et al. (2025) CheloniansTraits: a comprehensive trait database ",
+      "of global turtles and tortoises (figshare ",
+      "doi:10.6084/m9.figshare.28828241). The literal \"NA\" is treated as ",
+      "missing and \"min-max\" text ranges are reduced to their midpoint."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "CheloniansTraits.xlsx")
+    },
+    parse_fn    = function(path) parse_chelonians(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
+  ),
+
+  birdbase = list(
+    source_url  = "https://ndownloader.figshare.com/files/55634729",
+    source_doi  = "10.1038/s41597-025-05615-3",
+    version     = "2025.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Sekercioglu CH et al. (2025) BIRDBASE: a global database of bird ",
+      "ecological and life-history traits (figshare ",
+      "doi:10.6084/m9.figshare.27051040). Traits redundant with AVONET ",
+      "morphology are not carried."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "birdbase.xlsx")
+    },
+    parse_fn    = function(path) parse_birdbase(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
+  ),
+
+  tree_of_sex = list(
+    source_url  = "10.5061/dryad.v1908",
+    source_doi  = "10.1038/sdata.2014.15",
+    version     = "2014.1",
+    license     = "CC0",
+    attribution = paste0(
+      "The Tree of Sex Consortium (2014) Tree of Sex: a database of sexual ",
+      "systems. Scientific Data 1:140015. Data under CC0 ",
+      "(doi:10.5061/dryad.v1908). Plant, vertebrate and invertebrate tables ",
+      "are row-bound on a common core with a taxon_group discriminator."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      zip <- download_dryad_file(url, dest, "tree_of_sex_plants.zip",
+                                 file_pattern = "(^|/)plant.*\\.zip$")
+      utils::unzip(zip, exdir = dest)
+      download_dryad_file(url, dest, "vert.data.csv",
+                          file_pattern = "(^|/)vert.*\\.csv$")
+      download_dryad_file(url, dest, "invert.data.csv",
+                          file_pattern = "(^|/)invert.*\\.csv$")
+      dest
+    },
+    parse_fn    = function(path) parse_tree_of_sex(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  useful_plants = list(
+    source_url  = paste0("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/",
+                         "urn:uuid:e576e4b7-845a-422a-8472-b5eb078e08eb"),
+    source_doi  = "10.5063/F1CV4G34",
+    version     = "2020.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Diazgranados M et al. (2020) World Checklist of Useful Plant Species. ",
+      "Knowledge Network for Biocomplexity (doi:10.5063/F1CV4G34). The ",
+      "checklist is published only as a PDF; ten Level-1 use categories are ",
+      "decoded into boolean columns plus a crop-wild-relative flag."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "WCUP_2020.pdf")
+    },
+    parse_fn    = function(path) parse_useful_plants(path),
+    group_col   = NULL,
+    requires    = "pdftools"
+  ),
+
+  bien = list(
+    source_url  = "https://bien.nceas.ucsb.edu",
+    source_doi  = "10.1111/2041-210X.12861",
+    version     = format(Sys.Date(), "%Y.%m"),
+    license     = "CC BY",
+    attribution = paste0(
+      "Maitner BS et al. (2018) The BIEN R package: A tool to access the ",
+      "Botanical Information and Ecology Network (BIEN) database. Methods in ",
+      "Ecology and Evolution 9:373-379. Public-access trait records ",
+      "(access == \"public\") queried via the BIEN R package and aggregated to ",
+      "species level (numeric by median, categorical by mode)."
+    ),
+    download_fn = function(url, dest) {
+      # BIEN is queried directly by the parser; dest exists only so the
+      # interface matches the file-based parsers.
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      dest
+    },
+    parse_fn    = function(path) parse_bien(path),
+    group_col   = NULL,
+    requires    = "BIEN"
   )
 )
 

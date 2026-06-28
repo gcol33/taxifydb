@@ -4,7 +4,14 @@
 \alias{download_curl_file}
 \title{Download a file via curl}
 \usage{
-download_curl_file(url, dest_dir, filename, referer = NULL, user_agent = NULL)
+download_curl_file(
+  url,
+  dest_dir,
+  filename,
+  referer = NULL,
+  user_agent = NULL,
+  max_tries = 4L
+)
 }
 \arguments{
 \item{url}{Character. URL to download.}
@@ -16,6 +23,10 @@ download_curl_file(url, dest_dir, filename, referer = NULL, user_agent = NULL)
 \item{referer}{Character or \code{NULL}. Optional Referer header.}
 
 \item{user_agent}{Character or \code{NULL}. Override the default User-Agent.}
+
+\item{max_tries}{Integer. Download attempts before giving up. Large live
+exports (e.g. the World Spider Trait database) intermittently drop the TLS
+connection mid-transfer; each retry uses exponential backoff.}
 }
 \value{
 Path to the downloaded file.

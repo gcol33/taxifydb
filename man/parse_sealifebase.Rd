@@ -2,7 +2,7 @@
 % Please edit documentation in R/enrichment-parsers-traits.R
 \name{parse_sealifebase}
 \alias{parse_sealifebase}
-\title{Parse SeaLifeBase species and ecology tables}
+\title{Parse SeaLifeBase species traits (via rfishbase)}
 \usage{
 parse_sealifebase(path)
 }
@@ -13,10 +13,6 @@ parse_sealifebase(path)
 data.frame keyed on \code{canonical_name} with eight trait columns.
 }
 \description{
-Mirrors \code{\link[=parse_fishbase]{parse_fishbase()}} but queries the SeaLifeBase server through
-rfishbase. SeaLifeBase shares FishBase's schema, so the same length, mass,
-depth, trophic and habitat fields apply; it covers non-fish aquatic life
-(molluscs, crustaceans, echinoderms, marine mammals, reptiles, etc.).
-Missing columns degrade to NA, so the parser is robust to schema gaps on
-the SeaLifeBase side.
+Non-fish companion to \code{\link[=parse_fishbase]{parse_fishbase()}} (molluscs, crustaceans,
+echinoderms, marine mammals, reptiles, etc.). Shares the same trait columns.
 }

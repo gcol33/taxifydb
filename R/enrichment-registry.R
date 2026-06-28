@@ -1255,6 +1255,36 @@
     parse_fn    = function(path) parse_beukhof(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  zooplankton = list(
+    source_url  = "https://zenodo.org/api/records/8102913",
+    source_doi  = "10.5281/zenodo.8102913",
+    version     = "1.3.0",
+    license     = "CC BY-SA 4.0",
+    attribution = paste0(
+      "Pata PR, Hunt BPV (2025) A global trait database for marine ",
+      "zooplankton. Zenodo (doi:10.5281/zenodo.8102913), CC BY-SA 4.0. ",
+      "Long-format records reduced to species-level by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      zu <- r$files$links$self[grepl("\\.zip$", r$files$key)][1]
+      zp <- file.path(dest, "src.zip")
+      if (!file.exists(zp)) {
+        h <- curl::new_handle(); curl::handle_setopt(h, followlocation = TRUE)
+        curl::curl_download(zu, zp, handle = h)
+      }
+      ex <- file.path(dest, "ex")
+      if (!dir.exists(ex)) { dir.create(ex); utils::unzip(zp, exdir = ex) }
+      f <- list.files(ex, pattern = "trait_dataset_level2-.*\\.csv$",
+                      recursive = TRUE, full.names = TRUE)
+      f[!grepl("excluded", f)][1]
+    },
+    parse_fn    = function(path) parse_zooplankton(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

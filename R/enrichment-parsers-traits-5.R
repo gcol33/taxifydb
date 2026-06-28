@@ -513,3 +513,37 @@ parse_beukhof <- function(path) {
     FUN = function(z) { z <- z[!is.na(z)]; if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1] })
   .trait_finalize(merge(na, ca, by = "canonical_name"))
 }
+
+
+#' Parse Global Zooplankton Trait Database
+#'
+#' Long-format trait records reduced to one row per species (numeric by median,
+#' categorical by mode). Binary one-hot decompositions of the categorical traits
+#' are not carried (the categorical parent is kept instead).
+#'
+#' @param path Path to the level-2 trait CSV.
+#' @return data.frame with canonical_name + zooplankton traits.
+#' @export
+parse_zooplankton <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  long <- data.frame(
+    name  = as.character(d$scientificName),
+    trait = as.character(d$traitName),
+    value = as.character(d$traitValue),
+    stringsAsFactors = FALSE
+  )
+  spec <- list(
+    body_length_max_mm      = list(trait = "bodyLengthMax", type = "num"),
+    carbon_weight_mg        = list(trait = "carbonWeight", type = "num"),
+    nitrogen_pdw_pct        = list(trait = "nitrogenPDW", type = "num"),
+    vertical_distribution   = list(trait = "verticalDistribution", type = "cat"),
+    reproduction_mode       = list(trait = "reproductionMode", type = "cat"),
+    trophic_group           = list(trait = "trophicGroup", type = "cat"),
+    feeding_mode            = list(trait = "feedingMode", type = "cat"),
+    myelination             = list(trait = "myelination", type = "cat"),
+    habitat_association     = list(trait = "habitatAssociation", type = "cat"),
+    diel_vertical_migration = list(trait = "dielVerticalMigration", type = "cat"),
+    bioluminescence         = list(trait = "bioluminescence", type = "cat")
+  )
+  .trait_finalize(.pivot_species_traits(long, spec))
+}

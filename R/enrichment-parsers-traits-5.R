@@ -632,6 +632,46 @@ parse_disperse <- function(path) {
 }
 
 
+#' Parse NZTD New Zealand marine benthos traits
+#'
+#' Two-row header (trait category + modality) with fuzzy affinity scores; each
+#' trait category is reduced to its dominant modality (with the source labels),
+#' one row per species.
+#'
+#' @param path Path to the NZTD xlsx.
+#' @return data.frame with canonical_name + benthic traits.
+#' @export
+parse_nztd <- function(path) {
+  raw <- openxlsx2::read_xlsx(path, sheet = 1, col_names = FALSE)
+  cat1 <- as.character(unlist(raw[1, ], use.names = FALSE))
+  mod  <- as.character(unlist(raw[2, ], use.names = FALSE))
+  for (i in seq_along(cat1)) if (is.na(cat1[i]) && i > 1) cat1[i] <- cat1[i - 1]
+  body <- raw[-(1:2), , drop = FALSE]
+  spcol <- which(cat1 == "Species")[1]
+  sp <- trimws(as.character(body[[spcol]]))
+  trait_cats <- c("Bioturbation", "Body size", "Degree of attachment",
+                  "Feeding mode", "Living habit", "Mobility", "Morphology",
+                  "Movement method", "Rigidity")
+  out <- data.frame(canonical_name = sp, stringsAsFactors = FALSE)
+  for (tc in trait_cats) {
+    cols <- which(cat1 == tc & !is.na(mod))
+    if (!length(cols)) next
+    lab <- mod[cols]
+    m <- suppressWarnings(matrix(as.numeric(as.matrix(body[, cols, drop = FALSE])),
+                                 ncol = length(cols)))
+    oc <- gsub("_+", "_", gsub("[^a-z0-9]+", "_", tolower(tc)))
+    oc <- sub("_$", "", oc)
+    out[[oc]] <- vapply(seq_len(nrow(m)), function(i) {
+      r <- m[i, ]
+      if (all(is.na(r)) || all(r == 0 | is.na(r))) return(NA_character_)
+      lab[which.max(replace(r, is.na(r), -Inf))]
+    }, character(1L))
+  }
+  out <- out[!is.na(out$canonical_name) & grepl(" ", out$canonical_name), , drop = FALSE]
+  .trait_finalize(out)
+}
+
+
 #' Parse HomeRange mammal home-range database
 #'
 #' Per-individual home-range records reduced to species medians (home range in

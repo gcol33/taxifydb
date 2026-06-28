@@ -1407,6 +1407,28 @@
     group_col   = NULL,
     name_col    = "genus",
     requires    = "openxlsx2"
+  ),
+
+  nztd = list(
+    source_url  = "https://api.figshare.com/v2/articles/21939647",
+    source_doi  = "10.6084/m9.figshare.21939647",
+    version     = "2023.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Lam-Gordillo O et al. (2023) New Zealand Trait Database (NZTD) for ",
+      "marine benthic invertebrates (figshare ",
+      "doi:10.6084/m9.figshare.21939647), CC BY 4.0. Fuzzy-coded traits ",
+      "reduced to the dominant modality (source labels) by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      fu <- r$files$download_url[grepl("\\.xlsx$", r$files$name)][1]
+      download_curl_file(fu, dest, "nztd.xlsx")
+    },
+    parse_fn    = function(path) parse_nztd(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
   )
 )
 

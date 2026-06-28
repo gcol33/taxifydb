@@ -323,3 +323,58 @@ parse_quimbayo <- function(path) {
   )
   .trait_finalize(out)
 }
+
+
+#' Parse Hagge saproxylic beetle morphology
+#'
+#' Wide table, one row per deadwood-beetle species (underscore names), of body
+#' and appendage morphometrics.
+#'
+#' @param path Path to the trait CSV.
+#' @return data.frame with canonical_name + morphometrics.
+#' @export
+parse_saproxylic <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+  out <- data.frame(
+    canonical_name   = gsub("_", " ", trimws(as.character(d$species))),
+    body_length_mm   = num("body_length"),
+    body_width_mm    = num("body_width"),
+    body_height_mm   = num("body_height"),
+    mass_mg          = num("mass"),
+    colour_lightness = num("colour_lightness"),
+    head_length_mm   = num("head_length"),
+    pronotum_length_mm = num("pronotum_length"),
+    elytra_length_mm = num("elytra_length"),
+    wing_length_mm   = num("wing_length"),
+    wing_aspect      = num("wing_aspect"),
+    antenna_length_mm = num("antenna_length"),
+    eye_length_mm    = num("eye_length"),
+    stringsAsFactors = FALSE
+  )
+  .trait_finalize(out)
+}
+
+
+#' Parse Odonate Phenotypic Database (categorical traits)
+#'
+#' Multi-row table (several records per species); reduced to one row per species
+#' (mode) for behavioural and ecological categorical traits. Multi-valued cells
+#' are kept verbatim.
+#'
+#' @param path Path to the OPD CSV.
+#' @return data.frame with canonical_name + odonate traits.
+#' @export
+parse_odonata <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  cats <- c("territoriality", "flight_mode", "mate_guarding",
+            "habitat_openness", "has_wing_pigment")
+  long <- do.call(rbind, lapply(cats, function(oc) data.frame(
+    name  = as.character(d$GenusSpecies),
+    trait = oc,
+    value = if (oc %in% names(d)) as.character(d[[oc]]) else NA_character_,
+    stringsAsFactors = FALSE
+  )))
+  spec <- stats::setNames(lapply(cats, function(oc) list(trait = oc, type = "cat")), cats)
+  .trait_finalize(.pivot_species_traits(long, spec))
+}

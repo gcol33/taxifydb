@@ -1121,6 +1121,43 @@
     parse_fn    = function(path) parse_quimbayo(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  saproxylic = list(
+    source_url  = "10.5061/dryad.2fqz612p3",
+    source_doi  = "10.5061/dryad.2fqz612p3",
+    version     = "2021.1",
+    license     = "CC0",
+    attribution = paste0(
+      "Hagge J et al. (2021) Morphological trait database of European ",
+      "saproxylic beetles. Dryad (doi:10.5061/dryad.2fqz612p3), CC0. ",
+      "One row per species."
+    ),
+    download_fn = function(url, dest) {
+      download_dryad_file(url, dest, "saproxylic.csv",
+                          file_pattern = "saproxylic_beetle_morphological_trait_database_2021")
+    },
+    parse_fn    = function(path) parse_saproxylic(path),
+    group_col   = NULL,
+    requires    = "data.table"
+  ),
+
+  odonata = list(
+    source_url  = "10.5061/dryad.15pm5qc",
+    source_doi  = "10.5061/dryad.15pm5qc",
+    version     = "2020.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Waller JT et al. The Odonate Phenotypic Database. Dryad ",
+      "(doi:10.5061/dryad.15pm5qc), CC BY 4.0. Behavioural and ecological ",
+      "categorical traits, mode per species."
+    ),
+    download_fn = function(url, dest) {
+      download_dryad_file(url, dest, "odonata.csv", file_pattern = "OPD_updated")
+    },
+    parse_fn    = function(path) parse_odonata(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

@@ -1575,6 +1575,14 @@
       "source_url": "https://zenodo.org/api/records/4455016",
       "source_doi": "10.5281/zenodo.4455016",
       "license": "Open (ESA Ecology data policy)"
+    },
+    "saproxylic": {
+      "latest": "2021.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/saproxylic.vtr",
+      "nrow": 1266,
+      "source_url": "10.5061/dryad.2fqz612p3",
+      "source_doi": "10.5061/dryad.2fqz612p3",
+      "license": "CC0"
     }
   }
 }

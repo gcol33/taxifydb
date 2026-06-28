@@ -1607,6 +1607,14 @@
       "source_url": "https://raw.githubusercontent.com/valerianoparravicini/Trophic_Fish_2020/master/data/converted_experts_classification.csv",
       "source_doi": "10.1371/journal.pbio.3000702",
       "license": "CC BY 4.0"
+    },
+    "odonata": {
+      "latest": "2020.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/odonata.vtr",
+      "nrow": 1460,
+      "source_url": "10.5061/dryad.15pm5qc",
+      "source_doi": "10.5061/dryad.15pm5qc",
+      "license": "CC BY 4.0"
     }
   }
 }

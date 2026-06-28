@@ -933,6 +933,46 @@
     parse_fn    = function(path) parse_bien(path),
     group_col   = NULL,
     requires    = "BIEN"
+  ),
+
+  sharkipedia = list(
+    source_url  = paste0("https://zenodo.org/records/6656525/files/",
+                         "Sharkipedia-Traits-v1.0-22-01-25.csv?download=1"),
+    source_doi  = "10.1038/s41597-022-01655-1",
+    version     = "1.0",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Mull CG et al. (2022) Sharkipedia: a curated open access database of ",
+      "shark and ray life history traits and abundance time-series. ",
+      "Scientific Data 9:559. Data on Zenodo (doi:10.5281/zenodo.6656525). ",
+      "Long-format trait records reduced to species-level medians by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "sharkipedia_traits.csv")
+    },
+    parse_fn    = function(path) parse_sharkipedia(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  bird_nest = list(
+    source_url  = paste0("https://zenodo.org/records/10128906/files/",
+                         "NestTrait_v2.csv?download=1"),
+    source_doi  = "10.1038/s41597-023-02837-1",
+    version     = "2.0",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Chia SY et al. (2023) A global database of bird nest traits. ",
+      "Scientific Data (doi:10.1038/s41597-023-02837-1; data on Zenodo, ",
+      "doi:10.5281/zenodo.10128906). Binary nest-site, nest-structure and ",
+      "nest-attachment indicators, one row per species."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "nesttrait_v2.csv")
+    },
+    parse_fn    = function(path) parse_bird_nest(path),
+    group_col   = NULL,
+    requires    = character(0)
   )
 )
 

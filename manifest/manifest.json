@@ -1511,6 +1511,22 @@
       "source_url": "https://bien.nceas.ucsb.edu",
       "source_doi": "10.1111/2041-210X.12861",
       "license": "CC BY"
+    },
+    "sharkipedia": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/sharkipedia.vtr",
+      "nrow": 177,
+      "source_url": "https://zenodo.org/records/6656525/files/Sharkipedia-Traits-v1.0-22-01-25.csv?download=1",
+      "source_doi": "10.1038/s41597-022-01655-1",
+      "license": "CC BY 4.0"
+    },
+    "bird_nest": {
+      "latest": "2.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/bird_nest.vtr",
+      "nrow": 10378,
+      "source_url": "https://zenodo.org/records/10128906/files/NestTrait_v2.csv?download=1",
+      "source_doi": "10.1038/s41597-023-02837-1",
+      "license": "CC BY 4.0"
     }
   }
 }

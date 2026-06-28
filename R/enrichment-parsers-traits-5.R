@@ -609,3 +609,27 @@ parse_homerange <- function(path) {
     FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
   .trait_finalize(res)
 }
+
+
+#' Parse TetraDENSITY population density
+#'
+#' Per-record population densities reduced to species medians. Only the dominant
+#' `ind/km2` unit is kept (mixing with pairs/km2 or ind/ha would be incorrect).
+#'
+#' @param path Path to TetraDENSITY CSV.
+#' @return data.frame with canonical_name + density_ind_km2.
+#' @export
+parse_tetradensity <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  d <- d[!is.na(d$Density_unit) & d$Density_unit == "ind/km2", , drop = FALSE]
+  df <- data.frame(
+    canonical_name  = trimws(paste(d$Genus, d$Species)),
+    density_ind_km2 = suppressWarnings(as.numeric(d$Density)),
+    stringsAsFactors = FALSE
+  )
+  df <- df[!is.na(df$canonical_name) & grepl(" ", df$canonical_name), , drop = FALSE]
+  res <- stats::aggregate(df["density_ind_km2"],
+    by = list(canonical_name = df$canonical_name),
+    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  .trait_finalize(res)
+}

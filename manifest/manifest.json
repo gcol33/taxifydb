@@ -1647,6 +1647,14 @@
       "source_url": "10.5061/dryad.d2547d85x",
       "source_doi": "10.5061/dryad.d2547d85x",
       "license": "CC0"
+    },
+    "tetradensity": {
+      "latest": "1.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/tetradensity.vtr",
+      "nrow": 1915,
+      "source_url": "https://api.figshare.com/v2/articles/5371633",
+      "source_doi": "10.6084/m9.figshare.5371633",
+      "license": "CC BY 4.0"
     }
   }
 }

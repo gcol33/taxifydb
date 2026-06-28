@@ -1339,6 +1339,28 @@
     parse_fn    = function(path) parse_homerange(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  tetradensity = list(
+    source_url  = "https://api.figshare.com/v2/articles/5371633",
+    source_doi  = "10.6084/m9.figshare.5371633",
+    version     = "1.0",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Santini L et al. TetraDENSITY: a database of population density ",
+      "estimates in terrestrial vertebrates (figshare ",
+      "doi:10.6084/m9.figshare.5371633), CC BY 4.0. Species-median density; ",
+      "only ind/km2 records are used (other units excluded to avoid mixing)."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      fu <- r$files$download_url[r$files$name == "TetraDENSITY_v.1.csv"][1]
+      download_curl_file(fu, dest, "tetradensity.csv")
+    },
+    parse_fn    = function(path) parse_tetradensity(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

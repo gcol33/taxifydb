@@ -740,6 +740,38 @@ parse_blanchard <- function(path) {
 }
 
 
+#' Parse SHELD US freshwater mussel traits
+#'
+#' Wide species trait matrix, one row per mussel species.
+#'
+#' @param path Path to the SHELD species trait matrix xlsx.
+#' @return data.frame with canonical_name + mussel traits.
+#' @export
+parse_sheld <- function(path) {
+  d <- openxlsx2::read_xlsx(path)
+  num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+  chr <- function(c) {
+    if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
+    x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
+  }
+  cn <- trimws(as.character(d$scientificName))
+  gs <- trimws(paste(as.character(d$genus), as.character(d$species)))
+  cn[is.na(cn) | !grepl(" ", cn)] <- gs[is.na(cn) | !grepl(" ", cn)]
+  out <- data.frame(
+    canonical_name  = cn,
+    mean_length_mm  = num("meanLength"), max_length_mm = num("maxLength"),
+    mature_age      = num("matureAge"),  max_age = num("maxAge"),
+    growth_rate     = num("growthRate"), fecundity = num("fecundity"),
+    n_host_species  = num("nHostSpecies"), n_host_family = num("nHostFamily"),
+    brood           = chr("brood"), marsupial_gills = chr("marsupialGills"),
+    hermaphrodite   = chr("hermaphrodite"), shell_sculpture = chr("shellSculpture"),
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$canonical_name) & grepl(" ", out$canonical_name), , drop = FALSE]
+  .trait_finalize(out)
+}
+
+
 #' Parse HomeRange mammal home-range database
 #'
 #' Per-individual home-range records reduced to species medians (home range in

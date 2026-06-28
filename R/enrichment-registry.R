@@ -1475,6 +1475,28 @@
     group_col   = NULL,
     name_col    = "genus",
     requires    = "openxlsx2"
+  ),
+
+  sheld = list(
+    source_url  = "https://api.figshare.com/v2/articles/24115998",
+    source_doi  = "10.1038/s41597-023-02635-9",
+    version     = "2023.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Hopper GW et al. (2023) A trait dataset for freshwater mussels of the ",
+      "United States of America. Scientific Data 10:745 ",
+      "(doi:10.1038/s41597-023-02635-9; data figshare 24115998), CC BY 4.0. ",
+      "One row per species."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      fu <- r$files$download_url[grepl("speciesTraitMatrix.*\\.xlsx$", r$files$name)][1]
+      download_curl_file(fu, dest, "sheld.xlsx")
+    },
+    parse_fn    = function(path) parse_sheld(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
   )
 )
 

@@ -1695,6 +1695,14 @@
       "source_url": "10.5061/dryad.st6sc",
       "source_doi": "10.5061/dryad.st6sc",
       "license": "CC0"
+    },
+    "sheld": {
+      "latest": "2023.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/sheld.vtr",
+      "nrow": 313,
+      "source_url": "https://api.figshare.com/v2/articles/24115998",
+      "source_doi": "10.1038/s41597-023-02635-9",
+      "license": "CC BY 4.0"
     }
   }
 }

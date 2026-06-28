@@ -709,6 +709,37 @@ parse_arctic <- function(path) {
 }
 
 
+#' Parse Blanchard & Moreau ant genus defensive traits
+#'
+#' Genus-level ant traits with codes defined in the source headers; the clearly
+#' defined ones are mapped to their labels. Columns are read by position because
+#' the source header cells embed long code legends.
+#'
+#' @param path Path to the ant traits xlsx (header on row 3).
+#' @return data.frame with canonical_name (genus) + ant traits.
+#' @export
+parse_blanchard <- function(path) {
+  d <- openxlsx2::read_xlsx(path, start_row = 3)
+  chr <- function(i) { x <- trimws(as.character(d[[i]])); x[x == "" | x == "NA"] <- NA_character_; x }
+  num <- function(i) suppressWarnings(as.numeric(d[[i]]))
+  mp <- function(i, m) { v <- as.character(suppressWarnings(as.integer(num(i)))); unname(m[v]) }
+  out <- data.frame(
+    canonical_name      = trimws(as.character(d[[1]])),
+    subfamily           = chr(2),
+    spines              = mp(4,  c("0" = "absent", "1" = "present")),
+    sting               = mp(13, c("0" = "absent", "1" = "present")),
+    diet                = mp(14, c("0" = "herbivore", "1" = "omnivore", "2" = "predator")),
+    nesting             = mp(15, c("0" = "subterranean", "1" = "arboreal")),
+    foraging            = mp(16, c("0" = "subterranean", "1" = "arboreal")),
+    colony_size_workers = num(17),
+    stringsAsFactors    = FALSE
+  )
+  out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name) &
+             grepl("^[A-Z][a-z]+$", out$canonical_name), , drop = FALSE]
+  .trait_finalize(out)
+}
+
+
 #' Parse HomeRange mammal home-range database
 #'
 #' Per-individual home-range records reduced to species medians (home range in

@@ -1455,6 +1455,26 @@
     parse_fn    = function(path) parse_arctic(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  blanchard = list(
+    source_url  = "10.5061/dryad.st6sc",
+    source_doi  = "10.5061/dryad.st6sc",
+    version     = "2017.1",
+    license     = "CC0",
+    attribution = paste0(
+      "Blanchard BD, Moreau CS (2017) Defensive traits in the ant genera ",
+      "database. Dryad (doi:10.5061/dryad.st6sc), CC0. Genus-level traits; ",
+      "coded fields mapped to labels using the source's own legends."
+    ),
+    download_fn = function(url, dest) {
+      download_dryad_file(url, dest, "blanchard.xlsx",
+                          file_pattern = "TableS4_AllGeneraDefensiveTraits")
+    },
+    parse_fn    = function(path) parse_blanchard(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = "openxlsx2"
   )
 )
 

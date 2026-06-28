@@ -1687,6 +1687,14 @@
       "source_url": "https://phaidra.univie.ac.at/api/object/o:861474/octets",
       "source_doi": "10.25365/phaidra.49",
       "license": "CC BY 4.0"
+    },
+    "blanchard": {
+      "latest": "2017.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/blanchard.vtr",
+      "nrow": 333,
+      "source_url": "10.5061/dryad.st6sc",
+      "source_doi": "10.5061/dryad.st6sc",
+      "license": "CC0"
     }
   }
 }

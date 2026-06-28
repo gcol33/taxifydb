@@ -216,3 +216,41 @@ parse_huang_amph <- function(path) {
   out <- merge(agg, ord1, by = "canonical_name")
   .trait_finalize(out)
 }
+
+
+#' Parse Ostwald global bee morphometrics
+#'
+#' Long-format Darwin Core measurement table; reduced to one row per species.
+#' `verbatimAcceptedNameUsage` carries authorship and subgenera, so the join key
+#' is reduced to a clean binomial.
+#'
+#' @param path Path to the morphological dataset CSV.
+#' @return data.frame with canonical_name + bee morphometrics.
+#' @export
+parse_bee_ostwald <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  nm0 <- as.character(d$verbatimAcceptedNameUsage)
+  nm0 <- iconv(nm0, from = "latin1", to = "ASCII//TRANSLIT", sub = "")
+  raw <- gsub("\\s*\\([^)]*\\)", "", nm0)
+  binom <- vapply(strsplit(trimws(raw), "\\s+"), function(w) {
+    if (length(w) >= 2L) paste(w[1], w[2])
+    else if (length(w) == 1L) w[1] else NA_character_
+  }, character(1L))
+  long <- data.frame(
+    name  = binom,
+    trait = as.character(d$measurementType),
+    value = as.character(d$measurementValue),
+    stringsAsFactors = FALSE
+  )
+  spec <- list(
+    itd_mm             = list(trait = "ITD", type = "num"),
+    forewing_length_mm = list(trait = "forewing length", type = "num"),
+    tongue_length_mm   = list(trait = "tongue length", type = "num"),
+    tongue_width_mm    = list(trait = "tongue width", type = "num"),
+    body_length_mm     = list(trait = "body length", type = "num"),
+    thorax_length_mm   = list(trait = "thorax length", type = "num"),
+    hair_length_mm     = list(trait = "hair length", type = "num"),
+    hair_coverage_pct  = list(trait = "hair coverage", type = "num")
+  )
+  .trait_finalize(.pivot_species_traits(long, spec))
+}

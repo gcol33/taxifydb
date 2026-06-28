@@ -1551,6 +1551,14 @@
       "source_url": "https://api.figshare.com/v2/articles/21159229",
       "source_doi": "10.6084/m9.figshare.21159229",
       "license": "CC BY 4.0"
+    },
+    "bee_ostwald": {
+      "latest": "2024.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/bee_ostwald.vtr",
+      "nrow": 2008,
+      "source_url": "https://zenodo.org/records/13366989/files/Sup%20Table%204%20Morphological%20Dataset%20Revised.csv?download=1",
+      "source_doi": "10.5281/zenodo.13366989",
+      "license": "CC BY 4.0"
     }
   }
 }

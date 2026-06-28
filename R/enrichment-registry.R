@@ -1041,6 +1041,26 @@
     parse_fn    = function(path) parse_huang_amph(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  bee_ostwald = list(
+    source_url  = paste0("https://zenodo.org/records/13366989/files/",
+                         "Sup%20Table%204%20Morphological%20Dataset%20",
+                         "Revised.csv?download=1"),
+    source_doi  = "10.5281/zenodo.13366989",
+    version     = "2024.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Ostwald MM et al. (2024) A global database of bee morphological traits. ",
+      "Zenodo (doi:10.5281/zenodo.13366989), CC BY 4.0. Long-format Darwin Core ",
+      "measurements reduced to species-level medians by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "bee_morphology.csv")
+    },
+    parse_fn    = function(path) parse_bee_ostwald(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

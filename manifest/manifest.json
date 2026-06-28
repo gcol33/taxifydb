@@ -1543,6 +1543,14 @@
       "source_url": "https://zenodo.org/records/1164834/files/Appendix-1-Phytoplankton%20metrics%20database-revised.xlsx?download=1",
       "source_doi": "10.5281/zenodo.1164834",
       "license": "CC BY 4.0"
+    },
+    "huang_amph": {
+      "latest": "2022.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/huang_amph.vtr",
+      "nrow": 4776,
+      "source_url": "https://api.figshare.com/v2/articles/21159229",
+      "source_doi": "10.6084/m9.figshare.21159229",
+      "license": "CC BY 4.0"
     }
   }
 }

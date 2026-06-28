@@ -1013,6 +1013,34 @@
     parse_fn    = function(path) parse_rimet_phyto(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  huang_amph = list(
+    source_url  = "https://api.figshare.com/v2/articles/21159229",
+    source_doi  = "10.6084/m9.figshare.21159229",
+    version     = "2022.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Huang et al. A global amphibian morphological trait dataset (figshare ",
+      "doi:10.6084/m9.figshare.21159229), CC BY 4.0. Per-specimen ",
+      "morphometrics reduced to species-level medians by taxifydb for the ",
+      "measurements comparable across Anura, Caudata and Gymnophiona."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      for (nm in c("Anura.csv", "Caudata.csv", "Gymnophiona.csv")) {
+        fu <- r$files$download_url[r$files$name == nm]
+        if (length(fu)) {
+          tryCatch(download_curl_file(fu[1], dest, nm),
+                   error = function(e) message("  huang dl fail: ", nm))
+        }
+      }
+      dest
+    },
+    parse_fn    = function(path) parse_huang_amph(path),
+    group_col   = NULL,
+    requires    = character(0)
   )
 )
 

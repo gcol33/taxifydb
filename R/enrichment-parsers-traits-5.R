@@ -160,3 +160,59 @@ parse_rimet_phyto <- function(path) {
   )
   .trait_finalize(out)
 }
+
+
+#' Parse Huang amphibian morphology
+#'
+#' Three per-order files (Anura, Caudata, Gymnophiona) of per-specimen
+#' morphometrics; reduced to species-level medians for the measurements common
+#' and comparable across orders (snout-vent length, head length/width, eye
+#' diameter, fore/hind-limb length). Order-specific measurements are not carried
+#' because column meanings differ between clades.
+#'
+#' @param path Directory holding Anura.csv / Caudata.csv / Gymnophiona.csv.
+#' @return data.frame with canonical_name + morphometrics + taxon_order.
+#' @export
+parse_huang_amph <- function(path) {
+  ord_files <- c(Anura = "Anura.csv", Caudata = "Caudata.csv",
+                 Gymnophiona = "Gymnophiona.csv")
+  cols <- c(svl_mm = "SVL", head_length_mm = "HL", head_width_mm = "HW",
+            eye_diameter_mm = "ED", forelimb_length_mm = "FLL",
+            hindlimb_length_mm = "HLL")
+  acc <- list()
+  for (ord in names(ord_files)) {
+    f <- file.path(path, ord_files[[ord]])
+    if (!file.exists(f)) next
+    d <- utils::read.csv(f, check.names = FALSE, stringsAsFactors = FALSE,
+                         fileEncoding = "UTF-8")
+    g <- trimws(as.character(if ("Genus" %in% names(d)) d$Genus else rep(NA, nrow(d))))
+    s <- trimws(as.character(if ("Species" %in% names(d)) d$Species else rep(NA, nrow(d))))
+    # The Species column is inconsistent: sometimes a full binomial
+    # ("Rana temporaria"), sometimes the bare epithet ("bufo"). Build a clean
+    # binomial: if Species already starts with a capitalised genus take its
+    # first two words, otherwise glue Genus + first Species word.
+    cn <- vapply(seq_along(s), function(i) {
+      w <- strsplit(s[i], "\\s+")[[1]]
+      if (length(w) >= 2L && grepl("^[A-Z]", w[1])) paste(w[1], w[2])
+      else trimws(paste(g[i], w[1]))
+    }, character(1L))
+    row <- data.frame(canonical_name = cn, taxon_order = ord,
+                      stringsAsFactors = FALSE)
+    for (oc in names(cols)) {
+      sc <- cols[[oc]]
+      row[[oc]] <- if (sc %in% names(d)) suppressWarnings(as.numeric(d[[sc]])) else NA_real_
+    }
+    acc[[ord]] <- row
+  }
+  df <- do.call(rbind, acc)
+  df <- df[!is.na(df$canonical_name) & nzchar(trimws(df$canonical_name)) &
+           grepl(" ", df$canonical_name), , drop = FALSE]
+  num <- names(cols)
+  agg <- stats::aggregate(
+    df[num], by = list(canonical_name = df$canonical_name),
+    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) }
+  )
+  ord1 <- df[!duplicated(df$canonical_name), c("canonical_name", "taxon_order")]
+  out <- merge(agg, ord1, by = "canonical_name")
+  .trait_finalize(out)
+}

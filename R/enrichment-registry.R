@@ -1207,6 +1207,27 @@
     parse_fn    = function(path) parse_frugivoria(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  parravicini = list(
+    source_url  = paste0("https://raw.githubusercontent.com/",
+                         "valerianoparravicini/Trophic_Fish_2020/master/data/",
+                         "converted_experts_classification.csv"),
+    source_doi  = "10.1371/journal.pbio.3000702",
+    version     = "2020.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Parravicini V et al. (2020) Delineating reef fish trophic guilds with ",
+      "global gut content data synthesis and phylogeny. PLoS Biology ",
+      "18:e3000702 (doi:10.1371/journal.pbio.3000702). Consensus (modal) ",
+      "trophic guild across contributing experts, computed by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "parravicini.csv")
+    },
+    parse_fn    = function(path) parse_parravicini(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

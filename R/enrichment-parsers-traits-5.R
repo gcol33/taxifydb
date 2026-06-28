@@ -450,3 +450,30 @@ parse_frugivoria <- function(path) {
                rd("bird.csv", "bird", "diet_cat_e"))
   .trait_finalize(out)
 }
+
+
+#' Parse Parravicini reef-fish trophic guilds
+#'
+#' Each species carries one trophic-guild code per contributing expert; the
+#' cross-expert consensus (mode) is taken as the species trophic guild.
+#'
+#' @param path Path to converted_experts_classification.csv.
+#' @return data.frame with canonical_name + trophic_guild.
+#' @export
+parse_parravicini <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  expert_cols <- names(d)[grepl("^r[a-z]+$", names(d))]
+  guild <- vapply(seq_len(nrow(d)), function(i) {
+    v <- unlist(d[i, expert_cols], use.names = FALSE)
+    v <- trimws(as.character(v)); v <- v[!is.na(v) & nzchar(v) & v != "NA"]
+    if (!length(v)) return(NA_character_)
+    names(sort(table(v), decreasing = TRUE))[1]
+  }, character(1L))
+  out <- data.frame(
+    canonical_name = trimws(as.character(d$Genus_and_species)),
+    trophic_guild  = guild,
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$trophic_guild), , drop = FALSE]
+  .trait_finalize(out)
+}

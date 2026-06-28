@@ -1158,6 +1158,55 @@
     parse_fn    = function(path) parse_odonata(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  pelagic = list(
+    source_url  = paste0("https://borealisdata.ca/api/datasets/:persistentId",
+                         "?persistentId=doi:10.5683/SP3/0YFJED"),
+    source_doi  = "10.5683/SP3/0YFJED",
+    version     = "2024.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Gleiber MR et al. (2024) A trait database for pelagic species. ",
+      "Scientific Data; data Borealis (doi:10.5683/SP3/0YFJED), CC BY 4.0. ",
+      "One row per species."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      f <- r$data$latestVersion$files
+      i <- which(f$dataFile$filename == "1_pelagic_species_trait_database.csv")[1]
+      download_curl_file(
+        sprintf("https://borealisdata.ca/api/access/datafile/%s", f$dataFile$id[i]),
+        dest, "pelagic.csv")
+    },
+    parse_fn    = function(path) parse_pelagic(path),
+    group_col   = NULL,
+    requires    = "data.table"
+  ),
+
+  frugivoria = list(
+    source_url  = "https://pasta.lternet.edu/package/data/eml/edi/1220/5/",
+    source_doi  = "10.6073/pasta/frugivoria",
+    version     = "1.220.5",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Gerstner BE et al. (2023) Frugivoria: a trait database for birds and ",
+      "mammals exhibiting frugivory across contiguous Neotropical moist ",
+      "forests. EDI (edi.1220.5), CC BY 4.0. Mammal + bird 'simple' tables ",
+      "combined on a shared trait core."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      download_curl_file(paste0(url, "3c655f2ab1d525d1b1f05ee78153e875"),
+                         dest, "mammal.csv")
+      download_curl_file(paste0(url, "5a86fde71322a1ff64d94ace0ed1982c"),
+                         dest, "bird.csv")
+      dest
+    },
+    parse_fn    = function(path) parse_frugivoria(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

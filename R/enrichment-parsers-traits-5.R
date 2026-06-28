@@ -378,3 +378,75 @@ parse_odonata <- function(path) {
   spec <- stats::setNames(lapply(cats, function(oc) list(trait = oc, type = "cat")), cats)
   .trait_finalize(.pivot_species_traits(long, spec))
 }
+
+
+#' Parse Pelagic Species Trait Database
+#'
+#' Wide table, one row per pelagic species (fish, cephalopods, gelatinous), of
+#' depth/temperature envelope, size, habitat, defence and gregariousness traits.
+#'
+#' @param path Path to the pelagic trait CSV.
+#' @return data.frame with canonical_name + traits.
+#' @export
+parse_pelagic <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+  chr <- function(c) {
+    if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
+    x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
+  }
+  out <- data.frame(
+    canonical_name   = trimws(as.character(d$sci_name)),
+    depth_min_m      = num("depth_min"),
+    depth_max_m      = num("depth_max"),
+    temp_min_c       = num("temp_min"),
+    temp_max_c       = num("temp_max"),
+    temp_mean_c      = num("temp_mean"),
+    length_min_tl_cm = num("l_min_TL"),
+    length_max_tl_cm = num("l_max_TL"),
+    trophic_level    = num("trophic_level"),
+    vert_habitat     = chr("vert_habitat"),
+    horz_habitat     = chr("horz_habitat"),
+    body_shape       = chr("body_shape"),
+    phys_defense     = chr("phys_defense"),
+    gregarious       = chr("gregarious"),
+    stringsAsFactors = FALSE
+  )
+  .trait_finalize(out)
+}
+
+
+#' Parse Frugivoria (Neotropical frugivore traits)
+#'
+#' Combines the "simple" mammal and bird tables on a shared core (diet, body
+#' size/mass, longevity, generation time) with a taxon_group discriminator.
+#'
+#' @param path Directory holding mammal.csv and bird.csv.
+#' @return data.frame with canonical_name + traits.
+#' @export
+parse_frugivoria <- function(path) {
+  rd <- function(f, grp, dietcol) {
+    p <- file.path(path, f)
+    if (!file.exists(p)) return(NULL)
+    d <- data.table::fread(p, encoding = "Latin-1", data.table = FALSE)
+    num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+    chr <- function(c) {
+      if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
+      x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
+    }
+    data.frame(
+      canonical_name     = trimws(as.character(d$IUCN_species_name)),
+      taxon_group        = grp,
+      diet_category      = chr(dietcol),
+      diet_breadth       = num("diet_breadth"),
+      body_mass_g        = num("body_mass_e"),
+      body_size_mm       = num("body_size_mm"),
+      longevity          = num("longevity"),
+      generation_time    = num("generation_time"),
+      stringsAsFactors   = FALSE
+    )
+  }
+  out <- rbind(rd("mammal.csv", "mammal", "diet_cat"),
+               rd("bird.csv", "bird", "diet_cat_e"))
+  .trait_finalize(out)
+}

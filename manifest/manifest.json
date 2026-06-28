@@ -1583,6 +1583,22 @@
       "source_url": "10.5061/dryad.2fqz612p3",
       "source_doi": "10.5061/dryad.2fqz612p3",
       "license": "CC0"
+    },
+    "pelagic": {
+      "latest": "2024.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/pelagic.vtr",
+      "nrow": 590,
+      "source_url": "https://borealisdata.ca/api/datasets/:persistentId?persistentId=doi:10.5683/SP3/0YFJED",
+      "source_doi": "10.5683/SP3/0YFJED",
+      "license": "CC BY 4.0"
+    },
+    "frugivoria": {
+      "latest": "1.220.5",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/frugivoria.vtr",
+      "nrow": 1932,
+      "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/5/",
+      "source_doi": "10.6073/pasta/frugivoria",
+      "license": "CC BY 4.0"
     }
   }
 }

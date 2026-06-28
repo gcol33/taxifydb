@@ -1361,6 +1361,28 @@
     parse_fn    = function(path) parse_tetradensity(path),
     group_col   = NULL,
     requires    = "data.table"
+  ),
+
+  brot = list(
+    source_url  = "https://api.figshare.com/v2/articles/5280868",
+    source_doi  = "10.6084/m9.figshare.c.3843841",
+    version     = "2.0",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Tavsanoglu C, Pausas JG (2018) A functional trait database for ",
+      "Mediterranean Basin plants (BROT 2.0). Scientific Data 5:180135 ",
+      "(figshare collection doi:10.6084/m9.figshare.c.3843841), CC BY 4.0. ",
+      "Long-format records reduced to species-level by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      fu <- r$files$download_url[r$files$name == "BROT2_dat.csv"][1]
+      download_curl_file(fu, dest, "brot.csv")
+    },
+    parse_fn    = function(path) parse_brot(path),
+    group_col   = NULL,
+    requires    = "data.table"
   )
 )
 

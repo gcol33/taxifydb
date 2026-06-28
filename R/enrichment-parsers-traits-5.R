@@ -633,3 +633,36 @@ parse_tetradensity <- function(path) {
     FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
   .trait_finalize(res)
 }
+
+
+#' Parse BROT 2.0 Mediterranean plant traits
+#'
+#' Long-format trait records reduced to one row per species. Numeric units follow
+#' the standardised BROT 2.0 conventions (seed mass mg, SLA mm2/mg, height m,
+#' leaf area mm2).
+#'
+#' @param path Path to BROT2_dat.csv.
+#' @return data.frame with canonical_name + plant traits.
+#' @export
+parse_brot <- function(path) {
+  d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  long <- data.frame(
+    name  = as.character(d$Taxon),
+    trait = as.character(d$Trait),
+    value = as.character(d$Data),
+    stringsAsFactors = FALSE
+  )
+  spec <- list(
+    seed_mass_mg       = list(trait = "SeedMass", type = "num"),
+    sla_mm2_mg         = list(trait = "SLA", type = "num"),
+    height_m           = list(trait = "Height", type = "num"),
+    leaf_area_mm2      = list(trait = "LeafArea", type = "num"),
+    resp_fire          = list(trait = "RespFire", type = "cat"),
+    growth_form        = list(trait = "GrowthForm", type = "cat"),
+    disp_mode          = list(trait = "DispMode", type = "cat"),
+    fruit_type         = list(trait = "FruitType", type = "cat"),
+    soil_seed_bank     = list(trait = "SoilSeedBank", type = "cat"),
+    seedling_emergence = list(trait = "SeedlEmerg", type = "cat")
+  )
+  .trait_finalize(.pivot_species_traits(long, spec))
+}

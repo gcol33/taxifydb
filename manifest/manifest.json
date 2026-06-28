@@ -1655,6 +1655,14 @@
       "source_url": "https://api.figshare.com/v2/articles/5371633",
       "source_doi": "10.6084/m9.figshare.5371633",
       "license": "CC BY 4.0"
+    },
+    "brot": {
+      "latest": "2.0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/brot.vtr",
+      "nrow": 2881,
+      "source_url": "https://api.figshare.com/v2/articles/5280868",
+      "source_doi": "10.6084/m9.figshare.c.3843841",
+      "license": "CC BY 4.0"
     }
   }
 }

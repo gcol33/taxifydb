@@ -1503,6 +1503,14 @@
       "source_url": "https://ndownloader.figshare.com/files/45408133",
       "source_doi": "10.6084/m9.figshare.24572683",
       "license": "CC BY 4.0"
+    },
+    "bien": {
+      "latest": "2026.06",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/bien.vtr",
+      "nrow": 116275,
+      "source_url": "https://bien.nceas.ucsb.edu",
+      "source_doi": "10.1111/2041-210X.12861",
+      "license": "CC BY"
     }
   }
 }

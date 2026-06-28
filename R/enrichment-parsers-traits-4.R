@@ -202,19 +202,38 @@ parse_bien <- function(path) {
     flower_color         = list(trait = "flower color", type = "cat")
   )
   traits <- unname(vapply(spec, function(s) s$trait, character(1L)))
-  raw <- BIEN::BIEN_trait_trait(trait = traits)
 
-  if (!is.data.frame(raw) || nrow(raw) == 0L) {
+  # Query one trait at a time and immediately reduce each pull to the three
+  # columns we keep, freeing the full (many-column, multi-million-row) result
+  # before the next trait. A single all-traits pull holds every BIEN column for
+  # every record at once and exhausts memory; per-trait reduction bounds the
+  # peak to one trait's records.
+  long_list <- vector("list", length(traits))
+  for (i in seq_along(traits)) {
+    raw <- BIEN::BIEN_trait_trait(trait = traits[i])
+    if (is.data.frame(raw) && nrow(raw) > 0L) {
+      if ("access" %in% names(raw)) {
+        raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
+      }
+      if (nrow(raw) > 0L) {
+        long_list[[i]] <- data.frame(
+          name  = as.character(raw$scrubbed_species_binomial),
+          trait = as.character(raw$trait_name),
+          value = as.character(raw$trait_value),
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    rm(raw); gc(FALSE)
+    message(sprintf("  [bien] %d/%d %s: %s records", i, length(traits),
+                    traits[i],
+                    format(if (is.null(long_list[[i]])) 0L
+                           else nrow(long_list[[i]]), big.mark = ",")))
+  }
+
+  long <- do.call(rbind, long_list)
+  if (is.null(long) || nrow(long) == 0L) {
     stop("BIEN_trait_trait returned no data.", call. = FALSE)
   }
-  if ("access" %in% names(raw)) {
-    raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
-  }
-  long <- data.frame(
-    name  = as.character(raw$scrubbed_species_binomial),
-    trait = as.character(raw$trait_name),
-    value = as.character(raw$trait_value),
-    stringsAsFactors = FALSE
-  )
   .trait_finalize(.pivot_species_traits(long, spec))
 }

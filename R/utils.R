@@ -9,6 +9,52 @@
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
 
+#' Test whether a value would serialize to `null` or empty object
+#'
+#' A field is empty when `jsonlite::toJSON(auto_unbox = TRUE)` would render
+#' it as `null` or `{}`: `NULL`, a zero-length atomic vector or list, a
+#' length-one `NA`, or an empty / whitespace-only string.
+#'
+#' @param v Any value.
+#' @return `TRUE` if the value is empty for serialization purposes.
+#' @noRd
+is_empty_field <- function(v) {
+  if (is.null(v)) return(TRUE)
+  if (is.list(v)) return(length(v) == 0L)
+  if (length(v) == 0L) return(TRUE)
+  if (length(v) == 1L) {
+    if (is.na(v)) return(TRUE)
+    if (is.character(v) && !nzchar(trimws(v))) return(TRUE)
+  }
+  FALSE
+}
+
+
+#' Drop absent or empty fields from a named list before serialization
+#'
+#' Removes elements that would serialize to `null` or an empty object `{}`
+#' under `jsonlite::write_json(auto_unbox = TRUE)`. Named lists are compacted
+#' recursively and dropped when they become empty, so a nested block such as a
+#' citation with an absent `doi` loses that field entirely rather than emitting
+#' `"doi": {}`. Unnamed lists (JSON arrays) and non-empty atomic vectors pass
+#' through unchanged.
+#'
+#' @param x A named list.
+#' @return The list with empty fields removed.
+#' @noRd
+drop_empty_fields <- function(x) {
+  if (!is.list(x) || is.null(names(x))) return(x)
+  out <- list()
+  for (nm in names(x)) {
+    v <- x[[nm]]
+    if (is.list(v) && !is.null(names(v))) v <- drop_empty_fields(v)
+    if (is_empty_field(v)) next
+    out[[nm]] <- v
+  }
+  out
+}
+
+
 #' Strip a trailing authorship string from a scientific name
 #'
 #' Produces the canonical name by removing `authorship` from the end of

@@ -70,6 +70,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     nrow             = nrow(df),
     schema_version   = 2L
   )
+  meta <- drop_empty_fields(meta)
   meta_path <- file.path(dirname(vtr_path), "meta.json")
   jsonlite::write_json(meta, meta_path, pretty = TRUE, auto_unbox = TRUE,
                        null = "null")

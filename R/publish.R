@@ -193,7 +193,7 @@ update_manifest <- function(manifest_path, backend_name, version,
     entry$extras <- NULL
   }
 
-  manifest$backends[[backend_name]] <- entry
+  manifest$backends[[backend_name]] <- drop_empty_fields(entry)
 
   jsonlite::write_json(manifest, manifest_path, pretty = TRUE,
                        auto_unbox = TRUE)
@@ -264,7 +264,7 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
     entry$available_groups <- meta$available_groups
   }
 
-  manifest$enrichments[[name]] <- entry
+  manifest$enrichments[[name]] <- drop_empty_fields(entry)
 
   jsonlite::write_json(manifest, manifest_path, pretty = TRUE,
                        auto_unbox = TRUE)

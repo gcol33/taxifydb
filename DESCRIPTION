@@ -27,6 +27,7 @@ Imports:
     vectra
 Suggests:
     DBI,
+    GIFT,
     openxlsx2,
     rfishbase,
     RSQLite,

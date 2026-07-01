@@ -1703,6 +1703,44 @@
       "source_url": "https://api.figshare.com/v2/articles/24115998",
       "source_doi": "10.1038/s41597-023-02635-9",
       "license": "CC BY 4.0"
+    },
+    "gift": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/gift.vtr",
+      "nrow": 279943,
+      "source_url": "https://gift.uni-goettingen.de",
+      "source_format": "gift",
+      "source_version": "3.2",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "gift_woodiness_1",
+        "gift_growth_form_1",
+        "gift_lifecycle_1",
+        "gift_life_form_1",
+        "gift_climber_1",
+        "gift_epiphyte_1",
+        "gift_parasite_1",
+        "gift_aquatic_1",
+        "gift_plant_height_max",
+        "gift_photosynthetic_pathway",
+        "gift_seed_mass_mean",
+        "gift_dispersal_syndrome_1",
+        "gift_flowering_start",
+        "gift_flowering_end",
+        "gift_deciduousness_1",
+        "gift_sla_mean"
+      ],
+      "static": false,
+      "citation": {
+        "key": "weigelt2020gift",
+        "type": "article",
+        "authors": "Weigelt P, Konig C, Kreft H",
+        "year": "2020",
+        "title": "GIFT - A Global Inventory of Floras and Traits for macroecology and biogeography",
+        "journal": "Journal of Biogeography",
+        "doi": "10.1111/jbi.13623"
+      },
+      "license": "CC BY 4.0"
     }
   }
 }

@@ -342,6 +342,29 @@
     requires    = "rfishbase"
   ),
 
+  gift = list(
+    source_url  = "https://gift.uni-goettingen.de",
+    source_doi  = "10.1111/jbi.13623",
+    version     = format(Sys.Date(), "%Y.%m"),
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Weigelt P, Konig C, Kreft H (2020) GIFT - A Global Inventory of Floras ",
+      "and Traits for macroecology and biogeography. Journal of Biogeography ",
+      "47:16-43. Only the redistributable subset the GIFT API returns ",
+      "(CC BY 4.0; restricted references excluded) is included; cite GIFT and, ",
+      "where applicable, the underlying references (GIFT::GIFT_references())."
+    ),
+    download_fn = function(url, dest) {
+      # The GIFT package fetches data directly; dest exists only so the
+      # interface is uniform with file-based parsers.
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      dest
+    },
+    parse_fn    = function(path) parse_gift(path),
+    group_col   = NULL,
+    requires    = "GIFT"
+  ),
+
   fungal_traits = list(
     source_url  = "https://static-content.springer.com/esm/art%3A10.1007%2Fs13225-020-00466-2/MediaObjects/13225_2020_466_MOESM4_ESM.xlsx",
     source_doi  = "10.1007/s13225-020-00466-2",

@@ -1,3 +1,20 @@
+# taxifydb (development version)
+
+## New features
+
+* New `gift` enrichment: `parse_gift()` fetches GIFT's (Global Inventory of
+  Floras and Traits; Weigelt et al. 2020) species-level plant traits from the
+  live API at build time -- batched over all trait IDs -- and writes them to a
+  `.vtr` so the taxify runtime joins them offline. Only the redistributable
+  subset the API returns is included (CC BY 4.0; restricted references are
+  excluded by the default call). Registered in the enrichment build registry;
+  requires the `GIFT` package to build from source.
+
+## Fixes
+
+* Corrected the FishBase and SeaLifeBase enrichment license to CC BY-NC 4.0
+  (was mislabelled CC BY-NC 3.0).
+
 # taxifydb 0.1.6
 
 ## New features

@@ -329,7 +329,7 @@
     source_url  = "https://fishbase.ropensci.org",
     source_doi  = NULL,
     version     = format(Sys.Date(), "%Y.%m"),
-    license     = "CC BY-NC 3.0",
+    license     = "CC BY-NC 4.0",
     attribution = "Froese R, Pauly D (eds.) (2024) FishBase. World Wide Web electronic publication, https://www.fishbase.org.",
     download_fn = function(url, dest) {
       # rfishbase fetches data directly; dest exists only so the interface
@@ -580,7 +580,7 @@
     source_url  = "https://sealifebase.ropensci.org",
     source_doi  = NULL,
     version     = format(Sys.Date(), "%Y.%m"),
-    license     = "CC BY-NC 3.0",
+    license     = "CC BY-NC 4.0",
     attribution = "Palomares MLD, Pauly D (eds.) (2024) SeaLifeBase. World Wide Web electronic publication, https://www.sealifebase.org.",
     download_fn = function(url, dest) {
       # rfishbase fetches data directly; dest exists only so the interface

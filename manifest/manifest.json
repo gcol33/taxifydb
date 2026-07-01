@@ -927,7 +927,7 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.05/fishbase.vtr",
       "nrow": 37816,
       "source_url": "https://fishbase.ropensci.org",
-      "license": "CC BY-NC 3.0"
+      "license": "CC BY-NC 4.0"
     },
     "woodiness": {
       "latest": "2014.1",
@@ -1390,7 +1390,7 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/sealifebase.vtr",
       "nrow": 110985,
       "source_url": "https://sealifebase.ropensci.org",
-      "license": "CC BY-NC 3.0"
+      "license": "CC BY-NC 4.0"
     },
     "globtherm": {
       "latest": "2018.1",

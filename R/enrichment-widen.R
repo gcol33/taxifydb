@@ -63,7 +63,7 @@
 #' @noRd
 .is_bookkeeping_col <- function(sane) {
   grepl(paste0(
-    "^(id|.*_id|references?|refs?|citations?|source_refs?|",
+    "^(id[0-9]*|.*_id[0-9]*|references?|refs?|citations?|source_refs?|",
     "bibliography|literature|doi|url|weblink|web_link|link|",
     "species|genus|subgenus|scientific_?name|taxon_?name|species_?name|",
     "binomial|canonical_?name|accepted_?name|name|taxon)$"), sane) |

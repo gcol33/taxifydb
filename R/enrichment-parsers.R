@@ -511,7 +511,22 @@ parse_leda <- function(dir_path) {
     leaf_mass     = "leaf_mass.txt",
     sla           = "SLA.txt",
     clonal_growth = "clonal_growth.txt",
-    buoyancy      = "buoyancy.txt"
+    buoyancy      = "buoyancy.txt",
+    age_flower    = "age_of_first_flowering.txt",
+    branching     = "branching.txt",
+    bud_seas      = "buds_seasonality.txt",
+    buds_vert     = "buds_vertical_dist.txt",
+    leaf_dist     = "leaf_distribution.txt",
+    ldmc          = "LDMC_und_Geo.txt",
+    leaf_size     = "leaf_size.txt",
+    morph_disp    = "morphology_dispersal_unit.txt",
+    life_span     = "plant_life_span.txt",
+    rel_height    = "releasing_height.txt",
+    seed_long     = "seed_longevity.txt",
+    seed_number   = "seed_number.txt",
+    seed_shape    = "seed_shape.txt",
+    shoot_gf      = "shoot_growth_form.txt",
+    ssd           = "ssd.txt"
   )
 
   read_leda_trait <- function(path) {
@@ -523,7 +538,7 @@ parse_leda <- function(dir_path) {
     find_header_skip <- function(p, max_scan = 50L) {
       con <- file(p, encoding = "latin1")
       on.exit(close(con))
-      lines <- readLines(con, n = max_scan, warn = FALSE)
+      lines <- .to_utf8(readLines(con, n = max_scan, warn = FALSE))
       hits <- which(grepl("^SBS (name|number)\\s*;", lines,
                           ignore.case = TRUE))
       if (length(hits) == 0L) {
@@ -536,24 +551,30 @@ parse_leda <- function(dir_path) {
       hits[1L] - 1L
     }
 
-    tryCatch({
+    df0 <- tryCatch({
       skip_n <- find_header_skip(path)
       df <- utils::read.csv(path, sep = ";", stringsAsFactors = FALSE,
                             fileEncoding = "latin1", skip = skip_n,
-                            check.names = FALSE)
+                            check.names = FALSE, quote = "", row.names = NULL)
       if (ncol(df) <= 1L) {
         df <- utils::read.delim(path, stringsAsFactors = FALSE,
                                 fileEncoding = "latin1", skip = skip_n,
-                                check.names = FALSE)
+                                check.names = FALSE, quote = "", row.names = NULL)
       }
       df
     }, error = function(e) {
       tryCatch(
         utils::read.delim(path, stringsAsFactors = FALSE, skip = 0L,
-                          check.names = FALSE),
+                          check.names = FALSE, quote = "", row.names = NULL),
         error = function(e2) NULL
       )
     })
+    if (is.null(df0)) return(NULL)
+    names(df0) <- .to_utf8(names(df0))
+    for (j in seq_along(df0)) {
+      if (is.character(df0[[j]])) df0[[j]] <- .to_utf8(df0[[j]])
+    }
+    df0
   }
 
   find_name_col <- function(df) {
@@ -678,6 +699,43 @@ parse_leda <- function(dir_path) {
     "buoyancy", "character"
   )
 
+  # Remaining LEDA trait files (value column patterns verified against the
+  # downloaded headers; seed_bank / SNP omitted -- empty upstream).
+  master <- merge_trait(master, file.path(dir_path, trait_files$age_flower),
+    c("age of first flowering"), "age_first_flowering", "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$branching),
+    c("^branching$", "branching"), "branching", "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$bud_seas),
+    c("BBS above ground", "budb seas"), "bud_bank_seasonality", "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$buds_vert),
+    c("buds above ground", "buds in layer"), "buds_vertical_distribution",
+    "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$leaf_dist),
+    c("leaf distribution"), "leaf_distribution", "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$ldmc),
+    c("mean LMDC", "single value .mg/g", "LDMC"), "ldmc_mg_g", "numeric")
+  master <- merge_trait(master, file.path(dir_path, trait_files$leaf_size),
+    c("mean LS", "single value .mm.2", "leaf.*size"), "leaf_size_mm2", "numeric")
+  master <- merge_trait(master, file.path(dir_path, trait_files$morph_disp),
+    c("^diaspore type$", "diaspore type"), "diaspore_type", "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$life_span),
+    c("^plant lifespan$", "plant lifespan", "life span"), "plant_life_span",
+    "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$rel_height),
+    c("mean RH", "single value .m."), "releasing_height_m", "numeric")
+  master <- merge_trait(master, file.path(dir_path, trait_files$seed_long),
+    c("seed longevity index", "max longevity"), "seed_longevity_index",
+    "numeric")
+  master <- merge_trait(master, file.path(dir_path, trait_files$seed_number),
+    c("average SNP", "single value", "seed number"), "seed_number_per_plant",
+    "numeric")
+  master <- merge_trait(master, file.path(dir_path, trait_files$seed_shape),
+    c("length .single value", "length"), "seed_length_mm", "numeric")
+  master <- merge_trait(master, file.path(dir_path, trait_files$shoot_gf),
+    c("shoot growth form"), "shoot_growth_form", "character")
+  master <- merge_trait(master, file.path(dir_path, trait_files$ssd),
+    c("mean SSD", "SSD .g/cm"), "ssd_g_cm3", "numeric")
+
   if (is.null(master) || nrow(master) == 0L) {
     stop("No LEDA data could be parsed from downloaded files.", call. = FALSE)
   }
@@ -688,6 +746,13 @@ parse_leda <- function(dir_path) {
                 "clonal_growth", "buoyancy")
   for (col in expected) {
     if (!col %in% names(master)) master[[col]] <- NA
+  }
+
+  # LEDA files are latin1; make names and character traits valid UTF-8 so the
+  # downstream name resolution and .vtr write do not choke on stray bytes.
+  master$canonical_name <- .to_utf8(master$canonical_name)
+  for (cc in names(master)) {
+    if (is.character(master[[cc]])) master[[cc]] <- .to_utf8(master[[cc]])
   }
 
   master <- master[!is.na(master$canonical_name) &

@@ -129,7 +129,23 @@
         "leaf_mass.txt"         = "leaf_mass.txt",
         "SLA.txt"               = "SLA_und_geo_neu2.txt",
         "clonal_growth.txt"     = "CGO.txt",
-        "buoyancy.txt"          = "buoyancy_2016.txt"
+        "buoyancy.txt"          = "buoyancy_2016.txt",
+        # remaining LEDA trait files (seed_bank / SNP omitted: empty upstream)
+        "age_of_first_flowering.txt"    = "age_of_first_flowering.txt",
+        "branching.txt"                 = "branching.txt",
+        "buds_seasonality.txt"          = "buds_seasonality.txt",
+        "buds_vertical_dist.txt"        = "buds_vertical_dist.txt",
+        "leaf_distribution.txt"         = "leaf_distribution.txt",
+        "LDMC_und_Geo.txt"              = "LDMC_und_Geo.txt",
+        "leaf_size.txt"                 = "leaf_size.txt",
+        "morphology_dispersal_unit.txt" = "morphology_dispersal_unit.txt",
+        "plant_life_span.txt"           = "plant_life_span.txt",
+        "releasing_height.txt"          = "releasing_height.txt",
+        "seed_longevity.txt"            = "seed_longevity.txt",
+        "seed_number.txt"               = "seed_number.txt",
+        "seed_shape.txt"                = "seed_shape.txt",
+        "shoot_growth_form.txt"         = "shoot_growth_form.txt",
+        "ssd.txt"                       = "ssd.txt"
       )
       for (out_name in names(trait_files)) {
         upstream <- trait_files[[out_name]]
@@ -283,12 +299,21 @@
           dir.create(ott_dir, recursive = TRUE)
           tgz_path <- file.path(dest, "ott.tgz")
           if (!file.exists(tgz_path)) {
-            utils::download.file(ott_url, tgz_path, mode = "wb", quiet = TRUE)
+            # files.opentreeoflife.org's TLS certificate expired 2026-05-01;
+            # the OTT tarball is CC0 and confirmed present, so fetch it with
+            # certificate verification relaxed rather than failing the source.
+            h <- curl::new_handle()
+            curl::handle_setopt(h, followlocation = TRUE, maxredirs = 10L,
+                                ssl_verifypeer = 0L, ssl_verifyhost = 0L)
+            curl::curl_download(ott_url, tgz_path, handle = h)
           }
           utils::untar(tgz_path, exdir = dest)
+          # The tarball extracts to a versioned dir (e.g. ott3.7.3/); match that
+          # specifically so the freshly created (empty) ott/ dest dir -- which
+          # also starts with "ott" -- is not picked instead.
           ott_extracted <- list.dirs(dest, recursive = FALSE,
                                      full.names = TRUE)
-          ott_extracted <- ott_extracted[grepl("^ott",
+          ott_extracted <- ott_extracted[grepl("^ott[0-9]",
                                                basename(ott_extracted))][1L]
           if (!is.na(ott_extracted)) {
             file.copy(file.path(ott_extracted, "taxonomy.tsv"), ott_dir)

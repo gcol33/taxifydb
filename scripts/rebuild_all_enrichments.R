@@ -19,6 +19,22 @@ done_f   <- file.path(run_dir, "done.txt")
 failed_f <- file.path(run_dir, "failed.txt")
 log_f    <- file.path(run_dir, "rebuild.log")
 
+# Single-instance lock: concurrent runs race on the data dir and clobber each
+# other's .vtr. dir.create() is atomic -- exactly one caller wins even if the
+# task spawns several processes at once; the rest exit. A stale lock (>3h,
+# e.g. from a crash) is reclaimed.
+lock_d <- file.path(run_dir, "LOCK.d")
+if (dir.exists(lock_d) &&
+    difftime(Sys.time(), file.info(lock_d)$mtime, units = "hours") > 3) {
+  unlink(lock_d, recursive = TRUE)
+}
+if (!dir.create(lock_d, showWarnings = FALSE)) {
+  cat("Another rebuild instance holds the lock; exiting.\n")
+  quit(save = "no", status = 0)
+}
+writeLines(as.character(Sys.getpid()), file.path(lock_d, "pid"))
+on.exit(unlink(lock_d, recursive = TRUE), add = TRUE)
+
 logln <- function(...) {
   msg <- sprintf("[%s] %s", format(Sys.time(), "%H:%M:%S"), paste0(..., collapse = ""))
   cat(msg, "\n"); cat(msg, "\n", file = log_f, append = TRUE)
@@ -47,7 +63,17 @@ install_latest <- function(built_vtr, name) {
   new <- list.files(src_dir, pattern = paste0("^", name, "\\.vtr"), full.names = TRUE)
   file.copy(new, dest, overwrite = TRUE)
   meta <- file.path(src_dir, "meta.json")
-  if (file.exists(meta)) file.copy(meta, dest, overwrite = TRUE)
+  if (file.exists(meta)) {
+    # Mark the locally rebuilt .vtr static so the runtime treats it as
+    # authoritative: without this, the first add_*() call sees the build's
+    # version differ from the manifest's release version and re-downloads the
+    # OLD narrow release, clobbering the widened build.
+    m <- jsonlite::read_json(meta, simplifyVector = TRUE)
+    m$static <- TRUE
+    m$widened <- TRUE
+    jsonlite::write_json(m, file.path(dest, "meta.json"), pretty = TRUE,
+                         auto_unbox = TRUE, null = "null")
+  }
   dest
 }
 

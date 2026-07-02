@@ -260,10 +260,12 @@ parse_bien <- function(path) {
                                 type = "cat"),
     flower_color         = list(trait = "flower color", type = "cat")
   )
-  # Enumerate every BIEN trait so none is dropped; the curated spec above only
-  # renames/types the 16 it references, and .pivot_species_traits(keep_all) adds
-  # a column for each remaining fetched trait. If the trait catalogue is
-  # unavailable, fall back to fetching just the curated 16.
+  # Fetch every BIEN trait so none is dropped. The per-trait download is a large
+  # global scrape (millions of occurrence records each, dozens of traits), but
+  # the output is bounded: each pull is reduced immediately to (name, trait,
+  # value) and pivoted to one row per species. The curated `spec` only renames /
+  # types the traits it lists; keep_all pivots every other fetched trait. If the
+  # catalogue is unreachable, fall back to the curated set.
   curated_traits <- unname(vapply(spec, function(s) s$trait, character(1L)))
   all_traits <- tryCatch(BIEN::BIEN_trait_list(), error = function(e) NULL)
   traits <- if (is.data.frame(all_traits)) {
@@ -276,10 +278,9 @@ parse_bien <- function(path) {
   }
   traits <- traits[!is.na(traits) & nzchar(trimws(traits))]
   if (!length(traits)) {
-    message("  [bien] BIEN_trait_list() unavailable; fetching curated 16 only.")
+    message("  [bien] BIEN_trait_list() unavailable; fetching curated set only.")
     traits <- curated_traits
   } else {
-    # Guarantee the curated traits are fetched even if absent from the catalogue.
     traits <- union(traits, curated_traits)
   }
 

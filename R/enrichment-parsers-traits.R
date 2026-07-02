@@ -168,7 +168,9 @@ parse_funguild <- function(path) {
 #' species-epithet column, so the name must come from `load_taxa()` and be
 #' joined to traits by `SpecCode`. Traits come from the `species` table (length,
 #' mass, depth range, vulnerability, habitat, importance) and trophic level from
-#' `ecology` (`DietTroph`). Missing columns degrade to NA.
+#' `ecology` (`DietTroph`, falling back to `FoodTroph` where diet-based values
+#' are absent -- SeaLifeBase populates `FoodTroph` but rarely `DietTroph`).
+#' Missing columns degrade to NA.
 #'
 #' @param server Either "fishbase" or "sealifebase".
 #' @return data.frame keyed on `canonical_name` with eight trait columns.
@@ -198,7 +200,7 @@ parse_funguild <- function(path) {
     error = function(e) NULL
   )
   if (!is.null(eco) && "SpecCode" %in% names(eco)) {
-    eco_sub <- eco[, intersect(names(eco), c("SpecCode", "DietTroph")),
+    eco_sub <- eco[, intersect(names(eco), c("SpecCode", "DietTroph", "FoodTroph")),
                    drop = FALSE]
     eco_sub <- eco_sub[!duplicated(eco_sub$SpecCode), , drop = FALSE]
     merged <- merge(merged, eco_sub, by = "SpecCode", all.x = TRUE)
@@ -215,11 +217,17 @@ parse_funguild <- function(path) {
     trimws(x)
   }
 
+  # Trophic level: prefer diet-based (DietTroph), fall back to food-items-based
+  # (FoodTroph). SeaLifeBase populates FoodTroph but almost never DietTroph.
+  troph <- safe_num("DietTroph")
+  food  <- safe_num("FoodTroph")
+  troph[is.na(troph)] <- food[is.na(troph)]
+
   out <- data.frame(
     canonical_name  = merged$canonical_name,
     body_length_cm  = safe_num("Length"),
     body_mass_g     = safe_num("Weight"),
-    trophic_level   = safe_num("DietTroph"),
+    trophic_level   = troph,
     depth_min_m     = safe_num("DepthRangeShallow"),
     depth_max_m     = safe_num("DepthRangeDeep"),
     vulnerability   = safe_num("Vulnerability"),

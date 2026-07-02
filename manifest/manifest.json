@@ -734,9 +734,9 @@
       "source_url": "https://esapubs.org/archive/ecol/E090/184/PanTHERIA_1-0_WR05_Aug2008.txt"
     },
     "amphibio": {
-      "latest": "1.0",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.05/amphibio.vtr",
-      "nrow": 7802,
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/amphibio.vtr",
+      "nrow": 7799,
       "license": "CC BY 4.0",
       "source_doi": "10.6084/m9.figshare.4644424.v5",
       "source_url": "https://ndownloader.figshare.com/files/8828578"
@@ -1386,9 +1386,9 @@
       "license": "Free use with data-paper citation (no formal license stated)"
     },
     "sealifebase": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/sealifebase.vtr",
-      "nrow": 110985,
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/sealifebase.vtr",
+      "nrow": 111710,
       "source_url": "https://sealifebase.ropensci.org",
       "license": "CC BY-NC 4.0"
     },

@@ -184,6 +184,13 @@ parse_ott_common_names <- function(dir_path) {
   common <- syns[grepl("common", syns$type, ignore.case = TRUE), ]
   common <- common[!is.na(common$name) & nchar(common$name) > 0L, ]
 
+  empty <- data.frame(canonical_name = character(0), lang = character(0),
+                      common_name = character(0), stringsAsFactors = FALSE)
+  # OTT's synonyms.tsv is a scientific-synonym list with an empty `type` field
+  # in recent releases (e.g. 3.7.3) -- it carries no vernacular names, so this
+  # is normally 0 rows. Return empty rather than recycling NA against 0 rows.
+  if (nrow(common) == 0L) return(empty)
+
   canonical <- tax_lookup[common$uid]
 
   out <- data.frame(

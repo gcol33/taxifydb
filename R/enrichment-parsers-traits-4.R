@@ -19,6 +19,26 @@
   }
 }
 
+#' Raw Tree of Sex column names consumed by the curated block
+#'
+#' The same name-pattern selection `.tos_pick()` uses, but returning the picked
+#' raw column names (plus the Genus/species pair folded into `canonical_name`).
+#' Passed as `used=` to `.append_all_cols()` so a curated column whose raw source
+#' name differs from its output name (e.g. `environmental sex determination`
+#' -> `environmental_sd`) is not re-appended under its raw name.
+#' @noRd
+.tos_used <- function(df) {
+  patterns <- c("sexual.?system", "karyotype", "genotypic", "molecular.?basis",
+                "selfing", "environmental", "haplodiploidy")
+  nm <- names(df)
+  picked <- vapply(patterns, function(p) {
+    cand <- nm[grepl(p, nm, ignore.case = TRUE) &
+                 !grepl("^\\s*(source|notes)", nm, ignore.case = TRUE)]
+    if (length(cand)) cand[1L] else NA_character_
+  }, character(1L))
+  c("Genus", "species", picked[!is.na(picked)])
+}
+
 #' Parse the Tree of Sex database (plants + vertebrates + invertebrates)
 #'
 #' Row-binds the three sub-tables on a common core keyed on `Genus species`,
@@ -61,9 +81,19 @@ parse_tree_of_sex <- function(path) {
       haplodiploidy   = .tos_pick(df, "haplodiploidy"),
       stringsAsFactors = FALSE
     )
-    parts[[length(parts) + 1L]] <- out[cols]
+    out <- out[cols]
+    out <- .append_all_cols(out, df, out$canonical_name, used = .tos_used(df))
+    parts[[length(parts) + 1L]] <- out
   }
   if (!length(parts)) stop("No Tree of Sex CSVs found.", call. = FALSE)
+  # Each sub-table now carries its own group-specific extra columns, so bind on
+  # the union of columns, filling absent ones with NA.
+  all_cols <- unique(unlist(lapply(parts, names)))
+  parts <- lapply(parts, function(p) {
+    miss <- setdiff(all_cols, names(p))
+    for (m in miss) p[[m]] <- NA
+    p[all_cols]
+  })
   combined <- do.call(rbind, parts)
   .trait_finalize(combined)
 }
@@ -128,8 +158,6 @@ parse_useful_plants <- function(path) {
   n <- length(idx)
   canonical <- character(n)
   cwr <- integer(n)
-  code_mat <- matrix(0L, nrow = n, ncol = length(use_codes),
-                     dimnames = list(NULL, names(use_codes)))
 
   prev_nonempty <- function(i) {
     j <- i - 1L
@@ -137,6 +165,11 @@ parse_useful_plants <- function(path) {
     if (j >= 1L) lines[j] else ""
   }
 
+  # First pass: extract each record's name, CWR flag, and use codes, collecting
+  # the union of codes actually present. The ten curated codes are the full
+  # documented WCUP Level-1 scheme, but any further code-shaped token present is
+  # kept as its own boolean column so no source code is dropped.
+  rec_codes <- vector("list", n)
   for (k in seq_len(n)) {
     i <- idx[k]
     sp_line <- prev_nonempty(i)
@@ -146,13 +179,39 @@ parse_useful_plants <- function(path) {
     fields <- trimws(strsplit(lines[i], "|", fixed = TRUE)[[1L]])
     cwr[k] <- as.integer(any(toupper(fields) == "CWR"))
     codes_field <- if (length(fields) >= 2L) fields[2L] else ""
-    codes <- strsplit(codes_field, "\\s+")[[1L]]
-    hit <- names(use_codes)[names(use_codes) %in% toupper(codes)]
+    codes <- toupper(strsplit(codes_field, "\\s+")[[1L]])
+    codes <- codes[grepl("^[A-Z]{2,}$", codes) & codes != "CWR"]
+    rec_codes[[k]] <- codes
+  }
+
+  present <- unique(unlist(rec_codes))
+  extra_codes <- sort(setdiff(present, names(use_codes)))
+  ordered_codes <- c(names(use_codes), extra_codes)
+
+  # Curated codes keep their documented names; extra codes become their own
+  # (sanitized) boolean column, de-duplicated against the curated names.
+  col_names <- character(length(ordered_codes))
+  taken <- "canonical_name"
+  for (ci in seq_along(ordered_codes)) {
+    code <- ordered_codes[ci]
+    base <- if (code %in% names(use_codes)) use_codes[[code]]
+            else .sanitize_col(code)
+    nm <- .uniq_colname(base, taken)
+    col_names[ci] <- nm
+    taken <- c(taken, nm)
+  }
+
+  code_mat <- matrix(0L, nrow = n, ncol = length(ordered_codes),
+                     dimnames = list(NULL, ordered_codes))
+  for (k in seq_len(n)) {
+    hit <- intersect(rec_codes[[k]], ordered_codes)
     if (length(hit)) code_mat[k, hit] <- 1L
   }
 
   out <- data.frame(canonical_name = canonical, stringsAsFactors = FALSE)
-  for (code in names(use_codes)) out[[use_codes[[code]]]] <- code_mat[, code]
+  for (ci in seq_along(ordered_codes)) {
+    out[[col_names[ci]]] <- code_mat[, ordered_codes[ci]]
+  }
   out$crop_wild_relative <- cwr
   out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name), ]
   out[!duplicated(out$canonical_name), , drop = FALSE]
@@ -201,7 +260,28 @@ parse_bien <- function(path) {
                                 type = "cat"),
     flower_color         = list(trait = "flower color", type = "cat")
   )
-  traits <- unname(vapply(spec, function(s) s$trait, character(1L)))
+  # Enumerate every BIEN trait so none is dropped; the curated spec above only
+  # renames/types the 16 it references, and .pivot_species_traits(keep_all) adds
+  # a column for each remaining fetched trait. If the trait catalogue is
+  # unavailable, fall back to fetching just the curated 16.
+  curated_traits <- unname(vapply(spec, function(s) s$trait, character(1L)))
+  all_traits <- tryCatch(BIEN::BIEN_trait_list(), error = function(e) NULL)
+  traits <- if (is.data.frame(all_traits)) {
+    tcol <- intersect(c("trait_name", "trait"), names(all_traits))
+    if (length(tcol)) unique(as.character(all_traits[[tcol[1L]]])) else character(0)
+  } else if (is.character(all_traits)) {
+    unique(all_traits)
+  } else {
+    character(0)
+  }
+  traits <- traits[!is.na(traits) & nzchar(trimws(traits))]
+  if (!length(traits)) {
+    message("  [bien] BIEN_trait_list() unavailable; fetching curated 16 only.")
+    traits <- curated_traits
+  } else {
+    # Guarantee the curated traits are fetched even if absent from the catalogue.
+    traits <- union(traits, curated_traits)
+  }
 
   # Query one trait at a time and immediately reduce each pull to the three
   # columns we keep, freeing the full (many-column, multi-million-row) result

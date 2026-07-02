@@ -156,6 +156,19 @@ parse_funguild <- function(path) {
   out <- out[!duplicated(out$canonical_name), ]
   out$taxon_level <- NULL
 
+  # Keep every other FUNGuild field; the curated columns above stay untouched
+  # and references/citation-style fields are auto-skipped.
+  used_cols <- c(
+    level_col[1L], "taxonLevel", "taxon", "guild",
+    intersect(c("trophicMode", "trophic_mode"), names(df))[1L],
+    intersect(c("growthMorphology", "growthForm", "growth_morphology"),
+              names(df))[1L],
+    intersect(c("confidenceRanking", "confidence_ranking", "confidence"),
+              names(df))[1L]
+  )
+  used_cols <- used_cols[!is.na(used_cols)]
+  out <- .append_all_cols(out, df, trimws(df$taxon), used = used_cols)
+
   out
 }
 
@@ -200,10 +213,11 @@ parse_funguild <- function(path) {
     error = function(e) NULL
   )
   if (!is.null(eco) && "SpecCode" %in% names(eco)) {
-    eco_sub <- eco[, intersect(names(eco), c("SpecCode", "DietTroph", "FoodTroph")),
-                   drop = FALSE]
-    eco_sub <- eco_sub[!duplicated(eco_sub$SpecCode), , drop = FALSE]
-    merged <- merge(merged, eco_sub, by = "SpecCode", all.x = TRUE)
+    # Bring every ecology column (not just the two trophic-level fields);
+    # SpecCode stays the join key and species-table names win on collision.
+    eco_sub <- eco[!duplicated(eco$SpecCode), , drop = FALSE]
+    merged <- merge(merged, eco_sub, by = "SpecCode", all.x = TRUE,
+                    suffixes = c("", "_eco"))
   }
 
   safe_num <- function(col_name) {
@@ -239,7 +253,15 @@ parse_funguild <- function(path) {
   # Keep binomials only (a space separates genus and epithet).
   out <- out[!is.na(out$canonical_name) & grepl(" ", out$canonical_name), ,
              drop = FALSE]
-  out[!duplicated(out$canonical_name), , drop = FALSE]
+  out <- out[!duplicated(out$canonical_name), , drop = FALSE]
+
+  # Keep every other merged species/taxonomy/ecology column.
+  .append_all_cols(
+    out, merged, merged$canonical_name,
+    used = c("Species", "canonical_name", "Length", "Weight", "DietTroph",
+             "FoodTroph", "DepthRangeShallow", "DepthRangeDeep",
+             "Vulnerability", "DemersPelag", "Importance", "SpecCode")
+  )
 }
 
 
@@ -287,38 +309,30 @@ parse_groot <- function(path) {
     na.strings = c("", "NA")
   )
 
-  # GRooT trait label -> output column (the nine key traits the data paper
-  # highlights). The mycorrhizal-colonization label carries a space, not an
-  # underscore, in the source file.
-  key_traits <- c(
-    "Mean_Root_diameter"            = "root_diameter",
-    "Specific_root_length"          = "specific_root_length",
-    "Root_tissue_density"           = "root_tissue_density",
-    "Root_N_concentration"          = "root_n_concentration",
-    "Root_C_concentration"          = "root_c_concentration",
-    "Root_mass_fraction"            = "root_mass_fraction",
-    "Lateral_spread"                = "lateral_spread",
-    "Root_mycorrhizal colonization" = "root_mycorrhizal_colonization",
-    "Rooting_depth"                 = "rooting_depth"
+  # Nine key traits the data paper highlights keep hand-picked output names; the
+  # pivot keeps every other GRooT trait too (sanitized name). The mycorrhizal-
+  # colonization label carries a space, not an underscore, in the source file.
+  curated <- list(
+    root_diameter                 = list(trait = "Mean_Root_diameter",   type = "num"),
+    specific_root_length          = list(trait = "Specific_root_length", type = "num"),
+    root_tissue_density           = list(trait = "Root_tissue_density",  type = "num"),
+    root_n_concentration          = list(trait = "Root_N_concentration", type = "num"),
+    root_c_concentration          = list(trait = "Root_C_concentration", type = "num"),
+    root_mass_fraction            = list(trait = "Root_mass_fraction",   type = "num"),
+    lateral_spread                = list(trait = "Lateral_spread",       type = "num"),
+    root_mycorrhizal_colonization = list(trait = "Root_mycorrhizal colonization",
+                                         type = "num"),
+    rooting_depth                 = list(trait = "Rooting_depth",        type = "num")
   )
 
-  df <- df[!is.na(df$speciesTNRS) & nzchar(trimws(df$speciesTNRS)) &
-             df$traitName %in% names(key_traits), , drop = FALSE]
-  df$canonical_name <- trimws(paste(df$genusTNRS, df$speciesTNRS))
-  df$value <- suppressWarnings(as.numeric(df$meanSpecies))
-
-  out <- data.frame(
-    canonical_name = sort(unique(df$canonical_name)),
+  df <- df[!is.na(df$speciesTNRS) & nzchar(trimws(df$speciesTNRS)), , drop = FALSE]
+  long <- data.frame(
+    name  = trimws(paste(df$genusTNRS, df$speciesTNRS)),
+    trait = df$traitName,
+    value = df$meanSpecies,
     stringsAsFactors = FALSE
   )
-  for (tn in names(key_traits)) {
-    sub <- df[df$traitName == tn, c("canonical_name", "value")]
-    vals <- tapply(sub$value, sub$canonical_name,
-                   function(x) mean(x, na.rm = TRUE))
-    out[[key_traits[[tn]]]] <- as.numeric(vals[out$canonical_name])
-  }
-
-  out
+  .pivot_species_traits(long, curated)
 }
 
 
@@ -398,6 +412,14 @@ parse_fungal_traits <- function(path) {
   out <- out[!is.na(out$genus) & nchar(out$genus) > 0L, ]
 
   out <- out[!duplicated(out$genus), , drop = FALSE]
+
+  # Keep every other FungalTraits column. Genus is the key; canonical_name
+  # mirrors it, so the shared widener treats canonical_name as the join column.
+  used_cols <- c(genus_col, primary_col, secondary_col, growth_col, fruit_col,
+                 decay_col, plant_path_col, animal_col, endo_col, ecto_col)
+  used_cols <- used_cols[!is.na(used_cols)]
+  out <- .append_all_cols(out, df, genus_clean, used = used_cols)
+
   rownames(out) <- NULL
   out
 }
@@ -498,6 +520,27 @@ parse_fungalroot <- function(path) {
     mycorrhizal_records = as.integer(n_rec),
     stringsAsFactors    = FALSE
   )
+
+  # Keep every other measurement type per genus. The curated block above owns
+  # the standardized "Mycorrhiza type" (type / status / record count); all other
+  # measurement types pivot to one column each, joined on genus.
+  mea$genus <- occ$genus[match(mea[["Core ID"]], occ$ID)]
+  long <- data.frame(
+    name  = trimws(mea$genus),
+    trait = trimws(mea$measurementType),
+    value = mea$measurementValue,
+    stringsAsFactors = FALSE
+  )
+  keep <- !is.na(long$name) & nzchar(long$name) &
+          !is.na(long$trait) & long$trait != "Mycorrhiza type"
+  long <- long[keep, , drop = FALSE]
+  if (nrow(long) > 0L) {
+    extra <- .pivot_species_traits(long, spec = list(), keep_all = TRUE)
+    extra_cols <- setdiff(names(extra), "canonical_name")
+    idx <- match(out$canonical_name, extra$canonical_name)
+    for (cc in extra_cols) out[[cc]] <- extra[[cc]][idx]
+  }
+
   rownames(out) <- NULL
   out
 }
@@ -651,6 +694,18 @@ parse_algae_traits <- function(path) {
     }
   }
 
+  # Append every trait label not folded into the eight curated buckets.
+  consumed <- unlist(trait_map, use.names = FALSE)
+  long <- data.frame(name = species, trait = traits, value = values,
+                     stringsAsFactors = FALSE)
+  long <- long[!is.na(long$trait) & !(long$trait %in% consumed), , drop = FALSE]
+  if (nrow(long) > 0L) {
+    extra <- .pivot_species_traits(long, spec = list(), keep_all = TRUE)
+    extra_cols <- setdiff(names(extra), "canonical_name")
+    idx <- match(out$canonical_name, extra$canonical_name)
+    for (cc in extra_cols) out[[cc]] <- extra[[cc]][idx]
+  }
+
   out
 }
 
@@ -689,7 +744,7 @@ parse_algae_traits <- function(path) {
     x
   }
 
-  data.frame(
+  out <- data.frame(
     canonical_name = trimws(df[[name_col]]),
     body_size_cm   = safe_num(size_col),
     growth_form    = safe_chr(form_col),
@@ -701,6 +756,12 @@ parse_algae_traits <- function(path) {
     substrate      = safe_chr(sub_col),
     stringsAsFactors = FALSE
   )
+
+  # Append every other source column.
+  used_cols <- c(name_col, size_col, form_col, calc_col, span_col, tide_col,
+                 wave_col, env_col, sub_col)
+  used_cols <- used_cols[!is.na(used_cols)]
+  .append_all_cols(out, df, trimws(df[[name_col]]), used = used_cols)
 }
 
 
@@ -771,9 +832,10 @@ parse_repttraits <- function(path) {
 
   name_col <- pick_col("Species", exact = TRUE)
   if (is.null(name_col)) name_col <- hdr[1L]
+  cname <- trimws(gsub("_", " ", df[[name_col]]))
 
   out <- data.frame(
-    canonical_name      = trimws(gsub("_", " ", df[[name_col]])),
+    canonical_name      = cname,
     # ---- distribution / environment (the per-species range signal) ----
     biogeographic_realm = safe_chr("Main biogeographic region"),
     microhabitat        = safe_chr("Microhabitat"),
@@ -796,7 +858,23 @@ parse_repttraits <- function(path) {
   )
 
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  out[!duplicated(out$canonical_name), ]
+  out <- out[!duplicated(out$canonical_name), ]
+
+  # Keep every other ReptTraits column (the curated 16 are resolved by header).
+  used_cols <- c(
+    name_col,
+    pick_col("Main biogeographic region"), pick_col("Microhabitat"),
+    pick_col("Habitat type"), pick_col("Minimal elevation"),
+    pick_col("Maximum elevation"), pick_col("Mean Annual Temperature"),
+    pick_col("Insular/endemic"), pick_col("Maximum body mass"),
+    pick_col("Maximum length"), pick_col("Maximum total length"),
+    pick_col("Maximum Longevity"), pick_col("Diet", exact = TRUE),
+    pick_col("Reproductive mode"), pick_col("Mean number of offspring"),
+    pick_col("Active time"), pick_col("Foraging mode")
+  )
+  used_cols <- unlist(used_cols)
+  used_cols <- used_cols[!is.na(used_cols)]
+  .append_all_cols(out, df, cname, used = used_cols)
 }
 
 
@@ -846,8 +924,9 @@ parse_leptraits <- function(path) {
     flight_months <- safe_num("FlightDuration")
   }
 
+  cname <- trimws(df[[name_col]])
   out <- data.frame(
-    canonical_name       = trimws(df[[name_col]]),
+    canonical_name       = cname,
     wingspan_mm          = wingspan_mm,
     voltinism            = safe_num("Voltinism"),
     diapause_stage       = safe_chr("DiapauseStage"),
@@ -860,11 +939,16 @@ parse_leptraits <- function(path) {
     stringsAsFactors = FALSE
   )
 
-  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  trait_cols <- setdiff(names(out), "canonical_name")
-  has_data <- rowSums(!is.na(out[, trait_cols, drop = FALSE])) > 0L
-  out <- out[has_data, ]
-  out[!duplicated(out$canonical_name), ]
+  # Keep every other consensus column, including the raw month columns
+  # (flight_months is derived from them and kept above).
+  out <- .append_all_cols(
+    out, df, cname,
+    used = c(name_col, "WS_L", "WS_U", "Voltinism", "DiapauseStage",
+             "CanopyAffinity", "EdgeAffinity", "MoistureAffinity",
+             "DisturbanceAffinity", "NumberOfHostplantFamilies",
+             "FlightDuration")
+  )
+  .trait_finalize(out)
 }
 
 
@@ -936,8 +1020,13 @@ parse_animaltraits <- function(path) {
     if (length(x) == 0L) NA_real_ else stats::median(x)
   }, numeric(1L))
 
-  has_data <- !is.na(out$body_mass_kg) | !is.na(out$metabolic_rate_w)
-  out[has_data, ]
+  # Aggregate every other observation column to species level (numeric ->
+  # median, categorical -> mode) alongside the two curated columns.
+  used_cols <- c(name_col,
+                 if (length(bm_col) > 0L) bm_col[1L],
+                 if (length(mr_col) > 0L) mr_col[1L])
+  out <- .append_all_cols(out, df, canonical, used = used_cols)
+  .trait_finalize(out)
 }
 
 
@@ -986,83 +1075,64 @@ parse_arthropod_traits <- function(dir_path) {
     stringsAsFactors = FALSE
   )
 
+  # One long (name, trait, value) table from BOTH the MoF measurement rows and
+  # the description extension rows, keyed to the species name via taxon_id.
+  long_parts <- list()
+
   if (!is.null(mof_file)) {
     mof <- utils::read.delim(mof_file, stringsAsFactors = FALSE, quote = "")
     mof_id <- intersect(names(mof), c("id", "taxonID", "coreid"))
     if (length(mof_id) == 0L) mof_id <- names(mof)[1L] else mof_id <- mof_id[1L]
-
     type_col <- intersect(names(mof), c("measurementType", "type"))
     if (length(type_col) == 0L) type_col <- names(mof)[2L] else type_col <- type_col[1L]
     val_col <- intersect(names(mof), c("measurementValue", "value"))
     if (length(val_col) == 0L) val_col <- names(mof)[3L] else val_col <- val_col[1L]
-
-    quant_map <- c(
-      "Body_size"        = "body_size_mm",
-      "Dispersal_ability" = "dispersal",
-      "Voltinism_mean"   = "voltinism",
-      "Fecundity"        = "fecundity",
-      "Development_time" = "development_d",
-      "Lifespan"         = "lifespan_d",
-      "Thermal_mean"     = "thermal_mean"
+    long_parts[[length(long_parts) + 1L]] <- data.frame(
+      name  = out$canonical_name[match(mof[[mof_id]], out$taxon_id)],
+      trait = trimws(as.character(mof[[type_col]])),
+      value = as.character(mof[[val_col]]),
+      stringsAsFactors = FALSE
     )
-
-    for (mtype in names(quant_map)) {
-      out_col <- quant_map[[mtype]]
-      rows <- mof[[type_col]] == mtype
-      if (!any(rows)) {
-        out[[out_col]] <- NA_real_
-        next
-      }
-      sub <- mof[rows, c(mof_id, val_col), drop = FALSE]
-      names(sub) <- c("taxon_id", "val")
-      sub$val <- suppressWarnings(as.numeric(sub$val))
-      sub <- sub[!is.na(sub$val), ]
-      sub <- sub[!duplicated(sub$taxon_id), ]
-      idx <- match(out$taxon_id, sub$taxon_id)
-      out[[out_col]] <- sub$val[idx]
-    }
   }
 
   if (!is.null(desc_file)) {
     desc <- utils::read.delim(desc_file, stringsAsFactors = FALSE, quote = "")
     desc_id <- intersect(names(desc), c("id", "taxonID", "coreid"))
     if (length(desc_id) == 0L) desc_id <- names(desc)[1L] else desc_id <- desc_id[1L]
-
     desc_col <- intersect(names(desc), c("description", "value"))
     if (length(desc_col) == 0L) desc_col <- names(desc)[2L] else desc_col <- desc_col[1L]
     type_col2 <- intersect(names(desc), c("type", "measurementType"))
     if (length(type_col2) == 0L) type_col2 <- names(desc)[3L] else type_col2 <- type_col2[1L]
-
-    cat_map <- c(
-      "Diurnality"          = "diurnality",
-      "Feeding_guild_adult" = "feeding_guild",
-      "Trophic_range_adult" = "trophic_range"
+    long_parts[[length(long_parts) + 1L]] <- data.frame(
+      name  = out$canonical_name[match(desc[[desc_id]], out$taxon_id)],
+      trait = trimws(as.character(desc[[type_col2]])),
+      value = as.character(desc[[desc_col]]),
+      stringsAsFactors = FALSE
     )
-
-    for (dtype in names(cat_map)) {
-      out_col <- cat_map[[dtype]]
-      rows <- desc[[type_col2]] == dtype
-      if (!any(rows)) {
-        out[[out_col]] <- NA_character_
-        next
-      }
-      sub <- desc[rows, c(desc_id, desc_col), drop = FALSE]
-      names(sub) <- c("taxon_id", "val")
-      sub$val <- trimws(sub$val)
-      sub$val[sub$val == "" | sub$val == "NA"] <- NA_character_
-      sub <- sub[!duplicated(sub$taxon_id), ]
-      idx <- match(out$taxon_id, sub$taxon_id)
-      out[[out_col]] <- sub$val[idx]
-    }
   }
 
-  out$taxon_id <- NULL
+  # Curated nice names (7 quantitative + 3 categorical); every other trait is
+  # kept too via keep_all.
+  curated <- list(
+    body_size_mm  = list(trait = "Body_size",           type = "num"),
+    dispersal     = list(trait = "Dispersal_ability",   type = "num"),
+    voltinism     = list(trait = "Voltinism_mean",      type = "num"),
+    fecundity     = list(trait = "Fecundity",           type = "num"),
+    development_d = list(trait = "Development_time",     type = "num"),
+    lifespan_d    = list(trait = "Lifespan",            type = "num"),
+    thermal_mean  = list(trait = "Thermal_mean",        type = "num"),
+    diurnality    = list(trait = "Diurnality",          type = "cat"),
+    feeding_guild = list(trait = "Feeding_guild_adult", type = "cat"),
+    trophic_range = list(trait = "Trophic_range_adult", type = "cat")
+  )
 
-  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  trait_cols <- setdiff(names(out), "canonical_name")
-  has_data <- rowSums(!is.na(out[, trait_cols, drop = FALSE])) > 0L
-  out <- out[has_data, ]
-  out[!duplicated(out$canonical_name), ]
+  long <- if (length(long_parts)) {
+    do.call(rbind, long_parts)
+  } else {
+    data.frame(name = character(0), trait = character(0),
+               value = character(0), stringsAsFactors = FALSE)
+  }
+  .pivot_species_traits(long, curated)
 }
 
 
@@ -1078,6 +1148,7 @@ parse_anage <- function(path) {
 
   if (length(genus_col) > 0L && length(sp_col) > 0L) {
     canonical <- trimws(paste(df[[genus_col[1L]]], df[[sp_col[1L]]]))
+    name_used <- c(genus_col[1L], sp_col[1L])
   } else {
     name_col <- intersect(
       names(df),
@@ -1086,6 +1157,7 @@ parse_anage <- function(path) {
     )
     if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
     canonical <- trimws(df[[name_col]])
+    name_used <- name_col
   }
 
   find_col <- function(patterns) {
@@ -1107,54 +1179,47 @@ parse_anage <- function(path) {
     "Maximum.longevity..yrs.", "Maximum_longevity_yrs",
     "Maximum.longevity", "MaxLongevity", "max_longevity"
   ))
+  body_mass_col <- find_col(c("Body.mass..g.", "Body_mass_g", "Adult.weight..g.",
+                              "AdultWeight", "body_mass"))
+  metab_col <- find_col(c("Metabolic.rate..W.", "Metabolic_rate_W",
+                          "MetabolicRate", "metabolic_rate"))
+  fem_mat_col <- find_col(c("Female.maturity..days.", "Female_maturity_days",
+                            "FemaleMaturity", "female_maturity"))
+  male_mat_col <- find_col(c("Male.maturity..days.", "Male_maturity_days",
+                             "MaleMaturity", "male_maturity"))
+  gest_col <- find_col(c("Gestation.Incubation..days.",
+                         "Gestation_Incubation_days", "GestationIncubation",
+                         "gestation_incubation"))
+  litter_col <- find_col(c("Litter.Clutch.size", "Litter_Clutch_size",
+                           "LitterClutchSize", "litter_clutch_size"))
+  birth_col <- find_col(c("Birth.weight..g.", "Birth_weight_g", "BirthWeight",
+                          "birth_weight"))
+  growth_col <- find_col(c("Growth.rate..1.days.", "Growth_rate", "GrowthRate",
+                           "growth_rate"))
+  temp_col <- find_col(c("Temperature..K.", "Temperature_K", "Temperature",
+                         "temperature"))
 
   out <- data.frame(
     canonical_name         = canonical,
     max_longevity_yr       = safe_num(longevity_col),
-    body_mass_g            = safe_num(find_col(c(
-      "Body.mass..g.", "Body_mass_g", "Adult.weight..g.",
-      "AdultWeight", "body_mass"
-    ))),
-    metabolic_rate_w       = safe_num(find_col(c(
-      "Metabolic.rate..W.", "Metabolic_rate_W", "MetabolicRate",
-      "metabolic_rate"
-    ))),
-    female_maturity_d      = safe_num(find_col(c(
-      "Female.maturity..days.", "Female_maturity_days",
-      "FemaleMaturity", "female_maturity"
-    ))),
-    male_maturity_d        = safe_num(find_col(c(
-      "Male.maturity..days.", "Male_maturity_days",
-      "MaleMaturity", "male_maturity"
-    ))),
-    gestation_incubation_d = safe_num(find_col(c(
-      "Gestation.Incubation..days.", "Gestation_Incubation_days",
-      "GestationIncubation", "gestation_incubation"
-    ))),
-    litter_size            = safe_num(find_col(c(
-      "Litter.Clutch.size", "Litter_Clutch_size",
-      "LitterClutchSize", "litter_clutch_size"
-    ))),
-    birth_mass_g           = safe_num(find_col(c(
-      "Birth.weight..g.", "Birth_weight_g",
-      "BirthWeight", "birth_weight"
-    ))),
-    growth_rate            = safe_num(find_col(c(
-      "Growth.rate..1.days.", "Growth_rate",
-      "GrowthRate", "growth_rate"
-    ))),
-    temperature_k          = safe_num(find_col(c(
-      "Temperature..K.", "Temperature_K",
-      "Temperature", "temperature"
-    ))),
+    body_mass_g            = safe_num(body_mass_col),
+    metabolic_rate_w       = safe_num(metab_col),
+    female_maturity_d      = safe_num(fem_mat_col),
+    male_maturity_d        = safe_num(male_mat_col),
+    gestation_incubation_d = safe_num(gest_col),
+    litter_size            = safe_num(litter_col),
+    birth_mass_g           = safe_num(birth_col),
+    growth_rate            = safe_num(growth_col),
+    temperature_k          = safe_num(temp_col),
     stringsAsFactors = FALSE
   )
 
-  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  trait_cols <- setdiff(names(out), "canonical_name")
-  has_data <- rowSums(!is.na(out[, trait_cols, drop = FALSE])) > 0L
-  out <- out[has_data, ]
-  out[!duplicated(out$canonical_name), ]
+  # Keep every other AnAge column; blanks are the source's missing marker.
+  used_cols <- c(name_used, longevity_col, body_mass_col, metab_col,
+                 fem_mat_col, male_mat_col, gest_col, litter_col, birth_col,
+                 growth_col, temp_col)
+  out <- .append_all_cols(out, df, canonical, used = used_cols)
+  .trait_finalize(out)
 }
 
 
@@ -1314,7 +1379,15 @@ parse_glonaf <- function(dir_path) {
 
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out <- out[!is.na(out$region_id) & nchar(out$region_id) > 0L, ]
-  out[!duplicated(paste(out$canonical_name, out$region_id)), ]
+  out <- out[!duplicated(paste(out$canonical_name, out$region_id)), ]
+
+  # Carry the rest of the GloNAF flora record per (species, region); the merge
+  # helper keys are dropped, canonical_name / region_id / naturalized are kept.
+  .append_all_cols(
+    out, flora, trimws(flora$canonical_name),
+    group = "region_id", group_row = as.character(flora$region_id),
+    used = c("join_key", "region_join", "region_code_resolved", "OBJIDsic")
+  )
 }
 
 
@@ -1456,11 +1529,14 @@ parse_baseflor <- function(path) {
     stringsAsFactors   = FALSE
   )
 
-  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  trait_cols <- setdiff(names(out), "canonical_name")
-  has_data <- rowSums(!is.na(out[, trait_cols, drop = FALSE])) > 0L
-  out <- out[has_data, ]
-  out[!duplicated(out$canonical_name), ]
+  # Keep every other sheet column (raw French header, sanitized). The curated
+  # and recoded columns above are consumed and stay untouched.
+  used_cols <- cn[cn_key %in% c("nomh", "nomb", "noma", "floraison",
+                                "pollinisation", "dissemination", "sexualite",
+                                "couleur_fleur", "fruit", "type_ligneux",
+                                "continentalite", "salinite")]
+  out <- .append_all_cols(out, df, nm, used = used_cols)
+  .trait_finalize(out)
 }
 
 
@@ -1519,6 +1595,15 @@ parse_ecoflora <- function(path) {
     ell_nitrogen_uk           = chr("ell_N"),
     ell_salt_uk               = chr("ell_S"),
     stringsAsFactors          = FALSE
+  )
+
+  # Keep every other scraped column (raw short-code name, sanitized).
+  out <- .append_all_cols(
+    out, df, trimws(df$species),
+    used = c("species", "h_max", "h_min", "le_area", "le_long", "root_system",
+             "phot_path", "li_form", "reprod_meth", "flw_early", "flw_late",
+             "poll_vect", "seed_wght", "propag", "ell_light_uk", "ell_moist_uk",
+             "ell_pH_uk", "ell_N", "ell_S")
   )
   .trait_finalize(out)
 }
@@ -1621,6 +1706,16 @@ parse_floraweb <- function(path) {
   d <- utils::read.csv(path, stringsAsFactors = FALSE, colClasses = "character",
                        encoding = "UTF-8")
   d$col <- .floraweb_label_map[d$label]
+
+  # Labels the curated map does not cover. Many FloraWeb "labels" are
+  # value-encoded rows (latitudinal areal matrix, chromosome-count
+  # distributions, per-subspecies counts) that would explode into hundreds of
+  # degenerate columns; only fold the unmapped labels back in when there are
+  # few enough to be genuine per-species traits.
+  unmapped <- unique(d$label[is.na(d$col) & !is.na(d$label) & nzchar(d$label)])
+  keep_unmapped <- length(unmapped) > 0L && length(unmapped) < 60L
+  d_extra <- if (keep_unmapped) d[d$label %in% unmapped, , drop = FALSE] else NULL
+
   d <- d[!is.na(d$col), , drop = FALSE]
   d <- d[!.trait_is_nodata(d$value), , drop = FALSE]
   d$value <- trimws(gsub("\\s+", " ", d$value))
@@ -1652,6 +1747,24 @@ parse_floraweb <- function(path) {
       out[[cc]] <- trimws(sub("^Chromosomen Anz\\. Nachweise\\s*", "",
                               out[[cc]]))
     }
+  }
+
+  # Fold the unmapped labels back in only when the guard above deemed them few
+  # enough to be genuine per-species traits (not value-encoded matrix rows).
+  if (keep_unmapped && !is.null(d_extra) && nrow(d_extra) > 0L) {
+    d_extra <- d_extra[!.trait_is_nodata(d_extra$value), , drop = FALSE]
+    d_extra$value <- trimws(gsub("\\s+", " ", d_extra$value))
+    d_extra <- d_extra[nzchar(d_extra$value), , drop = FALSE]
+    long <- data.frame(
+      name  = trimws(d_extra$canonical_name),
+      trait = d_extra$label,
+      value = d_extra$value,
+      stringsAsFactors = FALSE
+    )
+    extra <- .pivot_species_traits(long, spec = list(), keep_all = TRUE)
+    extra_cols <- setdiff(names(extra), "canonical_name")
+    idx <- match(trimws(out$canonical_name), extra$canonical_name)
+    for (cc in extra_cols) out[[cc]] <- extra[[cc]][idx]
   }
 
   .trait_finalize(out)

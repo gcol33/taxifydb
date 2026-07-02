@@ -35,11 +35,13 @@ parse_woodiness <- function(path) {
                ifelse(grepl("^w", raw), "woody",
                ifelse(grepl("^v", raw), "variable", NA_character_)))
 
+  cname <- trimws(df[[name_col]])
   out <- data.frame(
-    canonical_name = trimws(df[[name_col]]),
+    canonical_name = cname,
     woodiness      = woodiness,
     stringsAsFactors = FALSE
   )
+  out <- .append_all_cols(out, df, cname, used = c(name_col, wood_col))
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -78,8 +80,9 @@ parse_eive <- function(path) {
 
   safe_num <- function(x) suppressWarnings(as.numeric(x))
 
+  cname <- trimws(df[[name_col]])
   out <- data.frame(
-    canonical_name = trimws(df[[name_col]]),
+    canonical_name = cname,
     stringsAsFactors = FALSE
   )
   if (!is.na(light_col)) out$light       <- safe_num(df[[light_col]])
@@ -88,6 +91,9 @@ parse_eive <- function(path) {
   if (!is.na(react_col)) out$reaction    <- safe_num(df[[react_col]])
   if (!is.na(nutr_col))  out$nutrients   <- safe_num(df[[nutr_col]])
 
+  used <- c(name_col, light_col, temp_col, moist_col, react_col, nutr_col)
+  used <- used[!is.na(used)]
+  out <- .append_all_cols(out, df, cname, used = used)
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -135,26 +141,38 @@ parse_elton_traits <- function(birds_path, mammals_path) {
     )
     if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
 
+    cname <- trimws(df[[name_col]])
     out <- data.frame(
-      canonical_name = trimws(df[[name_col]]),
+      canonical_name = cname,
       stringsAsFactors = FALSE
     )
+    used_srcs <- character(0)
     for (out_name in names(col_map)) {
       src <- resolve_col(df, col_map[[out_name]])
       out[[out_name]] <- if (!is.null(src)) {
+        used_srcs <- c(used_srcs, src)
         suppressWarnings(as.numeric(df[[src]]))
       } else {
         NA_real_
       }
     }
-    out
+    .append_all_cols(out, df, cname, used = c(name_col, used_srcs))
+  }
+
+  # Bird and mammal tables carry different extra columns; union them so no
+  # source column is dropped when the two curated sub-frames are stacked.
+  bind_union <- function(a, b) {
+    cols <- union(names(a), names(b))
+    for (cc in setdiff(cols, names(a))) a[[cc]] <- NA
+    for (cc in setdiff(cols, names(b))) b[[cc]] <- NA
+    rbind(a[cols], b[cols])
   }
 
   birds <- utils::read.delim(birds_path, stringsAsFactors = FALSE, quote = "")
   mammals <- utils::read.delim(mammals_path, stringsAsFactors = FALSE,
                                quote = "")
 
-  out <- rbind(extract_one(birds), extract_one(mammals))
+  out <- bind_union(extract_one(birds), extract_one(mammals))
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -213,24 +231,35 @@ parse_avonet <- function(path) {
     as.character(df[[col_name]])
   }
 
+  cname            <- trimws(df[[name_col]])
+  beak_length_col  <- find_col(c("Beak.Length_Culmen", "Beak.Length",
+                                 "culmen_length", "Bill.Length"))
+  beak_depth_col   <- find_col(c("Beak.Depth", "bill_depth", "Bill.Depth"))
+  wing_length_col  <- find_col(c("Wing.Length", "wing_length"))
+  tail_length_col  <- find_col(c("Tail.Length", "tail_length"))
+  tarsus_length_col <- find_col(c("Tarsus.Length", "tarsus_length"))
+  body_mass_col    <- find_col(c("Mass", "Body.Mass", "body_mass",
+                                 "BodyMass", "Mass.g"))
+  hand_wing_col    <- find_col(c("Hand.Wing.Index", "Hand-Wing.Index",
+                                 "HWI", "hand_wing_index"))
+  habitat_col      <- find_col(c("Habitat", "Primary.Lifestyle", "habitat"))
+  trophic_level_col <- find_col(c("Trophic.Level", "trophic_level"))
+  trophic_niche_col <- find_col(c("Trophic.Niche", "trophic_niche"))
+  migration_col    <- find_col(c("Migration", "migration"))
+
   out <- data.frame(
-    canonical_name  = trimws(df[[name_col]]),
-    beak_length     = safe_num(find_col(c("Beak.Length_Culmen", "Beak.Length",
-                                          "culmen_length", "Bill.Length"))),
-    beak_depth      = safe_num(find_col(c("Beak.Depth", "bill_depth",
-                                          "Bill.Depth"))),
-    wing_length     = safe_num(find_col(c("Wing.Length", "wing_length"))),
-    tail_length     = safe_num(find_col(c("Tail.Length", "tail_length"))),
-    tarsus_length   = safe_num(find_col(c("Tarsus.Length", "tarsus_length"))),
-    body_mass_g     = safe_num(find_col(c("Mass", "Body.Mass", "body_mass",
-                                          "BodyMass", "Mass.g"))),
-    hand_wing_index = safe_num(find_col(c("Hand.Wing.Index", "Hand-Wing.Index",
-                                          "HWI", "hand_wing_index"))),
-    habitat         = safe_chr(find_col(c("Habitat", "Primary.Lifestyle",
-                                          "habitat"))),
-    trophic_level   = safe_chr(find_col(c("Trophic.Level", "trophic_level"))),
-    trophic_niche   = safe_chr(find_col(c("Trophic.Niche", "trophic_niche"))),
-    migration       = safe_chr(find_col(c("Migration", "migration"))),
+    canonical_name  = cname,
+    beak_length     = safe_num(beak_length_col),
+    beak_depth      = safe_num(beak_depth_col),
+    wing_length     = safe_num(wing_length_col),
+    tail_length     = safe_num(tail_length_col),
+    tarsus_length   = safe_num(tarsus_length_col),
+    body_mass_g     = safe_num(body_mass_col),
+    hand_wing_index = safe_num(hand_wing_col),
+    habitat         = safe_chr(habitat_col),
+    trophic_level   = safe_chr(trophic_level_col),
+    trophic_niche   = safe_chr(trophic_niche_col),
+    migration       = safe_chr(migration_col),
     stringsAsFactors = FALSE
   )
 
@@ -242,6 +271,10 @@ parse_avonet <- function(path) {
                     NA_character_)))
   }
 
+  used <- c(name_col, beak_length_col, beak_depth_col, wing_length_col,
+            tail_length_col, tarsus_length_col, body_mass_col, hand_wing_col,
+            habitat_col, trophic_level_col, trophic_niche_col, migration_col)
+  out <- .append_all_cols(out, df, cname, used = used)
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -275,31 +308,41 @@ parse_pantheria <- function(path) {
     x
   }
 
+  cname             <- trimws(df[[name_col]])
+  body_mass_col     <- find_col(c("AdultBodyMass_g", "X5.1_AdultBodyMass",
+                                  "BodyMass"))
+  longevity_col     <- find_col(c("MaxLongevity_m", "X17.1_MaxLongevity"))
+  litter_size_col   <- find_col(c("LitterSize", "X15.1_LitterSize"))
+  gestation_col     <- find_col(c("GestationLen_d", "X9.1_GestationLen"))
+  weaning_col       <- find_col(c("WeaningAge_d", "X25.1_WeaningAge"))
+  home_range_col    <- find_col(c("HomeRange_km2", "X22.1_HomeRange",
+                                  "HomeRange_Indiv_km2"))
+  diet_breadth_col  <- find_col(c("DietBreadth", "X6.2_TrophicLevel",
+                                  "diet_breadth"))
+  habitat_breadth_col <- find_col(c("HabitatBreadth", "X12.2_HabitatBreadth",
+                                    "habitat_breadth"))
+
   out <- data.frame(
-    canonical_name  = trimws(df[[name_col]]),
-    body_mass_g     = safe_num(find_col(c("AdultBodyMass_g",
-                                          "X5.1_AdultBodyMass",
-                                          "BodyMass"))),
-    longevity_mo    = safe_num(find_col(c("MaxLongevity_m",
-                                          "X17.1_MaxLongevity"))),
-    litter_size     = safe_num(find_col(c("LitterSize",
-                                          "X15.1_LitterSize"))),
-    gestation_d     = safe_num(find_col(c("GestationLen_d",
-                                          "X9.1_GestationLen"))),
-    weaning_d       = safe_num(find_col(c("WeaningAge_d",
-                                          "X25.1_WeaningAge"))),
-    home_range_km2  = safe_num(find_col(c("HomeRange_km2",
-                                          "X22.1_HomeRange",
-                                          "HomeRange_Indiv_km2"))),
-    diet_breadth    = safe_num(find_col(c("DietBreadth",
-                                          "X6.2_TrophicLevel",
-                                          "diet_breadth"))),
-    habitat_breadth = safe_num(find_col(c("HabitatBreadth",
-                                          "X12.2_HabitatBreadth",
-                                          "habitat_breadth"))),
+    canonical_name  = cname,
+    body_mass_g     = safe_num(body_mass_col),
+    longevity_mo    = safe_num(longevity_col),
+    litter_size     = safe_num(litter_size_col),
+    gestation_d     = safe_num(gestation_col),
+    weaning_d       = safe_num(weaning_col),
+    home_range_km2  = safe_num(home_range_col),
+    diet_breadth    = safe_num(diet_breadth_col),
+    habitat_breadth = safe_num(habitat_breadth_col),
     stringsAsFactors = FALSE
   )
 
+  # PanTHERIA codes numeric missing values as -999; neutralize on the raw
+  # source before widening (NA-safe: read.delim's na.strings already handled
+  # most, this guards any residual).
+  df[!is.na(df) & df == -999] <- NA
+  used <- c(name_col, body_mass_col, longevity_col, litter_size_col,
+            gestation_col, weaning_col, home_range_col, diet_breadth_col,
+            habitat_breadth_col)
+  out <- .append_all_cols(out, df, cname, used = used)
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -337,32 +380,49 @@ parse_amphibio <- function(path) {
     suppressWarnings(as.integer(df[[col_name]]))
   }
 
+  cname               <- trimws(df[[name_col]])
+  body_size_col       <- find_col(c("Body_size_mm", "Body.size.mm",
+                                    "SVL_mm", "Body_length_mm"))
+  age_maturity_col    <- find_col(c("Age_at_maturity_min_y", "Age_at_maturity",
+                                    "Age.at.maturity"))
+  longevity_col       <- find_col(c("Longevity_max_y", "Longevity_max",
+                                    "Longevity"))
+  litter_size_col     <- find_col(c("Litter_size_max_n", "Litter.size",
+                                    "Clutch_size"))
+  reproductive_col    <- find_col(c("Reproductive_output_y",
+                                    "Reproductive.output"))
+  offspring_size_col  <- find_col(c("Offspring_size_mm", "Offspring.size"))
+  direct_dev_col      <- find_col(c("Dir", "Direct_development", "Devel_direct"))
+  larval_col          <- find_col(c("Lar", "Larval", "Has_larva"))
+  aquatic_col         <- find_col(c("Aqu", "Aquatic"))
+  fossorial_col       <- find_col(c("Fos", "Fossorial"))
+  arboreal_col        <- find_col(c("Arb", "Arboreal"))
+  diurnal_col         <- find_col(c("Diu", "Diurnal"))
+  nocturnal_col       <- find_col(c("Noc", "Nocturnal"))
+
   out <- data.frame(
-    canonical_name      = trimws(df[[name_col]]),
-    body_size_mm        = safe_num(find_col(c("Body_size_mm", "Body.size.mm",
-                                              "SVL_mm", "Body_length_mm"))),
-    age_maturity_y      = safe_num(find_col(c("Age_at_maturity_min_y",
-                                              "Age_at_maturity",
-                                              "Age.at.maturity"))),
-    longevity_yr        = safe_num(find_col(c("Longevity_max_y", "Longevity_max",
-                                              "Longevity"))),
-    litter_size         = safe_num(find_col(c("Litter_size_max_n",
-                                              "Litter.size", "Clutch_size"))),
-    reproductive_output = safe_num(find_col(c("Reproductive_output_y",
-                                              "Reproductive.output"))),
-    offspring_size_mm   = safe_num(find_col(c("Offspring_size_mm",
-                                              "Offspring.size"))),
-    direct_development  = safe_int(find_col(c("Dir", "Direct_development",
-                                              "Devel_direct"))),
-    larval              = safe_int(find_col(c("Lar", "Larval", "Has_larva"))),
-    aquatic             = safe_int(find_col(c("Aqu", "Aquatic"))),
-    fossorial           = safe_int(find_col(c("Fos", "Fossorial"))),
-    arboreal            = safe_int(find_col(c("Arb", "Arboreal"))),
-    diurnal             = safe_int(find_col(c("Diu", "Diurnal"))),
-    nocturnal_amphibio  = safe_int(find_col(c("Noc", "Nocturnal"))),
+    canonical_name      = cname,
+    body_size_mm        = safe_num(body_size_col),
+    age_maturity_y      = safe_num(age_maturity_col),
+    longevity_yr        = safe_num(longevity_col),
+    litter_size         = safe_num(litter_size_col),
+    reproductive_output = safe_num(reproductive_col),
+    offspring_size_mm   = safe_num(offspring_size_col),
+    direct_development  = safe_int(direct_dev_col),
+    larval              = safe_int(larval_col),
+    aquatic             = safe_int(aquatic_col),
+    fossorial           = safe_int(fossorial_col),
+    arboreal            = safe_int(arboreal_col),
+    diurnal             = safe_int(diurnal_col),
+    nocturnal_amphibio  = safe_int(nocturnal_col),
     stringsAsFactors = FALSE
   )
 
+  used <- c(name_col, body_size_col, age_maturity_col, longevity_col,
+            litter_size_col, reproductive_col, offspring_size_col,
+            direct_dev_col, larval_col, aquatic_col, fossorial_col,
+            arboreal_col, diurnal_col, nocturnal_col)
+  out <- .append_all_cols(out, df, cname, used = used)
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -400,31 +460,38 @@ parse_fish_traits <- function(path) {
     suppressWarnings(as.numeric(df[[col_name]]))
   }
 
+  cname                 <- trimws(gsub("_", " ", df[[name_col]]))
+  max_body_length_col   <- find_col(c("MBl", "MBI", "Max_body_length"))
+  body_elongation_col   <- find_col(c("BEl", "Body_elongation"))
+  vertical_eye_col      <- find_col(c("VEp", "Vertical_eye_position"))
+  relative_eye_col      <- find_col(c("REs", "Relative_eye_size"))
+  oral_gape_col         <- find_col(c("OGp", "Oral_gape_position"))
+  relative_maxillary_col <- find_col(c("RMl", "Relative_maxillary_length"))
+  body_lateral_col      <- find_col(c("BLs", "Body_lateral_shape"))
+  pectoral_position_col <- find_col(c("PFv", "Pectoral_fin_vertical"))
+  pectoral_size_col     <- find_col(c("PFs", "Pectoral_fin_size"))
+  caudal_peduncle_col   <- find_col(c("CPt", "Caudal_peduncle_throttling"))
+
   out <- data.frame(
-    canonical_name             = trimws(gsub("_", " ", df[[name_col]])),
-    max_body_length            = safe_num(find_col(c("MBl", "MBI",
-                                                     "Max_body_length"))),
-    body_elongation            = safe_num(find_col(c("BEl",
-                                                     "Body_elongation"))),
-    vertical_eye_position      = safe_num(find_col(c("VEp",
-                                                     "Vertical_eye_position"))),
-    relative_eye_size          = safe_num(find_col(c("REs",
-                                                     "Relative_eye_size"))),
-    oral_gape_position         = safe_num(find_col(c("OGp",
-                                                     "Oral_gape_position"))),
-    relative_maxillary_length  = safe_num(find_col(c("RMl",
-                                                     "Relative_maxillary_length"))),
-    body_lateral_shape         = safe_num(find_col(c("BLs",
-                                                     "Body_lateral_shape"))),
-    pectoral_fin_position      = safe_num(find_col(c("PFv",
-                                                     "Pectoral_fin_vertical"))),
-    pectoral_fin_size          = safe_num(find_col(c("PFs",
-                                                     "Pectoral_fin_size"))),
-    caudal_peduncle_throttling = safe_num(find_col(c("CPt",
-                                                     "Caudal_peduncle_throttling"))),
+    canonical_name             = cname,
+    max_body_length            = safe_num(max_body_length_col),
+    body_elongation            = safe_num(body_elongation_col),
+    vertical_eye_position      = safe_num(vertical_eye_col),
+    relative_eye_size          = safe_num(relative_eye_col),
+    oral_gape_position         = safe_num(oral_gape_col),
+    relative_maxillary_length  = safe_num(relative_maxillary_col),
+    body_lateral_shape         = safe_num(body_lateral_col),
+    pectoral_fin_position      = safe_num(pectoral_position_col),
+    pectoral_fin_size          = safe_num(pectoral_size_col),
+    caudal_peduncle_throttling = safe_num(caudal_peduncle_col),
     stringsAsFactors = FALSE
   )
 
+  used <- c(name_col, max_body_length_col, body_elongation_col,
+            vertical_eye_col, relative_eye_col, oral_gape_col,
+            relative_maxillary_col, body_lateral_col, pectoral_position_col,
+            pectoral_size_col, caudal_peduncle_col)
+  out <- .append_all_cols(out, df, cname, used = used)
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out[!duplicated(out$canonical_name), ]
 }
@@ -622,7 +689,6 @@ parse_leda <- function(dir_path) {
   for (col in expected) {
     if (!col %in% names(master)) master[[col]] <- NA
   }
-  master <- master[, expected]
 
   master <- master[!is.na(master$canonical_name) &
                      nchar(master$canonical_name) > 0L, ]
@@ -682,8 +748,9 @@ parse_diaz_traits <- function(path) {
   height_col <- find_col(c("plant.*height", "Height", "PlantHeight",
                            "Hmax", "height_m"))
 
+  cname <- trimws(df[[name_col]])
   out <- data.frame(
-    canonical_name = trimws(df[[name_col]]),
+    canonical_name = cname,
     seed_mass_mg   = safe_num(seed_col),
     plant_height_m = safe_num(height_col),
     stringsAsFactors = FALSE
@@ -703,9 +770,10 @@ parse_diaz_traits <- function(path) {
   }
 
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  has_data <- !is.na(out$seed_mass_mg) | !is.na(out$plant_height_m)
-  out <- out[has_data, ]
-  out[!duplicated(out$canonical_name), ]
+  out <- .append_all_cols(out, df, cname,
+                          used = c(name_col, seed_col, height_col))
+  # Keep a species if it carries ANY trait (seed/height OR an appended one).
+  .trait_finalize(out)
 }
 
 
@@ -763,13 +831,22 @@ parse_griis <- function(path) {
     ifelse(estab == "native", "native", "introduced"))
   )
 
+  cname <- trimws(df[[name_col]])
   out <- data.frame(
-    canonical_name  = trimws(df[[name_col]]),
+    canonical_name  = cname,
     country_code    = country_codes,
     invasive_status = invasive_status,
     stringsAsFactors = FALSE
   )
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out <- out[!is.na(out$country_code) & nchar(out$country_code) == 2L, ]
-  out[!duplicated(paste(out$canonical_name, out$country_code)), ]
+  out <- out[!duplicated(paste(out$canonical_name, out$country_code)), ]
+
+  # Carry the rest of the GRIIS record (raw establishmentMeans, habitat,
+  # kingdom/phylum, taxonRank, ...) keyed on (species, country).
+  .append_all_cols(
+    out, df, cname,
+    group = "country_code", group_row = country_codes,
+    used = c(name_col, cc_col, "isInvasive", "establishmentMeans")
+  )
 }

@@ -49,7 +49,7 @@ parse_common_names <- function(dir_path) {
   out <- out[order(!is.na(out$lang), decreasing = TRUE), ]
   out <- out[!duplicated(paste(out$canonical_name, out$common_name)), ]
 
-  out$source <- NULL
+  # Keep the provenance column (which database supplied the vernacular name).
   out
 }
 

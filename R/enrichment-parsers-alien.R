@@ -347,6 +347,14 @@ parse_alien_first_records <- function(path) {
                    out$alien_first_record, na.last = TRUE), ]
   out <- out[!duplicated(paste(out$canonical_name, out$country_code)), ]
 
+  # Carry every other Seebens field (raw region string, life form, status, ...)
+  # keyed on (species, country); the mapped Region reappears as its own column.
+  out <- .append_all_cols(
+    out, df, trimws(df$TaxonName),
+    group = "country_code", group_row = df$country_code,
+    used = c("TaxonName", "country_code", "FirstRecord", "Source", "Reference")
+  )
+
   rownames(out) <- NULL
   out
 }
@@ -549,5 +557,19 @@ parse_wcvp <- function(dir_path) {
   )
   out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
   out <- out[!is.na(out$tdwg_code) & nchar(out$tdwg_code) > 0L, ]
-  out[!duplicated(paste(out$canonical_name, out$tdwg_code)), ]
+  out <- out[!duplicated(paste(out$canonical_name, out$tdwg_code)), ]
+
+  # Carry the rest of the distribution table per (species, region), then the
+  # accepted name-table attributes (family, life-form / climate descriptions,
+  # authorship, ...) broadcast to each of a species' regions.
+  out <- .append_all_cols(
+    out, dist_df, dist_df$canonical_name,
+    group = "tdwg_code", group_row = trimws(dist_df[[area_col]]),
+    used = c(dist_id_col, area_col, intro_col, extinct_col)
+  )
+  out <- .append_all_cols(
+    out, accepted, trimws(accepted[[name_col]]),
+    used = c(id_col, name_col, status_col)
+  )
+  out
 }

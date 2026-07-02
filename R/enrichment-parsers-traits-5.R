@@ -59,8 +59,9 @@ parse_bird_nest <- function(path) {
     if (!col %in% names(d)) return(rep(NA_real_, nrow(d)))
     suppressWarnings(as.numeric(d[[col]]))
   }
+  cname <- trimws(as.character(d$Scientific_name))
   out <- data.frame(
-    canonical_name          = trimws(as.character(d$Scientific_name)),
+    canonical_name          = cname,
     brood_parasite          = flag("Parasite"),
     mound_builder           = flag("Mound"),
     nestsite_ground         = flag("NestSite_ground"),
@@ -82,6 +83,16 @@ parse_bird_nest <- function(path) {
     nestatt_lateral         = flag("NestAtt_lateral"),
     nestatt_pensile         = flag("NestAtt_pensile"),
     stringsAsFactors        = FALSE
+  )
+  out <- .append_all_cols(
+    out, d, cname,
+    used = c("Scientific_name", "Parasite", "Mound", "NestSite_ground",
+             "NestSite_tree", "NestSite_nontree", "NestSite_cliff_bank",
+             "NestSite_underground", "NestSite_waterbody", "NestSite_termite_ant",
+             "NestStr_scrape", "NestStr_platform", "NestStr_cup", "NestStr_dome",
+             "NestStr_dome_tunnel", "NestStr_primary_cavity",
+             "NestStr_second_cavity", "NestAtt_basal", "NestAtt_forked",
+             "NestAtt_lateral", "NestAtt_pensile")
   )
   .trait_finalize(out)
 }
@@ -149,8 +160,9 @@ parse_rimet_phyto <- function(path) {
     if (is.na(i)) rep(NA_real_, nrow(d)) else suppressWarnings(as.numeric(d[[i]]))
   }
   sp_i <- grep("Genus.*species name", nm, ignore.case = TRUE)[1]
+  cname <- trimws(as.character(d[[sp_i]]))
   out <- data.frame(
-    canonical_name        = trimws(as.character(d[[sp_i]])),
+    canonical_name        = cname,
     cell_length_um        = pick_num("^Cell length"),
     cell_width_um         = pick_num("^Cell width"),
     cell_thickness_um     = pick_num("^Cell thickness"),
@@ -158,6 +170,13 @@ parse_rimet_phyto <- function(path) {
     cell_biovolume_um3    = pick_num("^Cell biovolume"),
     stringsAsFactors      = FALSE
   )
+  used_idx <- c(sp_i,
+                grep("^Cell length", nm, ignore.case = TRUE)[1],
+                grep("^Cell width", nm, ignore.case = TRUE)[1],
+                grep("^Cell thickness", nm, ignore.case = TRUE)[1],
+                grep("^Cell surface area", nm, ignore.case = TRUE)[1],
+                grep("^Cell biovolume", nm, ignore.case = TRUE)[1])
+  out <- .append_all_cols(out, d, cname, used = nm[used_idx[!is.na(used_idx)]])
   .trait_finalize(out)
 }
 
@@ -180,6 +199,8 @@ parse_huang_amph <- function(path) {
             eye_diameter_mm = "ED", forelimb_length_mm = "FLL",
             hindlimb_length_mm = "HLL")
   acc <- list()
+  raws <- list()
+  cns  <- list()
   for (ord in names(ord_files)) {
     f <- file.path(path, ord_files[[ord]])
     if (!file.exists(f)) next
@@ -203,6 +224,8 @@ parse_huang_amph <- function(path) {
       row[[oc]] <- if (sc %in% names(d)) suppressWarnings(as.numeric(d[[sc]])) else NA_real_
     }
     acc[[ord]] <- row
+    raws[[ord]] <- d
+    cns[[ord]] <- cn
   }
   df <- do.call(rbind, acc)
   df <- df[!is.na(df$canonical_name) & nzchar(trimws(df$canonical_name)) &
@@ -214,6 +237,17 @@ parse_huang_amph <- function(path) {
   )
   ord1 <- df[!duplicated(df$canonical_name), c("canonical_name", "taxon_order")]
   out <- merge(agg, ord1, by = "canonical_name")
+  # Union-rbind the raw per-order files (differing columns filled with NA) and
+  # append every measurement column not already consumed above.
+  allcols <- unique(unlist(lapply(raws, names)))
+  raws2 <- lapply(raws, function(x) {
+    for (m in setdiff(allcols, names(x))) x[[m]] <- NA
+    x[allcols]
+  })
+  raw_df <- do.call(rbind, raws2)
+  raw_cn <- unlist(cns, use.names = FALSE)
+  out <- .append_all_cols(out, raw_df, raw_cn,
+                          used = c("Genus", "Species", unname(cols)))
   .trait_finalize(out)
 }
 
@@ -269,8 +303,9 @@ parse_pottier <- function(path) {
     if (!col %in% names(d)) return(rep(NA_real_, nrow(d)))
     suppressWarnings(as.numeric(d[[col]]))
   }
+  cname <- trimws(as.character(d$species))
   df <- data.frame(
-    canonical_name     = trimws(as.character(d$species)),
+    canonical_name     = cname,
     heat_tolerance_c   = num("mean_HT"),
     acclimation_temp_c = num("acclimation_temp"),
     svl_mm             = num("SVL"),
@@ -283,6 +318,10 @@ parse_pottier <- function(path) {
   res <- stats::aggregate(
     df[cols], by = list(canonical_name = df$canonical_name),
     FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) }
+  )
+  res <- .append_all_cols(
+    res, d, cname,
+    used = c("species", "mean_HT", "acclimation_temp", "SVL", "body_mass")
   )
   .trait_finalize(res)
 }
@@ -303,8 +342,9 @@ parse_quimbayo <- function(path) {
     if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
     x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
   }
+  cname <- trimws(paste(d$Genus, d$Species))
   out <- data.frame(
-    canonical_name         = trimws(paste(d$Genus, d$Species)),
+    canonical_name         = cname,
     body_size_max_cm       = num("Body_size_max"),
     aspect_ratio           = num("Aspect_ratio"),
     trophic_level          = num("Trophic_level"),
@@ -321,6 +361,13 @@ parse_quimbayo <- function(path) {
     size_group             = chr("Size_group"),
     stringsAsFactors       = FALSE
   )
+  out <- .append_all_cols(
+    out, d, cname,
+    used = c("Genus", "Species", "Body_size_max", "Aspect_ratio",
+             "Trophic_level", "Depth_min", "Depth_max", "TempOccurrence_mean",
+             "Home_range", "Diel_activity", "Level_water", "Body_shape",
+             "Mouth_position", "Diet", "Spawning", "Size_group")
+  )
   .trait_finalize(out)
 }
 
@@ -336,8 +383,9 @@ parse_quimbayo <- function(path) {
 parse_saproxylic <- function(path) {
   d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
   num <- function(c) if (c %in% names(d)) suppressWarnings(as.numeric(d[[c]])) else rep(NA_real_, nrow(d))
+  cname <- gsub("_", " ", trimws(as.character(d$species)))
   out <- data.frame(
-    canonical_name   = gsub("_", " ", trimws(as.character(d$species))),
+    canonical_name   = cname,
     body_length_mm   = num("body_length"),
     body_width_mm    = num("body_width"),
     body_height_mm   = num("body_height"),
@@ -351,6 +399,13 @@ parse_saproxylic <- function(path) {
     antenna_length_mm = num("antenna_length"),
     eye_length_mm    = num("eye_length"),
     stringsAsFactors = FALSE
+  )
+  out <- .append_all_cols(
+    out, d, cname,
+    used = c("species", "body_length", "body_width", "body_height", "mass",
+             "colour_lightness", "head_length", "pronotum_length",
+             "elytra_length", "wing_length", "wing_aspect", "antenna_length",
+             "eye_length")
   )
   .trait_finalize(out)
 }
@@ -369,10 +424,11 @@ parse_odonata <- function(path) {
   d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
   cats <- c("territoriality", "flight_mode", "mate_guarding",
             "habitat_openness", "has_wing_pigment")
-  long <- do.call(rbind, lapply(cats, function(oc) data.frame(
+  trait_cols <- setdiff(names(d), "GenusSpecies")
+  long <- do.call(rbind, lapply(trait_cols, function(oc) data.frame(
     name  = as.character(d$GenusSpecies),
     trait = oc,
-    value = if (oc %in% names(d)) as.character(d[[oc]]) else NA_character_,
+    value = as.character(d[[oc]]),
     stringsAsFactors = FALSE
   )))
   spec <- stats::setNames(lapply(cats, function(oc) list(trait = oc, type = "cat")), cats)
@@ -395,8 +451,9 @@ parse_pelagic <- function(path) {
     if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
     x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
   }
+  cname <- trimws(as.character(d$sci_name))
   out <- data.frame(
-    canonical_name   = trimws(as.character(d$sci_name)),
+    canonical_name   = cname,
     depth_min_m      = num("depth_min"),
     depth_max_m      = num("depth_max"),
     temp_min_c       = num("temp_min"),
@@ -411,6 +468,13 @@ parse_pelagic <- function(path) {
     phys_defense     = chr("phys_defense"),
     gregarious       = chr("gregarious"),
     stringsAsFactors = FALSE
+  )
+  out <- .append_all_cols(
+    out, d, cname,
+    used = c("sci_name", "depth_min", "depth_max", "temp_min", "temp_max",
+             "temp_mean", "l_min_TL", "l_max_TL", "trophic_level",
+             "vert_habitat", "horz_habitat", "body_shape", "phys_defense",
+             "gregarious")
   )
   .trait_finalize(out)
 }
@@ -434,8 +498,9 @@ parse_frugivoria <- function(path) {
       if (!c %in% names(d)) return(rep(NA_character_, nrow(d)))
       x <- trimws(as.character(d[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
     }
-    data.frame(
-      canonical_name     = trimws(as.character(d$IUCN_species_name)),
+    cname <- trimws(as.character(d$IUCN_species_name))
+    o <- data.frame(
+      canonical_name     = cname,
       taxon_group        = grp,
       diet_category      = chr(dietcol),
       diet_breadth       = num("diet_breadth"),
@@ -445,9 +510,21 @@ parse_frugivoria <- function(path) {
       generation_time    = num("generation_time"),
       stringsAsFactors   = FALSE
     )
+    .append_all_cols(
+      o, d, cname,
+      used = c("IUCN_species_name", dietcol, "diet_breadth", "body_mass_e",
+               "body_size_mm", "longevity", "generation_time")
+    )
   }
-  out <- rbind(rd("mammal.csv", "mammal", "diet_cat"),
-               rd("bird.csv", "bird", "diet_cat_e"))
+  parts <- list(rd("mammal.csv", "mammal", "diet_cat"),
+                rd("bird.csv", "bird", "diet_cat_e"))
+  parts <- parts[!vapply(parts, is.null, logical(1L))]
+  allcols <- unique(unlist(lapply(parts, names)))
+  parts <- lapply(parts, function(x) {
+    for (m in setdiff(allcols, names(x))) x[[m]] <- NA
+    x[allcols]
+  })
+  out <- do.call(rbind, parts)
   .trait_finalize(out)
 }
 
@@ -469,11 +546,13 @@ parse_parravicini <- function(path) {
     if (!length(v)) return(NA_character_)
     names(sort(table(v), decreasing = TRUE))[1]
   }, character(1L))
+  cname <- trimws(as.character(d$Genus_and_species))
   out <- data.frame(
-    canonical_name = trimws(as.character(d$Genus_and_species)),
+    canonical_name = cname,
     trophic_guild  = guild,
     stringsAsFactors = FALSE
   )
+  out <- .append_all_cols(out, d, cname, used = c("Genus_and_species"))
   out <- out[!is.na(out$trophic_guild), , drop = FALSE]
   .trait_finalize(out)
 }
@@ -511,7 +590,14 @@ parse_beukhof <- function(path) {
     FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
   ca <- stats::aggregate(base[cat_cols], by = list(canonical_name = base$canonical_name),
     FUN = function(z) { z <- z[!is.na(z)]; if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1] })
-  .trait_finalize(merge(na, ca, by = "canonical_name"))
+  out <- merge(na, ca, by = "canonical_name")
+  out <- .append_all_cols(
+    out, d, sp,
+    used = c("taxon", "tl", "AR", "offspring.size", "age.maturity", "fecundity",
+             "length.infinity", "growth.coefficient", "length.max", "habitat",
+             "feeding.mode", "body.shape", "fin.shape", "spawning.type")
+  )
+  .trait_finalize(out)
 }
 
 
@@ -604,19 +690,23 @@ parse_disperse <- function(path) {
   gi <- which(grepl("^Genus", codes))[1]
   body <- raw[-(1:3), , drop = FALSE]
   genus <- trimws(as.character(body[[gi]]))
-  groups <- c(
-    disperse_body_size_cm   = "^s[0-9]+$",
-    disperse_life_cycle     = "^cd[0-9]+$",
-    disperse_repro_cycles   = "^cy[0-9]+$",
-    disperse_dispersal      = "^dis[0-9]+$",
-    disperse_adult_lifespan = "^life[0-9]+$",
-    disperse_female_wing_mm = "^fwl[0-9]+$",
-    disperse_wing_type      = "^wnb[0-9]+$",
-    disperse_fecundity      = "^egg[0-9]+$"
-  )
+  # Curated names for the documented modality groups; every other fuzzy-coded
+  # group (a `<letters><digits>` code prefix) is derived from the data and
+  # emitted under `disperse_<prefix>` so no trait group is dropped.
+  known <- c(s = "disperse_body_size_cm", cd = "disperse_life_cycle",
+             cy = "disperse_repro_cycles", dis = "disperse_dispersal",
+             life = "disperse_adult_lifespan", fwl = "disperse_female_wing_mm",
+             wnb = "disperse_wing_type", egg = "disperse_fecundity")
+  is_code   <- grepl("^[A-Za-z]+[0-9]+$", codes)
+  code_pref <- sub("[0-9]+$", "", codes)
+  prefixes  <- unique(code_pref[is_code])
   out <- data.frame(canonical_name = genus, stringsAsFactors = FALSE)
-  for (oc in names(groups)) {
-    cols <- which(grepl(groups[[oc]], codes))
+  taken <- "canonical_name"
+  for (pf in prefixes) {
+    oc <- if (pf %in% names(known)) known[[pf]]
+          else .uniq_colname(.sanitize_col(paste0("disperse_", pf)), taken)
+    taken <- c(taken, oc)
+    cols <- which(is_code & code_pref == pf)
     if (!length(cols)) { out[[oc]] <- NA_character_; next }
     lab <- labels[cols]
     m <- suppressWarnings(matrix(as.numeric(as.matrix(body[, cols, drop = FALSE])),
@@ -649,9 +739,9 @@ parse_nztd <- function(path) {
   body <- raw[-(1:2), , drop = FALSE]
   spcol <- which(cat1 == "Species")[1]
   sp <- trimws(as.character(body[[spcol]]))
-  trait_cats <- c("Bioturbation", "Body size", "Degree of attachment",
-                  "Feeding mode", "Living habit", "Mobility", "Morphology",
-                  "Movement method", "Rigidity")
+  # Every trait category present (a forward-filled `cat1` header spanning its
+  # fuzzy modality columns), not only the documented nine.
+  trait_cats <- setdiff(unique(cat1[!is.na(cat1) & !is.na(mod)]), "Species")
   out <- data.frame(canonical_name = sp, stringsAsFactors = FALSE)
   for (tc in trait_cats) {
     cols <- which(cat1 == tc & !is.na(mod))
@@ -685,13 +775,25 @@ parse_arctic <- function(path) {
   d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
   d$traitvalue <- suppressWarnings(as.numeric(d$traitvalue))
   d$taxon <- trimws(as.character(d$taxon))
-  traits <- c(feeding_habit = "Feeding Habit", skeleton = "Skeleton",
-              reproduction = "Reproduction", larval_development = "Larval development",
-              size = "Size", living_habit = "Living habit", body_form = "Body Form",
-              mobility = "Mobility", bioturbation = "Bioturbation",
-              depth_range = "Depth Range", trophic_level = "Trophic Level",
-              fragility = "Fragility", sociability = "Sociability",
-              longevity = "Longevity/Life Span")
+  # Curated output names for the documented traits; every other trait present is
+  # derived from the data and named by its sanitized label, so none are dropped.
+  curated <- c("Feeding Habit" = "feeding_habit", "Skeleton" = "skeleton",
+               "Reproduction" = "reproduction",
+               "Larval development" = "larval_development", "Size" = "size",
+               "Living habit" = "living_habit", "Body Form" = "body_form",
+               "Mobility" = "mobility", "Bioturbation" = "bioturbation",
+               "Depth Range" = "depth_range", "Trophic Level" = "trophic_level",
+               "Fragility" = "fragility", "Sociability" = "sociability",
+               "Longevity/Life Span" = "longevity")
+  src <- unique(d$trait[!is.na(d$trait) & nzchar(trimws(d$trait))])
+  traits <- character(0)
+  taken  <- character(0)
+  for (s in src) {
+    oc <- if (s %in% names(curated)) curated[[s]] else .sanitize_col(s)
+    oc <- .uniq_colname(oc, taken)
+    taken <- c(taken, oc)
+    traits[[oc]] <- s
+  }
   taxa <- sort(unique(d$taxon))
   out <- data.frame(canonical_name = taxa, stringsAsFactors = FALSE)
   for (oc in names(traits)) {
@@ -723,8 +825,9 @@ parse_blanchard <- function(path) {
   chr <- function(i) { x <- trimws(as.character(d[[i]])); x[x == "" | x == "NA"] <- NA_character_; x }
   num <- function(i) suppressWarnings(as.numeric(d[[i]]))
   mp <- function(i, m) { v <- as.character(suppressWarnings(as.integer(num(i)))); unname(m[v]) }
+  cname <- trimws(as.character(d[[1]]))
   out <- data.frame(
-    canonical_name      = trimws(as.character(d[[1]])),
+    canonical_name      = cname,
     subfamily           = chr(2),
     spines              = mp(4,  c("0" = "absent", "1" = "present")),
     sting               = mp(13, c("0" = "absent", "1" = "present")),
@@ -734,6 +837,8 @@ parse_blanchard <- function(path) {
     colony_size_workers = num(17),
     stringsAsFactors    = FALSE
   )
+  out <- .append_all_cols(out, d, cname,
+                          used = names(d)[c(1, 2, 4, 13, 14, 15, 16, 17)])
   out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name) &
              grepl("^[A-Z][a-z]+$", out$canonical_name), , drop = FALSE]
   .trait_finalize(out)
@@ -767,6 +872,13 @@ parse_sheld <- function(path) {
     hermaphrodite   = chr("hermaphrodite"), shell_sculpture = chr("shellSculpture"),
     stringsAsFactors = FALSE
   )
+  out <- .append_all_cols(
+    out, d, cn,
+    used = c("scientificName", "genus", "species", "meanLength", "maxLength",
+             "matureAge", "maxAge", "growthRate", "fecundity", "nHostSpecies",
+             "nHostFamily", "brood", "marsupialGills", "hermaphrodite",
+             "shellSculpture")
+  )
   out <- out[!is.na(out$canonical_name) & grepl(" ", out$canonical_name), , drop = FALSE]
   .trait_finalize(out)
 }
@@ -782,8 +894,9 @@ parse_sheld <- function(path) {
 #' @export
 parse_homerange <- function(path) {
   d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
+  cname <- gsub("_", " ", trimws(as.character(d$Species)))
   df <- data.frame(
-    canonical_name = gsub("_", " ", trimws(as.character(d$Species))),
+    canonical_name = cname,
     home_range_km2 = suppressWarnings(as.numeric(d$Home_Range_km2)),
     body_mass_kg   = suppressWarnings(as.numeric(d$Body_mass_kg)),
     stringsAsFactors = FALSE
@@ -792,6 +905,10 @@ parse_homerange <- function(path) {
   cols <- c("home_range_km2", "body_mass_kg")
   res <- stats::aggregate(df[cols], by = list(canonical_name = df$canonical_name),
     FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  res <- .append_all_cols(
+    res, d, cname,
+    used = c("Species", "Home_Range_km2", "Body_mass_kg")
+  )
   .trait_finalize(res)
 }
 
@@ -807,8 +924,9 @@ parse_homerange <- function(path) {
 parse_tetradensity <- function(path) {
   d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
   d <- d[!is.na(d$Density_unit) & d$Density_unit == "ind/km2", , drop = FALSE]
+  cname <- trimws(paste(d$Genus, d$Species))
   df <- data.frame(
-    canonical_name  = trimws(paste(d$Genus, d$Species)),
+    canonical_name  = cname,
     density_ind_km2 = suppressWarnings(as.numeric(d$Density)),
     stringsAsFactors = FALSE
   )
@@ -816,6 +934,10 @@ parse_tetradensity <- function(path) {
   res <- stats::aggregate(df["density_ind_km2"],
     by = list(canonical_name = df$canonical_name),
     FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  res <- .append_all_cols(
+    res, d, cname,
+    used = c("Genus", "Species", "Density", "Density_unit")
+  )
   .trait_finalize(res)
 }
 

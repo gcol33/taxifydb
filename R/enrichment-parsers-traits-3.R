@@ -42,8 +42,9 @@ parse_bet <- function(path) {
     .bet_ind(df[[col]])
   }
 
+  cname <- chr("friendly_name")
   out <- data.frame(
-    canonical_name      = chr("friendly_name"),
+    canonical_name      = cname,
     growth_form         = chr("gform"),
     life_form           = chr("lform"),
     life_strategy       = chr("lstrat"),
@@ -63,6 +64,12 @@ parse_bet <- function(path) {
     epiphyte            = num("epiphyte"),
     redlist_category    = chr("category"),
     stringsAsFactors    = FALSE
+  )
+  out <- .append_all_cols(
+    out, df, cname,
+    used = c("friendly_name", "gform", "lform", "lstrat", "sex", "size",
+             "genl", "smeand", "indL", "indT", "indF", "indR", "indN",
+             "sub_so", "sub_ro", "sub_ba", "sub_wo", "epiphyte", "category")
   )
   .trait_finalize(out)
 }
@@ -92,8 +99,9 @@ parse_phylacine <- function(path) {
     x[x == "" | x == "NA"] <- NA_character_
     x
   }
+  cname <- trimws(gsub("_", " ", chr("Binomial.1.2")))
   out <- data.frame(
-    canonical_name        = trimws(gsub("_", " ", chr("Binomial.1.2"))),
+    canonical_name        = cname,
     mass_g                = num("Mass.g"),
     diet_plant_pct        = num("Diet.Plant"),
     diet_vertebrate_pct   = num("Diet.Vertebrate"),
@@ -105,6 +113,12 @@ parse_phylacine <- function(path) {
     island_endemicity     = chr("Island.Endemicity"),
     iucn_status           = chr("IUCN.Status.1.2"),
     stringsAsFactors      = FALSE
+  )
+  out <- .append_all_cols(
+    out, df, cname,
+    used = c("Binomial.1.2", "Mass.g", "Diet.Plant", "Diet.Vertebrate",
+             "Diet.Invertebrate", "Terrestrial", "Marine", "Freshwater",
+             "Aerial", "Island.Endemicity", "IUCN.Status.1.2")
   )
   .trait_finalize(out)
 }
@@ -167,8 +181,9 @@ parse_chelonians <- function(path) {
     x
   }
 
+  cname <- chr("Species")
   out <- data.frame(
-    canonical_name     = chr("Species"),
+    canonical_name     = cname,
     carapace_length_mm = numr("Maximum straight-line carapace length (mm)"),
     max_mass_g         = numr("Maximum mass (g)"),
     clutch_size_mean   = numr("Mean Clutch size"),
@@ -184,6 +199,16 @@ parse_chelonians <- function(path) {
     habitat_type       = chr("Habitat type"),
     shell_type         = chr("Shell type (Hardshell/Softshell)"),
     stringsAsFactors   = FALSE
+  )
+  out <- .append_all_cols(
+    out, df, cname,
+    used = .squish_used(df, c(
+      "Species", "Maximum straight-line carapace length (mm)",
+      "Maximum mass (g)", "Mean Clutch size", "Clutch size (max)",
+      "Number of clutches per year", "Incubation period (day)",
+      "Age at sexual maturity", "Maximum lifespan (year)", "Range size (km^2)",
+      "Diet", "Activity time", "Microhabitat", "Habitat type",
+      "Shell type (Hardshell/Softshell)"))
   )
   .trait_finalize(out)
 }
@@ -253,6 +278,15 @@ parse_birdbase <- function(path) {
     nest_type          = chr("Nest_Type"),
     flightlessness     = chr("Flightlessness"),
     stringsAsFactors   = FALSE
+  )
+  out <- .append_all_cols(
+    out, df, canonical,
+    used = .squish_used(df, c(
+      "Latin (BirdLife > IOC > Clements>AviList)",
+      "2024 IUCN Red List category", "RLM", "LAT", "ISL", "RR",
+      "NormMin", "NormMax", "Elevational Range", "Primary Habitat", "HB",
+      "Primary Diet", "DB", "ESI", "Clutch_Min", "Clutch_Max",
+      "Nest_Type", "Flightlessness"))
   )
   .trait_finalize(out)
 }

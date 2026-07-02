@@ -14,6 +14,24 @@
 # filter in one place here rather than in every parser.
 
 
+#' Coerce character data to valid UTF-8 without erroring
+#'
+#' Widening reads source columns the curated parsers never touched; some carry
+#' latin1 or otherwise invalid-UTF-8 bytes that make gsub/table/sort throw
+#' "invalid UTF-8" in a UTF-8 locale. Valid UTF-8 is kept as-is; strings that
+#' are invalid as UTF-8 are reinterpreted as latin1 (correct for the many
+#' latin1 trait sources); anything still unmappable is dropped byte-wise.
+#' @noRd
+.to_utf8 <- function(x) {
+  x <- as.character(x)
+  y <- iconv(x, "UTF-8", "UTF-8", sub = NA)          # NA where not valid UTF-8
+  bad <- is.na(y) & !is.na(x)
+  if (any(bad)) y[bad] <- iconv(x[bad], "latin1", "UTF-8", sub = "")
+  still <- is.na(y) & !is.na(x)
+  if (any(still)) y[still] <- iconv(x[still], "UTF-8", "UTF-8", sub = "")
+  y
+}
+
 #' Sanitize a raw column/trait label to a snake_case identifier
 #' @noRd
 .sanitize_col <- function(x) {
@@ -27,7 +45,7 @@
 #' Are most non-missing values numeric? (drives num-vs-char inference)
 #' @noRd
 .mostly_numeric <- function(v, thresh = 0.8) {
-  v <- as.character(v)
+  v <- .to_utf8(v)
   v <- v[!is.na(v) & nzchar(trimws(v))]
   if (!length(v)) return(FALSE)
   ok <- suppressWarnings(!is.na(as.numeric(gsub("[^0-9eE.+-]", "", v))))
@@ -67,7 +85,7 @@
 #' Coerce a raw character vector of numeric-ish tokens to numeric
 #' @noRd
 .as_num_loose <- function(v) {
-  suppressWarnings(as.numeric(gsub("[^0-9eE.+-]", "", as.character(v))))
+  suppressWarnings(as.numeric(gsub("[^0-9eE.+-]", "", .to_utf8(v))))
 }
 
 #' Resolve squish-matched target labels to their actual `df` column names
@@ -99,7 +117,7 @@
                              cat_cols = character(0),
                              group = NULL, group_row = NULL) {
   stopifnot("canonical_name" %in% names(out))
-  name <- trimws(as.character(name))
+  name <- trimws(.to_utf8(name))
   keep <- !is.na(name) & nzchar(name)
 
   # Group-keyed enrichments (griis by country, wcvp by tdwg, ...) have several
@@ -107,7 +125,7 @@
   # alone, and rejoin on the same pair.
   if (!is.null(group)) {
     stopifnot(group %in% names(out), length(group_row) == length(name))
-    gr    <- as.character(group_row)[keep]
+    gr    <- .to_utf8(group_row)[keep]
     src_k <- paste(name[keep], gr, sep = "\r")
     out_k <- paste(out$canonical_name, as.character(out[[group]]), sep = "\r")
   } else {
@@ -140,7 +158,7 @@
       })
       out[[oc]] <- as.numeric(agg[out_k])
     } else {
-      vv <- trimws(as.character(v))
+      vv <- trimws(.to_utf8(v))
       vv[!nzchar(vv) | vv == "NA"] <- NA_character_
       agg <- tapply(vv, src_k, .cat_mode)
       out[[oc]] <- as.character(agg[out_k])

@@ -9,6 +9,7 @@
 #' Most frequent non-missing value of a character vector
 #' @noRd
 .cat_mode <- function(v) {
+  v <- .to_utf8(v)
   v <- v[!is.na(v) & nzchar(trimws(v))]
   if (!length(v)) return(NA_character_)
   names(sort(table(trimws(v)), decreasing = TRUE))[1L]
@@ -49,6 +50,11 @@
 #' @noRd
 .pivot_species_traits <- function(long, spec = list(), keep_all = TRUE) {
   stopifnot(all(c("name", "trait", "value") %in% names(long)))
+  # Source labels/names/values may carry invalid UTF-8; make them safe before
+  # any gsub/table/sort touches them.
+  long$name  <- .to_utf8(long$name)
+  long$trait <- .to_utf8(long$trait)
+  long$value <- .to_utf8(long$value)
   long <- long[!is.na(long$name) & nzchar(trimws(long$name)), , drop = FALSE]
   long$name <- trimws(long$name)
 

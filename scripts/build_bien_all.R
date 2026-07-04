@@ -53,39 +53,63 @@ traits <- if (is.data.frame(tl)) {
   tc <- intersect(c("trait_name", "trait"), names(tl)); unique(as.character(tl[[tc[1L]]]))
 } else unique(as.character(tl))
 traits <- traits[!is.na(traits) & nzchar(trimws(traits))]
-traits <- union(traits, unname(vapply(spec, function(s) s$trait, character(1L))))
+# Curated traits first (known-fetchable, gets the important ones cached fast),
+# then the rest; the biggest record-level traits (DBH etc.) fall to the end
+# where a per-trait timeout can skip them without blocking the fast majority.
+traits <- union(unname(vapply(spec, function(s) s$trait, character(1L))), traits)
 logln(sprintf("BIEN trait catalogue: %d traits", length(traits)))
 
 safe <- function(s) gsub("[^A-Za-z0-9]+", "_", s)
+# Per-trait fetch reducer, run in a child process so a mega-trait (e.g. DBH,
+# millions of records) that hangs the record-level API can be killed and
+# skipped after a wall-clock budget instead of blocking the whole build.
+fetch_one <- function(tr) {
+  raw <- BIEN::BIEN_trait_trait(trait = tr)
+  if (is.data.frame(raw) && nrow(raw) > 0L) {
+    if ("access" %in% names(raw))
+      raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
+    if (nrow(raw) > 0L)
+      return(data.frame(name = as.character(raw$scrubbed_species_binomial),
+                        trait = as.character(raw$trait_name),
+                        value = as.character(raw$trait_value),
+                        stringsAsFactors = FALSE))
+  }
+  NULL
+}
+PER_TRAIT_TIMEOUT <- 1800L   # 30 min: fair for big traits, caps the intractable
 for (i in seq_along(traits)) {
   tr <- traits[i]
   f  <- file.path(cache, paste0(sprintf("%03d_", i), safe(tr), ".rds"))
-  if (file.exists(f)) { logln(sprintf("skip %d/%d %s (cached)", i, length(traits), tr)); next }
-  red <- tryCatch({
-    raw <- BIEN::BIEN_trait_trait(trait = tr)
-    if (is.data.frame(raw) && nrow(raw) > 0L) {
-      if ("access" %in% names(raw))
-        raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
-      if (nrow(raw) > 0L)
-        data.frame(name = as.character(raw$scrubbed_species_binomial),
-                   trait = as.character(raw$trait_name),
-                   value = as.character(raw$trait_value), stringsAsFactors = FALSE)
-      else NULL
-    } else NULL
-  }, error = function(e) { logln(sprintf("  ERR %s: %s", tr, conditionMessage(e))); NA })
-  if (identical(red, NA)) next          # error: leave uncached, retry next run
+  s  <- paste0(tools::file_path_sans_ext(f), ".skip")
+  if (file.exists(f) || file.exists(s)) {
+    logln(sprintf("skip %d/%d %s (done)", i, length(traits), tr)); next
+  }
+  t0 <- Sys.time()
+  red <- tryCatch(
+    callr::r(fetch_one, args = list(tr = tr), timeout = PER_TRAIT_TIMEOUT),
+    error = function(e) structure(list(), .err = conditionMessage(e)))
+  el <- round(as.numeric(difftime(Sys.time(), t0, units = "mins")), 1)
+  if (is.list(red) && !is.data.frame(red) && !is.null(attr(red, ".err"))) {
+    writeLines(attr(red, ".err"), s)      # timeout/error: mark skipped, don't retry
+    logln(sprintf("SKIP %d/%d %s (%s min): %s", i, length(traits), tr, el,
+                  attr(red, ".err")))
+    next
+  }
   saveRDS(red, f)
-  logln(sprintf("OK %d/%d %s: %s rows", i, length(traits), tr,
+  logln(sprintf("OK %d/%d %s (%s min): %s rows", i, length(traits), tr, el,
                 if (is.null(red)) 0L else nrow(red)))
 }
 
-# assemble only if every trait is cached (no errors pending)
-cached <- list.files(cache, pattern = "\\.rds$", full.names = TRUE)
-if (length(cached) < length(traits)) {
-  logln(sprintf("INCOMPLETE: %d/%d traits cached; rerun to finish.",
-                length(cached), length(traits)))
+# assemble once every trait is either cached or skipped
+cached  <- list.files(cache, pattern = "\\.rds$",  full.names = TRUE)
+skipped <- list.files(cache, pattern = "\\.skip$")
+if (length(cached) + length(skipped) < length(traits)) {
+  logln(sprintf("INCOMPLETE: %d cached + %d skipped of %d; rerun to finish.",
+                length(cached), length(skipped), length(traits)))
   quit(save = "no", status = 0)
 }
+if (length(skipped)) logln(sprintf("skipped (too large for record API): %s",
+                                   paste(sub("\\.skip$","",skipped), collapse=", ")))
 logln("all traits cached; assembling...")
 parts <- lapply(cached, readRDS)
 parts <- parts[!vapply(parts, is.null, logical(1L))]

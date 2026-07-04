@@ -279,6 +279,11 @@ parse_birdbase <- function(path) {
     flightlessness     = chr("Flightlessness"),
     stringsAsFactors   = FALSE
   )
+  # Mean clutch size from the reported min/max (single-value rows keep that
+  # value); feeds the cross-source clutch_litter_size trait.
+  cm <- rowMeans(cbind(out$clutch_min, out$clutch_max), na.rm = TRUE)
+  cm[is.nan(cm)] <- NA_real_
+  out$clutch_mean <- cm
   out <- .append_all_cols(
     out, df, canonical,
     used = .squish_used(df, c(

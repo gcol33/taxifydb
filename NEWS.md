@@ -11,6 +11,11 @@
   runtime coalesce EltonTraits (birds and mammals) into the cross-source
   `diet_guild` trait alongside AVONET and ReptTraits. Requires rebuilding
   `elton_traits.vtr` (`enrichment-2026.07`).
+* `parse_birdbase()` now derives a `clutch_mean` column as the NA-safe mean of
+  the reported clutch min and max, so the taxify runtime can coalesce Birdbase
+  bird clutch sizes into the cross-source `clutch_litter_size` trait (calibrated
+  1:1 against the Amniote database on 6781 shared species). Requires rebuilding
+  `birdbase.vtr` (`enrichment-2026.07`).
 
 ## Bug fixes
 

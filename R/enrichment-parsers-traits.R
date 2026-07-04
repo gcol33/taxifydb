@@ -301,8 +301,21 @@ parse_sealifebase <- function(path) {
 #' @return data.frame keyed on `canonical_name` with nine root-trait columns.
 #' @export
 parse_groot <- function(path) {
+  # download_groot() returns c(aggregate = ..., full = ...); older callers may
+  # still pass a single aggregate-CSV path.
+  agg_path  <- if (!is.null(names(path)) && "aggregate" %in% names(path)) {
+    path[["aggregate"]]
+  } else {
+    path[[1L]]
+  }
+  full_path <- if (!is.null(names(path)) && "full" %in% names(path)) {
+    path[["full"]]
+  } else {
+    NA_character_
+  }
+
   df <- utils::read.csv(
-    path,
+    agg_path,
     fileEncoding = "latin1",
     stringsAsFactors = FALSE,
     check.names = FALSE,
@@ -332,7 +345,91 @@ parse_groot <- function(path) {
     value = df$meanSpecies,
     stringsAsFactors = FALSE
   )
-  .pivot_species_traits(long, curated)
+  out <- .pivot_species_traits(long, curated)
+
+  # GRooT's aggregate specific_root_area mixes incompatible scales: three source
+  # papers sit ~1000x below GRooT's cm2 g-1 standard (a compilation unit error).
+  # Recompute it from the full per-record version, rescaling those papers with
+  # standardized sources winning per species (see .groot_fix_sra).
+  if (!is.na(full_path) && nzchar(full_path) && file.exists(full_path)) {
+    out <- .groot_fix_sra(out, full_path)
+  }
+  out
+}
+
+
+#' Download both GRooT files (species aggregate + full per-record version)
+#'
+#' The aggregate drives every trait; the full version is needed to repair
+#' specific_root_area (see [parse_groot()]). The full download is best-effort:
+#' if it fails, the aggregate SRA is used as-is.
+#'
+#' @param url Character. The aggregate ZIP URL (from the registry).
+#' @param dest Character. Download directory.
+#' @return Named character vector `c(aggregate = <csv>, full = <csv or NA>)`.
+#' @export
+download_groot <- function(url, dest) {
+  dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+  agg <- download_and_unzip(url, file.path(dest, "agg"),
+                            "GRooTAggregateSpeciesVersion\\.csv$")
+  full_url <- sub("GRooTAggregateSpeciesVersion\\.zip$", "GRooTFullVersion.zip", url)
+  full <- tryCatch(
+    download_and_unzip(full_url, file.path(dest, "full"),
+                       "GRooTFullVersion\\.csv$"),
+    error = function(e) NA_character_
+  )
+  c(aggregate = agg, full = full)
+}
+
+
+# Recompute specific_root_area from GRooT's full per-record version. Three source
+# papers (Quanquan 2011, an unpublished MSc thesis; Mokany & Ash 2008; Chanteloup
+# & Bonis 2013) are stored ~1000x below GRooT's cm2 g-1 standard (data paper Table
+# 1/S1, median 385.8) -- a compilation unit error, not GRooT's conversion: AusTraits
+# carries the identical Mokany 2008 data equally low. The x1000 is grounded, not a
+# guess: Mokany & Ash 2008's own SRA-SLA regression (Fig 1B, log10 SRA = 1.019 +
+# 0.024*(SLA - 18.208), SRA in m2/kg) fixes the real magnitude at ~10 m2/kg =
+# ~100 cm2/g, and the stored values x1000 land in that range. The three papers are
+# rescaled x1000, but standardized sources win per species: a species with any
+# clean record keeps its clean median (Mokany's paper itself cautions that its
+# pot-grown values differ from the field), and the rescaled papers only fill
+# species that no standardized source covers.
+.groot_fix_sra <- function(out, full_path,
+                           rescale = c("Quanquan 2011", "Mokany and Ash 2008",
+                                       "Chanteloup and Bonis 2013"),
+                           factor = 1000) {
+  if (!requireNamespace("data.table", quietly = TRUE)) return(out)
+  cols <- c("genusTNRS", "speciesTNRS", "traitName", "traitValue",
+            "referencesAbbreviated")
+  fv <- tryCatch(
+    as.data.frame(data.table::fread(full_path, select = cols,
+                                    showProgress = FALSE)),
+    error = function(e) NULL
+  )
+  if (is.null(fv) || !nrow(fv)) return(out)
+  d <- fv[fv$traitName == "Specific_root_area", , drop = FALSE]
+  if (!nrow(d)) return(out)
+
+  v   <- suppressWarnings(as.numeric(d$traitValue))
+  sp  <- trimws(paste(d$genusTNRS, d$speciesTNRS))
+  flg <- d$referencesAbbreviated %in% rescale
+  ok  <- is.finite(v) & nzchar(sp)
+
+  # Standardized-source per-species median (wins where present).
+  cok       <- ok & !flg
+  clean_med <- if (any(cok)) tapply(v[cok], sp[cok], stats::median) else numeric(0)
+  # Rescaled flagged-source per-species median (gap fill only).
+  vr        <- v; vr[flg] <- vr[flg] * factor
+  fok       <- ok & flg
+  flag_med  <- if (any(fok)) tapply(vr[fok], sp[fok], stats::median) else numeric(0)
+
+  final <- clean_med
+  gap   <- setdiff(names(flag_med), names(clean_med))
+  final[gap] <- flag_med[gap]
+  if (!length(final)) return(out)
+
+  out$specific_root_area <- as.numeric(final[out$canonical_name])
+  out
 }
 
 

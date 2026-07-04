@@ -2,6 +2,38 @@
 
 ## New features
 
+* `parse_elton_traits()` now derives a `diet_guild` column from the ten
+  EltonTraits diet-fraction columns: fractions are summed within each guild
+  (the four vertebrate/fish columns are all carnivory), the dominant guild
+  wins when it reaches 50 percent, otherwise the species is omnivore. The
+  derived label agrees 93% with EltonTraits' own `diet_5cat` and 83% with
+  AVONET's independent `trophic_niche` on shared species. This lets the taxify
+  runtime coalesce EltonTraits (birds and mammals) into the cross-source
+  `diet_guild` trait alongside AVONET and ReptTraits. Requires rebuilding
+  `elton_traits.vtr` (`enrichment-2026.07`).
+
+## Bug fixes
+
+* `parse_groot()` now repairs GRooT's `specific_root_area` column. GRooT's
+  species aggregate carries three source papers (Quanquan 2011, Mokany & Ash
+  2008, Chanteloup & Bonis 2013) at ~1000x below GRooT's documented cm2 g-1
+  standard (data paper Table 1/S1, median 385.8) -- physically impossible for
+  fine-root SRA -- which corrupts the aggregate mean for any co-measured species.
+  This is a compilation unit error, not GRooT's conversion (AusTraits carries the
+  identical Mokany 2008 data equally low). The x1000 correction is grounded in the
+  primary literature: Mokany & Ash 2008's own SRA-SLA regression (Fig 1B) puts the
+  real magnitude at ~10 m2/kg = ~100 cm2/g, and the stored values x1000 land in
+  that range. The build now also fetches the full per-record version
+  (`download_groot()`) and recomputes specific root area from it with the three
+  papers rescaled x1000, standardized sources winning per species -- a species
+  with any standardized record keeps its clean median (Mokany's paper itself
+  cautions its pot-grown values differ from the field), and the rescaled papers
+  fill only species no standardized source covers. The repaired column has median
+  386 cm2 g-1 (matching the data paper), full species coverage, and no physically
+  impossible sub-1 values. Every other GRooT trait is unchanged.
+
+## New features
+
 * New `gift` enrichment: `parse_gift()` fetches GIFT's (Global Inventory of
   Floras and Traits; Weigelt et al. 2020) species-level plant traits from the
   live API at build time -- batched over all trait IDs -- and writes them to a

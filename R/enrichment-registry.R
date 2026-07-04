@@ -656,9 +656,7 @@
       "licence is stated on the repository). Species-level means of the nine ",
       "best-populated key root traits."
     ),
-    download_fn = function(url, dest) {
-      download_and_unzip(url, dest, "GRooTAggregateSpeciesVersion\\.csv$")
-    },
+    download_fn = function(url, dest) download_groot(url, dest),
     parse_fn    = function(path) parse_groot(path),
     group_col   = NULL,
     requires    = character(0)

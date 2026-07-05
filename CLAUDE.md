@@ -55,13 +55,15 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 | itis | SQLite | parent_tsn walk, needs RSQLite |
 | ncbi | pipe-delimited .dmp | aggressive noise filter |
 | ott | TSV (Open Tree) | NCBI+GBIF+WoRMS+IRMNG synthesis |
-| worms | DwC-A (ChecklistBank) | marine taxa, denormalized |
+| worms | DwC-A (ChecklistBank) | marine taxa, denormalized; ChecklistBank double-quotes TSV fields, so `read_worms` reads with `read.delim(quote = "\"")` not `quote = ""` (see WoRMS quote note below) |
 | euromed | semicolon CSV | Euro+Med PlantBase 2020 snapshot |
 | fungorum | (depends) | Index Fungorum |
 | algaebase | ChecklistBank /nameusage/search | paginated API; /archive disabled (CC BY-NC) |
 | fishbase | rfishbase `load_taxa()` + `synonyms()` | fishes; shared reader `.read_rfishbase_backbone()`; needs rfishbase |
 | sealifebase | rfishbase (server = sealifebase) | non-fish aquatic; same shared reader |
 | reptiledb | taxa.csv + synonyms.xlsx + checklist.xlsx | reptiles; CC-BY; synonyms from 2023-04 snapshot, order via family->order map; needs openxlsx2 |
+
+**WoRMS quote note (#2, fixed in `worms-2026.07`).** ChecklistBank double-quotes its `Taxon.tsv` / `SpeciesProfile.tsv` string fields. `read_worms` (and the SpeciesProfile reader) must use `read.delim(quote = "\"")`, NOT `quote = ""` — with `quote = ""` the field-wrapping quotes are kept as literal characters, so 90.2% of `canonical_name` / `key_ci` / `key_normalized` / `authorship` came out wrapped in `"` (e.g. `"Aglaophamus malmgreni"`) and some quoted-field rows were mis-split (bibliographic text leaking into `taxon_id`). Runtime effect: exact match fails on the quotes, falls to fuzzy, and the quoted `accepted_name` then breaks every marine enrichment join. Using `quote = "\""` parses the double-quotes as quotes and strips them; only `"` is a quote (not `'`), so apostrophes in authorship (`d'Orbigny`, `O'Brien`) stay intact. After the fix: `canonical_name` quotes 1,406,915 -> 11 (the 11 genuine embedded quotes, e.g. `Gyrodactylus barbatuli f. "A"`), rows 1,559,455 -> 1,557,860. This was WoRMS-only: every other backbone and all enrichments have <=0.03% quoted, all genuine embedded quotes in informal/provisional names, so none needs the change. When rebuilding another delimited backbone/enrichment whose source wraps fields, prefer `quote = "\""` over `quote = ""`.
 
 ## Enrichments
 

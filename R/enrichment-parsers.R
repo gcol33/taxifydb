@@ -99,11 +99,6 @@ parse_eive <- function(path) {
 }
 
 
-#' Parse EltonTraits 1.0 birds + mammals TSVs
-#' @param birds_path Character. Path to BirdFuncDat.txt.
-#' @param mammals_path Character. Path to MamFuncDat.txt.
-#' @return data.frame with canonical_name + diet/foraging/body mass columns.
-#' @export
 # Derive one diet-guild label per species from the ten EltonTraits diet-fraction
 # columns. Fractions are summed within each guild first (the four vertebrate/fish
 # columns are all carnivory), then the dominant guild is taken; a species with no
@@ -138,6 +133,11 @@ parse_eive <- function(path) {
          ifelse(gmax < 50 | ntie > 1L, "omnivore", pick))
 }
 
+#' Parse EltonTraits 1.0 birds + mammals TSVs
+#' @param birds_path Character. Path to BirdFuncDat.txt.
+#' @param mammals_path Character. Path to MamFuncDat.txt.
+#' @return data.frame with canonical_name + diet/foraging/body mass columns.
+#' @export
 parse_elton_traits <- function(birds_path, mammals_path) {
   col_map <- list(
     diet_inv        = c("Diet.Inv", "Diet-Inv"),

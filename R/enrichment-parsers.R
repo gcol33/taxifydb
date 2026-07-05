@@ -12,7 +12,7 @@
 #' @param path Character. Path to GlobalWoodinessDatabase.csv.
 #' @return data.frame with canonical_name + woodiness.
 #' @export
-parse_woodiness <- function(path) {
+parse_zanne <- function(path) {
   df <- utils::read.csv(path, stringsAsFactors = FALSE)
 
   if ("gs" %in% names(df)) {
@@ -467,7 +467,7 @@ parse_amphibio <- function(path) {
 #' @param path Character. Path to FISHMORPH_Database.csv.
 #' @return data.frame with canonical_name + morphology columns.
 #' @export
-parse_fish_traits <- function(path) {
+parse_fishmorph <- function(path) {
   df <- utils::read.csv2(path, stringsAsFactors = FALSE,
                          fileEncoding = "latin1", dec = ".")
 

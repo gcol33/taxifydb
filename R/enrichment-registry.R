@@ -13,7 +13,7 @@
 #' @noRd
 .enrichment_build_registry <- list(
 
-  woodiness = list(
+  zanne = list(
     source_url  = "https://raw.githubusercontent.com/ejedwards/reanalysis_zanne2014/master/dryad/GlobalWoodinessDatabase.csv",
     source_doi  = "10.5061/dryad.63q27",
     version     = "2014.1",
@@ -22,7 +22,7 @@
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "GlobalWoodinessDatabase.csv")
     },
-    parse_fn    = function(path) parse_woodiness(path),
+    parse_fn    = function(path) parse_zanne(path),
     group_col   = NULL,
     requires    = character(0)
   ),
@@ -213,7 +213,7 @@
     requires    = "openxlsx2"
   ),
 
-  conservation_status = list(
+  iucn = list(
     source_url  = "https://hosted-datasets.gbif.org/datasets/iucn/iucn-latest.zip",
     source_doi  = NULL,
     version     = format(Sys.Date(), "%Y.%m"),
@@ -222,7 +222,7 @@
     download_fn = function(url, dest) {
       download_and_unzip(url, dest, pattern = NULL)
     },
-    parse_fn    = function(path) parse_conservation_status(path),
+    parse_fn    = function(path) parse_iucn(path),
     group_col   = NULL,
     requires    = "data.table"
   ),
@@ -444,7 +444,7 @@
     requires    = character(0)
   ),
 
-  fish_traits = list(
+  fishmorph = list(
     source_url  = "https://ndownloader.figshare.com/files/28672242",
     source_doi  = "10.6084/m9.figshare.14891412",
     version     = "1.0",
@@ -453,7 +453,7 @@
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "FISHMORPH_Database.csv")
     },
-    parse_fn    = function(path) parse_fish_traits(path),
+    parse_fn    = function(path) parse_fishmorph(path),
     group_col   = NULL,
     requires    = character(0)
   ),

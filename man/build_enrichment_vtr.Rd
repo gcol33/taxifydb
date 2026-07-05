@@ -22,7 +22,7 @@ build_enrichment_vtr(
 
 \item{vtr_path}{Character. Output path for the .vtr file.}
 
-\item{name}{Character. Enrichment identifier (e.g., "woodiness").}
+\item{name}{Character. Enrichment identifier (e.g., "zanne").}
 
 \item{version}{Character. Version string (e.g., "2026.04").}
 

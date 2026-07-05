@@ -373,7 +373,7 @@ parse_alien_first_records <- function(path) {
 #'   (`taxon.txt`, `distribution.txt`).
 #' @return data.frame with canonical_name + conservation_status.
 #' @export
-parse_conservation_status <- function(dir_path) {
+parse_iucn <- function(dir_path) {
   if (!requireNamespace("data.table", quietly = TRUE)) {
     stop("Package 'data.table' is required to parse the IUCN Red List archive.",
          call. = FALSE)

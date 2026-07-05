@@ -11,7 +11,7 @@
 #'
 #' @param df A data.frame with at least a `canonical_name` column.
 #' @param vtr_path Character. Output path for the .vtr file.
-#' @param name Character. Enrichment identifier (e.g., "woodiness").
+#' @param name Character. Enrichment identifier (e.g., "zanne").
 #' @param version Character. Version string (e.g., "2026.04").
 #' @param source_url Character. URL the source data was downloaded from.
 #' @param source_doi Character or NULL. DOI of the source dataset.

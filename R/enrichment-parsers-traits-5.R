@@ -52,7 +52,7 @@ parse_sharkipedia <- function(path) {
 #' @param path Path to NestTrait_v2.csv.
 #' @return data.frame with canonical_name + nest trait flags.
 #' @export
-parse_bird_nest <- function(path) {
+parse_nesttrait <- function(path) {
   d <- utils::read.csv(path, check.names = FALSE, stringsAsFactors = FALSE,
                        fileEncoding = "UTF-8")
   flag <- function(col) {

@@ -1520,9 +1520,9 @@
       "source_doi": "10.1038/s41597-022-01655-1",
       "license": "CC BY 4.0"
     },
-    "bird_nest": {
+    "nesttrait": {
       "latest": "2.0",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/bird_nest.vtr",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/nesttrait.vtr",
       "nrow": 10378,
       "source_url": "https://zenodo.org/records/10128906/files/NestTrait_v2.csv?download=1",
       "source_doi": "10.1038/s41597-023-02837-1",

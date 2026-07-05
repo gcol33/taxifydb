@@ -1001,7 +1001,7 @@
     requires    = character(0)
   ),
 
-  bird_nest = list(
+  nesttrait = list(
     source_url  = paste0("https://zenodo.org/records/10128906/files/",
                          "NestTrait_v2.csv?download=1"),
     source_doi  = "10.1038/s41597-023-02837-1",
@@ -1016,7 +1016,7 @@
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "nesttrait_v2.csv")
     },
-    parse_fn    = function(path) parse_bird_nest(path),
+    parse_fn    = function(path) parse_nesttrait(path),
     group_col   = NULL,
     requires    = character(0)
   ),

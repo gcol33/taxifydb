@@ -76,7 +76,11 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     message(sprintf("  Parsed %s rows.", format(nrow(df), big.mark = ",")))
   }
 
-  if (isTRUE(resolve_names) && "canonical_name" %in% names(df)) {
+  # A registry entry may set resolve_names = FALSE when its parser already
+  # resolves to the accepted-name grain (e.g. host-breadth rollups), so the
+  # pipeline must not resolve a second time.
+  reg_resolves <- if (is.null(reg$resolve_names)) TRUE else isTRUE(reg$resolve_names)
+  if (isTRUE(resolve_names) && reg_resolves && "canonical_name" %in% names(df)) {
     if (verbose) message("  Resolving names against backbones...")
     group_cols <- if (!is.null(reg$group_col)) reg$group_col else NULL
     df <- resolve_enrichment_names(df, group_cols = group_cols,

@@ -1741,6 +1741,22 @@
         "doi": "10.1111/jbi.13623"
       },
       "license": "CC BY 4.0"
+    },
+    "hosts": {
+      "latest": "2010.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/hosts.vtr",
+      "nrow": 19090,
+      "license": "CC0",
+      "source_doi": "10.5519/havt50xw",
+      "source_url": "https://data.nhm.ac.uk/dataset/hosts-a-database-of-the-world-s-lepidopteran-hostplants"
+    },
+    "usda_fungus_host": {
+      "latest": "2021.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/usda_fungus_host.vtr",
+      "nrow": 73546,
+      "license": "U.S. Public Domain",
+      "source_doi": "10.15482/USDA.ADC/1524414",
+      "source_url": "https://api.figshare.com/v2/articles/24855585"
     }
   }
 }

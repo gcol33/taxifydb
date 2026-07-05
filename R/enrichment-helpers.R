@@ -322,3 +322,106 @@ download_dryad_file <- function(doi, dest_dir, filename,
   }
   dest
 }
+
+
+# --- Cloudflare-fronted sources ---------------------------------------------
+#
+# R's libcurl sends a static TLS ClientHello whose JA3/JA4 fingerprint every
+# anti-bot has catalogued, so a plain download of a Cloudflare-gated source
+# returns the "Just a moment" HTML challenge instead of the data. Reproducing a
+# real Chrome ClientHello needs curl-impersonate (patched libcurl + BoringSSL),
+# which has no R binding; the bundled inst/py/cf_fetch.py (curl_cffi) does it.
+# These helpers shell out to it. Build-time only -- the runtime downloads the
+# pre-built .vtr and never touches python.
+
+
+#' Locate a Python interpreter that can import curl_cffi
+#'
+#' Honours `TAXIFYDB_PYTHON`, then tries `python` / `python3` on PATH. Errors
+#' with an install instruction if none has `curl_cffi`.
+#' @return Path to a usable python executable.
+#' @noRd
+.cf_python <- function() {
+  cands <- c(Sys.getenv("TAXIFYDB_PYTHON", ""),
+             Sys.which("python"), Sys.which("python3"))
+  cands <- cands[nzchar(cands)]
+  for (py in cands) {
+    ok <- tryCatch(
+      system2(py, c("-c", shQuote("import curl_cffi")),
+              stdout = FALSE, stderr = FALSE) == 0L,
+      error = function(e) FALSE)
+    if (isTRUE(ok)) return(unname(py))
+  }
+  stop("No Python with curl_cffi found. Cloudflare-gated enrichments ",
+       "(hosts, usda_fungus_host) need it at build time. Install with:\n",
+       "  pip install curl_cffi\n",
+       "or point TAXIFYDB_PYTHON at a suitable interpreter.", call. = FALSE)
+}
+
+
+#' Path to the bundled cf_fetch.py helper
+#' @noRd
+.cf_fetch_script <- function() {
+  p <- system.file("py", "cf_fetch.py", package = "taxifydb")
+  if (!nzchar(p) || !file.exists(p)) {
+    stop("Bundled cf_fetch.py not found (inst/py/cf_fetch.py).", call. = FALSE)
+  }
+  p
+}
+
+
+#' Download a Cloudflare-fronted file via the curl_cffi helper
+#'
+#' Downloads `url` into `dest_dir/filename` with a browser TLS impersonation
+#' that passes Cloudflare's "Just a moment" challenge. Cached: skips if the
+#' destination exists and is non-empty.
+#'
+#' @param url Character. URL to download.
+#' @param dest_dir Character. Directory to save into. Created if missing.
+#' @param filename Character. Output filename.
+#' @return Path to the downloaded file.
+#' @export
+download_cf_file <- function(url, dest_dir, filename) {
+  dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+  dest <- file.path(dest_dir, filename)
+  if (file.exists(dest) && file.size(dest) > 100L) return(dest)
+
+  py <- .cf_python()
+  status <- system2(py, c(shQuote(.cf_fetch_script()), "get",
+                          shQuote(url), shQuote(dest)))
+  if (status != 0L || !file.exists(dest) || file.size(dest) < 100L) {
+    stop(sprintf("Cloudflare download failed: %s", url), call. = FALSE)
+  }
+  dest
+}
+
+
+#' Harvest an entire CKAN datastore resource past the offset window
+#'
+#' CKAN's elasticsearch-backed datastore caps `offset` at `max_result_window`
+#' (10000); the helper pages the full table via the `after` (search_after)
+#' cursor, through Cloudflare, writing one JSON record per line. Cached.
+#'
+#' @param api_base Character. CKAN action root, e.g.
+#'   `https://data.nhm.ac.uk/api/3/action`.
+#' @param resource_id Character. Datastore resource id.
+#' @param dest_dir Character. Directory to save into. Created if missing.
+#' @param filename Character. Output filename (a `.jsonl`).
+#' @return Path to the downloaded JSONL file.
+#' @export
+harvest_ckan_datastore <- function(api_base, resource_id, dest_dir,
+                                    filename) {
+  dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+  dest <- file.path(dest_dir, filename)
+  if (file.exists(dest) && file.size(dest) > 1000L) return(dest)
+
+  py <- .cf_python()
+  status <- system2(py, c(shQuote(.cf_fetch_script()), "ckan",
+                          shQuote(api_base), shQuote(resource_id),
+                          shQuote(dest)))
+  if (status != 0L || !file.exists(dest) || file.size(dest) < 1000L) {
+    stop(sprintf("CKAN harvest failed: %s (resource %s)", api_base,
+                 resource_id), call. = FALSE)
+  }
+  dest
+}

@@ -77,93 +77,15 @@ resolve_enrichment_names <- function(df,
     stop("df must have a 'canonical_name' column")
   }
 
-  if (use_lookup) {
-    lookup_paths <- .find_lookup_paths(backends)
-    if (length(lookup_paths) > 0L) {
-      return(.resolve_via_lookup(df, group_cols, lookup_paths, verbose))
-    }
-    if (verbose) {
-      message("  No name_lookup.vtr files found; falling back to ",
-              "per-backend taxify(). Run build_all_name_lookups() to enable ",
-              "the fast path.")
-    }
-  }
-
-  if (!requireNamespace("taxify", quietly = TRUE)) {
-    stop("taxify package required for cross-backbone name resolution.")
-  }
-
-  unique_names <- unique(df$canonical_name)
-  n_source <- length(unique_names)
-
-  if (verbose) {
-    message(sprintf(
-      "  Resolving %s source names against %d backends...",
-      format(n_source, big.mark = ","), length(backends)
-    ))
-  }
-
-  all_mappings <- vector("list", length(backends))
-
-  for (i in seq_along(backends)) {
-    b <- backends[i]
-    if (verbose) message(sprintf("    [%d/%d] %s...", i, length(backends), b))
-
-    res <- tryCatch(
-      taxify::taxify(unique_names, backend = b, verbose = FALSE),
-      error = function(e) {
-        warning(sprintf("Backend '%s' failed: %s", b, conditionMessage(e)),
-                call. = FALSE)
-        NULL
-      }
-    )
-
-    if (!is.null(res)) {
-      matched <- res[!is.na(res$accepted_name),
-                     c("input_name", "accepted_name"), drop = FALSE]
-      if (nrow(matched) > 0L) {
-        all_mappings[[i]] <- unique(matched)
-      }
-    }
-  }
-
-  mapping <- do.call(rbind, all_mappings)
-
-  if (is.null(mapping) || nrow(mapping) == 0L) {
+  map <- resolve_name_map(df$canonical_name, backends = backends,
+                          verbose = verbose, use_lookup = use_lookup)
+  if (nrow(map) == 0L) {
     warning("No names resolved against any backend. Returning original df.")
     return(df)
   }
 
-  mapping <- unique(mapping)
-
-  unresolved <- setdiff(unique_names, mapping$input_name)
-  if (length(unresolved) > 0L) {
-    self_map <- data.frame(
-      input_name    = unresolved,
-      accepted_name = unresolved,
-      stringsAsFactors = FALSE
-    )
-    mapping <- rbind(mapping, self_map)
-  }
-
-  n_accepted <- length(unique(mapping$accepted_name))
-  ratio <- n_accepted / n_source
-
-  if (verbose) {
-    message(sprintf(
-      "  %s source names -> %s unique accepted names (%.2fx)",
-      format(n_source, big.mark = ","),
-      format(n_accepted, big.mark = ","),
-      ratio
-    ))
-  }
-
-  expanded <- merge(
-    df, mapping,
-    by.x = "canonical_name", by.y = "input_name",
-    all.x = TRUE
-  )
-
+  expanded <- merge(df, map, by.x = "canonical_name", by.y = "input_name",
+                    all.x = TRUE)
   has_resolved <- !is.na(expanded$accepted_name)
   expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
   expanded$accepted_name <- NULL
@@ -179,6 +101,98 @@ resolve_enrichment_names <- function(df,
   }
 
   expanded
+}
+
+
+#' Map names to their cross-backbone accepted names
+#'
+#' Resolves a vector of source names to every distinct accepted name they map
+#' to across the requested taxify backends, returning the long
+#' `(input_name, accepted_name)` mapping used by [resolve_enrichment_names()].
+#' Names that resolve nowhere are self-mapped (`accepted_name == input_name`).
+#'
+#' Exposed so that rollup enrichments (host breadth, interaction degree) can
+#' aggregate at the accepted-name grain -- unioning records across synonyms
+#' before counting -- instead of pre-aggregating per source name and losing
+#' counts when several synonyms later collapse onto one accepted name.
+#'
+#' @param names Character vector of source names.
+#' @param backends Character vector of backend names. Default: all 7.
+#' @param verbose Logical.
+#' @param use_lookup Logical. Try the hash-join fast path first. Default `TRUE`.
+#' @return data.frame with columns `input_name`, `accepted_name`.
+#' @export
+resolve_name_map <- function(names,
+                             backends = c("wfo", "col", "gbif", "itis",
+                                          "ncbi", "ott", "worms"),
+                             verbose = TRUE, use_lookup = TRUE) {
+  unique_names <- unique(names[!is.na(names) & nzchar(names)])
+  empty <- data.frame(input_name = character(), accepted_name = character(),
+                      stringsAsFactors = FALSE)
+  if (length(unique_names) == 0L) return(empty)
+
+  map <- NULL
+  if (use_lookup) {
+    lookup_paths <- .find_lookup_paths(backends)
+    if (length(lookup_paths) > 0L) {
+      map <- .name_map_via_lookup(unique_names, lookup_paths, verbose)
+    } else if (verbose) {
+      message("  No name_lookup.vtr files found; falling back to ",
+              "per-backend taxify(). Run build_all_name_lookups() to enable ",
+              "the fast path.")
+    }
+  }
+  if (is.null(map)) map <- .name_map_via_taxify(unique_names, backends, verbose)
+  if (is.null(map)) return(empty)
+
+  resolved_set <- unique(map$input_name)
+  unresolved <- setdiff(unique_names, resolved_set)
+  if (length(unresolved) > 0L) {
+    map <- rbind(map, data.frame(input_name = unresolved,
+                                 accepted_name = unresolved,
+                                 stringsAsFactors = FALSE))
+  }
+  map <- unique(map)
+
+  if (verbose) {
+    n_src <- length(unique_names)
+    n_acc <- length(unique(map$accepted_name))
+    message(sprintf("  %s source names -> %s unique accepted names (%.2fx)",
+                    format(n_src, big.mark = ","),
+                    format(n_acc, big.mark = ","),
+                    n_acc / max(n_src, 1L)))
+  }
+  map
+}
+
+
+#' Build the accepted-name map via per-backend taxify() (slow path)
+#' @noRd
+.name_map_via_taxify <- function(unique_names, backends, verbose) {
+  if (!requireNamespace("taxify", quietly = TRUE)) {
+    stop("taxify package required for cross-backbone name resolution.")
+  }
+  all_mappings <- vector("list", length(backends))
+  for (i in seq_along(backends)) {
+    b <- backends[i]
+    if (verbose) message(sprintf("    [%d/%d] %s...", i, length(backends), b))
+    res <- tryCatch(
+      taxify::taxify(unique_names, backend = b, verbose = FALSE),
+      error = function(e) {
+        warning(sprintf("Backend '%s' failed: %s", b, conditionMessage(e)),
+                call. = FALSE)
+        NULL
+      }
+    )
+    if (!is.null(res)) {
+      matched <- res[!is.na(res$accepted_name),
+                     c("input_name", "accepted_name"), drop = FALSE]
+      if (nrow(matched) > 0L) all_mappings[[i]] <- unique(matched)
+    }
+  }
+  mapping <- do.call(rbind, all_mappings)
+  if (is.null(mapping) || nrow(mapping) == 0L) return(NULL)
+  unique(mapping)
 }
 
 
@@ -244,11 +258,9 @@ resolve_enrichment_names <- function(df,
 }
 
 
-#' Resolve enrichment names via hash-joins against per-backbone lookup .vtr
+#' Build the accepted-name map via per-backbone lookup .vtr (fast path)
 #' @noRd
-.resolve_via_lookup <- function(df, group_cols, lookup_paths, verbose) {
-  unique_names <- unique(df$canonical_name)
-  unique_names <- unique_names[!is.na(unique_names) & nzchar(unique_names)]
+.name_map_via_lookup <- function(unique_names, lookup_paths, verbose) {
   query_keys <- .to_key_ci(unique_names)
   query_df <- data.frame(
     canonical_name = unique_names,
@@ -297,44 +309,5 @@ resolve_enrichment_names <- function(df,
   mapping <- merge(query_df, raw, by = "key_ci")
   mapping <- mapping[, c("canonical_name", "accepted_name")]
   names(mapping) <- c("input_name", "accepted_name")
-  mapping <- unique(mapping)
-
-  resolved_set <- unique(mapping$input_name)
-  unresolved <- setdiff(unique_names, resolved_set)
-  if (length(unresolved) > 0L) {
-    mapping <- rbind(
-      mapping,
-      data.frame(input_name = unresolved, accepted_name = unresolved,
-                 stringsAsFactors = FALSE)
-    )
-  }
-
-  n_acc <- length(unique(mapping$accepted_name))
-  if (verbose) {
-    message(sprintf(
-      "  [fast-path] %s source -> %s unique accepted (%.2fx)",
-      format(length(unique_names), big.mark = ","),
-      format(n_acc, big.mark = ","),
-      n_acc / max(length(unique_names), 1L)
-    ))
-  }
-
-  expanded <- merge(df, mapping,
-                    by.x = "canonical_name", by.y = "input_name",
-                    all.x = TRUE)
-  has_resolved <- !is.na(expanded$accepted_name)
-  expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
-  expanded$accepted_name <- NULL
-
-  expanded <- .dedup_keep_richest(expanded, group_cols)
-
-  if (verbose) {
-    message(sprintf(
-      "  [fast-path] final: %s rows (was %s)",
-      format(nrow(expanded), big.mark = ","),
-      format(nrow(df), big.mark = ",")
-    ))
-  }
-
-  expanded
+  unique(mapping)
 }

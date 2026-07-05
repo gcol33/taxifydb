@@ -1543,6 +1543,60 @@
     parse_fn    = function(path) parse_sheld(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  hosts = list(
+    source_url  = "https://data.nhm.ac.uk/dataset/hosts-a-database-of-the-world-s-lepidopteran-hostplants",
+    source_doi  = "10.5519/havt50xw",
+    version     = "2010.1",
+    license     = "CC0",
+    attribution = paste0(
+      "Robinson GS, Ackery PR, Kitching IJ, Beccaloni GW, Hernandez LM (2010) ",
+      "HOSTS - a Database of the World's Lepidopteran Hostplants. ",
+      "Natural History Museum, London (doi:10.5519/havt50xw), CC0. ",
+      "Rolled up to distinct hostplants and hostplant families per insect."
+    ),
+    # Cloudflare-gated portal: the offset-capped datastore is harvested past the
+    # 10000-record window via the search_after cursor through curl_cffi
+    # impersonation (see harvest_ckan_datastore / inst/py/cf_fetch.py).
+    download_fn = function(url, dest) {
+      harvest_ckan_datastore(
+        "https://data.nhm.ac.uk/api/3/action",
+        "877f387a-36a3-486c-a0c1-b8d5fb69f85a",
+        dest, "hosts.jsonl"
+      )
+    },
+    parse_fn    = function(path) parse_hosts(path),
+    group_col   = NULL,
+    # parser self-resolves to the accepted-name grain (host sets unioned across
+    # synonyms); a second pipeline resolve would only re-collapse identically.
+    resolve_names = FALSE,
+    requires    = "jsonlite"
+  ),
+
+  usda_fungus_host = list(
+    source_url  = "https://api.figshare.com/v2/articles/24855585",
+    source_doi  = "10.15482/USDA.ADC/1524414",
+    version     = "2021.1",
+    license     = "U.S. Public Domain",
+    attribution = paste0(
+      "Farr DF, Rossman AY, Castlebury LA (2021) United States National Fungus ",
+      "Collections Fungus-Host Dataset. Ag Data Commons ",
+      "(doi:10.15482/USDA.ADC/1524414), U.S. Public Domain. ",
+      "Rolled up to distinct host plants and host genera per fungus."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      fu <- r$files$download_url[grepl("Fungus-Host.*\\.csv$", r$files$name)][1]
+      download_curl_file(fu, dest, "fungus_host.csv")
+    },
+    parse_fn    = function(path) parse_usda_fungus_host(path),
+    group_col   = NULL,
+    # parser self-resolves to the accepted-name grain (host sets unioned across
+    # synonyms); a second pipeline resolve would only re-collapse identically.
+    resolve_names = FALSE,
+    requires    = "jsonlite"
   )
 )
 

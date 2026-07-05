@@ -66,11 +66,14 @@ read_worms <- function(worms_dir, verbose = TRUE) {
   }
 
   if (verbose) message("Reading WoRMS taxon data...")
+  # ChecklistBank double-quotes its TSV fields; parse them as quotes so the
+  # surrounding quote characters are stripped. Only " is a quote (not '), so
+  # apostrophes in authorship (d'Orbigny, O'Brien) stay intact.
   df <- utils::read.delim(
     taxon_files[1L],
     fileEncoding = "UTF-8",
     stringsAsFactors = FALSE,
-    quote = "",
+    quote = "\"",
     na.strings = "",
     check.names = FALSE
   )
@@ -186,7 +189,7 @@ build_worms <- function(output_dir = "output/worms", version = NULL,
       sp_files[1L],
       fileEncoding = "UTF-8",
       stringsAsFactors = FALSE,
-      quote = "",
+      quote = "\"",
       na.strings = "",
       check.names = FALSE
     )

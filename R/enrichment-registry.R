@@ -1597,6 +1597,54 @@
     # synonyms); a second pipeline resolve would only re-collapse identically.
     resolve_names = FALSE,
     requires    = "jsonlite"
+  ),
+
+  bacdive = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "crawl-snapshots-2026.07/bacdive.jsonl.gz"),
+    source_doi  = "10.1093/nar/gkab961",
+    version     = "2026.07",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Reimer LC et al. (2022) BacDive in 2022: the knowledge base for ",
+      "standardized bacterial and archaeal data. Nucleic Acids Research ",
+      "50:D741-D746 (doi:10.1093/nar/gkab961), CC BY 4.0. Bacterial Diversity ",
+      "Metadatabase, DSMZ. Strain phenotypes aggregated to per-species traits ",
+      "from the open /fetch API (accessed 2026-07)."
+    ),
+    # Snapshot crawled via inst/py/crawlers/crawl_bacdive.py (open /fetch API).
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "bacdive.jsonl.gz")
+    },
+    parse_fn    = function(path) parse_bacdive(path),
+    group_col   = NULL,
+    requires    = "jsonlite"
+  ),
+
+  globi = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "crawl-snapshots-2026.07/globi_edges.tsv.gz"),
+    source_doi  = "10.1016/j.ecoinf.2014.08.005",
+    version     = "2026.07",
+    license     = "CC BY 4.0 (derived counts; source records carry contributor licenses)",
+    attribution = paste0(
+      "Poelen JH, Simons JD, Mungall CJ (2014) Global Biotic Interactions: an ",
+      "open infrastructure to share and analyze species-interaction datasets. ",
+      "Ecological Informatics 24:148-159 (doi:10.1016/j.ecoinf.2014.08.005). ",
+      "Only derived per-species interaction counts are redistributed; the ",
+      "underlying records carry the licenses of their original data ",
+      "contributors. Snapshot 2026-06-24, accessed 2026-07."
+    ),
+    # Snapshot crawled via inst/py/crawlers/crawl_globi.py: distinct interaction
+    # edges. parse_globi resolves both endpoints to accepted names and counts
+    # distinct partners at the accepted grain, so it self-resolves.
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "globi_edges.tsv.gz")
+    },
+    parse_fn    = function(path) parse_globi(path),
+    group_col   = NULL,
+    resolve_names = FALSE,
+    requires    = character(0)
   )
 )
 

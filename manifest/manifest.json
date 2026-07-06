@@ -1757,6 +1757,22 @@
       "license": "U.S. Public Domain",
       "source_doi": "10.15482/USDA.ADC/1524414",
       "source_url": "https://api.figshare.com/v2/articles/24855585"
+    },
+    "bacdive": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/bacdive.vtr",
+      "nrow": 19889,
+      "license": "CC BY 4.0",
+      "source_doi": "10.1093/nar/gkab961",
+      "source_url": "https://bacdive.dsmz.de/"
+    },
+    "globi": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/globi.vtr",
+      "nrow": 544015,
+      "license": "CC BY 4.0 (derived counts; source records carry contributor licenses)",
+      "source_doi": "10.1016/j.ecoinf.2014.08.005",
+      "source_url": "https://www.globalbioticinteractions.org/"
     }
   }
 }

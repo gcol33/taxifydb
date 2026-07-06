@@ -48,7 +48,8 @@ def parse(html, num):
     rec = {"num": num, "name": name}
     for lab in FIELDS:
         m = re.search(
-            re.escape("<b>" + lab) + r"[^<]*</b>(.*?)(?=<b>|</td>|</div>|<br|<p>)", html, re.S
+            re.escape("<b>" + lab) + r"[^<]*</b>(.*?)(?=</h[1-6]>|<h[1-6]|<b>|</td>|</div>|<br|<p>)",
+            html, re.S,
         )
         if m:
             val = re.sub("<[^>]+>", " ", m.group(1))

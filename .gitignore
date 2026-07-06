@@ -20,3 +20,6 @@ raw/
 # OS
 .DS_Store
 Thumbs.db
+
+# local build/scratch artifacts
+scratchpad/

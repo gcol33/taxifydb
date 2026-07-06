@@ -1478,6 +1478,49 @@
     requires    = character(0)
   ),
 
+  kew_sid = list(
+    source_url  = "https://ser-sid.org/",
+    source_doi  = NA_character_,
+    version     = "2026.07",
+    license     = "CC BY 2.0",
+    attribution = paste0(
+      "Royal Botanic Gardens Kew, Seed Information Database (SID), served as ",
+      "SER-SID (https://ser-sid.org/), CC BY 2.0. Per-record seed weight, ",
+      "storage behaviour, oil/protein content and seed morphology reduced to ",
+      "per-species medians (numeric) and modes (categorical) by taxifydb ",
+      "(accessed 2026-07)."
+    ),
+    # SER-SID is served by a Supabase PostgREST backend; the anon key is
+    # embedded in the public web app and grants read-only access. Each table is
+    # paged 1000 rows at a time and cached as an .rds for parse_kew_sid().
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      base <- "https://fyxheguykvewpdeysvoh.supabase.co/rest/v1/"
+      key  <- paste0(
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6",
+        "ImZ5eGhlZ3V5a3Zld3BkZXlzdm9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDc0MTY1",
+        "MzQsImV4cCI6MTk2Mjk5MjUzNH0.",
+        "XhJKVijhMUidqeTbH62zQ6r8cS6j22TYAKfbbRHMTZ8"
+      )
+      tables <- list(
+        species           = "int_id,genus,epithet,lifeform",
+        seed_weights      = "species_id,thousandseedweight",
+        storage_behaviour = "species_id,storage_behaviour",
+        oil_content       = "species_id,oil_content",
+        protein_content   = "species_id,protein_content",
+        morphology        = "species_id,fruit_type"
+      )
+      for (nm in names(tables)) {
+        d <- download_supabase_table(base, key, nm, tables[[nm]])
+        saveRDS(d, file.path(dest, paste0(nm, ".rds")))
+      }
+      dest
+    },
+    parse_fn    = function(path) parse_kew_sid(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
   nztd = list(
     source_url  = "https://api.figshare.com/v2/articles/21939647",
     source_doi  = "10.6084/m9.figshare.21939647",

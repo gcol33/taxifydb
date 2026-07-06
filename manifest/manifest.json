@@ -1797,6 +1797,14 @@
       "source_url": "https://esapubs.org/archive/ecol/E096/202/",
       "source_doi": "10.1890/14-2252.1",
       "license": "CC BY 4.0"
+    },
+    "kew_sid": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/kew_sid.vtr",
+      "nrow": 50146,
+      "source_url": "https://ser-sid.org/",
+      "source_doi": null,
+      "license": "CC BY 2.0"
     }
   }
 }

@@ -425,3 +425,48 @@ harvest_ckan_datastore <- function(api_base, resource_id, dest_dir,
   }
   dest
 }
+
+
+#' Page a Supabase PostgREST table into a data.frame
+#'
+#' PostgREST caps a single response at 1000 rows, so a full table is read by
+#' walking `limit`/`offset` until a short page arrives. The Supabase anon key is
+#' sent as both `apikey` and `Authorization: Bearer` (PostgREST requires both).
+#'
+#' @param base Character. REST base, e.g. `https://<ref>.supabase.co/rest/v1/`.
+#' @param key Character. The anon (read-only) API key.
+#' @param table Character. Table name.
+#' @param select Character. PostgREST `select` clause (comma-separated columns).
+#' @param page Integer. Rows per request (PostgREST caps at 1000).
+#' @param max_pages Integer. Safety bound on the number of requests.
+#' @return A data.frame with every row of the table (or empty if none).
+#' @noRd
+download_supabase_table <- function(base, key, table, select,
+                                    page = 1000L, max_pages = 1000L) {
+  hdr <- list(apikey = key, Authorization = paste("Bearer", key))
+  sel <- utils::URLencode(select, reserved = TRUE)
+  out <- vector("list", max_pages)
+  offset <- 0L
+  i <- 1L
+  repeat {
+    if (i > max_pages) break
+    url <- paste0(base, table, "?select=", sel,
+                  "&limit=", page, "&offset=", offset)
+    h <- curl::new_handle()
+    curl::handle_setheaders(h, .list = hdr)
+    resp <- curl::curl_fetch_memory(url, handle = h)
+    if (resp$status_code >= 300L) {
+      stop(sprintf("Supabase %s HTTP %d", table, resp$status_code),
+           call. = FALSE)
+    }
+    d <- jsonlite::fromJSON(rawToChar(resp$content))
+    if (is.null(d) || !is.data.frame(d) || nrow(d) == 0L) break
+    out[[i]] <- d
+    i <- i + 1L
+    if (nrow(d) < page) break
+    offset <- offset + page
+  }
+  out <- out[!vapply(out, is.null, logical(1L))]
+  if (length(out) == 0L) return(data.frame(stringsAsFactors = FALSE))
+  do.call(rbind, out)
+}

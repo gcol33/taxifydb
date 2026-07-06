@@ -68,6 +68,10 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     available_groups = available_groups,
     built            = format(Sys.Date(), "%Y-%m-%d"),
     nrow             = nrow(df),
+    # Content identity of the built .vtr (the exact bytes publish.R uploads).
+    # taxify's runtime compares this md5 against the downloaded file offline to
+    # detect a same-tag republish and refresh an otherwise version-locked cache.
+    content_id       = unname(tools::md5sum(vtr_path)),
     schema_version   = 2L
   )
   meta <- drop_empty_fields(meta)

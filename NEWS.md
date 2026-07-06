@@ -19,6 +19,12 @@
 
 ## Bug fixes
 
+* `build_enrichment_vtr()` now records a `content_id` (md5 of the built `.vtr`)
+  in each enrichment's `meta.json`, and `sync_manifest.R` propagates it into
+  taxify's manifest. This lets taxify's runtime detect a same-tag republish (a
+  rebuilt asset re-uploaded under an unchanged release tag) and refresh an
+  otherwise version-locked static cache offline, instead of serving stale data
+  forever. Every rebuilt enrichment carries the id from this release onward.
 * `parse_groot()` now repairs GRooT's `specific_root_area` column. GRooT's
   species aggregate carries three source papers (Quanquan 2011, Mokany & Ash
   2008, Chanteloup & Bonis 2013) at ~1000x below GRooT's documented cm2 g-1

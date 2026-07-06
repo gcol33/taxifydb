@@ -50,6 +50,14 @@ for (enr_dir in enrichment_dirs) {
     changed <- TRUE
   }
 
+  # Content id (md5 of the built .vtr): drives taxify's offline static-cache
+  # refresh gate, so a rebuilt asset re-released under the same tag no longer
+  # leaves existing caches stale.
+  if (!is.null(meta$content_id) && !identical(entry$content_id, meta$content_id)) {
+    entry$content_id <- meta$content_id
+    changed <- TRUE
+  }
+
   if (!is.null(meta$available_groups)) {
     if (!identical(entry$available_groups, as.list(meta$available_groups))) {
       entry$available_groups <- as.list(meta$available_groups)

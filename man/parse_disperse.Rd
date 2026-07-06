@@ -10,11 +10,16 @@ parse_disperse(path)
 \item{path}{Path to the DISPERSE xlsx.}
 }
 \value{
-data.frame with canonical_name (genus) + dominant-modality traits.
+data.frame with canonical_name (genus) + dominant-modality traits +
+the three \verb{_mid} midpoint columns.
 }
 \description{
 Genus-level fuzzy-coded traits. Each fuzzy trait group (body size, life cycle,
 reproductive cycles, dispersal strategy, adult life span, female wing length,
 wing-pair type, fecundity) is reduced to its dominant modality, labelled with
-the database's own modality descriptions.
+the database's own modality descriptions. Modality labels are ASCII-normalized
+(\code{<=}, \code{>=}, \code{-}), and the three binned physical-magnitude ordinals
+(\code{disperse_body_size_cm}, \code{disperse_female_wing_mm}, \code{disperse_fecundity})
+also get a coarse \verb{_mid} numeric-midpoint column for numeric joins; the
+count/time ordinals stay categorical.
 }

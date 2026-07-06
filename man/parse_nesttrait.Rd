@@ -10,10 +10,15 @@ parse_nesttrait(path)
 \item{path}{Path to NestTrait_v2.csv.}
 }
 \value{
-data.frame with canonical_name + nest trait flags.
+data.frame with canonical_name + nest trait flags + the three
+collapsed categorical columns.
 }
 \description{
 Wide table, one row per bird species, with binary presence flags for nest
 site, nest structure and nest attachment plus mound-builder and brood-parasite
-flags. Kept as 0/1 indicators.
+flags. The 0/1 indicators are kept, and each of the three flag groups is also
+collapsed to a single pipe-delimited categorical column
+(\code{nest_structure}, \code{nest_site}, \code{nest_attachment}) so the taxify trait verb
+can consume them; multi-modal species carry every set modality
+(e.g. \code{"tree|nontree|cliff_bank"}).
 }

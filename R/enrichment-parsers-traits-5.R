@@ -43,14 +43,42 @@ parse_sharkipedia <- function(path) {
 }
 
 
+# Collapse a group of one-hot 0/1 flag columns into one pipe-delimited
+# categorical column, in source-column order. NestTrait sets several flags per
+# species (e.g. Abroscopus albogularis is tree + nontree + cliff_bank), and the
+# flags carry no magnitude to pick a single dominant modality from, so a
+# priority collapse would invent a primary that isn't in the data. The delimited
+# string keeps every set modality and stays one clean categorical the taxify
+# trait verb can consume. Rows with no flag set become NA.
+.onehot_to_multi <- function(d, cols, labels) {
+  present <- cols %in% names(d)
+  cols <- cols[present]
+  labels <- labels[present]
+  if (!length(cols)) return(rep(NA_character_, nrow(d)))
+  M <- vapply(cols, function(cn) suppressWarnings(as.numeric(d[[cn]])) == 1,
+              logical(nrow(d)))
+  if (is.null(dim(M))) M <- matrix(M, nrow = nrow(d))
+  M[is.na(M)] <- FALSE
+  vapply(seq_len(nrow(M)), function(i) {
+    set <- M[i, ]
+    if (!any(set)) NA_character_ else paste(labels[set], collapse = "|")
+  }, character(1L))
+}
+
+
 #' Parse Bird Nest Traits (NestTrait v2)
 #'
 #' Wide table, one row per bird species, with binary presence flags for nest
 #' site, nest structure and nest attachment plus mound-builder and brood-parasite
-#' flags. Kept as 0/1 indicators.
+#' flags. The 0/1 indicators are kept, and each of the three flag groups is also
+#' collapsed to a single pipe-delimited categorical column
+#' (`nest_structure`, `nest_site`, `nest_attachment`) so the taxify trait verb
+#' can consume them; multi-modal species carry every set modality
+#' (e.g. `"tree|nontree|cliff_bank"`).
 #'
 #' @param path Path to NestTrait_v2.csv.
-#' @return data.frame with canonical_name + nest trait flags.
+#' @return data.frame with canonical_name + nest trait flags + the three
+#'   collapsed categorical columns.
 #' @export
 parse_nesttrait <- function(path) {
   d <- utils::read.csv(path, check.names = FALSE, stringsAsFactors = FALSE,
@@ -83,6 +111,22 @@ parse_nesttrait <- function(path) {
     nestatt_lateral         = flag("NestAtt_lateral"),
     nestatt_pensile         = flag("NestAtt_pensile"),
     stringsAsFactors        = FALSE
+  )
+  out$nest_structure <- .onehot_to_multi(
+    d, paste0("NestStr_", c("scrape", "platform", "cup", "dome", "dome_tunnel",
+                            "primary_cavity", "second_cavity")),
+    c("scrape", "platform", "cup", "dome", "dome_tunnel", "primary_cavity",
+      "second_cavity")
+  )
+  out$nest_site <- .onehot_to_multi(
+    d, paste0("NestSite_", c("ground", "tree", "nontree", "cliff_bank",
+                             "underground", "waterbody", "termite_ant")),
+    c("ground", "tree", "nontree", "cliff_bank", "underground", "waterbody",
+      "termite_ant")
+  )
+  out$nest_attachment <- .onehot_to_multi(
+    d, paste0("NestAtt_", c("basal", "forked", "lateral", "pensile")),
+    c("basal", "forked", "lateral", "pensile")
   )
   out <- .append_all_cols(
     out, d, cname,
@@ -673,15 +717,51 @@ parse_eupolltrait <- function(path) {
 }
 
 
+# ASCII-normalize a DISPERSE modality label: the source wraps its ordinal bins
+# with typographic comparators (<= U+2264, >= U+2265) and en-dash ranges
+# (U+2013), and leaves stray double/trailing spaces. Map them to <=, >=, - and
+# collapse whitespace so downstream stays ASCII and joins on clean values.
+.ascii_bin_label <- function(x) {
+  x <- gsub("≤", "<=", x, fixed = TRUE)
+  x <- gsub("≥", ">=", x, fixed = TRUE)
+  x <- gsub("–", "-", x, fixed = TRUE)
+  x <- gsub("—", "-", x, fixed = TRUE)
+  x <- gsub("[[:space:]]+", " ", x)
+  trimws(x)
+}
+
+
+# Coarse numeric midpoint of an ASCII-normalized binned label, so the ordinal
+# magnitude columns support a numeric join. Closed range "a-b" -> mean(a, b);
+# bottom-open "< b" / "<= b" -> b/2; top-open "> a" / ">= a" -> a. Monotonic
+# across each column's bins.
+.disperse_bin_mid <- function(x) {
+  vapply(x, function(v) {
+    if (is.na(v) || !nzchar(v)) return(NA_real_)
+    nums <- suppressWarnings(as.numeric(
+      regmatches(v, gregexpr("[0-9]*\\.?[0-9]+", v))[[1]]))
+    nums <- nums[is.finite(nums)]
+    if (!length(nums)) return(NA_real_)
+    if (length(nums) >= 2L) return(mean(range(nums)))
+    if (grepl("^\\s*<", v)) nums[1L] / 2 else nums[1L]
+  }, numeric(1L), USE.NAMES = FALSE)
+}
+
+
 #' Parse DISPERSE European aquatic-invertebrate dispersal traits
 #'
 #' Genus-level fuzzy-coded traits. Each fuzzy trait group (body size, life cycle,
 #' reproductive cycles, dispersal strategy, adult life span, female wing length,
 #' wing-pair type, fecundity) is reduced to its dominant modality, labelled with
-#' the database's own modality descriptions.
+#' the database's own modality descriptions. Modality labels are ASCII-normalized
+#' (`<=`, `>=`, `-`), and the three binned physical-magnitude ordinals
+#' (`disperse_body_size_cm`, `disperse_female_wing_mm`, `disperse_fecundity`)
+#' also get a coarse `_mid` numeric-midpoint column for numeric joins; the
+#' count/time ordinals stay categorical.
 #'
 #' @param path Path to the DISPERSE xlsx.
-#' @return data.frame with canonical_name (genus) + dominant-modality traits.
+#' @return data.frame with canonical_name (genus) + dominant-modality traits +
+#'   the three `_mid` midpoint columns.
 #' @export
 parse_disperse <- function(path) {
   raw <- openxlsx2::read_xlsx(path, sheet = "Data", col_names = FALSE)
@@ -718,6 +798,14 @@ parse_disperse <- function(path) {
     }, character(1L))
   }
   out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name), , drop = FALSE]
+  label_cols <- setdiff(names(out), "canonical_name")
+  for (cc in label_cols) out[[cc]] <- .ascii_bin_label(out[[cc]])
+  for (cc in c("disperse_body_size_cm", "disperse_female_wing_mm",
+               "disperse_fecundity")) {
+    if (cc %in% names(out)) {
+      out[[paste0(cc, "_mid")]] <- .disperse_bin_mid(out[[cc]])
+    }
+  }
   .trait_finalize(out)
 }
 

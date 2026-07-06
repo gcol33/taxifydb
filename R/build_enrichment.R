@@ -83,8 +83,12 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
   if (isTRUE(resolve_names) && reg_resolves && "canonical_name" %in% names(df)) {
     if (verbose) message("  Resolving names against backbones...")
     group_cols <- if (!is.null(reg$group_col)) reg$group_col else NULL
+    # A source whose names carry authorship (e.g. ITALIC's "Genus sp. Author")
+    # cannot match the clean-binomial fast-path lookup key; such an entry sets
+    # use_lookup = FALSE to take the authorship-aware taxify() resolution path.
+    use_lookup <- if (is.null(reg$use_lookup)) TRUE else isTRUE(reg$use_lookup)
     df <- resolve_enrichment_names(df, group_cols = group_cols,
-                                   verbose = verbose)
+                                   verbose = verbose, use_lookup = use_lookup)
   }
 
   if (is.null(output_dir)) {

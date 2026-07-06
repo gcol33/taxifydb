@@ -176,8 +176,14 @@ resolve_name_map <- function(names,
   for (i in seq_along(backends)) {
     b <- backends[i]
     if (verbose) message(sprintf("    [%d/%d] %s...", i, length(backends), b))
+    # Exact-only, matching the hash-join fast path: enrichment resolution maps
+    # source names to accepted names, and a name that does not exactly match a
+    # backbone must resolve to nothing, not be fuzzy-guessed onto a near
+    # neighbour (which would attach the source's traits to the wrong taxon).
+    # Fuzzy here also scans every unmatched name against the full backbone,
+    # turning an authored-name source like ITALIC into an hours-long build.
     res <- tryCatch(
-      taxify::taxify(unique_names, backend = b, verbose = FALSE),
+      taxify::taxify(unique_names, backend = b, fuzzy = FALSE, verbose = FALSE),
       error = function(e) {
         warning(sprintf("Backend '%s' failed: %s", b, conditionMessage(e)),
                 call. = FALSE)

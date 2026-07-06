@@ -1645,6 +1645,33 @@
     group_col   = NULL,
     resolve_names = FALSE,
     requires    = character(0)
+  ),
+
+  italic = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "crawl-snapshots-2026.07/italic.jsonl"),
+    source_doi  = "10.3390/jof9050556",
+    version     = "2026.07",
+    license     = "CC BY-SA 4.0",
+    attribution = paste0(
+      "Nimis PL: ITALIC - The Information System on Italian Lichens, Version ",
+      "8.0. University of Trieste, Dept. of Biology (https://italic.units.it), ",
+      "accessed 2026-07. System described in Martellos S, Conti M, Nimis PL ",
+      "(2023) Aggregation of Italian Lichen Data in ITALIC 7.0. Journal of ",
+      "Fungi 9(5):556 (doi:10.3390/jof9050556). Taxon-page descriptors ",
+      "released under CC BY-SA 4.0."
+    ),
+    # Snapshot crawled via inst/py/crawlers/crawl_italic.py from the ITALIC 8.0
+    # taxon pages, whose data are CC BY-SA 4.0 per the system's How-to-cite page.
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "italic.jsonl")
+    },
+    parse_fn    = function(path) parse_italic(path),
+    group_col   = NULL,
+    # ITALIC names carry authorship, which the clean-binomial fast-path lookup
+    # key cannot match; use the authorship-aware taxify() resolution path.
+    use_lookup  = FALSE,
+    requires    = "jsonlite"
   )
 )
 

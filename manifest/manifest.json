@@ -1608,6 +1608,14 @@
       "source_doi": "10.1371/journal.pbio.3000702",
       "license": "CC BY 4.0"
     },
+    "spider_traits": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/spider_traits.vtr",
+      "nrow": 9346,
+      "source_url": "https://spidertraits.sci.muni.cz/backend/data/export/csv/family/*/genus/*/species/*/original-name/*/trait-category/*/trait/*/method/*/location/*/country/*/dataset/*/authors/*/reference/*/row-link/*",
+      "source_doi": "10.1093/database/baab064",
+      "license": "CC BY 4.0"
+    },
     "odonata": {
       "latest": "2020.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/odonata.vtr",

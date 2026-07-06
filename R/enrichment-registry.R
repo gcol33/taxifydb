@@ -1455,6 +1455,29 @@
     requires    = "openxlsx2"
   ),
 
+  edwards_phyto = list(
+    source_url  = "https://esapubs.org/archive/ecol/E096/202/",
+    source_doi  = "10.1890/14-2252.1",
+    version     = "2015.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Edwards KF, Klausmeier CA, Litchman E (2015) Nutrient utilization traits ",
+      "of phytoplankton. Ecology 96:2311 (Ecological Archives E096-202, ",
+      "doi:10.1890/14-2252.1), CC BY 4.0. Per-culture nitrogen/phosphorus ",
+      "utilization traits (maximum growth rate, half-saturation, minimum/maximum ",
+      "quota, uptake kinetics) reduced to species-level medians by taxifydb; ",
+      "units per the source metadata."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      download_curl_file(paste0(url, "Table1.csv"), dest, "Table1.csv")
+      dest
+    },
+    parse_fn    = function(path) parse_edwards_phyto(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
   nztd = list(
     source_url  = "https://api.figshare.com/v2/articles/21939647",
     source_doi  = "10.6084/m9.figshare.21939647",

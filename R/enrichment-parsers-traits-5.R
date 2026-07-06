@@ -810,6 +810,65 @@ parse_disperse <- function(path) {
 }
 
 
+#' Parse Edwards phytoplankton nutrient-utilization traits
+#'
+#' Per-culture nitrogen (nitrate, ammonium) and phosphorus utilization traits
+#' (maximum growth rate, half-saturation constants for growth and uptake, minimum
+#' subsistence quota, maximum quota, maximum uptake rate) from Edwards et al.
+#' (2015, Ecological Archives E096-202). Each source row is one culture
+#' measurement; rows are reduced to one per species (numeric traits by median,
+#' taxon group and freshwater/marine system by mode). Experimental conditions
+#' (temperature, irradiance, daylength) and per-measurement citations are not
+#' carried. Nutrient-trait column names are kept verbatim from the source: units
+#' are documented in the source metadata, and the source is internally
+#' inconsistent on the V_max time unit, so no unit is asserted in the name.
+#'
+#' @param path Directory holding Table1.csv (or a path to Table1.csv itself).
+#' @return data.frame with canonical_name + phytoplankton nutrient traits.
+#' @export
+parse_edwards_phyto <- function(path) {
+  f1 <- if (dir.exists(path)) file.path(path, "Table1.csv") else path
+  d <- utils::read.csv(f1, check.names = FALSE, stringsAsFactors = FALSE,
+                       fileEncoding = "latin1")
+  cname <- trimws(as.character(d$species))
+  keep <- !is.na(cname) & nzchar(cname)
+  d <- d[keep, , drop = FALSE]
+  cname <- cname[keep]
+  # Experimental conditions and per-measurement metadata do not reduce to a
+  # species-level trait, so they are not aggregated.
+  drop_cols <- c("species", "isolate", "synonym", "c_citation", "citation",
+                 "temperature", "irradiance", "light_hours")
+  cat_src <- intersect(c("taxon", "system"), names(d))
+  num_src <- setdiff(names(d), c(drop_cols, cat_src))
+  dn <- d[num_src]
+  for (cc in num_src) dn[[cc]] <- suppressWarnings(as.numeric(dn[[cc]]))
+  med <- function(z) {
+    z <- z[is.finite(z)]
+    if (!length(z)) NA_real_ else stats::median(z)
+  }
+  agg_num <- stats::aggregate(dn, by = list(canonical_name = cname), FUN = med)
+  mode1 <- function(z) {
+    z <- z[!is.na(z) & nzchar(trimws(z))]
+    if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1]
+  }
+  agg_cat <- stats::aggregate(d[cat_src], by = list(canonical_name = cname),
+                              FUN = mode1)
+  out <- merge(agg_num, agg_cat, by = "canonical_name")
+  # A single source record spells the freshwater system "fresh".
+  if ("system" %in% names(out)) out$system[out$system == "fresh"] <- "freshwater"
+  ren <- c(volume = "cell_volume", c_per_cell = "carbon_per_cell",
+           taxon = "taxon_group", system = "habitat_system")
+  for (old in names(ren)) {
+    if (old %in% names(out)) names(out)[names(out) == old] <- ren[[old]]
+  }
+  # Drop trait columns left entirely empty after species reduction.
+  trait_cols <- setdiff(names(out), "canonical_name")
+  empty <- vapply(trait_cols, function(cc) all(is.na(out[[cc]])), logical(1))
+  if (any(empty)) out <- out[c("canonical_name", trait_cols[!empty])]
+  .trait_finalize(out)
+}
+
+
 #' Parse NZTD New Zealand marine benthos traits
 #'
 #' Two-row header (trait category + modality) with fuzzy affinity scores; each

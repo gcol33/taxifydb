@@ -1789,6 +1789,14 @@
       "license": "CC BY-SA 4.0",
       "source_doi": "10.3390/jof9050556",
       "source_url": "https://italic.units.it/"
+    },
+    "edwards_phyto": {
+      "latest": "2015.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/edwards_phyto.vtr",
+      "nrow": 169,
+      "source_url": "https://esapubs.org/archive/ecol/E096/202/",
+      "source_doi": "10.1890/14-2252.1",
+      "license": "CC BY 4.0"
     }
   }
 }

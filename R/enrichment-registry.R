@@ -1738,6 +1738,108 @@
     # key cannot match; use the authorship-aware taxify() resolution path.
     use_lookup  = FALSE,
     requires    = "jsonlite"
+  ),
+
+  thermofresh = list(
+    source_url  = paste0("https://zenodo.org/api/records/14056760/files/",
+                         "hsbayat%2FFreshwater_thermtol_db-data.zip/content"),
+    source_doi  = "10.5281/zenodo.14056760",
+    version     = "2024.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Freshwater thermal-tolerance database (Helena Bayat and contributors). ",
+      "Zenodo (doi:10.5281/zenodo.14056760), CC BY 4.0; source repository ",
+      "hsbayat/Freshwater_thermtol_db. Per-test critical thermal limits ",
+      "(ctmax, ctmin, lt50, ltmax, ltmin, in degrees C) for freshwater fish, ",
+      "invertebrates and amphibians, reduced to species-level medians by ",
+      "taxifydb."
+    ),
+    download_fn = function(url, dest) download_and_unzip(url, dest, pattern = NULL),
+    parse_fn    = function(path) parse_thermofresh(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  ramond = list(
+    source_url  = "https://www.seanoe.org/data/00405/51662/",
+    source_doi  = "10.17882/51662",
+    version     = "2018.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Ramond P, Siano R, Sourisseau M (2018) Functional traits of marine ",
+      "protists. SEANOE (doi:10.17882/51662), CC BY 4.0; described in Ramond et ",
+      "al. (2019) Coupling between taxonomic and functional diversity in ",
+      "protistan coastal communities. Environmental Microbiology 21:730-749. ",
+      "Genus-level morphological, behavioural and ecological traits (numeric ",
+      "cell size by median, categorical by mode)."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      for (id in c("56963", "56964", "56965")) {
+        download_curl_file(
+          sprintf("https://www.seanoe.org/data/00405/51662/data/%s.csv", id),
+          dest, paste0(id, ".csv"))
+      }
+      dest
+    },
+    parse_fn    = function(path) parse_ramond(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = character(0)
+  ),
+
+  freshwater_insects_conus = list(
+    source_url  = paste0("https://pasta.lternet.edu/package/data/eml/edi/481/5/",
+                         "3a88bfdfefcfe6dcafb27afd3ce4e90c"),
+    source_doi  = "10.6073/pasta/8238ea9bc15840844b3a023b6b6ed158",
+    version     = "2021.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Twardochleb LA et al. (2021) Freshwater insect occurrences and traits ",
+      "for the contiguous United States, 2001-2018. Environmental Data ",
+      "Initiative (doi:10.6073/pasta/8238ea9bc15840844b3a023b6b6ed158), ",
+      "CC BY 4.0. Genus-level ecological and life-history trait modalities ",
+      "(source abbreviation codes kept verbatim)."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "fw_insects_traits_by_genus.csv")
+    },
+    parse_fn    = function(path) parse_fw_insects_conus(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = character(0)
+  ),
+
+  eurobat = list(
+    source_url  = "https://api.figshare.com/v2/articles/21777161",
+    source_doi  = "10.6084/m9.figshare.21777161",
+    version     = "2023.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Froidevaux JSP et al. (2023) EuroBaTrait 1.0: a species-level trait ",
+      "dataset of bats in Europe and beyond. Scientific Data; data figshare ",
+      "(doi:10.6084/m9.figshare.21777161), CC BY 4.0. Thematic ",
+      "measurement-or-fact tables (morphology, life history, diet, foraging ",
+      "habitat, roost type) reduced to species-level values by taxifydb ",
+      "(numeric by median, categorical by mode)."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
+      want <- c("03_morphology.csv", "06_foraging_habitat.csv",
+                "07_roost_type.csv", "08_diet.csv", "10_life_history.csv")
+      for (nm in want) {
+        fu <- r$files$download_url[r$files$name == nm]
+        if (length(fu)) {
+          tryCatch(download_curl_file(fu[1], dest, nm),
+                   error = function(e) message("  eurobat dl fail: ", nm))
+        }
+      }
+      dest
+    },
+    parse_fn    = function(path) parse_eurobat(path),
+    group_col   = NULL,
+    requires    = character(0)
   )
 )
 

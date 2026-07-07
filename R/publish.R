@@ -157,6 +157,9 @@ update_manifest <- function(manifest_path, backend_name, version,
   entry$full_url    <- sprintf("%s/%s.vtr", base_url, backend_name)
   entry$full_size   <- file.size(vtr_path)
   entry$full_sha256 <- sha256(vtr_path)
+  # md5 of the .vtr; taxify's runtime uses this (base-R tools::md5sum) as the
+  # content id for its same-tag-republish refresh gate on backbones.
+  entry$content_id  <- unname(tools::md5sum(vtr_path))
   entry$nrow        <- count_vtr_rows(vtr_path)
 
   if (!is.null(source_url)) {

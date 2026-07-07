@@ -396,6 +396,42 @@ download_cf_file <- function(url, dest_dir, filename) {
 }
 
 
+#' Download a Wiley/Atypon supporting-information file
+#'
+#' Wiley's supplement endpoint (`/action/downloadSupplement`) returns 403 to a
+#' cold request: it requires session cookies set by first loading the article
+#' page and an article Referer. The bundled cf_fetch.py `wiley` mode primes the
+#' session and sends the correct headers through a browser TLS impersonation,
+#' clearing both the Cloudflare tier and the cookie/Referer check. Cached: skips
+#' if the destination exists and is non-empty.
+#'
+#' @param article_url Character. The article landing-page URL (used to prime the
+#'   session and as Referer), e.g. a `.../doi/10.1002/ecy.1745` URL.
+#' @param doi Character. The article DOI.
+#' @param sup_file Character. The supplement file name, e.g.
+#'   `ecy1745-sup-0001-DataS1.zip`.
+#' @param dest_dir Character. Directory to save into. Created if missing.
+#' @param filename Character. Output filename.
+#' @return Path to the downloaded file.
+#' @export
+download_wiley_supplement <- function(article_url, doi, sup_file, dest_dir,
+                                      filename) {
+  dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+  dest <- file.path(dest_dir, filename)
+  if (file.exists(dest) && file.size(dest) > 100L) return(dest)
+
+  py <- .cf_python()
+  status <- system2(py, c(shQuote(.cf_fetch_script()), "wiley",
+                          shQuote(article_url), shQuote(doi),
+                          shQuote(sup_file), shQuote(dest)))
+  if (status != 0L || !file.exists(dest) || file.size(dest) < 100L) {
+    stop(sprintf("Wiley supplement download failed: %s (%s)", sup_file, doi),
+         call. = FALSE)
+  }
+  dest
+}
+
+
 #' Harvest an entire CKAN datastore resource past the offset window
 #'
 #' CKAN's elasticsearch-backed datastore caps `offset` at `max_result_window`

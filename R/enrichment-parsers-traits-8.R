@@ -1,8 +1,9 @@
 # Wave-B trait parsers (citation-only / unstated-licence tier, built with the
 # maintainer's explicit go-ahead): plant chromosome counts (CCDB), mammal
-# host-parasite summaries (GMPD 2.0), and British & Irish plant / bryophyte
-# attributes (PLANTATT, BRYOATT). Coded categorical source fields are kept
-# verbatim rather than decoded, so no trait label is invented.
+# host-parasite summaries (GMPD 2.0), British & Irish plant / bryophyte
+# attributes (PLANTATT, BRYOATT), and Central European clonal / bud-bank traits
+# (CLO-PLA). Coded categorical source fields are kept verbatim rather than
+# decoded, so no trait label is invented.
 
 
 #' Parse the Chromosome Counts Database (CCDB)
@@ -189,4 +190,72 @@ parse_bryoatt <- function(path) {
     stringsAsFactors   = FALSE
   )
   .trait_finalize(out)
+}
+
+
+#' Parse CLO-PLA (clonal and bud-bank traits of the Central European flora)
+#'
+#' One row per species for 29 traits of clonal growth, bud banks and lifespan.
+#' Names are collapsed to the binomial (authorship and infraspecific rank are
+#' dropped, hybrid markers kept), so infraspecific records are aggregated to the
+#' species. Numeric traits (growth-form flags, bud-bank sizes/depths,
+#' persistence, offspring, spread, clonal index) are reduced by median; the
+#' nominal coded traits (branching, cyclicity, clonal-growth-organ type,
+#' regenerative-bud position and role) by mode. Coded fields are kept verbatim
+#' as in the source; consult the CLO-PLA metadata to decode them.
+#'
+#' @param path Path to `CLO-PLA-traits.txt` (or a directory containing it).
+#' @return data.frame with canonical_name + CLO-PLA clonal / bud-bank traits.
+#' @export
+parse_clopla <- function(path) {
+  f <- if (dir.exists(path)) {
+    list.files(path, pattern = "CLO-PLA-traits\\.txt$", full.names = TRUE,
+               recursive = TRUE)[1L]
+  } else path
+  if (is.na(f) || !nzchar(f)) {
+    stop("CLO-PLA: 'CLO-PLA-traits.txt' not found.", call. = FALSE)
+  }
+  # The source is Windows-1252 encoded and wraps Species_name in literal double
+  # quotes (a doubled-quote artefact); read as latin1, strip the wrapping quote.
+  d <- utils::read.delim(f, sep = "\t", quote = "\"", stringsAsFactors = FALSE,
+                         check.names = FALSE, fileEncoding = "latin1",
+                         na.strings = c("", "NA"))
+  raw <- .to_utf8(trimws(gsub('^"+|"+$', "", trimws(as.character(d$Species_name)))))
+
+  # Collapse "Genus species (Author)" to the binomial; keep a hybrid epithet
+  # ("Genus x epithet"); drop infrageneric aggregates ("Genus sect. X").
+  collapse_name <- function(z) {
+    z <- z[nzchar(z)]
+    if (length(z) < 2L) return(NA_character_)
+    if (grepl("^(sect|subsect|ser|subser|agg)\\.$", z[2L])) return(NA_character_)
+    hy <- z[2L] %in% c("x", "X") ||
+      (nchar(z[2L]) == 1L && grepl("[^ -~]", z[2L]))
+    if (hy && length(z) >= 3L) paste(z[1:3], collapse = " ")
+    else paste(z[1:2], collapse = " ")
+  }
+  name <- vapply(strsplit(raw, "\\s+"), collapse_name, character(1L))
+
+  num_cols <- c("woody", "annual", "perennialnonclonal", "monocarpic",
+                "polycarpic", "clonal", "Primaryroot", "BB0", "BB0_mn10",
+                "BB_gtmn10", "BB0R", "BB0_mn10R", "BB_gtmn10R", "BBsize",
+                "BBdepth", "BBRsize", "BBRdepth", "persistence", "offspring",
+                "offspring_wsmall", "spread", "clonalindex", "dispersibility",
+                "Rsprouter")
+  cat_cols <- c("branching", "cyclicity", "finalCGO", "PositionRB", "RoleRB")
+
+  mk <- function(cols) do.call(rbind, lapply(cols, function(cn) {
+    data.frame(name = name, trait = cn, value = as.character(d[[cn]]),
+               stringsAsFactors = FALSE)
+  }))
+  long <- rbind(mk(num_cols), mk(cat_cols))
+  long <- long[nzchar(trimws(long$name)) & !is.na(long$value) &
+                 nzchar(trimws(long$value)), , drop = FALSE]
+
+  spec <- c(
+    stats::setNames(
+      lapply(num_cols, function(c) list(trait = c, type = "num")), num_cols),
+    stats::setNames(
+      lapply(cat_cols, function(c) list(trait = c, type = "cat")), cat_cols)
+  )
+  .trait_finalize(.pivot_species_traits(long, spec, keep_all = FALSE))
 }

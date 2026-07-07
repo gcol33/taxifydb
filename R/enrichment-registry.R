@@ -2074,6 +2074,39 @@
     parse_fn    = function(path) parse_bryoatt(path),
     group_col   = NULL,
     requires    = "readxl"
+  ),
+
+  clopla = list(
+    source_url  = "https://esajournals.onlinelibrary.wiley.com/doi/10.1002/ecy.1745",
+    source_doi  = "10.1002/ecy.1745",
+    version     = "2017.1",
+    license     = "ESA data paper; free to use with citation, no explicit licence",
+    attribution = paste0(
+      "Klimesova J, Danihelka J, Chrtek J, de Bello F, Herben T (2017) ",
+      "CLO-PLA: a database of clonal and bud-bank traits of the Central ",
+      "European flora. Ecology 98(4):1179. doi:10.1002/ecy.1745. ESA data ",
+      "paper; free to use with citation, no explicit licence. Clonal, ",
+      "bud-bank and lifespan trait codes kept verbatim."
+    ),
+    download_fn = function(url, dest) {
+      zip <- download_wiley_supplement(
+        article_url = url,
+        doi         = "10.1002/ecy.1745",
+        sup_file    = "ecy1745-sup-0001-DataS1.zip",
+        dest_dir    = dest,
+        filename    = "CLO-PLA-DataS1.zip"
+      )
+      ex <- file.path(dest, "extracted")
+      if (!dir.exists(ex)) {
+        dir.create(ex, recursive = TRUE, showWarnings = FALSE)
+        utils::unzip(zip, exdir = ex)
+      }
+      list.files(ex, pattern = "CLO-PLA-traits\\.txt$",
+                 full.names = TRUE, recursive = TRUE)[1L]
+    },
+    parse_fn    = function(path) parse_clopla(path),
+    group_col   = NULL,
+    requires    = character(0)
   )
 )
 

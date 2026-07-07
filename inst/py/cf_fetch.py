@@ -12,13 +12,15 @@ R/enrichment-helpers.R. Kept dependency-light (curl_cffi only) and build-time
 only; the taxify runtime never calls this.
 
 Usage:
-    python cf_fetch.py get  <url> <out_path>
-    python cf_fetch.py ckan <api_base> <resource_id> <out.jsonl>
+    python cf_fetch.py get   <url> <out_path>
+    python cf_fetch.py ckan  <api_base> <resource_id> <out.jsonl>
+    python cf_fetch.py wiley <article_url> <doi> <sup_file> <out_path>
 
 `api_base` is the CKAN action root, e.g. https://data.nhm.ac.uk/api/3/action
 """
 import json
 import sys
+from urllib.parse import urlsplit
 
 # Pin the newest concrete browser identity, NOT the bare "chrome" alias: the
 # alias maps to an older default that Cloudflare still blocked on NHM, while a
@@ -95,6 +97,39 @@ def cmd_ckan(api_base, resource_id, out_path):
     print(f"cf_fetch ckan: wrote {seen} records to {out_path}", flush=True)
 
 
+def _stream_to_file(r, out_path):
+    if r.status_code != 200:
+        r.close()
+        sys.exit(f"cf_fetch: HTTP {r.status_code}")
+    n = 0
+    with open(out_path, "wb") as fh:
+        for chunk in r.iter_content(chunk_size=1 << 20):
+            fh.write(chunk)
+            n += len(chunk)
+    r.close()
+    if n < 100:
+        sys.exit(f"cf_fetch: suspiciously small response ({n} bytes)")
+    print(f"cf_fetch: wrote {n} bytes to {out_path}", flush=True)
+
+
+def cmd_wiley(article_url, doi, sup_file, out_path):
+    """Download a Wiley/Atypon supporting-information file.
+
+    Atypon serves supplements from /action/downloadSupplement only to a session
+    that has first loaded the article page (which sets the required cookies) and
+    that sends the article as Referer; a cold request returns 403. Priming the
+    session with a GET of the article, then requesting the supplement with the
+    doi/file as query parameters, clears both checks.
+    """
+    sess = _session()
+    p = urlsplit(article_url)
+    sess.get(article_url, timeout=300)  # prime session cookies
+    action = f"{p.scheme}://{p.netloc}/action/downloadSupplement"
+    r = sess.get(action, params={"doi": doi, "file": sup_file},
+                 headers={"Referer": article_url}, timeout=900, stream=True)
+    _stream_to_file(r, out_path)
+
+
 def main(argv):
     if len(argv) < 2:
         sys.exit(__doc__)
@@ -103,6 +138,8 @@ def main(argv):
         cmd_get(argv[2], argv[3])
     elif mode == "ckan" and len(argv) == 5:
         cmd_ckan(argv[2], argv[3], argv[4])
+    elif mode == "wiley" and len(argv) == 6:
+        cmd_wiley(argv[2], argv[3], argv[4], argv[5])
     else:
         sys.exit(__doc__)
 

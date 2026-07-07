@@ -1962,6 +1962,28 @@
     parse_fn    = function(path) parse_kew_cvalues(path),
     group_col   = NULL,
     requires    = "rvest"
+  ),
+
+  epa_freshwater = list(
+    source_url  = "https://ofmpub.epa.gov/eims/eimscomm.getfile?p_download_id=526642",
+    source_doi  = NA_character_,
+    version     = "2012.1",
+    license     = "Public domain (U.S. Government work)",
+    attribution = paste0(
+      "U.S. EPA Freshwater Biological Traits Database (2012), public domain. ",
+      "Compiled primarily from Vieira NKM et al. (2006) A database of lotic ",
+      "invertebrate traits for North America, USGS Data Series 187, and Poff ",
+      "NL et al. (2006). Curated primary functional traits (feeding mode, ",
+      "habit, voltinism, thermal preference, body-size class, body shape, ",
+      "rheophily, oviposition behaviour, diapause) for freshwater ",
+      "macroinvertebrates, reduced to per-taxon modes by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, pattern = "Transposed.*\\.xls$")
+    },
+    parse_fn    = function(path) parse_epa_freshwater(path),
+    group_col   = NULL,
+    requires    = "readxl"
   )
 )
 

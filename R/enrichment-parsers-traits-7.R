@@ -308,3 +308,66 @@ parse_kew_cvalues <- function(path) {
   )
   .trait_finalize(.pivot_species_traits(long, spec, keep_all = FALSE))
 }
+
+
+#' Parse the EPA Freshwater Biological Traits database (macroinvertebrates)
+#'
+#' Ecological and life-history traits of North-American freshwater
+#' macroinvertebrates, read from the transposed distribution (one row per taxon
+#' and source citation). A curated set of interpretable primary trait columns is
+#' melted to (taxon, trait, value) and reduced to one row per taxon by mode, so
+#' the multiple per-taxon citation records collapse to the dominant state. The
+#' retained traits are primary feeding mode, habit, voltinism, thermal
+#' preference, maximum body-size class, body shape, rheophily, primary
+#' oviposition behaviour and diapause. `Other (specify in comments)` placeholder
+#' entries are dropped. The taxon grain is mixed (species and genus); the ITIS
+#' TSN is present in the source. This dataset shares its lineage (USGS Data
+#' Series 187, Vieira et al. 2006) with `freshwater_insects_conus`, which is at
+#' genus grain; the species-grain records here are the net-new contribution.
+#'
+#' @param path Path to the transposed traits `.xls` (or its directory).
+#' @return data.frame with canonical_name + freshwater macroinvertebrate traits.
+#' @export
+parse_epa_freshwater <- function(path) {
+  f <- if (dir.exists(path)) {
+    list.files(path, pattern = "Transposed.*\\.xls$", full.names = TRUE,
+               ignore.case = TRUE)[1L]
+  } else path
+  # Read every column as text: the sheet mixes types and a text read avoids
+  # coercion warnings and preserves the categorical labels verbatim.
+  d <- as.data.frame(
+    readxl::read_excel(f, sheet = "DataTable", col_types = "text",
+                       .name_repair = "minimal"),
+    check.names = FALSE, stringsAsFactors = FALSE)
+  if (!"Taxon" %in% names(d)) {
+    stop("EPA Freshwater: missing 'Taxon' column.", call. = FALSE)
+  }
+
+  # curated trait -> source column (primary state of each functional trait)
+  traits <- c(feeding_mode = "Feed_mode_prim", habit = "Habit_prim",
+              voltinism = "Voltinism", thermal_preference = "Thermal_pref",
+              body_size_class = "Max_body_size", body_shape = "Body_shape",
+              rheophily = "Rheophily_abbrev",
+              oviposition_behavior = "Ovipos_behav_prim", diapause = "Diapause")
+  traits <- traits[traits %in% names(d)]
+
+  # Upper-case only the first letter so case variants (predator/Predator)
+  # collapse to one state without altering interior casing (units, hyphens).
+  norm <- function(x) {
+    x <- trimws(as.character(x))
+    x[x == "" | x == "NA" | x == "Unknown" |
+        grepl("^Other \\(specify", x)] <- NA_character_
+    sub("^(\\w)", "\\U\\1", x, perl = TRUE)
+  }
+
+  taxon <- trimws(as.character(d$Taxon))
+  long <- do.call(rbind, lapply(names(traits), function(tr) {
+    data.frame(name = taxon, trait = tr, value = norm(d[[traits[[tr]]]]),
+               stringsAsFactors = FALSE)
+  }))
+  long <- long[!is.na(long$value), , drop = FALSE]
+
+  spec <- lapply(names(traits), function(tr) list(trait = tr, type = "cat"))
+  names(spec) <- names(traits)
+  .trait_finalize(.pivot_species_traits(long, spec, keep_all = FALSE))
+}

@@ -239,3 +239,72 @@ parse_cefas_btrait <- function(path) {
   }
   .trait_finalize(out)
 }
+
+
+#' Parse the Kew Plant DNA C-values database (genome size)
+#'
+#' Genome-size estimates for plants, scraped from the paginated Kew C-values
+#' search interface as one HTML page per 100 records (the source exposes no bulk
+#' export). The data table on each page (Family, Genus, Species, chromosome
+#' number, ploidy, 1C DNA amount) is read; the Mean/Min/Max summary-statistic
+#' tables are ignored. Records are keyed on the binomial and reduced to one row
+#' per taxon: genome size as the 1C DNA amount in picograms, plus chromosome
+#' number (2n) and ploidy level where a clean numeric value is given. Numeric
+#' traits are reduced by median.
+#'
+#' @param path Directory of downloaded C-values HTML pages (or a single page).
+#' @return data.frame with canonical_name + genome-size traits.
+#' @export
+parse_kew_cvalues <- function(path) {
+  files <- if (dir.exists(path)) {
+    list.files(path, pattern = "\\.html?$", full.names = TRUE)
+  } else path
+  if (!length(files)) stop("Kew C-values: no HTML pages found.", call. = FALSE)
+
+  # The results page carries three tables; the data table is the one with the
+  # Genus/Species columns (the other two are Mean/Min/Max summary statistics).
+  data_table <- function(f) {
+    tbls <- tryCatch(rvest::html_table(rvest::read_html(f)),
+                     error = function(e) list())
+    for (t in tbls) {
+      if (all(c("Genus", "Species") %in% names(t)) && ncol(t) >= 6L) {
+        return(as.data.frame(t, check.names = FALSE, stringsAsFactors = FALSE))
+      }
+    }
+    NULL
+  }
+  parts <- lapply(files, data_table)
+  parts <- parts[!vapply(parts, is.null, logical(1L))]
+  if (!length(parts)) stop("Kew C-values: no data table on any page.",
+                           call. = FALSE)
+  d <- do.call(rbind, parts)
+
+  dna_col <- grep("DNA Amount", names(d), value = TRUE)[1L]
+  chr_col <- grep("Chromosome", names(d), value = TRUE)[1L]
+  plo_col <- grep("Ploidy",     names(d), value = TRUE)[1L]
+
+  # Drop identification qualifiers so the binomial matches a backbone name.
+  sp <- sub("^(cf\\.|aff\\.)\\s*", "", trimws(as.character(d$Species)))
+  name <- trimws(paste(trimws(as.character(d$Genus)), sp))
+
+  mk <- function(trait, col) {
+    if (is.na(col)) return(NULL)
+    data.frame(name = name, trait = trait,
+               value = as.character(d[[col]]), stringsAsFactors = FALSE)
+  }
+  long <- do.call(rbind, list(
+    mk("genome_size_1c_pg", dna_col),
+    mk("chromosome_2n",     chr_col),
+    mk("ploidy_x",          plo_col)
+  ))
+  long$value <- trimws(long$value)
+  long <- long[nzchar(trimws(long$name)) & !is.na(long$value) &
+                 !long$value %in% c("", "-"), , drop = FALSE]
+
+  spec <- list(
+    genome_size_1c_pg = list(trait = "genome_size_1c_pg", type = "num"),
+    chromosome_2n     = list(trait = "chromosome_2n",     type = "num"),
+    ploidy_x          = list(trait = "ploidy_x",          type = "num")
+  )
+  .trait_finalize(.pivot_species_traits(long, spec, keep_all = FALSE))
+}

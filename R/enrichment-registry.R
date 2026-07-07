@@ -1908,6 +1908,60 @@
     group_col   = NULL,
     name_col    = "genus",
     requires    = character(0)
+  ),
+
+  kew_cvalues = list(
+    source_url  = "https://cvalues.science.kew.org/search",
+    source_doi  = NA_character_,
+    version     = "7.1",
+    license     = "CC BY",
+    attribution = paste0(
+      "Pellicer J, Leitch IJ (2020) The Plant DNA C-values database (release ",
+      "7.1): an updated online repository of plant genome size data for ",
+      "comparative studies. New Phytologist 226:301-305. Royal Botanic ",
+      "Gardens Kew (https://cvalues.science.kew.org/), CC BY. Genome size (1C ",
+      "DNA amount, picograms), chromosome number (2n) and ploidy level reduced ",
+      "to per-species medians by taxifydb."
+    ),
+    # cvalues exposes no bulk export; the CodeIgniter search form returns an
+    # HTML results table via POST, 100 records per page. Pages are fetched
+    # sequentially and cached; parse_kew_cvalues() reads the data table off each.
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      base_body <- paste0(
+        "search_type=AllPlants&prime_estimates=1&cvalue=onec",
+        "&show_fields[]=family&show_fields[]=genus&show_fields[]=species",
+        "&show_fields[]=chromosome&show_fields[]=ploidy&show_fields[]=prime",
+        "&sort=s.species_name&sort_order=ASC&page=")
+      fetch_page <- function(pg) {
+        out <- file.path(dest, sprintf("page_%03d.html", pg))
+        if (file.exists(out) && file.size(out) > 5000L) return(out)
+        h <- curl::new_handle()
+        curl::handle_setopt(h, copypostfields = paste0(base_body, pg),
+                            followlocation = TRUE, connecttimeout = 60L)
+        curl::handle_setheaders(
+          h, "Content-Type" = "application/x-www-form-urlencoded",
+          "User-Agent" = "Mozilla/5.0 (compatible; taxifydb/0.1)")
+        resp <- curl::curl_fetch_memory(url, handle = h)
+        if (resp$status_code != 200L) {
+          stop(sprintf("Kew C-values page %d: HTTP %d", pg, resp$status_code),
+               call. = FALSE)
+        }
+        writeBin(resp$content, out)
+        Sys.sleep(0.2)
+        out
+      }
+      p1  <- fetch_page(1L)
+      txt <- readChar(p1, file.size(p1), useBytes = TRUE)
+      m   <- regmatches(txt, regexpr("of ([0-9]+)", txt))
+      total  <- suppressWarnings(as.integer(sub("of ", "", m)))
+      npages <- if (length(total) && !is.na(total)) ceiling(total / 100L) else 1L
+      for (pg in seq_len(npages)[-1L]) fetch_page(pg)
+      dest
+    },
+    parse_fn    = function(path) parse_kew_cvalues(path),
+    group_col   = NULL,
+    requires    = "rvest"
   )
 )
 

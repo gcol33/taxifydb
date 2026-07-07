@@ -67,7 +67,7 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 ## Enrichments
 
-84 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
+85 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
 `sealifebase`, and `groot`). Ecoflora and FloraWeb are built into `.vtr` files
 from frozen per-species scrape snapshots. Only 1 on-demand source remains
 (Pignatti, copyrighted), catalogued in `.enrichment_scrape_only`

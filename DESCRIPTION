@@ -31,6 +31,7 @@ Suggests:
     openxlsx2,
     readxl,
     rfishbase,
+    rvest,
     RSQLite,
     testthat (>= 3.0.0)
 Remotes:

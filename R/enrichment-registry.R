@@ -1840,6 +1840,74 @@
     parse_fn    = function(path) parse_eurobat(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  copepod_traits = list(
+    source_url  = paste0("https://store.pangaea.de/Publications/BrunP-etal_2016/",
+                         "Brun-etal_2016_Copepode_trait.xlsx"),
+    source_doi  = "10.1594/PANGAEA.862968",
+    version     = "2017.1",
+    license     = "CC BY 3.0",
+    attribution = paste0(
+      "Brun P, Payne MR, Kiorboe T (2017) A trait database for marine ",
+      "copepods. Earth System Science Data 9:99-113 ",
+      "(doi:10.5194/essd-9-99-2017); data on PANGAEA ",
+      "(doi:10.1594/PANGAEA.862968), CC BY 3.0. Species-level body size ",
+      "(mm), egg outer diameter (micrometres), clutch size, feeding mode, ",
+      "feeder type, spawning strategy, myelination and resting-egg presence, ",
+      "reduced by taxifydb (numeric by median, categorical by mode)."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "brun_copepod.xlsx")
+    },
+    parse_fn    = function(path) parse_copepod_traits(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
+  ),
+
+  fishtraits = list(
+    source_url  = paste0("https://www.sciencebase.gov/catalog/file/get/",
+                         "5a7c6e8ce4b00f54eb2318c0?name=FishTraits_14.3.xls"),
+    source_doi  = NULL,
+    version     = "14.3",
+    license     = "Public domain (U.S. Government work)",
+    attribution = paste0(
+      "Frimpong EA, Angermeier PL (2009) FishTraits: a database of ecological ",
+      "and life-history traits of freshwater fishes of the United States. ",
+      "Fisheries 34:487-495. Data: USGS ScienceBase, FishTraits v14.3 (item ",
+      "5a7c6e8ce4b00f54eb2318c0), public domain. Species-level trophic-guild, ",
+      "life-history, temperature and salinity tolerance and conservation ",
+      "traits for United States freshwater fishes."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "FishTraits_14.3.xls")
+    },
+    parse_fn    = function(path) parse_fishtraits(path),
+    group_col   = NULL,
+    requires    = "readxl"
+  ),
+
+  cefas_btrait = list(
+    source_url  = "https://data-api.cefas.co.uk/api/export/11935?format=csv",
+    source_doi  = "10.14466/CefasDataHub.123",
+    version     = "2022.1",
+    license     = "OGL v3.0",
+    attribution = paste0(
+      "North-West European continental-shelf benthos biological-traits ",
+      "database, Cefas Data Hub (doi:10.14466/CefasDataHub.123), described in ",
+      "Scientific Data 9:339 (doi:10.1038/s41597-022-01442-y). Open ",
+      "Government Licence v3.0. Genus-and-above fuzzy-coded biological traits ",
+      "(body size, morphology, lifespan, egg and larval development, living ",
+      "habit, sediment position, feeding mode, mobility, bioturbation), each ",
+      "reduced to the highest-scoring modality by taxifydb."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "cefas_btrait.csv")
+    },
+    parse_fn    = function(path) parse_cefas_btrait(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = character(0)
   )
 )
 

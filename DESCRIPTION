@@ -29,6 +29,7 @@ Suggests:
     DBI,
     GIFT,
     openxlsx2,
+    readxl,
     rfishbase,
     RSQLite,
     testthat (>= 3.0.0)

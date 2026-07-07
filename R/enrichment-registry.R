@@ -1984,6 +1984,96 @@
     parse_fn    = function(path) parse_epa_freshwater(path),
     group_col   = NULL,
     requires    = "readxl"
+  ),
+
+  ccdb = list(
+    source_url  = "https://ccdb.tau.ac.il/services/statistics/",
+    source_doi  = NA_character_,
+    version     = "2026.07",
+    license     = "Citation requested (CCDB community resource; no explicit licence)",
+    attribution = paste0(
+      "Rice A et al. (2015) The Chromosome Counts Database (CCDB) - a ",
+      "community resource of plant chromosome numbers. New Phytologist ",
+      "206:19-26. Data: ccdb.tau.ac.il (citation requested, no explicit ",
+      "licence). Per-species median, minimum and maximum somatic chromosome ",
+      "number (2n) aggregated by CCDB across the major plant groups."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      for (g in c("Angiosperms", "Gymnosperms", "Pteridophytes", "Bryophytes")) {
+        u <- paste0(url, "?majorGroup=", g, "&format=csv")
+        tryCatch(download_curl_file(u, dest, paste0("ccdb_", tolower(g), ".csv")),
+                 error = function(e) message("  ccdb dl fail: ", g))
+      }
+      dest
+    },
+    parse_fn    = function(path) parse_ccdb(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  gmpd = list(
+    source_url  = paste0("https://raw.githubusercontent.com/",
+                         "globalbioticinteractions/global-mammal-parasite-database/",
+                         "main/GMPD_main.csv"),
+    source_doi  = "10.1002/ecy.1799",
+    version     = "2.0",
+    license     = "Citation requested (Wiley version-of-record terms; no explicit licence)",
+    attribution = paste0(
+      "Stephens PR et al. (2017) Global Mammal Parasite Database version 2.0. ",
+      "Ecology 98:1476 (doi:10.1002/ecy.1799). Data via the Global Biotic ",
+      "Interactions mirror (citation requested, no explicit licence). ",
+      "Per-host-species parasite richness, distinct-parasite counts by ",
+      "parasite type, mean reported prevalence and host group."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "GMPD_main.csv")
+    },
+    parse_fn    = function(path) parse_gmpd(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
+  plantatt = list(
+    source_url  = paste0("https://www.brc.ac.uk/sites/default/files/biblio/",
+                         "PLANTATT_19_Nov_08.zip"),
+    source_doi  = NA_character_,
+    version     = "2008.1",
+    license     = "(c) Biological Records Centre (no explicit licence)",
+    attribution = paste0(
+      "Hill MO, Preston CD, Roy DB (2004) PLANTATT: Attributes of British and ",
+      "Irish Plants. Biological Records Centre, CEH. (c) Biological Records ",
+      "Centre (no explicit licence). Ellenberg indicator values (light, ",
+      "moisture, reaction, nitrogen, salt), maximum height (cm), and life-form, ",
+      "woodiness and native-status codes kept verbatim."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, pattern = "PLANTATT.*\\.xls$")
+    },
+    parse_fn    = function(path) parse_plantatt(path),
+    group_col   = NULL,
+    requires    = "readxl"
+  ),
+
+  bryoatt = list(
+    source_url  = paste0("https://www.brc.ac.uk/sites/default/files/biblio/",
+                         "Bryoatt_updated_2017_0.zip"),
+    source_doi  = NA_character_,
+    version     = "2017.1",
+    license     = "(c) Biological Records Centre (no explicit licence)",
+    attribution = paste0(
+      "Hill MO, Preston CD, Bosanquet SDS, Roy DB (2007) BRYOATT: Attributes ",
+      "of British and Irish Mosses, Liverworts and Hornworts. NERC / CEH. ",
+      "(c) Biological Records Centre (no explicit licence). Ellenberg ",
+      "indicator values, life-form, plant-group (moss / liverwort / hornwort) ",
+      "and status codes kept verbatim."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, pattern = "Bryoatt.*\\.xls$")
+    },
+    parse_fn    = function(path) parse_bryoatt(path),
+    group_col   = NULL,
+    requires    = "readxl"
   )
 )
 

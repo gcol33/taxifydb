@@ -104,6 +104,25 @@
       "full_sha256": "db74b3e49aa84fb10149dbda301bffb72ffee53751de6bda6a9774a96766d7c4",
       "nrow": 134031,
       "source_url": "https://sealifebase.ropensci.org"
+    },
+    "wgsrpd": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wgsrpd-2026.07/wgsrpd.vtr",
+      "nrow": 44549,
+      "full_size": 569514,
+      "full_sha256": "406993ceb63a2bd1d84650445028ce231025d7731417d5ab9c97d50c65f0cfea",
+      "content_id": "953fd2d1adb6f4f6138b296743241ba8",
+      "static": true,
+      "source_url": "https://github.com/tdwg/wgsrpd/blob/master/geojson/level3.geojson",
+      "citation": {
+        "key": "brummitt2001wgsrpd",
+        "type": "book",
+        "authors": "Brummitt RK",
+        "year": "2001",
+        "title": "World Geographical Scheme for Recording Plant Distributions, Edition 2",
+        "url": "https://github.com/tdwg/wgsrpd"
+      },
+      "license": "CC BY 4.0"
     }
   },
   "enrichments": {

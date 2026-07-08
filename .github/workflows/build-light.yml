@@ -171,7 +171,7 @@ jobs:
           git push -f -u origin "$BR"
           gh pr create --repo gcol33/taxify --base main --head "$BR" \
             --title "manifest: sync $BE v$VER" \
-            --body "Automated backend-manifest sync from the taxifydb \`$BE-$VER\` release. Mechanical fields (full_url, full_size, full_sha256, content_id, nrow, delta_url) are written by \`taxifydb::update_manifest()\`; curated fields (citation, license) are preserved from the existing entry. A brand-new backend needs its citation/license added once in this PR." \
+            --body "Automated backend-manifest sync from the taxifydb \`$BE-$VER\` release. Mechanical fields (full_url, full_size, full_sha256, content_id, nrow, delta_url, source_url) are written by \`taxifydb::update_manifest()\`; curated fields (citation, license) are preserved from the existing entry. A brand-new backend needs its citation/license added once in this PR." \
             2>/dev/null || echo "PR for $BR already open (branch updated)."
         shell: bash
         env:

@@ -1,3 +1,19 @@
+# taxifydb 0.1.9
+
+## Manifest fixes
+
+* `update_manifest()` now fills a backbone's `source_url` from the `url` field
+  of the `.meta` sidecar that `build_vtr()` writes next to every `.vtr`, so the
+  manifest URL always matches what the build downloaded from (each backend's
+  single `.<name>_url` constant). Previously `source_url` was an optional
+  argument that no build path passed, so it was hand-curated and present for
+  only some backbones. The `euromed`, `fungorum`, and `algaebase` entries gain
+  their `source_url`, and `ncbi`'s stale URL (`.../new_taxdump.tar.gz`, which
+  the server does not serve) is corrected to the path the builder actually
+  downloads (`.../new_taxdump/new_taxdump.tar.gz`). Adds an internal
+  `read_meta()` reader for the sidecar; this mirrors the enrichment path, which
+  already derives `source_url` from the built `meta.json`.
+
 # taxifydb 0.1.8
 
 ## New backbones

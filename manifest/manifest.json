@@ -47,7 +47,7 @@
       "full_size": 514271185,
       "full_sha256": "8db142ab21d93240f71f51972c69e15ec484b19cf915ea4bb08c239348a637b3",
       "nrow": 2759103,
-      "source_url": "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump.tar.gz"
+      "source_url": "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz"
     },
     "ott": {
       "latest": "3.7.3",
@@ -70,21 +70,24 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.06/euromed.vtr",
       "full_size": 30389481,
       "full_sha256": "ef5a1ac9dd206885b834d8fafd06a76863b59933bb8b2195d0a586aeb5813a32",
-      "nrow": 133426
+      "nrow": 133426,
+      "source_url": "https://germansl.infinitenature.org/EuroMed/version1/EuroMed.zip"
     },
     "fungorum": {
       "latest": "2026.06",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.06/fungorum.vtr",
       "full_size": 71353563,
       "full_sha256": "d33b6e42643f0846578e95d95f6a78c9de22cc7628109ed8063d33a05e25af0f",
-      "nrow": 315037
+      "nrow": 315037,
+      "source_url": "https://api.checklistbank.org/dataset/2073/archive"
     },
     "algaebase": {
       "latest": "2026.06",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.06/algaebase.vtr",
       "full_size": 36264066,
       "full_sha256": "de17ce3538d0b225cebdb2a874cb4f67e334b86304bd68f881d12ccb096a6261",
-      "nrow": 172351
+      "nrow": 172351,
+      "source_url": "https://api.checklistbank.org/dataset/304756/nameusage/search"
     },
     "fishbase": {
       "latest": "2026.06",

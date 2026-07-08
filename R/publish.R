@@ -119,7 +119,10 @@ count_vtr_rows <- function(vtr_path) {
 #'   manifest entry; the runtime downloader fetches each into the same
 #'   versioned directory as the main `.vtr`.
 #' @param repo Character. GitHub repo for URL construction.
-#' @param source_url Character. Original data source URL.
+#' @param source_url Character or NULL. Original data source URL. When `NULL`
+#'   (the default), it is read from the `url` field of the `.meta` sidecar that
+#'   `build_vtr()` writes next to `vtr_path`, which is the backend's single
+#'   source of truth for provenance.
 #' @return The updated manifest (invisibly).
 #' @export
 update_manifest <- function(manifest_path, backend_name, version,
@@ -162,7 +165,16 @@ update_manifest <- function(manifest_path, backend_name, version,
   entry$content_id  <- unname(tools::md5sum(vtr_path))
   entry$nrow        <- count_vtr_rows(vtr_path)
 
-  if (!is.null(source_url)) {
+  # Provenance defaults to the download URL that build_vtr() records in the
+  # .meta sidecar next to every .vtr (the backend's single source of truth).
+  # An explicit source_url argument overrides it.
+  if (is.null(source_url)) {
+    meta <- read_meta(paste0(tools::file_path_sans_ext(vtr_path), ".meta"))
+    if (!is.null(meta) && "url" %in% names(meta) && nzchar(meta[["url"]])) {
+      source_url <- meta[["url"]]
+    }
+  }
+  if (!is.null(source_url) && nzchar(source_url)) {
     entry$source_url <- source_url
   }
 

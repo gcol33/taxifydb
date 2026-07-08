@@ -49,6 +49,28 @@ build_vtr <- function(df, vtr_path, backend_name, version, source_url,
 }
 
 
+#' Read a `.meta` sidecar written by `build_vtr()`
+#'
+#' Parses the `key=value` lines into a named character vector. The sidecar is
+#' the authoritative provenance record for a built `.vtr` (source `url`,
+#' `version`, `download_date`, `nrow`). Only the first `=` on a line splits the
+#' key from the value, so URLs carrying `?download=1` query strings survive.
+#'
+#' @param meta_path Character. Path to the `.meta` file.
+#' @return Named character vector of fields, or `NULL` if the file is absent.
+#' @noRd
+read_meta <- function(meta_path) {
+  if (!file.exists(meta_path)) return(NULL)
+  lines <- readLines(meta_path, warn = FALSE)
+  lines <- lines[nzchar(lines)]
+  eq <- regexpr("=", lines, fixed = TRUE)
+  keep <- eq > 0L
+  vals <- substring(lines[keep], eq[keep] + 1L)
+  names(vals) <- substring(lines[keep], 1L, eq[keep] - 1L)
+  vals
+}
+
+
 #' Compute SHA-256 checksum of a file
 #'
 #' @param path Character. Path to the file.

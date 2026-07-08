@@ -36,7 +36,10 @@ versioned directory as the main \code{.vtr}.}
 
 \item{repo}{Character. GitHub repo for URL construction.}
 
-\item{source_url}{Character. Original data source URL.}
+\item{source_url}{Character or NULL. Original data source URL. When \code{NULL}
+(the default), it is read from the \code{url} field of the \code{.meta} sidecar that
+\code{build_vtr()} writes next to \code{vtr_path}, which is the backend's single
+source of truth for provenance.}
 }
 \value{
 The updated manifest (invisibly).

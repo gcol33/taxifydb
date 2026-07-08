@@ -45,7 +45,7 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 ## Backends
 
-12 backends. All built via the same `build_backend(name)` entrypoint.
+15 backends. All built via the same `build_backend(name)` entrypoint.
 
 | Backend | Format | Notes |
 |---------|--------|-------|
@@ -62,6 +62,8 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 | fishbase | rfishbase `load_taxa()` + `synonyms()` | fishes; shared reader `.read_rfishbase_backbone()`; needs rfishbase |
 | sealifebase | rfishbase (server = sealifebase) | non-fish aquatic; same shared reader |
 | reptiledb | taxa.csv + synonyms.xlsx + checklist.xlsx | reptiles; CC-BY; synonyms from 2023-04 snapshot, order via family->order map; needs openxlsx2 |
+| wcvp | pipe-delimited `wcvp_names.csv` (Kew) | vascular plants; CC BY; `taxon_name` is the rendered canonical (hybrids + infraspecific markers); acceptance derived from `accepted_plant_name_id` (self=accepted, other=synonym, empty=unplaced), not the nine `taxon_status` spellings. Kew does NOT field-wrap, and 0.06% of names carry genuine embedded `"` (e.g. `f. "A"`), so `read_wcvp` reads with `quote = ""` (opposite of WoRMS); optional data.table fread |
+| lcvp | `tab_lcvp.rda` (idiv-biodiversity/LCVP) | vascular plants; MIT; loaded via base `load()` (no LCVP pkg dep); canonical assembled from `Input.Genus`/`Input.Epitheton`/`Rank`/`Input.Subspecies.Epitheton` (`nil` = species; `forma`->`f.`); synonym->accepted via `globalId.of.Output.Taxon`; `unresolved` kept as own accepted concept; no hybrids in input columns |
 
 **WoRMS quote note (#2, fixed in `worms-2026.07`).** ChecklistBank double-quotes its `Taxon.tsv` / `SpeciesProfile.tsv` string fields. `read_worms` (and the SpeciesProfile reader) must use `read.delim(quote = "\"")`, NOT `quote = ""` — with `quote = ""` the field-wrapping quotes are kept as literal characters, so 90.2% of `canonical_name` / `key_ci` / `key_normalized` / `authorship` came out wrapped in `"` (e.g. `"Aglaophamus malmgreni"`) and some quoted-field rows were mis-split (bibliographic text leaking into `taxon_id`). Runtime effect: exact match fails on the quotes, falls to fuzzy, and the quoted `accepted_name` then breaks every marine enrichment join. Using `quote = "\""` parses the double-quotes as quotes and strips them; only `"` is a quote (not `'`), so apostrophes in authorship (`d'Orbigny`, `O'Brien`) stay intact. After the fix: `canonical_name` quotes 1,406,915 -> 11 (the 11 genuine embedded quotes, e.g. `Gyrodactylus barbatuli f. "A"`), rows 1,559,455 -> 1,557,860. This was WoRMS-only: every other backbone and all enrichments have <=0.03% quoted, all genuine embedded quotes in informal/provisional names, so none needs the change. When rebuilding another delimited backbone/enrichment whose source wraps fields, prefer `quote = "\""` over `quote = ""`.
 

@@ -1,14 +1,15 @@
 Package: taxifydb
 Title: Build Backbones and Enrichments for the 'taxify' Package
-Version: 0.1.7
+Version: 0.1.8
 Authors@R:
     person("Gilles", "Colling", , "gilles.colling051@gmail.com",
            role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0003-3070-6066"))
 Description: Build pipeline for the 'taxify' package. Downloads raw source
     data from official providers (WFO, COL, GBIF, ITIS, NCBI Taxonomy, Open
-    Tree of Life, WoRMS, Euro+Med PlantBase, Index Fungorum, AlgaeBase) and
-    a wide set of trait and conservation datasets, normalizes to a unified
+    Tree of Life, WoRMS, Euro+Med PlantBase, Index Fungorum, AlgaeBase, the
+    World Checklist of Vascular Plants, and the Leipzig Catalogue of Vascular
+    Plants) and a wide set of trait and conservation datasets, normalizes to a unified
     Darwin Core-like schema, and writes pre-compiled '.vtr' files that the
     'taxify' runtime consumes. Separates build-time concerns (network
     access, parsing, schema normalization) from runtime concerns so that
@@ -26,6 +27,7 @@ Imports:
     utils,
     vectra
 Suggests:
+    data.table,
     DBI,
     GIFT,
     openxlsx2,

@@ -134,13 +134,40 @@ check_gbif_api_version <- function(source_url) {
 #' Check Kew WCVP for the latest version
 #'
 #' WCVP has no dedicated API, so we fall back to a HEAD request via
-#' [check_gbif_version()].
+#' [check_gbif_version()], which reads the bulk file's `Last-Modified` header
+#' and formats it as `YYYY.MM`.
 #'
 #' @param source_url Character. WCVP download URL.
 #' @return Named list with `version` and `url`.
 #' @export
 check_wcvp_version <- function(source_url) {
   check_gbif_version(source_url)
+}
+
+
+#' Check the LCVP data package for the latest version
+#'
+#' LCVP is distributed as an R data package; its data version is the `Version`
+#' field of the package `DESCRIPTION` on GitHub.
+#'
+#' @param source_url Character. LCVP `tab_lcvp.rda` download URL (unused; the
+#'   `DESCRIPTION` location is derived from the fixed repository).
+#' @return Named list with `version` and `url`.
+#' @export
+check_lcvp_version <- function(source_url) {
+  desc_url <- paste0("https://raw.githubusercontent.com/",
+                     "idiv-biodiversity/LCVP/master/DESCRIPTION")
+  lines <- tryCatch(readLines(desc_url, warn = FALSE),
+                    error = function(e) NULL)
+  if (is.null(lines)) return(NULL)
+
+  ver_line <- grep("^Version:", lines, value = TRUE)
+  version <- if (length(ver_line) > 0L) {
+    trimws(sub("^Version:", "", ver_line[1L]))
+  } else {
+    NA_character_
+  }
+  list(version = version, url = desc_url)
 }
 
 

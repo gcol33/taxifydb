@@ -17,7 +17,9 @@
   algaebase = function(...) build_algaebase(...),
   fishbase    = function(...) build_fishbase(...),
   sealifebase = function(...) build_sealifebase(...),
-  reptiledb   = function(...) build_reptiledb(...)
+  reptiledb   = function(...) build_reptiledb(...),
+  wcvp        = function(...) build_wcvp(...),
+  lcvp        = function(...) build_lcvp(...)
 )
 
 

@@ -14,5 +14,6 @@ Named list with \code{version} and \code{url}.
 }
 \description{
 WCVP has no dedicated API, so we fall back to a HEAD request via
-\code{\link[=check_gbif_version]{check_gbif_version()}}.
+\code{\link[=check_gbif_version]{check_gbif_version()}}, which reads the bulk file's \code{Last-Modified} header
+and formats it as \code{YYYY.MM}.
 }

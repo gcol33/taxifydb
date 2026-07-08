@@ -1,4 +1,56 @@
-# taxifydb (development version)
+# taxifydb 0.1.8
+
+## New backbones
+
+* `build_wcvp()` builds the World Checklist of Vascular Plants backbone
+  (`wcvp`) from Kew's pipe-delimited `wcvp_names.csv` (CC BY). The canonical
+  name is taken straight from `taxon_name` (hybrid signs and infraspecific
+  markers already rendered), and acceptance is derived from the
+  `accepted_plant_name_id` link (a name pointing at another is a synonym; a
+  self-pointing or unplaced name is its own accepted concept) rather than the
+  nine `taxon_status` spellings. `read_wcvp()` reads with `quote = ""` so the
+  0.06% of names carrying a genuine embedded double-quote (informal epithets
+  like `f. "A"`) stay literal; it uses `data.table::fread()` when available and
+  falls back to `utils::read.delim()`.
+* `build_lcvp()` builds the Leipzig Catalogue of Vascular Plants backbone
+  (`lcvp`) from the `idiv-biodiversity/LCVP` `tab_lcvp.rda` (MIT), loaded with
+  base `load()` so no LCVP package dependency is needed. The canonical name is
+  assembled from `Input.Genus` / `Input.Epitheton` / `Rank` /
+  `Input.Subspecies.Epitheton` (`nil` marks species rank; `forma` renders as
+  `f.`); the synonym to accepted link comes from `globalId.of.Output.Taxon`,
+  and `unresolved` names are kept as their own accepted concept.
+* Both are wired into `build_backend()`, `list_backends()`, and the heavy
+  build workflow, bringing the backbone count to 15, and carry
+  `check_wcvp_version()` / `check_lcvp_version()` upstream-version checks. Adds
+  `data.table` to Imports.
+
+## Backbone fixes
+
+* `read_worms()` (and the SpeciesProfile reader) now parse ChecklistBank's
+  double-quoted `Taxon.tsv` / `SpeciesProfile.tsv` with `read.delim(quote =
+  "\"")` instead of `quote = ""`. Previously the field-wrapping quotes were
+  kept as literal characters, so 90.2% of `canonical_name`, `key_ci`,
+  `key_normalized`, and `authorship` came out wrapped in `"` and some
+  quoted-field rows were mis-split, which broke exact matching (falling to
+  fuzzy) and every marine enrichment join. After the fix, wrapped
+  `canonical_name` quotes drop from 1,406,915 to 11 (the genuine embedded
+  ones), and only `"` is treated as a quote so authorship apostrophes
+  (`d'Orbigny`) stay intact. WoRMS rebuilt under `worms-2026.07`.
+* `publish` now stamps a `content_id` (md5 of the built `.vtr`) for each
+  backbone in the manifest, mirroring the enrichment `content_id`, so taxify's
+  runtime can detect a same-tag republish and refresh a version-locked static
+  cache instead of serving stale data.
+
+## New enrichments
+
+* A further wave of trait and interaction recipes brings the enrichment
+  registry to 91: `bacdive`, `globi`, `italic` (lichens), `hosts`,
+  `usda_fungus_host`, `edwards_phyto`, `kew_sid`, `thermofresh`, `ramond`,
+  `fw_insects_conus`, `eurobat`, `copepod_traits`, `fishtraits`,
+  `cefas_btrait`, `kew_cvalues`, `epa_freshwater`, `ccdb`, `gmpd`, `plantatt`,
+  `bryoatt`, and `clopla`. Run `taxifydb::list_enrichments()` for the full set;
+  pre-built `.vtr` artifacts are published under the `enrichment-2026.07` tag.
+  The GloBI, BacDive, and ITALIC builds use resume-safe crawlers.
 
 ## New features
 

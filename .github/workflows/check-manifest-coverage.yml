@@ -1,0 +1,109 @@
+name: Check taxify Manifest Coverage
+
+on:
+  schedule:
+    # Every Monday at 06:30 UTC (after the enrichment-version check)
+    - cron: '30 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.5.2'
+          use-public-rspm: true
+
+      - name: Install check dependencies
+        # base R + jsonlite + curl only; the full package Imports taxify
+        # (GitHub Remote) which needs no resolving here.
+        run: install.packages(c("jsonlite", "curl"))
+        shell: Rscript {0}
+
+      - name: Check manifest coverage
+        id: check
+        run: |
+          Rscript scripts/check_manifest_coverage.R | tee coverage_stdout.txt
+          drift=$(grep -oE 'drift_count=[0-9]+' coverage_stdout.txt | tail -1 | cut -d= -f2)
+          echo "drift_count=${drift:-0}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build issue body
+        if: steps.check.outputs.drift_count != '0'
+        run: |
+          res <- jsonlite::fromJSON("coverage_results.json")
+          drift <- res[res$status %in% c("missing_in_manifest", "stale_in_manifest"), ]
+          lines <- c(
+            "## taxify manifest is out of sync with taxifydb releases",
+            "",
+            "The following backbones are released on `gcol33/taxifydb` but not",
+            "current in taxify's runtime `inst/manifest.json`. Users of these",
+            "backends silently fall back to build-from-source.",
+            "",
+            "| Backend | Latest release | In taxify manifest | Status |",
+            "|---|---|---|---|"
+          )
+          for (i in seq_len(nrow(drift))) {
+            lines <- c(lines, sprintf(
+              "| `%s` | %s | %s | **%s** |",
+              drift$backend[i],
+              drift$release[i],
+              ifelse(is.na(drift$manifest[i]), "(none)", drift$manifest[i]),
+              drift$status[i]
+            ))
+          }
+          lines <- c(lines, "",
+            "The build workflows open a sync PR automatically; this drift means a",
+            "sync PR is unmerged, `TAXIFY_MANIFEST_TOKEN` is unset, or the entry",
+            "needs a one-time citation/license before merge.",
+            "",
+            sprintf("*Last checked: %s UTC*", format(Sys.time(), "%Y-%m-%d %H:%M")))
+          writeLines(paste(lines, collapse = "\n"), "issue_body.md")
+        shell: Rscript {0}
+
+      - name: Create or update issue
+        if: steps.check.outputs.drift_count != '0'
+        run: |
+          gh label create manifest-drift --repo ${{ github.repository }} \
+            --color FBCA04 --description "taxify manifest out of sync with releases" \
+            2>/dev/null || true
+          BODY=$(cat issue_body.md)
+          EXISTING=$(gh issue list --repo ${{ github.repository }} \
+            --label "manifest-drift" --state open --json number -q '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --repo ${{ github.repository }} --body "$BODY"
+            echo "Updated issue #$EXISTING"
+          else
+            gh issue create --repo ${{ github.repository }} \
+              --title "taxify manifest out of sync with releases" \
+              --body "$BODY" --label "manifest-drift"
+            echo "Created new issue"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Close issue if in sync
+        if: steps.check.outputs.drift_count == '0'
+        run: |
+          EXISTING=$(gh issue list --repo ${{ github.repository }} \
+            --label "manifest-drift" --state open --json number -q '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --repo ${{ github.repository }} \
+              --comment "taxify manifest is back in sync as of $(date -u +%Y-%m-%d)."
+            echo "Closed issue #$EXISTING"
+          else
+            echo "No open issue to close"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,19 +2,22 @@
 % Please edit documentation in R/backend-euromed.R
 \name{read_euromed}
 \alias{read_euromed}
-\title{Read and normalize the Euro+Med CSV}
+\title{Read and normalize the Euro+Med CDM snapshot}
 \usage{
-read_euromed(csv_path, verbose = TRUE)
+read_euromed(jsonl_path, nodes_path, verbose = TRUE)
 }
 \arguments{
-\item{csv_path}{Character. Path to the EuroMed.csv file.}
+\item{jsonl_path}{Character. Path to \code{euromed.jsonl} (one accepted taxon per
+line, synonyms nested).}
+
+\item{nodes_path}{Character. Path to \code{nodes.tsv} (genus/suprageneric
+treeIndex paths for family resolution).}
 
 \item{verbose}{Logical.}
 }
 \value{
-A normalized data.frame.
+A normalized data.frame in the unified backbone schema.
 }
 \description{
-Resolves the parent-child hierarchy for family/genus, maps synonym
-relationships via TaxonConceptID, and produces the unified backbone schema.
+Read and normalize the Euro+Med CDM snapshot
 }

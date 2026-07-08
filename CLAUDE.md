@@ -56,7 +56,7 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 | ncbi | pipe-delimited .dmp | aggressive noise filter |
 | ott | TSV (Open Tree) | NCBI+GBIF+WoRMS+IRMNG synthesis |
 | worms | DwC-A (ChecklistBank) | marine taxa, denormalized; ChecklistBank double-quotes TSV fields, so `read_worms` reads with `read.delim(quote = "\"")` not `quote = ""` (see WoRMS quote note below) |
-| euromed | semicolon CSV | Euro+Med PlantBase 2020 snapshot |
+| euromed | CDM REST snapshot (NDJSON) | Euro+Med PlantBase, harvested live from the EDIT CyberTaxonomy CDM API (`api.cybertaxonomy.org/euromed`) by `inst/py/crawlers/crawl_euromed.py` into a frozen `euromed.jsonl` + `nodes.tsv` snapshot (accepted taxa with nested synonyms; genus->family from node `treeIndex`). Replaces the frozen 2020 v1.2 flat file that could not refresh (#7). No working bulk export exists (the CDM `/dwca` and `/checklist/export` endpoints time out through the public proxy), so the per-taxon portal API is crawled |
 | fungorum | (depends) | Index Fungorum |
 | algaebase | ChecklistBank /nameusage/search | paginated API; /archive disabled (CC BY-NC) |
 | fishbase | rfishbase `load_taxa()` + `synonyms()` | fishes; shared reader `.read_rfishbase_backbone()`; needs rfishbase |

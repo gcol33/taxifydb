@@ -2,18 +2,23 @@
 % Please edit documentation in R/backend-euromed.R
 \name{download_euromed}
 \alias{download_euromed}
-\title{Download and extract the Euro+Med CSV}
+\title{Download the frozen Euro+Med CDM snapshot}
 \usage{
-download_euromed(dest = tempdir(), verbose = TRUE)
+download_euromed(dest = tempdir(), local_dir = NULL, verbose = TRUE)
 }
 \arguments{
 \item{dest}{Character. Destination directory.}
 
+\item{local_dir}{Character or NULL. A local crawl output directory to use
+instead of downloading (default \verb{~/dev/taxify-crawls/euromed}).}
+
 \item{verbose}{Logical.}
 }
 \value{
-Path to the extracted CSV.
+Named list with \code{jsonl} and \code{nodes} paths.
 }
 \description{
-Download and extract the Euro+Med CSV
+Fetches the crawler's NDJSON snapshot and node-path table from the release.
+If a local crawl directory already holds both files (the machine that ran
+the crawl), they are used directly.
 }

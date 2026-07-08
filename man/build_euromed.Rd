@@ -4,12 +4,20 @@
 \alias{build_euromed}
 \title{Build the Euro+Med backbone .vtr}
 \usage{
-build_euromed(output_dir = "output/euromed", version = NULL, verbose = TRUE)
+build_euromed(
+  output_dir = "output/euromed",
+  version = NULL,
+  local_dir = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{output_dir}{Character.}
 
 \item{version}{Character or NULL.}
+
+\item{local_dir}{Character or NULL. Local crawl snapshot directory (see
+\code{\link[=download_euromed]{download_euromed()}}).}
 
 \item{verbose}{Logical.}
 }

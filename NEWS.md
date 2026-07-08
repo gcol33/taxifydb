@@ -1,3 +1,21 @@
+# taxifydb 0.1.10
+
+## Backbone fixes
+
+* The Euro+Med backbone is repointed from the frozen germansl 2020 v1.2 flat
+  file (which could not refresh) to the live EDIT CyberTaxonomy CDM API that
+  backs europlusmed.org. `inst/py/crawlers/crawl_euromed.py` harvests the full
+  classification through the per-taxon portal API (the CDM bulk-export endpoints
+  time out through the public proxy and no bulk Euro+Med exists on
+  GBIF/COL/ChecklistBank) and freezes it as an `euromed.jsonl` + `nodes.tsv`
+  snapshot, the same pattern as the ecoflora/floraweb scrape snapshots.
+  `read_euromed()` builds the unified backbone from the snapshot: accepted taxa
+  with nested synonyms resolved to their accepted concept, authorship and
+  epithets parsed from the rendered name, and family mapped to each genus from
+  the node `treeIndex` materialised path. Taxa the portal does not publish
+  (`publish = false`) are skipped. The version pin moves from `2020.1` to
+  `2026.07`.
+
 # taxifydb 0.1.9
 
 ## Manifest fixes

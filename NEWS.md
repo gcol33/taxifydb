@@ -16,6 +16,16 @@
   (`publish = false`) are skipped. The version pin moves from `2020.1` to
   `2026.07`.
 
+## Manifest
+
+* The LCVP (`lcvp-3.0.1`, 1,337,891 names), WCVP (`wcvp-2026.06`, 1,448,984
+  names), and Reptile Database (`reptiledb-2026.06`, 50,043 names) backbones
+  are now in `manifest/manifest.json`. LCVP and WCVP had no published `.vtr`
+  release at all, so they could previously only be built from source; both are
+  now built and released, and all three entries carry the full metadata
+  (`nrow`, `full_size`, `full_sha256`, `content_id`, `source_url`, citation,
+  license). The manifest now lists every one of the fifteen backbones.
+
 # taxifydb 0.1.9
 
 ## Manifest fixes

@@ -66,12 +66,13 @@
       "source_url": "https://api.checklistbank.org/dataset/2011/archive"
     },
     "euromed": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.06/euromed.vtr",
-      "full_size": 30389481,
-      "full_sha256": "ef5a1ac9dd206885b834d8fafd06a76863b59933bb8b2195d0a586aeb5813a32",
-      "nrow": 133426,
-      "source_url": "https://germansl.infinitenature.org/EuroMed/version1/EuroMed.zip"
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.07/euromed.vtr",
+      "full_size": 34576063,
+      "full_sha256": "4515c73ed5ab65dcdb87f94be55e747ff6e4095321ffe6cb697f1da8e25f1731",
+      "nrow": 146922,
+      "source_url": "https://europlusmed.org",
+      "content_id": "066682024bbd866f476d0aeaf3c02e00"
     },
     "fungorum": {
       "latest": "2026.06",

@@ -56,14 +56,20 @@ parse_kew_sid <- function(path) {
 
   median_by <- function(tbl, col, out_name) {
     if (is.null(tbl) || !nrow(tbl)) return(NULL)
-    v <- suppressWarnings(as.numeric(tbl[[col]]))
-    a <- stats::aggregate(
-      list(v = v), by = list(species_id = tbl$species_id),
-      FUN = function(z) {
-        z <- z[is.finite(z)]
-        if (!length(z)) NA_real_ else stats::median(z)
-      })
-    names(a)[names(a) == "v"] <- out_name
+    v  <- suppressWarnings(as.numeric(tbl[[col]]))
+    sp <- .num_group_spread(v, tbl$species_id)
+    if (!nrow(sp)) return(NULL)
+    a  <- data.frame(
+      species_id = tbl$species_id[match(sp$group, as.character(tbl$species_id))],
+      stringsAsFactors = FALSE
+    )
+    a[[out_name]] <- sp$med
+    # Add the within-species range only where some species shows a genuine range
+    # (seed weight, oil, protein are per-accession measurements that vary).
+    if (any(sp$max > sp$min, na.rm = TRUE)) {
+      a[[paste0(out_name, "_min")]] <- sp$min
+      a[[paste0(out_name, "_max")]] <- sp$max
+    }
     a
   }
   count_by <- function(tbl, col, out_name) {

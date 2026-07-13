@@ -789,6 +789,29 @@
     requires    = character(0)
   ),
 
+  combine_imputed = list(
+    source_url  = "https://ndownloader.figshare.com/files/27703266",
+    source_doi  = "10.1002/ecy.3344",
+    version     = "1.0",
+    license     = "CC0",
+    attribution = paste0(
+      "Soria CD et al. (2021) COMBINE: a coalesced mammal database of ",
+      "intrinsic and extrinsic traits. Ecology 102:e03344 ",
+      "(figshare doi:10.6084/m9.figshare.13028255). Phylogenetically imputed ",
+      "values (higher coverage than the reported table for the same ~6.2k ",
+      "species; gaps filled by a phylogenetic multiple-imputation model), ",
+      "keyed on the IUCN 2020 binomial. Shipped alongside the reported ",
+      "`combine` enrichment, not as a replacement: imputed values are model ",
+      "estimates, not measurements."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "trait_data_imputed.csv")
+    },
+    parse_fn    = function(path) parse_combine(path),
+    group_col   = NULL,
+    requires    = character(0)
+  ),
+
   austraits = list(
     source_url  = paste0("https://zenodo.org/api/records/15718081/files/",
                          "austraits-7.0.0.zip/content"),

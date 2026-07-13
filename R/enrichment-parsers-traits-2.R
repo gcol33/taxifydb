@@ -74,14 +74,8 @@
       next
     }
     if (identical(s$type, "num")) {
-      agg <- tapply(
-        suppressWarnings(as.numeric(sub$value)), sub$name,
-        function(z) {
-          z <- z[is.finite(z)]
-          if (!length(z)) NA_real_ else stats::median(z)
-        }
-      )
-      res[[oc]] <- as.numeric(agg[species])
+      spread <- .num_group_spread(sub$value, sub$name)
+      res    <- .attach_num_spread(res, oc, spread, species)
     } else {
       agg <- tapply(sub$value, sub$name, .cat_mode)
       res[[oc]] <- as.character(agg[species])

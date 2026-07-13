@@ -653,12 +653,7 @@ parse_leda <- function(dir_path) {
     names(trait_df)[2L] <- out_col
 
     if (as_type %in% c("numeric", "integer")) {
-      trait_df <- stats::aggregate(
-        trait_df[[out_col]],
-        by = list(canonical_name = trait_df$canonical_name),
-        FUN = function(x) stats::median(x, na.rm = TRUE)
-      )
-      names(trait_df)[2L] <- out_col
+      trait_df <- .aggregate_spread(trait_df, out_col)
     } else {
       trait_df <- trait_df[!duplicated(trait_df$canonical_name), ]
     }

@@ -88,6 +88,99 @@
   suppressWarnings(as.numeric(gsub("[^0-9eE.+-]", "", .to_utf8(v))))
 }
 
+# ---- within-source numeric spread ------------------------------------------
+#
+# Where a source has several records per species (population/individual/life-
+# stage measurements), collapsing to a single median discards the range. These
+# helpers keep the median as the headline value (byte-identical to the old
+# aggregate) AND, only where some species shows a genuine range (max > min), add
+# <col>_min / <col>_max / <col>_n so the spread survives to the runtime and
+# add_trait() can report it. Gating on the range (not merely the record count)
+# keeps 1-row-per-species sources lean and also drops degenerate columns where
+# repeated records only restate one value (e.g. an imputed value duplicated
+# across accidental duplicate rows) -- there min==max carries nothing beyond the
+# median. taxify's add_trait() looks for these companion columns and widens its
+# reported range to them automatically.
+
+#' Per-group numeric spread: median (headline), min, max, count of finite values
+#'
+#' Returns a data.frame keyed by the sorted unique groups, with `med`, `min`,
+#' `max`, `n`. Non-finite values are dropped before every statistic.
+#' @noRd
+.num_group_spread <- function(value, group) {
+  v  <- suppressWarnings(as.numeric(value))
+  g  <- as.character(group)
+  ok <- is.finite(v) & !is.na(g) & nzchar(g)
+  v  <- v[ok]; g <- g[ok]
+  us <- sort(unique(g))
+  if (!length(us)) {
+    return(data.frame(group = character(0), med = numeric(0),
+                      min = numeric(0), max = numeric(0), n = integer(0),
+                      stringsAsFactors = FALSE))
+  }
+  idx  <- split(seq_along(v), factor(g, levels = us))
+  stat <- function(f) vapply(idx, function(i) f(v[i]), numeric(1L))
+  data.frame(group = us,
+             med = stat(stats::median), min = stat(min), max = stat(max),
+             n   = vapply(idx, length, integer(1L)),
+             stringsAsFactors = FALSE)
+}
+
+#' Attach a collapsed numeric column (median + gated spread) to a curated output
+#'
+#' `spread` is a `.num_group_spread()` result; `keys` aligns its groups to the
+#' rows of `out`. Always sets `out[[oc]]` to the median; adds `<oc>_min`,
+#' `<oc>_max`, `<oc>_n` only when some species shows a genuine range
+#' (`max > min`). Gating on the range, not merely on the record count, keeps out
+#' degenerate columns where several records repeat one value (e.g. an imputed
+#' value duplicated across accidental duplicate rows) -- there the spread carries
+#' no information beyond the median.
+#' @noRd
+.attach_num_spread <- function(out, oc, spread, keys) {
+  mi <- match(keys, spread$group)
+  out[[oc]] <- spread$med[mi]
+  if (any(spread$max > spread$min, na.rm = TRUE)) {
+    out[[paste0(oc, "_min")]] <- spread$min[mi]
+    out[[paste0(oc, "_max")]] <- spread$max[mi]
+    out[[paste0(oc, "_n")]]   <- as.integer(spread$n[mi])
+  }
+  out
+}
+
+#' Collapse a data.frame's numeric columns by key to median + gated spread
+#'
+#' Drop-in replacement for the recurring `aggregate(df[cols], by = key,
+#' FUN = median)` idiom that de-duplicates it and, wherever a column shows a
+#' genuine within-key range (`max > min` for some key), also emits `<col>_min` /
+#' `<col>_max` / `<col>_n`. Columns whose repeated records only ever restate one
+#' value get the median alone -- their spread would be pure noise. Returns a
+#' data.frame keyed by the unique `key` values.
+#' @noRd
+.aggregate_spread <- function(df, cols, key = "canonical_name") {
+  k    <- as.character(df[[key]])
+  keep <- !is.na(k) & nzchar(k)
+  k    <- k[keep]; df <- df[keep, , drop = FALSE]
+  us   <- sort(unique(k))
+  out  <- stats::setNames(data.frame(us, stringsAsFactors = FALSE), key)
+  if (!length(us)) return(out)
+  idx  <- split(seq_along(k), factor(k, levels = us))
+  for (cc in cols) {
+    v   <- suppressWarnings(as.numeric(df[[cc]]))
+    fin <- lapply(idx, function(i) { z <- v[i]; z[is.finite(z)] })
+    n   <- vapply(fin, length, integer(1L))
+    mn  <- vapply(fin, function(z) if (!length(z)) NA_real_ else min(z), numeric(1L))
+    mx  <- vapply(fin, function(z) if (!length(z)) NA_real_ else max(z), numeric(1L))
+    out[[cc]] <- vapply(fin, function(z) if (!length(z)) NA_real_ else stats::median(z),
+                        numeric(1L))
+    if (any(mx > mn, na.rm = TRUE)) {
+      out[[paste0(cc, "_min")]] <- mn
+      out[[paste0(cc, "_max")]] <- mx
+      out[[paste0(cc, "_n")]]   <- n
+    }
+  }
+  out
+}
+
 #' Resolve squish-matched target labels to their actual `df` column names
 #'
 #' `.squish_pick()` selects a column by stripping every non-alphanumeric
@@ -151,12 +244,8 @@
               else .mostly_numeric(v)
 
     if (as_num) {
-      vv  <- .as_num_loose(v)
-      agg <- tapply(vv, src_k, function(z) {
-        z <- z[is.finite(z)]
-        if (!length(z)) NA_real_ else stats::median(z)
-      })
-      out[[oc]] <- as.numeric(agg[out_k])
+      spread <- .num_group_spread(.as_num_loose(v), src_k)
+      out    <- .attach_num_spread(out, oc, spread, out_k)
     } else {
       vv <- trimws(.to_utf8(v))
       vv[!nzchar(vv) | vv == "NA"] <- NA_character_

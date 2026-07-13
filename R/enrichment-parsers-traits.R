@@ -1095,27 +1095,11 @@ parse_animaltraits <- function(path) {
   )
   obs <- obs[!is.na(obs$canonical_name) & nchar(obs$canonical_name) > 0L, ]
 
-  species <- unique(obs$canonical_name)
-  out <- data.frame(
-    canonical_name   = species,
-    body_mass_kg     = NA_real_,
-    metabolic_rate_w = NA_real_,
-    stringsAsFactors = FALSE
-  )
-
-  idx <- match(obs$canonical_name, species)
-  bm_split <- split(obs$body_mass_kg, idx)
-  mr_split <- split(obs$metabolic_rate_w, idx)
-
-  out$body_mass_kg <- vapply(bm_split, function(x) {
-    x <- x[!is.na(x) & x > 0]
-    if (length(x) == 0L) NA_real_ else stats::median(x)
-  }, numeric(1L))
-
-  out$metabolic_rate_w <- vapply(mr_split, function(x) {
-    x <- x[!is.na(x) & x > 0]
-    if (length(x) == 0L) NA_real_ else stats::median(x)
-  }, numeric(1L))
+  # Non-positive masses/rates are invalid; drop them before collapsing so the
+  # per-species median (and its within-species range) rest only on valid records.
+  obs$body_mass_kg[is.na(obs$body_mass_kg) | obs$body_mass_kg <= 0] <- NA_real_
+  obs$metabolic_rate_w[is.na(obs$metabolic_rate_w) | obs$metabolic_rate_w <= 0] <- NA_real_
+  out <- .aggregate_spread(obs, c("body_mass_kg", "metabolic_rate_w"))
 
   # Aggregate every other observation column to species level (numeric ->
   # median, categorical -> mode) alongside the two curated columns.

@@ -275,10 +275,7 @@ parse_huang_amph <- function(path) {
   df <- df[!is.na(df$canonical_name) & nzchar(trimws(df$canonical_name)) &
            grepl(" ", df$canonical_name), , drop = FALSE]
   num <- names(cols)
-  agg <- stats::aggregate(
-    df[num], by = list(canonical_name = df$canonical_name),
-    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) }
-  )
+  agg <- .aggregate_spread(df, num)
   ord1 <- df[!duplicated(df$canonical_name), c("canonical_name", "taxon_order")]
   out <- merge(agg, ord1, by = "canonical_name")
   # Union-rbind the raw per-order files (differing columns filled with NA) and
@@ -359,10 +356,7 @@ parse_pottier <- function(path) {
   df <- df[!is.na(df$canonical_name) & nzchar(df$canonical_name) &
            grepl(" ", df$canonical_name), , drop = FALSE]
   cols <- c("heat_tolerance_c", "acclimation_temp_c", "svl_mm", "body_mass_g")
-  res <- stats::aggregate(
-    df[cols], by = list(canonical_name = df$canonical_name),
-    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) }
-  )
+  res <- .aggregate_spread(df, cols)
   res <- .append_all_cols(
     res, d, cname,
     used = c("species", "mean_HT", "acclimation_temp", "SVL", "body_mass")
@@ -630,8 +624,7 @@ parse_beukhof <- function(path) {
   num_cols <- c("trophic_level", "aspect_ratio", "offspring_size", "age_maturity",
                 "fecundity", "length_infinity_cm", "growth_coefficient", "length_max_cm")
   cat_cols <- c("habitat", "feeding_mode", "body_shape", "fin_shape", "spawning_type")
-  na <- stats::aggregate(base[num_cols], by = list(canonical_name = base$canonical_name),
-    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  na <- .aggregate_spread(base, num_cols)
   ca <- stats::aggregate(base[cat_cols], by = list(canonical_name = base$canonical_name),
     FUN = function(z) { z <- z[!is.na(z)]; if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1] })
   out <- merge(na, ca, by = "canonical_name")
@@ -842,11 +835,8 @@ parse_edwards_phyto <- function(path) {
   num_src <- setdiff(names(d), c(drop_cols, cat_src))
   dn <- d[num_src]
   for (cc in num_src) dn[[cc]] <- suppressWarnings(as.numeric(dn[[cc]]))
-  med <- function(z) {
-    z <- z[is.finite(z)]
-    if (!length(z)) NA_real_ else stats::median(z)
-  }
-  agg_num <- stats::aggregate(dn, by = list(canonical_name = cname), FUN = med)
+  dn$canonical_name <- cname
+  agg_num <- .aggregate_spread(dn, num_src)
   mode1 <- function(z) {
     z <- z[!is.na(z) & nzchar(trimws(z))]
     if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1]
@@ -858,8 +848,15 @@ parse_edwards_phyto <- function(path) {
   if ("system" %in% names(out)) out$system[out$system == "fresh"] <- "freshwater"
   ren <- c(volume = "cell_volume", c_per_cell = "carbon_per_cell",
            taxon = "taxon_group", system = "habitat_system")
+  # Rename the median headline and its spread companions (_min/_max/_n) together
+  # so add_trait()'s <col>_min lookup keeps matching the renamed column.
   for (old in names(ren)) {
-    if (old %in% names(out)) names(out)[names(out) == old] <- ren[[old]]
+    for (suf in c("", "_min", "_max", "_n")) {
+      on <- paste0(old, suf)
+      if (on %in% names(out)) {
+        names(out)[names(out) == on] <- paste0(ren[[old]], suf)
+      }
+    }
   }
   # Drop trait columns left entirely empty after species reduction.
   trait_cols <- setdiff(names(out), "canonical_name")
@@ -1049,9 +1046,7 @@ parse_homerange <- function(path) {
     stringsAsFactors = FALSE
   )
   df <- df[!is.na(df$canonical_name) & grepl(" ", df$canonical_name), , drop = FALSE]
-  cols <- c("home_range_km2", "body_mass_kg")
-  res <- stats::aggregate(df[cols], by = list(canonical_name = df$canonical_name),
-    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  res <- .aggregate_spread(df, c("home_range_km2", "body_mass_kg"))
   res <- .append_all_cols(
     res, d, cname,
     used = c("Species", "Home_Range_km2", "Body_mass_kg")
@@ -1078,9 +1073,7 @@ parse_tetradensity <- function(path) {
     stringsAsFactors = FALSE
   )
   df <- df[!is.na(df$canonical_name) & grepl(" ", df$canonical_name), , drop = FALSE]
-  res <- stats::aggregate(df["density_ind_km2"],
-    by = list(canonical_name = df$canonical_name),
-    FUN = function(z) { z <- z[is.finite(z)]; if (!length(z)) NA_real_ else stats::median(z) })
+  res <- .aggregate_spread(df, "density_ind_km2")
   res <- .append_all_cols(
     res, d, cname,
     used = c("Genus", "Species", "Density", "Density_unit")

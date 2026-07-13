@@ -1548,6 +1548,15 @@
       "source_doi": "10.1002/ecy.3344",
       "license": "CC0"
     },
+    "combine_imputed": {
+      "latest": "1.0",
+      "content_id": "48bb5dc9002810a5d9df58ec82289d8e",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/combine_imputed.vtr",
+      "nrow": 6791,
+      "source_url": "https://ndownloader.figshare.com/files/27703266",
+      "source_doi": "10.1002/ecy.3344",
+      "license": "CC0"
+    },
     "austraits": {
       "latest": "7.0.0",
       "content_id": "eb52674ef53c18841345038c511bb616",

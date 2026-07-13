@@ -96,3 +96,88 @@ test_that(".is_bookkeeping_col flags references/URLs/IDs/names, keeps traits", {
                                          "activity_cycle", "trophic_level",
                                          "leaf_area"))))
 })
+
+
+# ---- within-source numeric spread ------------------------------------------
+#
+# Where a source carries several records per species (population/life-stage
+# measurements), the median stays the headline value but <col>_min/_max/_n keep
+# the range visible. The companion columns appear only where some group has more
+# than one finite record, so 1-row-per-species sources stay lean.
+
+test_that(".num_group_spread returns median/min/max/n per group, dropping non-finite", {
+  s <- .num_group_spread(c(1, 3, 100, NA, Inf, 7), c("a", "a", "a", "a", "a", "b"))
+  expect_equal(s$group, c("a", "b"))
+  expect_equal(s$med, c(3, 7))          # median(1,3,100) ; single value 7
+  expect_equal(s$min, c(1, 7))
+  expect_equal(s$max, c(100, 7))
+  expect_equal(s$n, c(3L, 1L))          # NA and Inf dropped from group a
+})
+
+test_that(".attach_num_spread adds companions only when a group has >1 record", {
+  # multiplicity present -> companions added
+  sp  <- .num_group_spread(c(1, 3, 100), c("Aus bus", "Aus bus", "Aus bus"))
+  out <- .attach_num_spread(data.frame(canonical_name = "Aus bus",
+                                       stringsAsFactors = FALSE),
+                            "trait", sp, "Aus bus")
+  expect_equal(out$trait, 3)
+  expect_equal(out$trait_min, 1)
+  expect_equal(out$trait_max, 100)
+  expect_equal(out$trait_n, 3L)
+
+  # all singletons -> median only, no companions
+  sp2  <- .num_group_spread(c(5, 9), c("Aus bus", "Cus dus"))
+  out2 <- .attach_num_spread(data.frame(canonical_name = c("Aus bus", "Cus dus"),
+                                        stringsAsFactors = FALSE),
+                             "trait", sp2, c("Aus bus", "Cus dus"))
+  expect_equal(out2$trait, c(5, 9))
+  expect_false(any(c("trait_min", "trait_max", "trait_n") %in% names(out2)))
+})
+
+test_that(".aggregate_spread collapses by key to median + gated spread", {
+  df <- data.frame(
+    canonical_name = c("Aus bus", "Aus bus", "Aus bus", "Cus dus"),
+    height = c(10, 100, 40, 7),
+    mass   = c(1, 2, 3, 5),
+    stringsAsFactors = FALSE
+  )
+  out <- .aggregate_spread(df, c("height", "mass"))
+  expect_equal(out$canonical_name, c("Aus bus", "Cus dus"))
+  expect_equal(out$height, c(40, 7))          # median(10,100,40)=40 ; 7
+  expect_equal(out$height_min, c(10, 7))
+  expect_equal(out$height_max, c(100, 7))
+  expect_equal(out$height_n, c(3L, 1L))
+  expect_equal(out$mass, c(2, 5))
+})
+
+test_that(".append_all_cols emits spread where a species has several records", {
+  df <- data.frame(
+    sp    = c("Aus bus", "Aus bus", "Aus bus", "Cus dus"),
+    trait = c(1, 3, 100, 8),
+    stringsAsFactors = FALSE
+  )
+  out <- .append_all_cols(data.frame(canonical_name = c("Aus bus", "Cus dus"),
+                                     stringsAsFactors = FALSE),
+                          df, df$sp, used = "sp")
+  expect_equal(out$trait[out$canonical_name == "Aus bus"], 3)      # median
+  expect_equal(out$trait_min[out$canonical_name == "Aus bus"], 1)
+  expect_equal(out$trait_max[out$canonical_name == "Aus bus"], 100)
+  expect_equal(out$trait_n[out$canonical_name == "Aus bus"], 3L)
+  # the single-record species carries the value but NA spread (n == 1 there)
+  expect_equal(out$trait[out$canonical_name == "Cus dus"], 8)
+  expect_equal(out$trait_n[out$canonical_name == "Cus dus"], 1L)
+})
+
+test_that(".pivot_species_traits emits spread for a multiply-recorded trait", {
+  long <- data.frame(
+    name  = c("Aus bus", "Aus bus", "Aus bus", "Cus dus"),
+    trait = c("Height", "Height", "Height", "Height"),
+    value = c("10", "40", "100", "7"),
+    stringsAsFactors = FALSE
+  )
+  res <- .pivot_species_traits(long, list(height = list(trait = "Height", type = "num")))
+  expect_equal(res$height[res$canonical_name == "Aus bus"], 40)
+  expect_equal(res$height_min[res$canonical_name == "Aus bus"], 10)
+  expect_equal(res$height_max[res$canonical_name == "Aus bus"], 100)
+  expect_equal(res$height_n[res$canonical_name == "Aus bus"], 3L)
+})

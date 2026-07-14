@@ -2018,6 +2018,15 @@
       "source_url": "https://ndownloader.figshare.com/files/33669518",
       "source_doi": "10.6084/m9.figshare.12668570",
       "license": "CC BY 4.0"
+    },
+    "gidias": {
+      "latest": "2025.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/gidias.vtr",
+      "nrow": 3390,
+      "content_id": "f7ffc6621e143c245179e8d7c39fca54",
+      "source_url": "https://ndownloader.figshare.com/files/53894801",
+      "source_doi": "10.6084/m9.figshare.27908838",
+      "license": "CC BY 4.0"
     }
   }
 }

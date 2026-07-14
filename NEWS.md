@@ -1,3 +1,20 @@
+# taxifydb 0.1.12
+
+## New enrichment
+
+* GIDIAS (Bacher et al. 2025), the IPBES invasive-species assessment's global
+  impact compilation, is added as a per-species enrichment (`gidias`, CC BY 4.0).
+  Only derived aggregates are distributed, not the raw impact records:
+  `parse_gidias()` reduces each species' impact records to its IUCN EICAT
+  environmental-impact category and SEICAT socio-economic-impact category (each
+  the most severe magnitude among the species' negative impacts; the per-record
+  global-extinction flag splits EICAT magnitude 3 into Major and Massive), plus
+  the driving mechanism, affected well-being constituents, realms, and
+  record/source counts. Names are resolved to the accepted grain inside
+  `parse_gidias()` (the InvaCost / GloBI rollup pattern), so a species whose
+  records are split across a synonym and its accepted name keeps its full
+  evidence (#10).
+
 # taxifydb 0.1.11
 
 ## New enrichment

@@ -220,6 +220,29 @@
     requires      = "openxlsx2"
   ),
 
+  gidias = list(
+    source_url  = "https://ndownloader.figshare.com/files/53894801",
+    source_doi  = "10.6084/m9.figshare.27908838",
+    version     = "2025.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Bacher S et al. (2025) Global Impacts Dataset of Invasive Alien Species ",
+      "(GIDIAS). Scientific Data 12:832 (figshare doi:10.6084/m9.figshare.27908838), ",
+      "CC BY 4.0. Compiled for the IPBES thematic assessment of invasive alien ",
+      "species. Only per-species EICAT/SEICAT impact aggregates are distributed, ",
+      "not the raw impact records: the most-severe environmental (EICAT) and ",
+      "socio-economic (SEICAT) impact category, driving mechanism, affected ",
+      "well-being constituents, realms, and record/source counts."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "GIDIAS_machine_read.csv")
+    },
+    parse_fn      = function(path) parse_gidias(path),
+    group_col     = NULL,
+    resolve_names = FALSE,
+    requires      = character(0)
+  ),
+
   alien_first_records = list(
     source_url  = "https://zenodo.org/records/10039630/files/GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx",
     source_doi  = "10.5281/zenodo.10039630",

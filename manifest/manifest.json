@@ -2027,6 +2027,48 @@
       "source_url": "https://ndownloader.figshare.com/files/53894801",
       "source_doi": "10.6084/m9.figshare.27908838",
       "license": "CC BY 4.0"
+    },
+    "kew_cvalues": {
+      "latest": "7.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/kew_cvalues.vtr",
+      "nrow": 13575,
+      "content_id": "627e41e63dcb5e54d7037df9b47190cb",
+      "source_url": "https://cvalues.science.kew.org/search",
+      "license": "CC BY"
+    },
+    "copepod_traits": {
+      "latest": "2017.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/copepod_traits.vtr",
+      "nrow": 1524,
+      "content_id": "db43473252c40e8b990d5ccc05bf66b7",
+      "source_url": "https://store.pangaea.de/Publications/BrunP-etal_2016/Brun-etal_2016_Copepode_trait.xlsx",
+      "source_doi": "10.1594/PANGAEA.862968",
+      "license": "CC BY 3.0"
+    },
+    "fishtraits": {
+      "latest": "14.3",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/fishtraits.vtr",
+      "nrow": 865,
+      "content_id": "4264bc3c3fa6e6b2c3aa15910f681197",
+      "source_url": "https://www.sciencebase.gov/catalog/file/get/5a7c6e8ce4b00f54eb2318c0?name=FishTraits_14.3.xls",
+      "license": "Public domain (U.S. Government work)"
+    },
+    "epa_freshwater": {
+      "latest": "2012.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/epa_freshwater.vtr",
+      "nrow": 2777,
+      "content_id": "860116fabb30a72e0a25d9fc499e98d9",
+      "source_url": "https://ofmpub.epa.gov/eims/eimscomm.getfile?p_download_id=526642",
+      "license": "Public domain (U.S. Government work)"
+    },
+    "cefas_btrait": {
+      "latest": "2022.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/cefas_btrait.vtr",
+      "nrow": 932,
+      "content_id": "16b5e5ec8f52643c8f5276bc55213cab",
+      "source_url": "https://data-api.cefas.co.uk/api/export/11935?format=csv",
+      "source_doi": "10.14466/CefasDataHub.123",
+      "license": "OGL v3.0"
     }
   }
 }

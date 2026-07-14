@@ -270,6 +270,10 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   entry$latest   <- meta$version
   entry$full_url <- sprintf("%s/%s.vtr", base_url, name)
   entry$nrow     <- meta$nrow
+  # md5 of the .vtr (from the build sidecar); taxify's runtime uses it to detect
+  # a same-tag republish and refresh an otherwise version-locked enrichment cache
+  # -- the enrichment analogue of what update_manifest() records for backbones.
+  if (!is.null(meta$content_id)) entry$content_id <- meta$content_id
 
   if (!is.null(meta$source_url)) entry$source_url <- meta$source_url
   if (!is.null(meta$source_doi)) entry$source_doi <- meta$source_doi

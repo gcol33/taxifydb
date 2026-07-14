@@ -1,3 +1,30 @@
+# taxifydb 0.1.11
+
+## New enrichment
+
+* InvaCost (Diagne et al. 2020), the economic costs of biological invasions, is
+  added as a per-species enrichment (`invacost`, CC BY 4.0). Only derived
+  aggregates are distributed, not the raw estimate rows: `cost_total_usd` (each
+  estimate's standardised annual 2017-USD cost expanded across its documented
+  impact period and summed, overlapping estimates not de-duplicated), `cost_n`,
+  and the dominant `cost_type`. Names are resolved to the accepted grain inside
+  `parse_invacost()` and the cost is summed there (the GloBI rollup pattern), so
+  a species whose costs are split across a synonym and its accepted name keeps
+  its full total (#9).
+
+## PHYLACINE mass provenance
+
+* `parse_phylacine()` keeps the source `Mass.Method` flag as `mass_method` and
+  adds a coarse `mass_method_class` (`reported` / `estimated` / `imputed`), so a
+  phylogenetically imputed or allometrically estimated body mass is not served as
+  a measurement where PHYLACINE is a species' only source (#11).
+
+## Publishing
+
+* `update_enrichment_manifest()` now records the `.vtr` `content_id` (its md5),
+  matching `update_manifest()` for backbones, so a same-tag enrichment republish
+  refreshes an otherwise version-locked runtime cache.
+
 # taxifydb 0.1.10
 
 ## Backbone fixes

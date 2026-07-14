@@ -195,6 +195,31 @@
     requires    = character(0)
   ),
 
+  invacost = list(
+    source_url  = "https://ndownloader.figshare.com/files/33669518",
+    source_doi  = "10.6084/m9.figshare.12668570",
+    version     = "4.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Diagne C et al. (2020) InvaCost, a public database of the economic ",
+      "costs of biological invasions worldwide. Scientific Data 7:277 ",
+      "(figshare doi:10.6084/m9.figshare.12668570), database version 4.1, ",
+      "CC BY 4.0. Only derived per-species aggregates are distributed, not the ",
+      "raw estimate rows: cumulative cost (each estimate's standardised annual ",
+      "2017-USD cost expanded across its documented impact period and summed, ",
+      "overlapping estimates not de-duplicated), the number of estimates, and ",
+      "the dominant cost type. Use the invacost R package for a rigorous cost ",
+      "analysis."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "InvaCost_database_v4.1.xlsx")
+    },
+    parse_fn      = function(path) parse_invacost(path),
+    group_col     = NULL,
+    resolve_names = FALSE,
+    requires      = "openxlsx2"
+  ),
+
   alien_first_records = list(
     source_url  = "https://zenodo.org/records/10039630/files/GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx",
     source_doi  = "10.5281/zenodo.10039630",

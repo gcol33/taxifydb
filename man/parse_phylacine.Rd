@@ -17,3 +17,10 @@ One row per mammal species (including recently and prehistorically extinct).
 The binomial is stored with an underscore (\code{Genus_species}) and is converted
 to a space-separated canonical name.
 }
+\details{
+\code{Mass.g} is partly modelled: PHYLACINE gap-fills data-poor and extinct
+species. The source \code{Mass.Method} flag is kept verbatim as \code{mass_method},
+alongside a coarse \code{mass_method_class} (\code{reported} / \code{estimated} / \code{imputed})
+so a modelled mass is never served as a measurement where PHYLACINE is the
+sole source for a species.
+}

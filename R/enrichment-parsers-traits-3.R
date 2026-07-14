@@ -77,11 +77,35 @@ parse_bet <- function(path) {
 
 # ---- PHYLACINE: mammals including recently extinct --------------------------
 
+#' Classify a PHYLACINE `Mass.Method` string into a provenance tier
+#'
+#' PHYLACINE 1.2 records how each body-mass value was obtained. Three tiers
+#' matter for whether a mass is a measurement or a model output: `reported`
+#' (measured/compiled), `imputed` (phylogenetic gap-fill), and `estimated`
+#' (everything else -- allometric scaling from a body dimension, or the mass of
+#' a similarly sized relative). Only `reported` is an observation; `estimated`
+#' and `imputed` are model outputs.
+#' @noRd
+.phylacine_mass_class <- function(method) {
+  cls <- rep(NA_character_, length(method))
+  m   <- tolower(trimws(method))
+  cls[!is.na(m) & nzchar(m)] <- "estimated"
+  cls[m == "reported"] <- "reported"
+  cls[m == "imputed"]  <- "imputed"
+  cls
+}
+
 #' Parse PHYLACINE v1.2 trait data
 #'
 #' One row per mammal species (including recently and prehistorically extinct).
 #' The binomial is stored with an underscore (`Genus_species`) and is converted
 #' to a space-separated canonical name.
+#'
+#' `Mass.g` is partly modelled: PHYLACINE gap-fills data-poor and extinct
+#' species. The source `Mass.Method` flag is kept verbatim as `mass_method`,
+#' alongside a coarse `mass_method_class` (`reported` / `estimated` / `imputed`)
+#' so a modelled mass is never served as a measurement where PHYLACINE is the
+#' sole source for a species.
 #'
 #' @param path Character. Path to `Trait_data.csv`.
 #' @return data.frame with canonical_name + mammal traits.
@@ -99,10 +123,13 @@ parse_phylacine <- function(path) {
     x[x == "" | x == "NA"] <- NA_character_
     x
   }
-  cname <- trimws(gsub("_", " ", chr("Binomial.1.2")))
+  cname       <- trimws(gsub("_", " ", chr("Binomial.1.2")))
+  mass_method <- chr("Mass.Method")
   out <- data.frame(
     canonical_name        = cname,
     mass_g                = num("Mass.g"),
+    mass_method           = mass_method,
+    mass_method_class     = .phylacine_mass_class(mass_method),
     diet_plant_pct        = num("Diet.Plant"),
     diet_vertebrate_pct   = num("Diet.Vertebrate"),
     diet_invertebrate_pct = num("Diet.Invertebrate"),
@@ -116,9 +143,10 @@ parse_phylacine <- function(path) {
   )
   out <- .append_all_cols(
     out, df, cname,
-    used = c("Binomial.1.2", "Mass.g", "Diet.Plant", "Diet.Vertebrate",
-             "Diet.Invertebrate", "Terrestrial", "Marine", "Freshwater",
-             "Aerial", "Island.Endemicity", "IUCN.Status.1.2")
+    used = c("Binomial.1.2", "Mass.g", "Mass.Method", "Diet.Plant",
+             "Diet.Vertebrate", "Diet.Invertebrate", "Terrestrial", "Marine",
+             "Freshwater", "Aerial", "Island.Endemicity", "IUCN.Status.1.2"),
+    cat_cols = "Mass.Method"
   )
   .trait_finalize(out)
 }

@@ -1586,8 +1586,8 @@
     },
     "phylacine": {
       "latest": "1.2",
-      "content_id": "95fb68c0539e83c1bacd32120ee53e67",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.06/phylacine.vtr",
+      "content_id": "09d94f1ef749f45e0483f5b105802854",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/phylacine.vtr",
       "nrow": 6380,
       "source_url": "https://raw.githubusercontent.com/MegaPast2Future/PHYLACINE_1.2/master/Data/Traits/Trait_data.csv",
       "source_doi": "10.1002/ecy.2443",
@@ -2008,6 +2008,15 @@
       "nrow": 52,
       "source_url": "https://api.figshare.com/v2/articles/21777161",
       "source_doi": "10.6084/m9.figshare.21777161",
+      "license": "CC BY 4.0"
+    },
+    "invacost": {
+      "latest": "4.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/invacost.vtr",
+      "nrow": 905,
+      "content_id": "c8bffe4cf5ede0b753a6dbe5af93663b",
+      "source_url": "https://ndownloader.figshare.com/files/33669518",
+      "source_doi": "10.6084/m9.figshare.12668570",
       "license": "CC BY 4.0"
     }
   }

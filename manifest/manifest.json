@@ -107,8 +107,8 @@
       "source_url": "https://sealifebase.ropensci.org"
     },
     "reptiledb": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/reptiledb-2026.06/reptiledb.vtr",
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/reptiledb-2026.07/reptiledb.vtr",
       "nrow": 50043,
       "full_size": 9594935,
       "full_sha256": "d241f4c64ee21a290836f3d3c3c0570a933757e6e6e2037e89eb38946f173b4f",
@@ -121,7 +121,11 @@
         "title": "The Reptile Database",
         "url": "http://www.reptile-database.org"
       },
-      "license": "CC BY 4.0"
+      "license": "CC BY 4.0",
+      "content_id": "047bde3e1e5503dc9204b2c9419d420f",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/reptiledb-2026.07/reptiledb.xdelta",
+      "delta_size": 86
     },
     "lcvp": {
       "latest": "3.0.1",

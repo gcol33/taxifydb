@@ -2048,8 +2048,8 @@
     "fishtraits": {
       "latest": "14.3",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/fishtraits.vtr",
-      "nrow": 865,
-      "content_id": "4264bc3c3fa6e6b2c3aa15910f681197",
+      "nrow": 860,
+      "content_id": "b1a5e13547361c55567a822c662731f5",
       "source_url": "https://www.sciencebase.gov/catalog/file/get/5a7c6e8ce4b00f54eb2318c0?name=FishTraits_14.3.xls",
       "license": "Public domain (U.S. Government work)"
     },

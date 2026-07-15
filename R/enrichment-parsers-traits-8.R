@@ -12,7 +12,10 @@
 #' service (one server-side per-taxon reduction per major plant group). Names
 #' are collapsed to the binomial (infraspecific and authorship qualifiers are
 #' dropped) and reduced to one row per species: the median chromosome number
-#' (2n) with its minimum and maximum across the aggregated records.
+#' (2n) with its minimum and maximum across the aggregated records. The service
+#' reports gametic numbers, which are doubled to the somatic 2n the columns
+#' name; the spread between minimum and maximum is real ploidy variation among
+#' a species' cytotypes.
 #'
 #' @param path Directory of per-group CCDB statistics CSVs (or a single CSV).
 #' @return data.frame with canonical_name + chromosome-number traits.
@@ -40,13 +43,25 @@ parse_ccdb <- function(path) {
   }
   name <- vapply(strsplit(trimws(as.character(d$resolved_name)), "\\s+"),
                  collapse_name, character(1L))
+  # The statistics service reports the GAMETIC number n, not the somatic 2n:
+  # CCDB normalizes every record to n before aggregating (a record reporting
+  # 2n = 20 is stored as parsed_n = 10), and the service reduces that column.
+  # Doubling recovers the somatic number, and it commutes with the reduction --
+  # the median, minimum and maximum are all order-preserving, so 2 * median(n)
+  # is median(2n). The countsFull service carries the per-record count type and
+  # pins the relation: parsed_n is sporophytic/2 wherever a record reports a
+  # somatic count, and equals gametophytic wherever it reports a gametic one.
+  n_to_2n <- function(v) {
+    x <- suppressWarnings(as.numeric(as.character(v)))
+    as.character(2 * x)
+  }
   long <- do.call(rbind, list(
     data.frame(name = name, trait = "chromosome_number_2n",
-               value = as.character(d$median),  stringsAsFactors = FALSE),
+               value = n_to_2n(d$median),  stringsAsFactors = FALSE),
     data.frame(name = name, trait = "chromosome_2n_min",
-               value = as.character(d$minimum), stringsAsFactors = FALSE),
+               value = n_to_2n(d$minimum), stringsAsFactors = FALSE),
     data.frame(name = name, trait = "chromosome_2n_max",
-               value = as.character(d$max),     stringsAsFactors = FALSE)
+               value = n_to_2n(d$max),     stringsAsFactors = FALSE)
   ))
   long <- long[nzchar(trimws(long$name)) &
                  !is.na(suppressWarnings(as.numeric(long$value))), , drop = FALSE]

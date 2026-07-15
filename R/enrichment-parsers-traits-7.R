@@ -136,8 +136,13 @@ parse_fishtraits <- function(path) {
          call. = FALSE)
   }
 
+  # The workbook follows the SAS missing convention: "." marks an absent text
+  # value (it fills 92% of OTHERNAMES, and stands in for the epithet of the
+  # family- and genus-rank entries for undescribed fishes).
   chr <- function(c) {
-    x <- trimws(as.character(df[[c]])); x[x == "" | x == "NA"] <- NA_character_; x
+    x <- trimws(as.character(df[[c]]))
+    x[x == "" | x == "NA" | x == "."] <- NA_character_
+    x
   }
   # FishTraits codes missing continuous/count values as -999 or -555; genuine
   # negatives occur only in MINTEMP (January minima down to -22.5 degrees C).
@@ -148,14 +153,31 @@ parse_fishtraits <- function(path) {
     v <- suppressWarnings(as.numeric(df[[c]])); v[!v %in% c(0, 1)] <- NA_real_; v
   }
 
+  # A third code, -1, marks "no mapped native range in the conterminous US". It
+  # spans the whole range-derived block (area, perimeter, patches, latitudinal
+  # and longitudinal range, and the two PRISM temperatures read at the range
+  # centroid) plus the conservation block, on the same introduced species. It
+  # cannot be stripped per column: -1 is also a genuine January minimum, which
+  # MINTEMP records on a continuous 0.1-degree grid running through it. Rows
+  # carrying a mapped range are therefore left untouched.
+  no_range <- !is.na(num("AREAKM2")) & num("AREAKM2") == -1
+  rng <- function(c) { v <- num(c); v[no_range] <- NA_real_; v }
+
   # Balon reproductive-guild indicators (A_*, B_*, C1_*) collapse to one code:
   # the flagged guild, in column order (each species carries a single guild).
   guild_cols <- grep("^[ABC][_0-9]", names(df), value = TRUE)
   repro <- rep(NA_character_, nrow(df))
   for (cc in rev(guild_cols)) repro[bin(cc) %in% 1] <- cc
 
+  # Entries for undescribed fishes carry a family or genus name with no epithet,
+  # so they have no species-rank key to join on and .trait_finalize() drops them.
+  gen <- chr("GENUS")
+  epi <- chr("SPECIES")
+  binom <- ifelse(is.na(gen) | is.na(epi), NA_character_,
+                  trimws(paste(gen, epi)))
+
   out <- data.frame(
-    canonical_name           = trimws(paste(chr("GENUS"), chr("SPECIES"))),
+    canonical_name           = binom,
     itis_tsn                 = chr("ITISTSN"),
     common_name              = chr("COMMONNAME"),
     native                   = bin("NATIVE"),
@@ -177,8 +199,8 @@ parse_fishtraits <- function(path) {
     spawning_season_months   = num("SEASON"),
     repro_guild              = repro,
     euryhaline               = bin("EURYHALINE"),
-    min_temp_c               = num("MINTEMP"),
-    max_temp_c               = num("MAXTEMP"),
+    min_temp_c               = rng("MINTEMP"),
+    max_temp_c               = rng("MAXTEMP"),
     potamodromous_anadromous = bin("POTANADR"),
     prefers_lotic            = bin("PREFLOT"),
     prefers_lentic           = bin("PREFLEN"),

@@ -1990,9 +1990,13 @@
       "Pellicer J, Leitch IJ (2020) The Plant DNA C-values database (release ",
       "7.1): an updated online repository of plant genome size data for ",
       "comparative studies. New Phytologist 226:301-305. Royal Botanic ",
-      "Gardens Kew (https://cvalues.science.kew.org/), CC BY. Genome size (1C ",
-      "DNA amount, picograms), chromosome number (2n) and ploidy level reduced ",
-      "to per-species medians by taxifydb."
+      "Gardens Kew (https://cvalues.science.kew.org/), CC BY. The database ",
+      "itself is cited as: Leitch IJ, Johnston E, Pellicer J, Hidalgo O, ",
+      "Bennett MD (2019) Plant DNA C-values Database (Release 7.1, April 2019). ",
+      "Genome size (1C DNA amount, picograms) reduced to per-species medians by ",
+      "taxifydb; chromosome number (2n) and ploidy level reduced to the base ",
+      "cytotype (per-species minimum), with the cytotype range kept in the ",
+      "_min / _max columns."
     ),
     # cvalues exposes no bulk export; the CodeIgniter search form returns an
     # HTML results table via POST, 100 records per page. Pages are fetched

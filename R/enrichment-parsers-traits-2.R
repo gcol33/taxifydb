@@ -43,9 +43,11 @@
 #' `spec` is a named list mapping each output column to
 #' `list(trait = <source trait name>, type = "num" | "cat")`. Numeric traits are
 #' aggregated by median, categorical traits by mode, across all records of a
-#' species. With `keep_all = TRUE` (the default), every distinct `trait` value
-#' not named in `spec` is also pivoted (sanitized name, inferred type), so no
-#' source trait is dropped; pass `spec = list()` to keep every trait with
+#' species. A numeric entry may set `reduce = "min" | "max" | "mean"` to pick a
+#' different headline statistic (see `.num_group_spread()`); the spread columns
+#' are unaffected. With `keep_all = TRUE` (the default), every distinct `trait`
+#' value not named in `spec` is also pivoted (sanitized name, inferred type), so
+#' no source trait is dropped; pass `spec = list()` to keep every trait with
 #' auto-generated names only.
 #' @noRd
 .pivot_species_traits <- function(long, spec = list(), keep_all = TRUE) {
@@ -74,7 +76,9 @@
       next
     }
     if (identical(s$type, "num")) {
-      spread <- .num_group_spread(sub$value, sub$name)
+      spread <- .num_group_spread(sub$value, sub$name,
+                                  reduce = if (is.null(s$reduce)) "median"
+                                           else s$reduce)
       res    <- .attach_num_spread(res, oc, spread, species)
     } else {
       agg <- tapply(sub$value, sub$name, .cat_mode)

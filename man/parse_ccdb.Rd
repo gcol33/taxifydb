@@ -17,5 +17,8 @@ Somatic chromosome numbers for plants, taken from the CCDB \code{statistics}
 service (one server-side per-taxon reduction per major plant group). Names
 are collapsed to the binomial (infraspecific and authorship qualifiers are
 dropped) and reduced to one row per species: the median chromosome number
-(2n) with its minimum and maximum across the aggregated records.
+(2n) with its minimum and maximum across the aggregated records. The service
+reports gametic numbers, which are doubled to the somatic 2n the columns
+name; the spread between minimum and maximum is real ploidy variation among
+a species' cytotypes.
 }

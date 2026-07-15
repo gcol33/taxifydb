@@ -19,6 +19,9 @@ export). The data table on each page (Family, Genus, Species, chromosome
 number, ploidy, 1C DNA amount) is read; the Mean/Min/Max summary-statistic
 tables are ignored. Records are keyed on the binomial and reduced to one row
 per taxon: genome size as the 1C DNA amount in picograms, plus chromosome
-number (2n) and ploidy level where a clean numeric value is given. Numeric
-traits are reduced by median.
+number (2n) and ploidy level where a clean numeric value is given. The 1C DNA
+amount is reduced by median; the chromosome number and ploidy level are
+discrete counts whose repeated records are cytotype variants of one species,
+so they are reduced to the base cytotype by minimum, with \verb{_min} / \verb{_max}
+carrying the range.
 }

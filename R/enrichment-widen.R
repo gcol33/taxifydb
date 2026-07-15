@@ -102,43 +102,54 @@
 # median. taxify's add_trait() looks for these companion columns and widens its
 # reported range to them automatically.
 
-#' Per-group numeric spread: median (headline), min, max, count of finite values
+#' Per-group numeric spread: headline value, min, max, count of finite values
 #'
-#' Returns a data.frame keyed by the sorted unique groups, with `med`, `min`,
+#' Returns a data.frame keyed by the sorted unique groups, with `val`, `min`,
 #' `max`, `n`. Non-finite values are dropped before every statistic.
+#'
+#' `reduce` picks the statistic behind `val`. The median suits a continuous
+#' quantity measured repeatedly (populations, accessions, life stages), where a
+#' value between two records is itself a valid value. It does not suit a
+#' discrete count whose records are cytotype variants of one species: the median
+#' of a diploid 2n = 10 and a tetraploid 2n = 20 is 15, an odd number no
+#' organism carries. There `min` names the base cytotype, and `<col>_min` /
+#' `<col>_max` still carry the range across cytotypes.
 #' @noRd
-.num_group_spread <- function(value, group) {
+.num_group_spread <- function(value, group,
+                              reduce = c("median", "min", "max", "mean")) {
+  reduce <- match.arg(reduce)
+  fn <- switch(reduce, median = stats::median, min = min, max = max, mean = mean)
   v  <- suppressWarnings(as.numeric(value))
   g  <- as.character(group)
   ok <- is.finite(v) & !is.na(g) & nzchar(g)
   v  <- v[ok]; g <- g[ok]
   us <- sort(unique(g))
   if (!length(us)) {
-    return(data.frame(group = character(0), med = numeric(0),
+    return(data.frame(group = character(0), val = numeric(0),
                       min = numeric(0), max = numeric(0), n = integer(0),
                       stringsAsFactors = FALSE))
   }
   idx  <- split(seq_along(v), factor(g, levels = us))
   stat <- function(f) vapply(idx, function(i) f(v[i]), numeric(1L))
   data.frame(group = us,
-             med = stat(stats::median), min = stat(min), max = stat(max),
+             val = stat(fn), min = stat(min), max = stat(max),
              n   = vapply(idx, length, integer(1L)),
              stringsAsFactors = FALSE)
 }
 
-#' Attach a collapsed numeric column (median + gated spread) to a curated output
+#' Attach a collapsed numeric column (headline + gated spread) to a curated output
 #'
 #' `spread` is a `.num_group_spread()` result; `keys` aligns its groups to the
-#' rows of `out`. Always sets `out[[oc]]` to the median; adds `<oc>_min`,
+#' rows of `out`. Always sets `out[[oc]]` to the headline value; adds `<oc>_min`,
 #' `<oc>_max`, `<oc>_n` only when some species shows a genuine range
 #' (`max > min`). Gating on the range, not merely on the record count, keeps out
 #' degenerate columns where several records repeat one value (e.g. an imputed
 #' value duplicated across accidental duplicate rows) -- there the spread carries
-#' no information beyond the median.
+#' no information beyond the headline.
 #' @noRd
 .attach_num_spread <- function(out, oc, spread, keys) {
   mi <- match(keys, spread$group)
-  out[[oc]] <- spread$med[mi]
+  out[[oc]] <- spread$val[mi]
   if (any(spread$max > spread$min, na.rm = TRUE)) {
     out[[paste0(oc, "_min")]] <- spread$min[mi]
     out[[paste0(oc, "_max")]] <- spread$max[mi]

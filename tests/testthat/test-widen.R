@@ -108,10 +108,46 @@ test_that(".is_bookkeeping_col flags references/URLs/IDs/names, keeps traits", {
 test_that(".num_group_spread returns median/min/max/n per group, dropping non-finite", {
   s <- .num_group_spread(c(1, 3, 100, NA, Inf, 7), c("a", "a", "a", "a", "a", "b"))
   expect_equal(s$group, c("a", "b"))
-  expect_equal(s$med, c(3, 7))          # median(1,3,100) ; single value 7
+  expect_equal(s$val, c(3, 7))          # median(1,3,100) ; single value 7
   expect_equal(s$min, c(1, 7))
   expect_equal(s$max, c(100, 7))
   expect_equal(s$n, c(3L, 1L))          # NA and Inf dropped from group a
+})
+
+test_that(".num_group_spread reduce= picks the headline, leaving the spread alone", {
+  v <- c(10, 20, 20, 7)
+  g <- c("a", "a", "a", "b")
+  expect_equal(.num_group_spread(v, g)$val, c(20, 7))              # median default
+  expect_equal(.num_group_spread(v, g, reduce = "min")$val,  c(10, 7))
+  expect_equal(.num_group_spread(v, g, reduce = "max")$val,  c(20, 7))
+  expect_equal(.num_group_spread(v, g, reduce = "mean")$val, c(50 / 3, 7))
+
+  # the range is a property of the records, not of the headline choice
+  for (r in c("median", "min", "max", "mean")) {
+    s <- .num_group_spread(v, g, reduce = r)
+    expect_equal(s$min, c(10, 7))
+    expect_equal(s$max, c(20, 7))
+    expect_equal(s$n,   c(3L, 1L))
+  }
+  expect_error(.num_group_spread(v, g, reduce = "mode"))
+})
+
+test_that(".pivot_species_traits threads reduce= per numeric column", {
+  long <- data.frame(
+    name  = rep("Aus bus", 4),
+    trait = c("Count", "Count", "Measure", "Measure"),
+    value = c("10", "20", "1.0", "4.0"),
+    stringsAsFactors = FALSE
+  )
+  res <- .pivot_species_traits(long, list(
+    count   = list(trait = "Count",   type = "num", reduce = "min"),
+    measure = list(trait = "Measure", type = "num")
+  ), keep_all = FALSE)
+
+  expect_equal(res$count, 10)        # base cytotype, not the impossible 15
+  expect_equal(res$count_min, 10)
+  expect_equal(res$count_max, 20)
+  expect_equal(res$measure, 2.5)     # continuous column keeps the median
 })
 
 test_that(".attach_num_spread adds companions only when a group has >1 record", {

@@ -63,7 +63,7 @@ parse_kew_sid <- function(path) {
       species_id = tbl$species_id[match(sp$group, as.character(tbl$species_id))],
       stringsAsFactors = FALSE
     )
-    a[[out_name]] <- sp$med
+    a[[out_name]] <- sp$val
     # Add the within-species range only where some species shows a genuine range
     # (seed weight, oil, protein are per-accession measurements that vary).
     if (any(sp$max > sp$min, na.rm = TRUE)) {

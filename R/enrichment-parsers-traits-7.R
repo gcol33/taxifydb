@@ -271,8 +271,11 @@ parse_cefas_btrait <- function(path) {
 #' number, ploidy, 1C DNA amount) is read; the Mean/Min/Max summary-statistic
 #' tables are ignored. Records are keyed on the binomial and reduced to one row
 #' per taxon: genome size as the 1C DNA amount in picograms, plus chromosome
-#' number (2n) and ploidy level where a clean numeric value is given. Numeric
-#' traits are reduced by median.
+#' number (2n) and ploidy level where a clean numeric value is given. The 1C DNA
+#' amount is reduced by median; the chromosome number and ploidy level are
+#' discrete counts whose repeated records are cytotype variants of one species,
+#' so they are reduced to the base cytotype by minimum, with `_min` / `_max`
+#' carrying the range.
 #'
 #' @param path Directory of downloaded C-values HTML pages (or a single page).
 #' @return data.frame with canonical_name + genome-size traits.
@@ -323,10 +326,21 @@ parse_kew_cvalues <- function(path) {
   long <- long[nzchar(trimws(long$name)) & !is.na(long$value) &
                  !long$value %in% c("", "-"), , drop = FALSE]
 
+  # The search returns one prime estimate per C-values species entry, so a
+  # binomial collects several records only where entries that differ by
+  # accession or cytotype (the source's Subspecies field: "(Octoploid)",
+  # "line TPG 17-79") share it. Those records are cytotype variants of one
+  # species, which the chromosome number and ploidy level count discretely: a
+  # median between a diploid 2n = 10 and a tetraploid 2n = 20 returns 15, and no
+  # plant has an odd somatic number. The minimum names the base cytotype, and
+  # chromosome_2n_min/_max still carry the range. The 1C DNA amount is a
+  # continuous measurement, so it keeps the median.
   spec <- list(
     genome_size_1c_pg = list(trait = "genome_size_1c_pg", type = "num"),
-    chromosome_2n     = list(trait = "chromosome_2n",     type = "num"),
-    ploidy_x          = list(trait = "ploidy_x",          type = "num")
+    chromosome_2n     = list(trait = "chromosome_2n",     type = "num",
+                             reduce = "min"),
+    ploidy_x          = list(trait = "ploidy_x",          type = "num",
+                             reduce = "min")
   )
   .trait_finalize(.pivot_species_traits(long, spec, keep_all = FALSE))
 }

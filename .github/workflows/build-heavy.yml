@@ -39,22 +39,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install taxifydb (local)
+      - name: Resolve Rscript
+        id: rscript
         run: |
-          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
-          "$RSCRIPT" -e "devtools::install_local('.', upgrade = 'never')"
+          echo "path=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)" >> "$GITHUB_OUTPUT"
         shell: bash
 
-      - name: Build backbone
+      - name: Install taxifydb (local)
         run: |
-          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
-          "$RSCRIPT" -e "taxifydb::build_backend('${{ matrix.backend }}', output_dir = file.path('output', '${{ matrix.backend }}'))"
+          "${{ steps.rscript.outputs.path }}" -e "devtools::install_local('.', upgrade = 'never')"
         shell: bash
 
       - name: Compute version
         id: version
         run: echo "version=$(date +%Y.%m)" >> $GITHUB_OUTPUT
         shell: bash
+
+      - name: Build backbone
+        run: |
+          "${{ steps.rscript.outputs.path }}" -e "taxifydb::build_backend('${{ matrix.backend }}', output_dir = file.path('output', '${{ matrix.backend }}'))"
+        shell: bash
+
+      - name: Create delta vs previous release
+        id: delta
+        continue-on-error: true
+        uses: ./.github/actions/vtr-delta
+        with:
+          backend: ${{ matrix.backend }}
+          version: ${{ steps.version.outputs.version }}
+          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          rscript: ${{ steps.rscript.outputs.path }}
 
       - name: Create release and upload
         run: |
@@ -81,7 +96,6 @@ jobs:
 
       - name: Update and commit manifest
         run: |
-          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for i in $(seq 1 10); do
@@ -89,7 +103,7 @@ jobs:
             # so jobs pinned to the trigger SHA never clobber each other.
             git fetch origin main
             git reset --hard origin/main
-            "$RSCRIPT" -e "taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output', '${{ matrix.backend }}', '${{ matrix.backend }}.vtr'))"
+            "${{ steps.rscript.outputs.path }}" -e "p <- file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.xdelta'); d <- '${{ steps.delta.outputs.prev_version }}'; taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.vtr'), delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
             git add manifest/manifest.json
             if git diff --staged --quiet; then
               echo "manifest unchanged"; break
@@ -112,10 +126,10 @@ jobs:
             echo "TAXIFY_MANIFEST_TOKEN not set; skipping taxify manifest sync."
             exit 0
           fi
-          RSCRIPT=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)
           BE="${{ matrix.backend }}"
           VER="${{ steps.version.outputs.version }}"
           VTR="$(pwd)/output/$BE/$BE.vtr"
+          DELTA="$(pwd)/output/$BE/$BE.xdelta"
           rm -rf taxify_repo
           git clone "https://x-access-token:${TAXIFY_MANIFEST_TOKEN}@github.com/gcol33/taxify.git" taxify_repo
           cd taxify_repo
@@ -123,7 +137,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BR="auto/manifest-$BE"
           git checkout -B "$BR" origin/main
-          "$RSCRIPT" -e "taxifydb::update_manifest('inst/manifest.json', '$BE', '$VER', '$VTR')"
+          "${{ steps.rscript.outputs.path }}" -e "p <- '$DELTA'; d <- '${{ steps.delta.outputs.prev_version }}'; taxifydb::update_manifest('inst/manifest.json', '$BE', '$VER', '$VTR', delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
           git add inst/manifest.json
           if git diff --staged --quiet; then
             echo "taxify manifest already current for $BE."; exit 0
@@ -132,7 +146,7 @@ jobs:
           git push -f -u origin "$BR"
           gh pr create --repo gcol33/taxify --base main --head "$BR" \
             --title "manifest: sync $BE v$VER" \
-            --body "Automated backend-manifest sync from the taxifydb \`$BE-$VER\` release. Mechanical fields (full_url, full_size, full_sha256, content_id, nrow, source_url) are written by \`taxifydb::update_manifest()\`; curated fields (citation, license) are preserved from the existing entry. A brand-new backend needs its citation/license added once in this PR." \
+            --body "Automated backend-manifest sync from the taxifydb \`$BE-$VER\` release. Mechanical fields (full_url, full_size, full_sha256, content_id, nrow, delta_url, source_url) are written by \`taxifydb::update_manifest()\`; curated fields (citation, license) are preserved from the existing entry. A brand-new backend needs its citation/license added once in this PR." \
             2>/dev/null || echo "PR for $BR already open (branch updated)."
         shell: bash
         env:

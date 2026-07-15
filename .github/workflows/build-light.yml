@@ -60,35 +60,6 @@ jobs:
         id: version
         run: echo "version=$(date +%Y.%m)" >> $GITHUB_OUTPUT
 
-      - name: Download previous release (for delta)
-        id: prev
-        continue-on-error: true
-        run: |
-          # Read the tag out of --json: `gh release list` prints the title in
-          # column 1 ("NCBI v2026.06"), so matching a bare `^ncbi-` against the
-          # table never hits. Match <backend>-<numeric version> so a companion
-          # data release sharing the prefix (euromed-snapshot-2026.07 carries a
-          # raw harvest, no .vtr) cannot be picked, and skip the version being
-          # built so a re-run deltas against the previous release, not itself.
-          PREV_TAG=$(gh release list --repo ${{ github.repository }} --limit 100 \
-            --json tagName \
-            -q '[.[].tagName
-                 | select(test("^${{ matrix.backend }}-[0-9]"))
-                 | select(. != "${{ matrix.backend }}-${{ steps.version.outputs.version }}")][0]')
-          if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "null" ]; then
-            echo "No previous ${{ matrix.backend }} release; skipping delta."
-            exit 0
-          fi
-          echo "Previous release: $PREV_TAG"
-          echo "prev_version=${PREV_TAG#${{ matrix.backend }}-}" >> "$GITHUB_OUTPUT"
-          mkdir -p output/${{ matrix.backend }}_prev
-          gh release download "$PREV_TAG" \
-            --repo ${{ github.repository }} \
-            --pattern "${{ matrix.backend }}.vtr" \
-            --dir output/${{ matrix.backend }}_prev || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build backbone
         run: |
           taxifydb::build_backend(
@@ -97,19 +68,15 @@ jobs:
           )
         shell: Rscript {0}
 
-      - name: Create delta vs previous
+      - name: Create delta vs previous release
+        id: delta
         continue-on-error: true
-        run: |
-          prev <- file.path("output", "${{ matrix.backend }}_prev",
-                             "${{ matrix.backend }}.vtr")
-          new  <- file.path("output", "${{ matrix.backend }}",
-                             "${{ matrix.backend }}.vtr")
-          delta <- file.path("output", "${{ matrix.backend }}",
-                              "${{ matrix.backend }}.xdelta")
-          if (file.exists(prev) && file.exists(new)) {
-            taxifydb::create_delta(prev, new, delta)
-          }
-        shell: Rscript {0}
+        uses: ./.github/actions/vtr-delta
+        with:
+          backend: ${{ matrix.backend }}
+          version: ${{ steps.version.outputs.version }}
+          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
         run: |
@@ -143,7 +110,7 @@ jobs:
             # so parallel matrix jobs never clobber each other's updates.
             git fetch origin main
             git reset --hard origin/main
-            Rscript -e "p <- file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.xdelta'); d <- '${{ steps.prev.outputs.prev_version }}'; taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.vtr'), delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
+            Rscript -e "p <- file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.xdelta'); d <- '${{ steps.delta.outputs.prev_version }}'; taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.vtr'), delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
             git add manifest/manifest.json
             if git diff --staged --quiet; then
               echo "manifest unchanged"; break
@@ -177,7 +144,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BR="auto/manifest-$BE"
           git checkout -B "$BR" origin/main
-          Rscript -e "p <- '$DELTA'; d <- '${{ steps.prev.outputs.prev_version }}'; taxifydb::update_manifest('inst/manifest.json', '$BE', '$VER', '$VTR', delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
+          Rscript -e "p <- '$DELTA'; d <- '${{ steps.delta.outputs.prev_version }}'; taxifydb::update_manifest('inst/manifest.json', '$BE', '$VER', '$VTR', delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
           git add inst/manifest.json
           if git diff --staged --quiet; then
             echo "taxify manifest already current for $BE."; exit 0

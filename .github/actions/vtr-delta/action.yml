@@ -1,0 +1,83 @@
+name: 'Backbone .vtr delta'
+description: >
+  Download the previous release of a backbone and diff the freshly built .vtr
+  against it, so users patch instead of re-downloading the full file.
+
+inputs:
+  backend:
+    description: 'Backend name, also the release tag prefix and file basename.'
+    required: true
+  version:
+    description: 'Version being built.'
+    required: true
+  repository:
+    description: 'owner/repo holding the releases.'
+    required: true
+  token:
+    description: 'Token used for gh release list/download.'
+    required: true
+  rscript:
+    description: 'Rscript executable.'
+    required: false
+    default: 'Rscript'
+
+outputs:
+  prev_version:
+    description: >
+      Version the delta was cut against. Empty when no delta was produced, so
+      callers can pass it straight to update_manifest(delta_from = ).
+    value: ${{ steps.delta.outputs.prev_version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Select and download the previous release
+      id: prev
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        if ! command -v xdelta3 >/dev/null 2>&1; then
+          echo "::warning::xdelta3 is not on PATH; ${{ inputs.backend }} ships a full .vtr only."
+          exit 0
+        fi
+        # Read the tag out of --json: `gh release list` prints the title in
+        # column 1 ("NCBI v2026.06"), so matching a bare `^ncbi-` against the
+        # table never hits. Match <backend>-<numeric version> so a companion
+        # data release sharing the prefix (euromed-snapshot-2026.07 carries a
+        # raw harvest, no .vtr) cannot be picked, and skip the version being
+        # built so a re-run deltas against the previous release, not itself.
+        PREV_TAG=$(gh release list --repo "${{ inputs.repository }}" --limit 100 \
+          --json tagName \
+          -q '[.[].tagName
+               | select(test("^${{ inputs.backend }}-[0-9]"))
+               | select(. != "${{ inputs.backend }}-${{ inputs.version }}")][0]')
+        if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "null" ]; then
+          echo "No previous ${{ inputs.backend }} release; skipping delta."
+          exit 0
+        fi
+        echo "Previous release: $PREV_TAG"
+        mkdir -p "output/${{ inputs.backend }}_prev"
+        if ! gh release download "$PREV_TAG" \
+              --repo "${{ inputs.repository }}" \
+              --pattern "${{ inputs.backend }}.vtr" \
+              --dir "output/${{ inputs.backend }}_prev"; then
+          echo "::warning::$PREV_TAG carries no ${{ inputs.backend }}.vtr asset; skipping delta."
+          exit 0
+        fi
+        # Set only once the base file is on disk, so prev_version and the
+        # .xdelta always agree about what the patch applies to.
+        echo "prev_version=${PREV_TAG#${{ inputs.backend }}-}" >> "$GITHUB_OUTPUT"
+
+    - name: Create the delta
+      id: delta
+      if: steps.prev.outputs.prev_version
+      shell: bash
+      run: |
+        BE="${{ inputs.backend }}"
+        "${{ inputs.rscript }}" -e "taxifydb::create_delta('output/${BE}_prev/${BE}.vtr', 'output/${BE}/${BE}.vtr', 'output/${BE}/${BE}.xdelta')"
+        if [ ! -f "output/$BE/$BE.xdelta" ]; then
+          echo "::warning::xdelta3 produced no patch for $BE; shipping a full .vtr only."
+          exit 0
+        fi
+        echo "prev_version=${{ steps.prev.outputs.prev_version }}" >> "$GITHUB_OUTPUT"

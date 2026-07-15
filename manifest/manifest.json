@@ -2026,11 +2026,12 @@
     "gidias": {
       "latest": "2025.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/gidias.vtr",
-      "nrow": 3390,
-      "content_id": "f7ffc6621e143c245179e8d7c39fca54",
+      "nrow": 6052,
+      "content_id": "6dfa80b7993e9aeee87b9487f6a7891d",
       "source_url": "https://ndownloader.figshare.com/files/53894801",
       "source_doi": "10.6084/m9.figshare.27908838",
-      "license": "CC BY 4.0"
+      "license": "CC BY 4.0",
+      "available_groups": ["Any", "Fungi", "Invertebrate", "Microbe", "Plant", "Vertebrate"]
     },
     "kew_cvalues": {
       "latest": "7.1",

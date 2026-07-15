@@ -15,6 +15,20 @@
   names(sort(table(trimws(v)), decreasing = TRUE))[1L]
 }
 
+#' Every distinct non-missing value of a character vector, joined
+#'
+#' The counterpart to `.cat_mode()` for a column where a species genuinely
+#' carries several values and picking the commonest would hide the rest (the
+#' papers behind a species' records, the methods they used). Values are sorted so
+#' the result does not depend on record order.
+#' @noRd
+.cat_join <- function(v, sep = "; ") {
+  v <- .to_utf8(v)
+  v <- trimws(v[!is.na(v) & nzchar(trimws(v))])
+  if (!length(v)) return(NA_character_)
+  paste(sort(unique(v)), collapse = sep)
+}
+
 #' Augment a curated spec with every remaining distinct trait
 #'
 #' Keeps the caller's curated output columns (nice names, forced types) and adds
@@ -45,10 +59,11 @@
 #' aggregated by median, categorical traits by mode, across all records of a
 #' species. A numeric entry may set `reduce = "min" | "max" | "mean"` to pick a
 #' different headline statistic (see `.num_group_spread()`); the spread columns
-#' are unaffected. With `keep_all = TRUE` (the default), every distinct `trait`
-#' value not named in `spec` is also pivoted (sanitized name, inferred type), so
-#' no source trait is dropped; pass `spec = list()` to keep every trait with
-#' auto-generated names only.
+#' are unaffected. A categorical entry may set `reduce = "join"` to keep every
+#' distinct value instead of the commonest. With `keep_all = TRUE` (the default),
+#' every distinct `trait` value not named in `spec` is also pivoted (sanitized
+#' name, inferred type), so no source trait is dropped; pass `spec = list()` to
+#' keep every trait with auto-generated names only.
 #' @noRd
 .pivot_species_traits <- function(long, spec = list(), keep_all = TRUE) {
   stopifnot(all(c("name", "trait", "value") %in% names(long)))
@@ -81,7 +96,8 @@
                                            else s$reduce)
       res    <- .attach_num_spread(res, oc, spread, species)
     } else {
-      agg <- tapply(sub$value, sub$name, .cat_mode)
+      fn  <- if (identical(s$reduce, "join")) .cat_join else .cat_mode
+      agg <- tapply(sub$value, sub$name, fn)
       res[[oc]] <- as.character(agg[species])
     }
   }

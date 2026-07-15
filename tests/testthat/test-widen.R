@@ -132,6 +132,35 @@ test_that(".num_group_spread reduce= picks the headline, leaving the spread alon
   expect_error(.num_group_spread(v, g, reduce = "mode"))
 })
 
+test_that(".cat_join keeps every distinct value, .cat_mode keeps the commonest", {
+  v <- c("Smith 1990", "Jones 1985", "Smith 1990", NA, "  ", "Jones 1985",
+         "Smith 1990")
+  expect_equal(.cat_join(v), "Jones 1985; Smith 1990")   # sorted, deduped
+  expect_equal(.cat_mode(v), "Smith 1990")               # 3 records vs 2
+  expect_equal(.cat_join(c(NA, "", "   ")), NA_character_)
+  expect_equal(.cat_join("Only 2001"), "Only 2001")
+  # order of records must not change the result
+  expect_equal(.cat_join(c("b", "a")), .cat_join(c("a", "b")))
+})
+
+test_that(".pivot_species_traits reduce='join' keeps every value of a cat column", {
+  long <- data.frame(
+    name  = rep("Aus bus", 3),
+    trait = rep("Ref", 3),
+    value = c("Smith 1990", "Jones 1985", "Smith 1990"),
+    stringsAsFactors = FALSE
+  )
+  joined <- .pivot_species_traits(
+    long, list(ref = list(trait = "Ref", type = "cat", reduce = "join")),
+    keep_all = FALSE)
+  expect_equal(joined$ref, "Jones 1985; Smith 1990")
+
+  # default stays mode, so existing parsers are unaffected
+  moded <- .pivot_species_traits(
+    long, list(ref = list(trait = "Ref", type = "cat")), keep_all = FALSE)
+  expect_equal(moded$ref, "Smith 1990")
+})
+
 test_that(".pivot_species_traits threads reduce= per numeric column", {
   long <- data.frame(
     name  = rep("Aus bus", 4),

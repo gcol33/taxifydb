@@ -277,6 +277,12 @@ parse_cefas_btrait <- function(path) {
 #' so they are reduced to the base cytotype by minimum, with `_min` / `_max`
 #' carrying the range.
 #'
+#' Each record names the paper the value was measured in and the method used, so
+#' both are kept: `original_reference` and `estimation_method` list every
+#' distinct value a species' records carry, joined by `"; "`. The method matters
+#' for interpreting the 1C amount, since Feulgen densitometry and flow cytometry
+#' are different measurements.
+#'
 #' @param path Directory of downloaded C-values HTML pages (or a single page).
 #' @return data.frame with canonical_name + genome-size traits.
 #' @export
@@ -307,6 +313,8 @@ parse_kew_cvalues <- function(path) {
   dna_col <- grep("DNA Amount", names(d), value = TRUE)[1L]
   chr_col <- grep("Chromosome", names(d), value = TRUE)[1L]
   plo_col <- grep("Ploidy",     names(d), value = TRUE)[1L]
+  ref_col <- grep("Reference",  names(d), value = TRUE)[1L]
+  est_col <- grep("Estimation", names(d), value = TRUE)[1L]
 
   # Drop identification qualifiers so the binomial matches a backbone name.
   sp <- sub("^(cf\\.|aff\\.)\\s*", "", trimws(as.character(d$Species)))
@@ -318,9 +326,11 @@ parse_kew_cvalues <- function(path) {
                value = as.character(d[[col]]), stringsAsFactors = FALSE)
   }
   long <- do.call(rbind, list(
-    mk("genome_size_1c_pg", dna_col),
-    mk("chromosome_2n",     chr_col),
-    mk("ploidy_x",          plo_col)
+    mk("genome_size_1c_pg",  dna_col),
+    mk("chromosome_2n",      chr_col),
+    mk("ploidy_x",           plo_col),
+    mk("original_reference", ref_col),
+    mk("estimation_method",  est_col)
   ))
   long$value <- trimws(long$value)
   long <- long[nzchar(trimws(long$name)) & !is.na(long$value) &
@@ -340,12 +350,21 @@ parse_kew_cvalues <- function(path) {
   # carries an odd somatic number by definition (Tahiti lime 2n = 3x = 27), as
   # do aneuploid hybrids and the gametophytic counts of haploid-dominant
   # bryophytes. The minimum returns a reported record, so those survive.
+  # The reference and estimation method are per-record provenance, so they are
+  # joined rather than reduced to the commonest: where a binomial collects
+  # several records the papers behind them are all part of the answer, and a
+  # 1C value measured by Feulgen densitometry is not interchangeable with one
+  # measured by flow cytometry.
   spec <- list(
-    genome_size_1c_pg = list(trait = "genome_size_1c_pg", type = "num"),
-    chromosome_2n     = list(trait = "chromosome_2n",     type = "num",
-                             reduce = "min"),
-    ploidy_x          = list(trait = "ploidy_x",          type = "num",
-                             reduce = "min")
+    genome_size_1c_pg  = list(trait = "genome_size_1c_pg", type = "num"),
+    chromosome_2n      = list(trait = "chromosome_2n",     type = "num",
+                              reduce = "min"),
+    ploidy_x           = list(trait = "ploidy_x",          type = "num",
+                              reduce = "min"),
+    original_reference = list(trait = "original_reference", type = "cat",
+                              reduce = "join"),
+    estimation_method  = list(trait = "estimation_method",  type = "cat",
+                              reduce = "join")
   )
   .trait_finalize(.pivot_species_traits(long, spec, keep_all = FALSE))
 }

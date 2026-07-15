@@ -2007,6 +2007,7 @@
         "search_type=AllPlants&prime_estimates=1&cvalue=onec",
         "&show_fields[]=family&show_fields[]=genus&show_fields[]=species",
         "&show_fields[]=chromosome&show_fields[]=ploidy&show_fields[]=prime",
+        "&show_fields[]=reference&show_fields[]=estimation",
         "&sort=s.species_name&sort_order=ASC&page=")
       fetch_page <- function(pg) {
         out <- file.path(dest, sprintf("page_%03d.html", pg))

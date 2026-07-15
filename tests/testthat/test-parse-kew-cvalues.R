@@ -37,8 +37,14 @@ fixture <- function() {
                 "latifolia"),
     `Chromosome Number (2n)` = c("10", "20", "20", "26", "52", "-", "27"),
     `Ploidy Level (x)`       = c("2", "4", "2", "2", "4", "-", "3"),
+    `Estimation Method`      = c("FC:PI", "Fe", "FC:PI", "FC:PI", "FC:PI",
+                                 "FC:PI", "FC:PI"),
     `DNA Amount1C (pg)`      = c("0.20", "0.40", "2.70", "0.60", "1.20", "5.00",
                                  "0.61"),
+    `Original Reference`     = c("Bennett and Smith,1976", "Zonneveld et al.,2005",
+                                 "Rayburn et al.,1993", "Siljak-Yakovlev,2010",
+                                 "Siljak-Yakovlev,2010", "Suda et al.,2005",
+                                 "Pellicer et al.,2013"),
     check.names      = FALSE,
     stringsAsFactors = FALSE
   ))
@@ -72,6 +78,26 @@ test_that("a reduced count is always a count some record reported", {
   # every reduced value appears among that species' own source records
   expect_true(all(res$chromosome_2n[is.finite(res$chromosome_2n)] %in%
                     c(10, 20, 26, 52, 27)))
+})
+
+test_that("provenance survives the reduction: every paper behind a value is kept", {
+  res <- parse_kew_cvalues(fixture())
+
+  # a species measured twice keeps both papers, so the reduced value is traceable
+  at <- res[res$canonical_name == "Arabidopsis thaliana", ]
+  expect_equal(at$original_reference,
+               "Bennett and Smith,1976; Zonneveld et al.,2005")
+  # the two records used different methods, and both are reported
+  expect_equal(at$estimation_method, "FC:PI; Fe")
+
+  # a single-record species carries its one reference, unjoined
+  expect_equal(res$original_reference[res$canonical_name == "Zea mays"],
+               "Rayburn et al.,1993")
+  expect_equal(res$estimation_method[res$canonical_name == "Zea mays"], "FC:PI")
+
+  # two records from the same paper collapse to one citation
+  expect_equal(res$original_reference[res$canonical_name == "Acer campestre"],
+               "Siljak-Yakovlev,2010")
 })
 
 test_that("a genuine triploid keeps its odd count", {

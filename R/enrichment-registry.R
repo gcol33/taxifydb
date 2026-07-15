@@ -232,13 +232,15 @@
       "species. Only per-species EICAT/SEICAT impact aggregates are distributed, ",
       "not the raw impact records: the most-severe environmental (EICAT) and ",
       "socio-economic (SEICAT) impact category, driving mechanism, affected ",
-      "well-being constituents, realms, and record/source counts."
+      "well-being constituents, realms, and record/source counts, both over all ",
+      "of a species' records (affected_taxon = \"All\") and per affected native ",
+      "taxon."
     ),
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "GIDIAS_machine_read.csv")
     },
     parse_fn      = function(path) parse_gidias(path),
-    group_col     = NULL,
+    group_col     = "affected_taxon",
     resolve_names = FALSE,
     requires      = character(0)
   ),

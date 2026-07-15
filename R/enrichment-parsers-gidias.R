@@ -26,10 +26,36 @@
 # SEICAT is the same construction on the CWB (constituents of well-being) block,
 # whose magnitude tops out at 3 (all people stop an activity) = MR.
 #
+# Each species is aggregated twice: once over all its records (affected_taxon =
+# "All", the default grain) and once per affected native taxon. GIDIAS records
+# what a species impacts in Affected.native.species.Taxon, a controlled 5-term
+# vocabulary (Plant 6,113 records, Invertebrate 4,514, Vertebrate 3,457, Microbe
+# 294, Fungi 2), set on 9,224 of the 10,429 negative Nature records. It buys
+# group = "Vertebrate", not group = "Aves": the finer detail lives in
+# Affected.native.species.Details, which is uncontrolled free text ("native
+# plants", "Laysan Albatross") and cannot be indexed. The split is worth its rows
+# because 408 of the 1,466 species with a negative Nature impact and an affected
+# taxon recorded (28%) impact two or more of the five, so for those the single
+# most-severe category is genuinely lossy.
+#
+# The "All" row is not the union of the per-taxon rows and cannot be dropped: it
+# is the only row carrying the 12% of negative records with no affected taxon
+# recorded, and the only one carrying SEICAT. The affected-taxon axis is an
+# environmental-impact (Nature/EICAT) concept -- 13,070 of the 14,380 rows that
+# carry an affected taxon have no CWB direction at all, and only 1,179 of the
+# 2,893 negative-CWB rows carry one -- so slicing SEICAT (impact on people's
+# activities) by affected native taxon would answer a question the column does
+# not ask. Per-taxon rows therefore carry the EICAT block and the record counts;
+# their SEICAT columns are NA.
+#
 # Like parse_invacost / parse_globi, names are resolved to the accepted grain
 # inside the parser (resolve_name_map) and the aggregation happens there, so a
 # species whose records are split across a synonym and its accepted name keeps
 # the full impact evidence. The registry entry therefore sets resolve_names = FALSE.
+
+#' The affected_taxon value marking a species' all-records aggregate
+#' @noRd
+.gidias_taxon_all <- "All"
 
 #' Map a GIDIAS Nature magnitude (0-3) and global-extinction flag to EICAT
 #' @noRd
@@ -81,9 +107,19 @@
 #' evidence: the driving mechanism(s), affected well-being constituents, the
 #' species' functional group and realms, and record/source counts.
 #'
+#' Each species is aggregated twice. `affected_taxon = "All"` summarises every
+#' record, and is the grain to use unless you want one affected group. The
+#' other rows summarise the species' impacts on one affected native taxon
+#' (`"Plant"`, `"Invertebrate"`, `"Vertebrate"`, `"Microbe"`, `"Fungi"`), which
+#' 28% of species split across two or more. Only the `"All"` row carries SEICAT
+#' and the negative records with no affected taxon recorded: the affected-taxon
+#' axis slices the environmental-impact block, so the SEICAT columns are `NA` on
+#' a per-taxon row.
+#'
 #' @param path Character. Path to the GIDIAS machine-readable `.csv` (or a
 #'   directory containing it).
-#' @return data.frame with `canonical_name` and the `gidias_*` aggregate columns.
+#' @return data.frame with `canonical_name`, `affected_taxon`, and the
+#'   `gidias_*` aggregate columns.
 #' @export
 parse_gidias <- function(path) {
   file <- if (dir.exists(path)) {
@@ -108,6 +144,7 @@ parse_gidias <- function(path) {
   dir_nat <- chr("direction.Nature")
   glob    <- toupper(chr("global.extinction")) == "TRUE"
   mech    <- chr("mechanism.Nature.clean")
+  aff_tax <- chr("Affected.native.species.Taxon")
   mag_cwb <- suppressWarnings(as.integer(chr("magnitude.CWB")))   # "positive" -> NA
   dir_cwb <- tolower(chr("direction.CWB"))
   cwb_aff <- chr("affected.CWB.clean")
@@ -124,6 +161,7 @@ parse_gidias <- function(path) {
   glob <- glob[keep]; mech <- mech[keep]; mag_cwb <- mag_cwb[keep]
   dir_cwb <- dir_cwb[keep]; cwb_aff <- cwb_aff[keep]; taxon <- taxon[keep]
   kingdom <- kingdom[keep]; realm <- realm[keep]; src <- src[keep]
+  aff_tax <- aff_tax[keep]
 
   # Resolve to the accepted grain and expand each record to the accepted name(s)
   # its species maps to across backends (see file header).
@@ -137,11 +175,15 @@ parse_gidias <- function(path) {
   e_mag_nat <- mag_nat[idx]; e_dir_nat <- dir_nat[idx]; e_glob <- glob[idx]
   e_mech    <- mech[idx];    e_mag_cwb <- mag_cwb[idx]; e_dir_cwb <- dir_cwb[idx]
   e_cwb_aff <- cwb_aff[idx]; e_taxon   <- taxon[idx];   e_kingdom <- kingdom[idx]
-  e_realm   <- realm[idx];   e_src     <- src[idx]
+  e_realm   <- realm[idx];   e_src     <- src[idx];     e_aff_tax <- aff_tax[idx]
 
-  groups <- split(seq_along(accn), accn)
-  res <- lapply(groups, function(i) {
-    neg <- i[which(e_dir_nat[i] == "Negative")]
+  # One aggregation over whatever record subset defines a row: the Nature/EICAT
+  # block plus the record counts over `nat_i`, the CWB/SEICAT block over
+  # `cwb_i`. The two subsets coincide for the all-records aggregate; a
+  # per-affected-taxon row passes an empty `cwb_i`, so SEICAT falls to NA there
+  # (see the affected-taxon note in the file header).
+  agg <- function(nat_i, cwb_i) {
+    neg <- nat_i[which(e_dir_nat[nat_i] == "Negative")]
     if (length(neg)) {
       mags <- e_mag_nat[neg]
       if (all(is.na(mags))) {
@@ -155,7 +197,7 @@ parse_gidias <- function(path) {
       eicat <- NA_character_; emag <- NA_integer_; emech <- NA_character_
     }
 
-    negc <- i[which(e_dir_cwb[i] == "negative")]
+    negc <- cwb_i[which(e_dir_cwb[cwb_i] == "negative")]
     if (length(negc)) {
       cmags <- e_mag_cwb[negc]
       if (all(is.na(cmags))) {
@@ -168,19 +210,46 @@ parse_gidias <- function(path) {
       seicat <- NA_character_; smag <- NA_integer_; saff <- NA_character_
     }
 
-    s <- e_src[i]
+    s <- e_src[nat_i]
     list(eicat = eicat, emag = emag, emech = emech,
          seicat = seicat, smag = smag, saff = saff,
-         taxon = .gidias_mode1(e_taxon[i]), kingdom = .gidias_mode1(e_kingdom[i]),
-         realms = .gidias_uniq_join(e_realm[i]),
-         n_records = length(i), n_negative = length(neg),
+         taxon = .gidias_mode1(e_taxon[nat_i]),
+         kingdom = .gidias_mode1(e_kingdom[nat_i]),
+         realms = .gidias_uniq_join(e_realm[nat_i]),
+         n_records = length(nat_i), n_negative = length(neg),
          n_sources = length(unique(s[!is.na(s) & nzchar(s)])),
-         glob = any(e_glob[i], na.rm = TRUE))
-  })
+         glob = any(e_glob[nat_i], na.rm = TRUE))
+  }
+
+  # The all-records aggregate: the default grain, and the only row that keeps
+  # the negative records with no affected taxon recorded (12% of them) and the
+  # SEICAT block.
+  by_name  <- split(seq_along(accn), accn)
+  row_name <- names(by_name)
+  row_tax  <- rep(.gidias_taxon_all, length(by_name))
+  row_nat  <- unname(by_name)
+  row_cwb  <- unname(by_name)
+
+  # Per-affected-taxon rows, on top of (never instead of) the aggregate.
+  has_aff <- !is.na(e_aff_tax) & nzchar(e_aff_tax)
+  if (any(has_aff)) {
+    i <- which(has_aff)
+    by_tax <- split(i, paste(accn[i], e_aff_tax[i], sep = "\r"))
+    # Read the name and taxon back off the first record of each group rather
+    # than parsing the split key, so the separator only ever has to group.
+    first <- vapply(by_tax, `[[`, integer(1), 1L)
+    row_name <- c(row_name, accn[first])
+    row_tax  <- c(row_tax,  e_aff_tax[first])
+    row_nat  <- c(row_nat,  unname(by_tax))
+    row_cwb  <- c(row_cwb,  rep(list(integer(0)), length(by_tax)))
+  }
+
+  res <- Map(agg, row_nat, row_cwb)
 
   g <- function(f, mode) vapply(res, function(z) z[[f]], mode)
   out <- data.frame(
-    canonical_name           = names(res),
+    canonical_name           = row_name,
+    affected_taxon           = row_tax,
     gidias_eicat_category    = g("eicat", character(1)),
     gidias_eicat_magnitude   = g("emag", integer(1)),
     gidias_eicat_mechanism   = g("emech", character(1)),
@@ -197,5 +266,5 @@ parse_gidias <- function(path) {
     stringsAsFactors = FALSE
   )
   out <- out[.is_binomial(out$canonical_name), , drop = FALSE]
-  out[order(out$canonical_name), , drop = FALSE]
+  out[order(out$canonical_name, out$affected_taxon), , drop = FALSE]
 }

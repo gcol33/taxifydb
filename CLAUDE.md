@@ -84,6 +84,13 @@ resolution before its `.vtr` is written:
 Group-based enrichments (GRIIS, WCVP, common_names) pass `group_cols` so
 deduplication respects the grouping column.
 
+`gidias` carries two grains in one `.vtr`, keyed on `affected_taxon`: `"All"`
+(every record for the species) plus one row per affected native taxon (`Plant`,
+`Invertebrate`, `Vertebrate`, `Microbe`, `Fungi`). The `"All"` row is not the
+union of the others and cannot be dropped — it is the only one carrying SEICAT
+and the negative records with no affected taxon recorded, so a door reading
+gidias without a group must select `affected_taxon == "All"`.
+
 ## Building locally
 
 ```bash

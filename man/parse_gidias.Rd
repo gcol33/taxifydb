@@ -11,7 +11,8 @@ parse_gidias(path)
 directory containing it).}
 }
 \value{
-data.frame with \code{canonical_name} and the \verb{gidias_*} aggregate columns.
+data.frame with \code{canonical_name}, \code{affected_taxon}, and the
+\verb{gidias_*} aggregate columns.
 }
 \description{
 Reads the GIDIAS machine-readable impact records and reduces them to
@@ -29,4 +30,13 @@ MV); a species with negative records but no scored magnitude is \code{"DD"}.
 well-being block (SEICAT, MC/MN/MO/MR). The remaining columns summarise the
 evidence: the driving mechanism(s), affected well-being constituents, the
 species' functional group and realms, and record/source counts.
+
+Each species is aggregated twice. \code{affected_taxon = "All"} summarises every
+record, and is the grain to use unless you want a specific victim group. The
+other rows summarise the species' impacts on one affected native taxon
+(\code{"Plant"}, \code{"Invertebrate"}, \code{"Vertebrate"}, \code{"Microbe"}, \code{"Fungi"}), which
+28\% of species split across two or more. Only the \code{"All"} row carries SEICAT
+and the negative records with no affected taxon recorded: the affected-taxon
+axis slices the environmental-impact block, so the SEICAT columns are \code{NA} on
+a per-taxon row.
 }

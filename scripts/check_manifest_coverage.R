@@ -43,10 +43,17 @@ rel  <- gh_json(sprintf("https://api.github.com/repos/%s/releases?per_page=100",
                         REPO))
 tags <- rel$tag_name %||% character(0L)
 
+# A backbone release tag is "<backend>-<numeric version>" and nothing else.
+# The prefix alone is not enough: companion data releases share it
+# (euromed-snapshot-2026.07 holds the raw CDM harvest that euromed-2026.07 is
+# built from, not a .vtr), and reading one as a version reports a backbone
+# release that has no .vtr behind it. Order with numeric_version rather than
+# lexicographically so 3.10.1 sorts above 3.7.3.
 latest_release <- vapply(BACKENDS, function(be) {
-  hit <- grep(sprintf("^%s-", be), tags, value = TRUE)
+  hit <- grep(sprintf("^%s-[0-9][0-9.]*$", be), tags, value = TRUE)
   if (!length(hit)) return(NA_character_)
-  sort(sub(sprintf("^%s-", be), "", hit), decreasing = TRUE)[1L]  # YYYY.MM sorts
+  v <- sub(sprintf("^%s-", be), "", hit)
+  v[order(numeric_version(v), decreasing = TRUE)][1L]
 }, character(1L))
 
 # taxify runtime manifest (public repo, no auth needed).

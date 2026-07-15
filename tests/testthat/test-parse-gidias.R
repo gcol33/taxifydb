@@ -1,7 +1,7 @@
 # GIDIAS records what a species impacts in Affected.native.species.Taxon (a
 # controlled 5-term vocabulary), so parse_gidias aggregates each species once
-# over all its records (affected_taxon = "All") and once per affected taxon.
-# The two grains have to stay distinct: "All" is the only row carrying SEICAT
+# over all its records (affected_taxon = "Any") and once per affected taxon.
+# The two grains have to stay distinct: "Any" is the only row carrying SEICAT
 # and the negative records with no affected taxon recorded, and it must keep
 # answering exactly what it answered before the per-taxon rows existed.
 
@@ -51,11 +51,11 @@ test_that("each species gets one all-records aggregate plus a row per affected t
 
   expect_true(all(c("canonical_name", "affected_taxon") %in% names(out)))
   expect_setequal(out$affected_taxon[out$canonical_name == "Felis catus"],
-                  c("All", "Vertebrate", "Invertebrate"))
+                  c("Any", "Vertebrate", "Invertebrate"))
   # A species with no affected taxon recorded still gets its aggregate.
-  expect_identical(out$affected_taxon[out$canonical_name == "Bufo marinus"], "All")
+  expect_identical(out$affected_taxon[out$canonical_name == "Bufo marinus"], "Any")
   # Exactly one aggregate per species, so the default grain stays a lookup.
-  expect_false(anyDuplicated(out$canonical_name[out$affected_taxon == "All"]) > 0L)
+  expect_false(anyDuplicated(out$canonical_name[out$affected_taxon == "Any"]) > 0L)
 })
 
 test_that("the aggregate summarises every record, the per-taxon rows only their own", {
@@ -69,9 +69,9 @@ test_that("the aggregate summarises every record, the per-taxon rows only their 
   }
 
   # Most severe across all records: magnitude 3 + global extinction -> Massive.
-  expect_identical(pick("All", "gidias_eicat_category"), "MV")
-  expect_identical(pick("All", "gidias_n_records"), 4L)
-  expect_identical(pick("All", "gidias_n_negative"), 3L)
+  expect_identical(pick("Any", "gidias_eicat_category"), "MV")
+  expect_identical(pick("Any", "gidias_n_records"), 4L)
+  expect_identical(pick("Any", "gidias_n_negative"), 3L)
 
   # The collapse this grain exists to undo: the cat is MV overall but only
   # Moderate for invertebrates.
@@ -92,7 +92,7 @@ test_that("the affected-taxon axis slices the environmental block only", {
   on.exit(unlink(f), add = TRUE)
 
   out <- parse_gidias(f)
-  grp <- out[out$affected_taxon != "All", , drop = FALSE]
+  grp <- out[out$affected_taxon != "Any", , drop = FALSE]
 
   # SEICAT measures impact on people's activities, so it is not a question the
   # affected-native-taxon column can answer: it lives on the aggregate alone.
@@ -101,7 +101,7 @@ test_that("the affected-taxon axis slices the environmental block only", {
   expect_true(all(is.na(grp$gidias_seicat_affected)))
   expect_identical(
     out$gidias_seicat_category[out$canonical_name == "Felis catus" &
-                                 out$affected_taxon == "All"],
+                                 out$affected_taxon == "Any"],
     "MO"
   )
 })
@@ -115,9 +115,9 @@ test_that("a negative record with no affected taxon lands in the aggregate only"
   cat_rows <- out[out$canonical_name == "Felis catus", , drop = FALSE]
 
   # The untagged magnitude-1 record is counted by the aggregate ...
-  expect_identical(cat_rows$gidias_n_negative[cat_rows$affected_taxon == "All"], 3L)
+  expect_identical(cat_rows$gidias_n_negative[cat_rows$affected_taxon == "Any"], 3L)
   # ... and by no per-taxon row, which between them see only 2 of the 3.
   expect_identical(
-    sum(cat_rows$gidias_n_negative[cat_rows$affected_taxon != "All"]), 2L
+    sum(cat_rows$gidias_n_negative[cat_rows$affected_taxon != "Any"]), 2L
   )
 })

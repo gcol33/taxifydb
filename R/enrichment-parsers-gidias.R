@@ -27,7 +27,7 @@
 # whose magnitude tops out at 3 (all people stop an activity) = MR.
 #
 # Each species is aggregated twice: once over all its records (affected_taxon =
-# "All", the default grain) and once per affected native taxon. GIDIAS records
+# "Any", the default grain) and once per affected native taxon. GIDIAS records
 # what a species impacts in Affected.native.species.Taxon, a controlled 5-term
 # vocabulary (Plant 6,113 records, Invertebrate 4,514, Vertebrate 3,457, Microbe
 # 294, Fungi 2), set on 9,224 of the 10,429 negative Nature records. It buys
@@ -38,7 +38,7 @@
 # taxon recorded (28%) impact two or more of the five, so for those the single
 # most-severe category is genuinely lossy.
 #
-# The "All" row is not the union of the per-taxon rows and cannot be dropped: it
+# The "Any" row is not the union of the per-taxon rows and cannot be dropped: it
 # is the only row carrying the 12% of negative records with no affected taxon
 # recorded, and the only one carrying SEICAT. The affected-taxon axis is an
 # environmental-impact (Nature/EICAT) concept -- 13,070 of the 14,380 rows that
@@ -55,7 +55,7 @@
 
 #' The affected_taxon value marking a species' all-records aggregate
 #' @noRd
-.gidias_taxon_all <- "All"
+.gidias_taxon_any <- "Any"
 
 #' Map a GIDIAS Nature magnitude (0-3) and global-extinction flag to EICAT
 #' @noRd
@@ -107,11 +107,11 @@
 #' evidence: the driving mechanism(s), affected well-being constituents, the
 #' species' functional group and realms, and record/source counts.
 #'
-#' Each species is aggregated twice. `affected_taxon = "All"` summarises every
+#' Each species is aggregated twice. `affected_taxon = "Any"` summarises every
 #' record, and is the grain to use unless you want one affected group. The
 #' other rows summarise the species' impacts on one affected native taxon
 #' (`"Plant"`, `"Invertebrate"`, `"Vertebrate"`, `"Microbe"`, `"Fungi"`), which
-#' 28% of species split across two or more. Only the `"All"` row carries SEICAT
+#' 28% of species split across two or more. Only the `"Any"` row carries SEICAT
 #' and the negative records with no affected taxon recorded: the affected-taxon
 #' axis slices the environmental-impact block, so the SEICAT columns are `NA` on
 #' a per-taxon row.
@@ -226,7 +226,7 @@ parse_gidias <- function(path) {
   # SEICAT block.
   by_name  <- split(seq_along(accn), accn)
   row_name <- names(by_name)
-  row_tax  <- rep(.gidias_taxon_all, length(by_name))
+  row_tax  <- rep(.gidias_taxon_any, length(by_name))
   row_nat  <- unname(by_name)
   row_cwb  <- unname(by_name)
 

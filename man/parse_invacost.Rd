@@ -15,8 +15,8 @@ data.frame with \code{canonical_name}, \code{cost_total_usd} (2017 USD),
 }
 \description{
 Reads the InvaCost v4.1 workbook and reduces the individual cost estimates to
-three per-species economic-impact indicators. Only these derived aggregates
-are distributed; the raw estimate rows are not.
+three per-species economic-impact indicators. The \code{.vtr} carries these derived
+aggregates; for the individual cost estimates, use the invacost package.
 }
 \details{
 \code{cost_total_usd} is the InvaCost-convention cumulative cost: each estimate's

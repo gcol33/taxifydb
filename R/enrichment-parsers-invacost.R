@@ -1,10 +1,13 @@
 # InvaCost economic-cost aggregates.
 #
 # InvaCost (Diagne et al. 2020, Scientific Data) is a compilation of individual
-# monetary cost estimates of biological invasions. The raw rows carry
-# heterogeneous provenance (currency, cost year, method, reliability) and are
-# NOT redistributed; only derived per-species aggregates are (CC BY 4.0), the
-# same treatment as the GloBI interaction rollup.
+# monetary cost estimates of biological invasions. InvaCost is CC BY 4.0
+# throughout, estimate rows included, so the distribution boundary here is
+# grain, not license: a .vtr is a lookup keyed on canonical_name, and the raw
+# rows key on species x estimate x currency x cost year x method. They are an
+# evidence table, not a per-species lookup, so this parser reduces them to
+# aggregates, as the GloBI interaction rollup does. Use the invacost package
+# for a rigorous cost analysis over the estimate rows themselves.
 #
 # Like parse_globi, names are resolved to the accepted grain inside the parser
 # (resolve_name_map) and the total is summed there, so a species whose costs are
@@ -15,8 +18,8 @@
 #' Parse the InvaCost economic-cost database into per-species aggregates
 #'
 #' Reads the InvaCost v4.1 workbook and reduces the individual cost estimates to
-#' three per-species economic-impact indicators. Only these derived aggregates
-#' are distributed; the raw estimate rows are not.
+#' three per-species economic-impact indicators. The `.vtr` carries these derived
+#' aggregates; for the individual cost estimates, use the invacost package.
 #'
 #' `cost_total_usd` is the InvaCost-convention cumulative cost: each estimate's
 #' standardised annual cost (`Cost_estimate_per_year_2017_USD_exchange_rate`, in

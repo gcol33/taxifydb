@@ -4,10 +4,13 @@
 # assessment's compilation of >22,000 individual impact records for ~3,350 alien
 # species. Each record classifies one documented impact to the IUCN standards
 # EICAT (impact on nature) and SEICAT (impact on people's activities), on a 0-3
-# magnitude scale. The raw impact records carry heterogeneous provenance
-# (per-record source, location, method) and are NOT redistributed; only derived
-# per-species aggregates are (CC BY 4.0), the same treatment as the InvaCost and
-# GloBI rollups.
+# magnitude scale. GIDIAS is CC BY 4.0 throughout, records included, so the
+# distribution boundary here is grain, not license: a .vtr is a lookup keyed on
+# canonical_name, indexable along at most one group_col, and the raw records key
+# on species x study x location x mechanism x impacted taxon. They are an
+# evidence table, not a per-species lookup, so this parser reduces them to
+# aggregates, as the InvaCost and GloBI rollups do. Use the GIDIAS figshare
+# download for the records themselves.
 #
 # A species' EICAT category is the standard summary of its impact records: the
 # most severe magnitude among its negative (harmful) environmental impacts.
@@ -64,8 +67,9 @@
 #' Parse the GIDIAS impact database into per-species EICAT/SEICAT aggregates
 #'
 #' Reads the GIDIAS machine-readable impact records and reduces them to
-#' per-species environmental- and socio-economic-impact indicators. Only these
-#' derived aggregates are distributed; the raw impact records are not.
+#' per-species environmental- and socio-economic-impact indicators. The `.vtr`
+#' carries these derived aggregates; for the individual impact records, use the
+#' GIDIAS figshare download.
 #'
 #' `gidias_eicat_category` is the species' EICAT category: the most severe
 #' magnitude among its negative (harmful) environmental-impact records, mapped

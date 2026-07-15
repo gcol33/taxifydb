@@ -25,3 +25,10 @@ discrete counts whose repeated records are cytotype variants of one species,
 so they are reduced to the base cytotype by minimum, with \verb{_min} / \verb{_max}
 carrying the range.
 }
+\details{
+Each record names the paper the value was measured in and the method used, so
+both are kept: \code{original_reference} and \code{estimation_method} list every
+distinct value a species' records carry, joined by \code{"; "}. The method matters
+for interpreting the 1C amount, since Feulgen densitometry and flow cytometry
+are different measurements.
+}

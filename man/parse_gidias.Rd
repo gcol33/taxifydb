@@ -15,8 +15,9 @@ data.frame with \code{canonical_name} and the \verb{gidias_*} aggregate columns.
 }
 \description{
 Reads the GIDIAS machine-readable impact records and reduces them to
-per-species environmental- and socio-economic-impact indicators. Only these
-derived aggregates are distributed; the raw impact records are not.
+per-species environmental- and socio-economic-impact indicators. The \code{.vtr}
+carries these derived aggregates; for the individual impact records, use the
+GIDIAS figshare download.
 }
 \details{
 \code{gidias_eicat_category} is the species' EICAT category: the most severe

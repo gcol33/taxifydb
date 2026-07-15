@@ -110,10 +110,11 @@
 #' `reduce` picks the statistic behind `val`. The median suits a continuous
 #' quantity measured repeatedly (populations, accessions, life stages), where a
 #' value between two records is itself a valid value. It does not suit a
-#' discrete count whose records are cytotype variants of one species: the median
-#' of a diploid 2n = 10 and a tetraploid 2n = 20 is 15, an odd number no
-#' organism carries. There `min` names the base cytotype, and `<col>_min` /
-#' `<col>_max` still carry the range across cytotypes.
+#' discrete count whose records are cytotype variants of one species, because it
+#' interpolates: a diploid 2n = 10 and a tetraploid 2n = 20 give 15, which
+#' neither record reports. `min`, `max` and `mean` differ in which record they
+#' name, but only `mean` shares the median's habit of inventing one; `min` and
+#' `max` always return a value some record actually carries.
 #' @noRd
 .num_group_spread <- function(value, group,
                               reduce = c("median", "min", "max", "mean")) {

@@ -1,8 +1,12 @@
 # The C-values search returns one prime estimate per database species entry, so
 # a binomial collects several records only where entries differing by accession
 # or cytotype share it. Chromosome number and ploidy level are discrete counts
-# there: a median between cytotypes invents a value no plant carries. The 1C DNA
-# amount is a continuous measurement and keeps the median.
+# there: a median between cytotypes invents a count neither record reports. The
+# 1C DNA amount is a continuous measurement and keeps the median.
+#
+# An odd 2n is not an error to be filtered: a triploid carries one by definition
+# (Tahiti lime 2n = 3x = 27), as do aneuploid hybrids and the gametophytic
+# counts of haploid-dominant bryophytes. The reduction must leave those alone.
 
 kew_page <- function(rows) {
   cell <- function(x) paste0("<td>", x, "</td>")
@@ -27,11 +31,14 @@ kew_page <- function(rows) {
 fixture <- function() {
   kew_page(data.frame(
     Family  = "Brassicaceae",
-    Genus   = c("Arabidopsis", "Arabidopsis", "Zea", "Acer", "Acer", "Sedum"),
-    Species = c("thaliana", "thaliana", "mays", "campestre", "campestre", "acre"),
-    `Chromosome Number (2n)` = c("10", "20", "20", "26", "52", "-"),
-    `Ploidy Level (x)`       = c("2", "4", "2", "2", "4", "-"),
-    `DNA Amount1C (pg)`      = c("0.20", "0.40", "2.70", "0.60", "1.20", "5.00"),
+    Genus   = c("Arabidopsis", "Arabidopsis", "Zea", "Acer", "Acer", "Sedum",
+                "Citrus"),
+    Species = c("thaliana", "thaliana", "mays", "campestre", "campestre", "acre",
+                "latifolia"),
+    `Chromosome Number (2n)` = c("10", "20", "20", "26", "52", "-", "27"),
+    `Ploidy Level (x)`       = c("2", "4", "2", "2", "4", "-", "3"),
+    `DNA Amount1C (pg)`      = c("0.20", "0.40", "2.70", "0.60", "1.20", "5.00",
+                                 "0.61"),
     check.names      = FALSE,
     stringsAsFactors = FALSE
   ))
@@ -54,14 +61,27 @@ test_that("a cytotype pair reduces to the base cytotype, not an odd median", {
   expect_equal(ac$chromosome_2n_max, 52)
 })
 
-test_that("every reduced chromosome number is an even, whole count", {
+test_that("a reduced count is always a count some record reported", {
   res <- parse_kew_cvalues(fixture())
   v   <- res$chromosome_2n[is.finite(res$chromosome_2n)]
   expect_true(all(abs(v - round(v)) < 1e-9))
-  expect_true(all(round(v) %% 2 == 0))
 
   p <- res$ploidy_x[is.finite(res$ploidy_x)]
   expect_true(all(abs(p - round(p)) < 1e-9))
+
+  # every reduced value appears among that species' own source records
+  expect_true(all(res$chromosome_2n[is.finite(res$chromosome_2n)] %in%
+                    c(10, 20, 26, 52, 27)))
+})
+
+test_that("a genuine triploid keeps its odd count", {
+  res <- parse_kew_cvalues(fixture())
+  cl  <- res[res$canonical_name == "Citrus latifolia", ]
+
+  # Tahiti lime is a seedless triploid: 2n = 3x = 27. Odd is correct here, and
+  # a reduction that filtered or evened odd counts would destroy it.
+  expect_equal(cl$chromosome_2n, 27)
+  expect_equal(cl$ploidy_x, 3)
 })
 
 test_that("the continuous 1C amount keeps its median, and '-' reads as absent", {

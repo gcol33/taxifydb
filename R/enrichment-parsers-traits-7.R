@@ -330,11 +330,16 @@ parse_kew_cvalues <- function(path) {
   # binomial collects several records only where entries that differ by
   # accession or cytotype (the source's Subspecies field: "(Octoploid)",
   # "line TPG 17-79") share it. Those records are cytotype variants of one
-  # species, which the chromosome number and ploidy level count discretely: a
-  # median between a diploid 2n = 10 and a tetraploid 2n = 20 returns 15, and no
-  # plant has an odd somatic number. The minimum names the base cytotype, and
-  # chromosome_2n_min/_max still carry the range. The 1C DNA amount is a
-  # continuous measurement, so it keeps the median.
+  # species, which the chromosome number and ploidy level count discretely, so a
+  # median interpolates between them: a diploid 2n = 10 and a tetraploid 2n = 20
+  # give 15, a count neither record reports. The minimum names the base
+  # cytotype, and chromosome_2n_min/_max carry the range across the rest. The 1C
+  # DNA amount is a continuous measurement, so it keeps the median.
+  #
+  # An odd 2n is left untouched wherever the source reports one: a triploid
+  # carries an odd somatic number by definition (Tahiti lime 2n = 3x = 27), as
+  # do aneuploid hybrids and the gametophytic counts of haploid-dominant
+  # bryophytes. The minimum returns a reported record, so those survive.
   spec <- list(
     genome_size_1c_pg = list(trait = "genome_size_1c_pg", type = "num"),
     chromosome_2n     = list(trait = "chromosome_2n",     type = "num",

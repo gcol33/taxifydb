@@ -229,12 +229,13 @@
       "Bacher S et al. (2025) Global Impacts Dataset of Invasive Alien Species ",
       "(GIDIAS). Scientific Data 12:832 (figshare doi:10.6084/m9.figshare.27908838), ",
       "CC BY 4.0. Compiled for the IPBES thematic assessment of invasive alien ",
-      "species. Only per-species EICAT/SEICAT impact aggregates are distributed, ",
-      "not the raw impact records: the most-severe environmental (EICAT) and ",
-      "socio-economic (SEICAT) impact category, driving mechanism, affected ",
-      "well-being constituents, realms, and record/source counts, both over all ",
-      "of a species' records (affected_taxon = \"All\") and per affected native ",
-      "taxon."
+      "species. Only per-species impact aggregates are distributed, not the raw ",
+      "impact records: the most-severe environmental (EICAT) and socio-economic ",
+      "(SEICAT) impact category, the direction of the impact on nature's ",
+      "contributions to people (NCP, which the source scores on no magnitude ",
+      "scale), driving mechanism, affected well-being constituents and ",
+      "contributions, realms, and record/source counts, both over all of a ",
+      "species' records (affected_taxon = \"Any\") and per affected native taxon."
     ),
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "GIDIAS_machine_read.csv")

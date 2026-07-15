@@ -31,6 +31,14 @@ well-being block (SEICAT, MC/MN/MO/MR). The remaining columns summarise the
 evidence: the driving mechanism(s), affected well-being constituents, the
 species' functional group and realms, and record/source counts.
 
+Nature's Contributions to People (NCP) is reported as a direction rather than
+a category: \code{gidias_ncp_direction} gives the direction(s) recorded
+(\code{"Negative"}, \code{"Positive"}, \code{"Neutral"}, or a combination for the 16\% of
+species with a mixed record) and \code{gidias_ncp_affected} the contributions
+affected. GIDIAS scores no magnitude scale for this block, so no IUCN-style
+category is derived; the two columns are not paired, so use the source
+records where the direction of a specific contribution matters.
+
 Each species is aggregated twice. \code{affected_taxon = "Any"} summarises every
 record, and is the grain to use unless you want one affected group. The
 other rows summarise the species' impacts on one affected native taxon

@@ -26,6 +26,20 @@
 # SEICAT is the same construction on the CWB (constituents of well-being) block,
 # whose magnitude tops out at 3 (all people stop an activity) = MR.
 #
+# GIDIAS scores a third block, Nature's Contributions to People (NCP), which
+# gets no category because the source does not score one. magnitude.NCP is free
+# text on the 2,965 rows that carry it, mixing at least four vocabularies in one
+# column (EICAT tokens MN/MO/MR/MC/DD; a yes/high/medium ordinal; a verbatim
+# scale description "1: Reduced performance of individuals"; "not quantified"),
+# so there is no 0-3 scale to map and inventing one would fabricate a rating the
+# source does not claim. direction.NCP is clean and better covered than the CWB
+# block we do rate: 7,144 rows (4,741 Negative) against direction.CWB's 3,400.
+# So NCP is carried as a direction plus the contributions affected, and no
+# category. The 18 NCP.* columns are not read: they are exactly the one-hot
+# decomposition of affected.NCP.clean (both non-empty on the same 7,294 rows,
+# agreeing on all 7,294, neither covering a row the other misses), so rolling
+# them up would restate gidias_ncp_affected 18 times.
+#
 # Each species is aggregated twice: once over all its records (affected_taxon =
 # "Any", the default grain) and once per affected native taxon. GIDIAS records
 # what a species impacts in Affected.native.species.Taxon, a controlled 5-term
@@ -40,13 +54,15 @@
 #
 # The "Any" row is not the union of the per-taxon rows and cannot be dropped: it
 # is the only row carrying the 12% of negative records with no affected taxon
-# recorded, and the only one carrying SEICAT. The affected-taxon axis is an
-# environmental-impact (Nature/EICAT) concept -- 13,070 of the 14,380 rows that
-# carry an affected taxon have no CWB direction at all, and only 1,179 of the
-# 2,893 negative-CWB rows carry one -- so slicing SEICAT (impact on people's
-# activities) by affected native taxon would answer a question the column does
-# not ask. Per-taxon rows therefore carry the EICAT block and the record counts;
-# their SEICAT columns are NA.
+# recorded, and the only one carrying the two people-facing blocks. The
+# affected-taxon axis is an environmental-impact (Nature/EICAT) concept --
+# 13,070 of the 14,380 rows that carry an affected taxon have no CWB direction
+# at all, only 1,179 of the 2,893 negative-CWB rows carry one, and 11,177 of
+# those 14,380 have no NCP direction either -- so slicing SEICAT (impact on
+# people's activities) or NCP (contributions to people) by affected native taxon
+# would answer a question those columns do not ask. Per-taxon rows therefore
+# carry the EICAT block and the record counts; their SEICAT and NCP columns are
+# NA.
 #
 # Like parse_invacost / parse_globi, names are resolved to the accepted grain
 # inside the parser (resolve_name_map) and the aggregation happens there, so a
@@ -107,6 +123,14 @@
 #' evidence: the driving mechanism(s), affected well-being constituents, the
 #' species' functional group and realms, and record/source counts.
 #'
+#' Nature's Contributions to People (NCP) is reported as a direction rather than
+#' a category: `gidias_ncp_direction` gives the direction(s) recorded
+#' (`"Negative"`, `"Positive"`, `"Neutral"`, or a combination for the 16% of
+#' species with a mixed record) and `gidias_ncp_affected` the contributions
+#' affected. GIDIAS scores no magnitude scale for this block, so no IUCN-style
+#' category is derived; the two columns are not paired, so use the source
+#' records where the direction of a specific contribution matters.
+#'
 #' Each species is aggregated twice. `affected_taxon = "Any"` summarises every
 #' record, and is the grain to use unless you want one affected group. The
 #' other rows summarise the species' impacts on one affected native taxon
@@ -148,6 +172,8 @@ parse_gidias <- function(path) {
   mag_cwb <- suppressWarnings(as.integer(chr("magnitude.CWB")))   # "positive" -> NA
   dir_cwb <- tolower(chr("direction.CWB"))
   cwb_aff <- chr("affected.CWB.clean")
+  dir_ncp <- chr("direction.NCP")
+  ncp_aff <- chr("affected.NCP.clean")
   taxon   <- chr("IAS.Taxon")
   kingdom <- chr("Kingdom")
   realm   <- chr("Realm")
@@ -161,7 +187,7 @@ parse_gidias <- function(path) {
   glob <- glob[keep]; mech <- mech[keep]; mag_cwb <- mag_cwb[keep]
   dir_cwb <- dir_cwb[keep]; cwb_aff <- cwb_aff[keep]; taxon <- taxon[keep]
   kingdom <- kingdom[keep]; realm <- realm[keep]; src <- src[keep]
-  aff_tax <- aff_tax[keep]
+  aff_tax <- aff_tax[keep]; dir_ncp <- dir_ncp[keep]; ncp_aff <- ncp_aff[keep]
 
   # Resolve to the accepted grain and expand each record to the accepted name(s)
   # its species maps to across backends (see file header).
@@ -176,13 +202,14 @@ parse_gidias <- function(path) {
   e_mech    <- mech[idx];    e_mag_cwb <- mag_cwb[idx]; e_dir_cwb <- dir_cwb[idx]
   e_cwb_aff <- cwb_aff[idx]; e_taxon   <- taxon[idx];   e_kingdom <- kingdom[idx]
   e_realm   <- realm[idx];   e_src     <- src[idx];     e_aff_tax <- aff_tax[idx]
+  e_dir_ncp <- dir_ncp[idx]; e_ncp_aff <- ncp_aff[idx]
 
   # One aggregation over whatever record subset defines a row: the Nature/EICAT
-  # block plus the record counts over `nat_i`, the CWB/SEICAT block over
-  # `cwb_i`. The two subsets coincide for the all-records aggregate; a
-  # per-affected-taxon row passes an empty `cwb_i`, so SEICAT falls to NA there
-  # (see the affected-taxon note in the file header).
-  agg <- function(nat_i, cwb_i) {
+  # block plus the record counts over `nat_i`, and the two people-facing blocks
+  # (CWB/SEICAT and NCP) over `ppl_i`. The two subsets coincide for the
+  # all-records aggregate; a per-affected-taxon row passes an empty `ppl_i`, so
+  # both people-facing blocks fall to NA there (see the file header).
+  agg <- function(nat_i, ppl_i) {
     neg <- nat_i[which(e_dir_nat[nat_i] == "Negative")]
     if (length(neg)) {
       mags <- e_mag_nat[neg]
@@ -197,7 +224,7 @@ parse_gidias <- function(path) {
       eicat <- NA_character_; emag <- NA_integer_; emech <- NA_character_
     }
 
-    negc <- cwb_i[which(e_dir_cwb[cwb_i] == "negative")]
+    negc <- ppl_i[which(e_dir_cwb[ppl_i] == "negative")]
     if (length(negc)) {
       cmags <- e_mag_cwb[negc]
       if (all(is.na(cmags))) {
@@ -213,6 +240,14 @@ parse_gidias <- function(path) {
     s <- e_src[nat_i]
     list(eicat = eicat, emag = emag, emech = emech,
          seicat = seicat, smag = smag, saff = saff,
+         # NCP has no usable magnitude, so direction is the indicator (see the
+         # NCP note in the file header). Both columns summarise every NCP
+         # record for the species, whatever its direction: affected.NCP.clean
+         # names the contribution affected, and direction.NCP scores it
+         # separately, so a species with a mixed record ("Negative; Positive",
+         # 16% of them) does not pair the two at this grain.
+         ncp_dir = .gidias_uniq_join(e_dir_ncp[ppl_i]),
+         ncp_aff = .gidias_uniq_join(e_ncp_aff[ppl_i], split_semi = TRUE),
          taxon = .gidias_mode1(e_taxon[nat_i]),
          kingdom = .gidias_mode1(e_kingdom[nat_i]),
          realms = .gidias_uniq_join(e_realm[nat_i]),
@@ -256,6 +291,8 @@ parse_gidias <- function(path) {
     gidias_seicat_category   = g("seicat", character(1)),
     gidias_seicat_magnitude  = g("smag", integer(1)),
     gidias_seicat_affected   = g("saff", character(1)),
+    gidias_ncp_direction     = g("ncp_dir", character(1)),
+    gidias_ncp_affected      = g("ncp_aff", character(1)),
     gidias_ias_taxon         = g("taxon", character(1)),
     gidias_kingdom           = g("kingdom", character(1)),
     gidias_realms            = g("realms", character(1)),

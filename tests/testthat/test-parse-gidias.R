@@ -20,6 +20,13 @@ gidias_fixture <- function() {
     direction.CWB                 = c("", "", "", "negative", ""),
     magnitude.CWB                 = c(NA, NA, NA, 2L, NA),
     affected.CWB.clean            = c("", "", "", "Health", ""),
+    # NCP: a mixed-direction species (the cat preys on pests as well as on
+    # natives), and a compound affected cell to split.
+    direction.NCP                 = c("Negative", "", "", "Positive", ""),
+    affected.NCP.clean            = c("1. Habitat creation and maintenance;", "",
+                                      "", "10. Regulation of detrimental organisms;",
+                                      ""),
+    magnitude.NCP                 = c("high", "", "", "yes", ""),
     IAS.Taxon                     = c(rep("Vertebrate", 4L), "Vertebrate"),
     Kingdom                       = "Animalia",
     Realm                         = c(rep("terrestrial", 4L), "terrestrial"),
@@ -94,16 +101,43 @@ test_that("the affected-taxon axis slices the environmental block only", {
   out <- parse_gidias(f)
   grp <- out[out$affected_taxon != "Any", , drop = FALSE]
 
-  # SEICAT measures impact on people's activities, so it is not a question the
-  # affected-native-taxon column can answer: it lives on the aggregate alone.
+  # SEICAT and NCP are about people, so they are not questions the
+  # affected-native-taxon column can answer: they live on the aggregate alone.
   expect_true(all(is.na(grp$gidias_seicat_category)))
   expect_true(all(is.na(grp$gidias_seicat_magnitude)))
   expect_true(all(is.na(grp$gidias_seicat_affected)))
+  expect_true(all(is.na(grp$gidias_ncp_direction)))
+  expect_true(all(is.na(grp$gidias_ncp_affected)))
   expect_identical(
     out$gidias_seicat_category[out$canonical_name == "Felis catus" &
                                  out$affected_taxon == "Any"],
     "MO"
   )
+})
+
+test_that("NCP is carried as a direction, with no invented magnitude category", {
+  local_stub_resolver()
+  f <- gidias_fixture()
+  on.exit(unlink(f), add = TRUE)
+
+  out <- parse_gidias(f)
+  any_cat <- out[out$canonical_name == "Felis catus" &
+                   out$affected_taxon == "Any", , drop = FALSE]
+
+  # GIDIAS scores no magnitude scale for NCP (magnitude.NCP is free text), so
+  # direction is the indicator and there is no gidias_ncp_category to derive.
+  expect_true(all(c("gidias_ncp_direction", "gidias_ncp_affected") %in%
+                    names(out)))
+  expect_false(any(grepl("ncp.*(category|magnitude)", names(out))))
+
+  # A species with a mixed record keeps both directions rather than a winner.
+  expect_identical(any_cat$gidias_ncp_direction, "Negative; Positive")
+  # Affected contributions are pooled across directions and split on ";".
+  expect_identical(any_cat$gidias_ncp_affected,
+                   "1. Habitat creation and maintenance; 10. Regulation of detrimental organisms")
+
+  # A species with no NCP record gets NA, not an empty string.
+  expect_true(is.na(out$gidias_ncp_direction[out$canonical_name == "Bufo marinus"]))
 })
 
 test_that("a negative record with no affected taxon lands in the aggregate only", {

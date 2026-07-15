@@ -41,10 +41,8 @@
 download_ncbi <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  gz_path <- file.path(dest, "new_taxdump.tar.gz")
-
   if (verbose) message("Downloading NCBI taxonomy dump (~141 MB)...")
-  utils::download.file(.ncbi_url, gz_path, mode = "wb", quiet = !verbose)
+  gz_path <- download_curl_file(.ncbi_url, dest, "new_taxdump.tar.gz")
 
   if (verbose) message("Extracting...")
   utils::untar(gz_path, exdir = dest)

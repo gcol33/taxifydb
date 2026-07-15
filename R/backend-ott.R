@@ -37,10 +37,8 @@
 download_ott <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  tgz_path <- file.path(dest, "ott.tgz")
-
   if (verbose) message("Downloading OTT taxonomy (~106 MB)...")
-  utils::download.file(.ott_url, tgz_path, mode = "wb", quiet = !verbose)
+  tgz_path <- download_curl_file(.ott_url, dest, "ott.tgz")
 
   if (verbose) message("Extracting...")
   utils::untar(tgz_path, exdir = dest)

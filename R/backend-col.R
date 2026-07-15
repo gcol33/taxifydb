@@ -58,13 +58,11 @@
 download_col <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  zip_path <- file.path(dest, "col_download.zip")
-
   if (verbose) {
     message("Downloading COL backbone from ChecklistBank (~600 MB)...")
     message(sprintf("  URL: %s", .col_url))
   }
-  utils::download.file(.col_url, zip_path, mode = "wb", quiet = !verbose)
+  zip_path <- download_curl_file(.col_url, dest, "col_download.zip")
 
   if (verbose) message("Extracting Taxon.tsv ...")
   txt_files <- utils::unzip(zip_path, list = TRUE)$Name

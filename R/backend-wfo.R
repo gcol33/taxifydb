@@ -49,13 +49,11 @@
 download_wfo <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  zip_path <- file.path(dest, "wfo_download.zip")
-
   if (verbose) {
     message("Downloading WFO backbone from Zenodo (~120 MB)...")
     message(sprintf("  URL: %s", .wfo_url))
   }
-  utils::download.file(.wfo_url, zip_path, mode = "wb", quiet = !verbose)
+  zip_path <- download_curl_file(.wfo_url, dest, "wfo_download.zip")
 
   if (verbose) message("Extracting classification file...")
   txt_files <- utils::unzip(zip_path, list = TRUE)$Name

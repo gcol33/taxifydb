@@ -334,10 +334,7 @@
       ncbi_dir <- file.path(dest, "ncbi")
       if (!dir.exists(ncbi_dir)) {
         dir.create(ncbi_dir, recursive = TRUE)
-        tar_path <- file.path(dest, "taxdump.tar.gz")
-        if (!file.exists(tar_path)) {
-          utils::download.file(ncbi_url, tar_path, mode = "wb", quiet = TRUE)
-        }
+        tar_path <- download_curl_file(ncbi_url, dest, "taxdump.tar.gz")
         utils::untar(tar_path, files = "names.dmp", exdir = ncbi_dir)
       }
 

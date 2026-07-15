@@ -47,14 +47,11 @@
 download_fungorum <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  zip_path <- file.path(dest, "fungorum_coldp.zip")
-
   if (verbose) {
     message("Downloading Species Fungorum Plus from ChecklistBank...")
     message(sprintf("  URL: %s", .fungorum_url))
   }
-  utils::download.file(.fungorum_url, zip_path, mode = "wb",
-                       quiet = !verbose)
+  zip_path <- download_curl_file(.fungorum_url, dest, "fungorum_coldp.zip")
 
   if (verbose) message("Extracting ColDP files...")
   needed <- c("Taxon.tsv", "Name.tsv", "Synonym.tsv")

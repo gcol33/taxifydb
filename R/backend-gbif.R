@@ -51,13 +51,11 @@
 download_gbif <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  gz_path <- file.path(dest, "gbif_simple.txt.gz")
-
   if (verbose) {
     message("Downloading GBIF backbone (~1.5 GB)...")
     message(sprintf("  URL: %s", .gbif_url))
   }
-  utils::download.file(.gbif_url, gz_path, mode = "wb", quiet = !verbose)
+  gz_path <- download_curl_file(.gbif_url, dest, "gbif_simple.txt.gz")
 
   gz_path
 }

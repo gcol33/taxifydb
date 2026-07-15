@@ -21,10 +21,8 @@
 download_itis <- function(dest = tempdir(), verbose = TRUE) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 
-  zip_path <- file.path(dest, "itisSqlite.zip")
-
   if (verbose) message("Downloading ITIS SQLite dump (~212 MB)...")
-  utils::download.file(.itis_url, zip_path, mode = "wb", quiet = !verbose)
+  zip_path <- download_curl_file(.itis_url, dest, "itisSqlite.zip")
 
   if (verbose) message("Extracting...")
   utils::unzip(zip_path, exdir = dest)

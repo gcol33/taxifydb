@@ -43,30 +43,37 @@ jobs:
         if: steps.check.outputs.drift_count != '0'
         run: |
           res <- jsonlite::fromJSON("coverage_results.json")
-          drift <- res[res$status %in% c("missing_in_manifest", "stale_in_manifest"), ]
+          drift <- res[res$status %in% c("missing_in_manifest",
+                                         "missing_in_taxifydb",
+                                         "stale_in_manifest"), ]
           lines <- c(
             "## taxify manifest is out of sync with taxifydb releases",
             "",
-            "The following backbones are released on `gcol33/taxifydb` but not",
-            "current in taxify's runtime `inst/manifest.json`. Users of these",
-            "backends silently fall back to build-from-source.",
+            "The entries below differ between what `gcol33/taxifydb` has released",
+            "(build-side `manifest/manifest.json` and per-backbone release tags)",
+            "and taxify's runtime `inst/manifest.json`. Backbone drift silently",
+            "degrades users to build-from-source; enrichment drift leaves one of",
+            "the two manifests a stale second source of truth.",
             "",
-            "| Backend | Latest release | In taxify manifest | Status |",
-            "|---|---|---|---|"
+            "| Kind | Name | taxifydb | taxify manifest | Status |",
+            "|---|---|---|---|---|"
           )
           for (i in seq_len(nrow(drift))) {
             lines <- c(lines, sprintf(
-              "| `%s` | %s | %s | **%s** |",
-              drift$backend[i],
-              drift$release[i],
+              "| %s | `%s` | %s | %s | **%s** |",
+              drift$kind[i],
+              drift$name[i],
+              ifelse(is.na(drift$release[i]), "(none)", drift$release[i]),
               ifelse(is.na(drift$manifest[i]), "(none)", drift$manifest[i]),
               drift$status[i]
             ))
           }
           lines <- c(lines, "",
-            "The build workflows open a sync PR automatically; this drift means a",
-            "sync PR is unmerged, `TAXIFY_MANIFEST_TOKEN` is unset, or the entry",
-            "needs a one-time citation/license before merge.",
+            "Backbone drift: the build workflows open a sync PR automatically, so",
+            "this means a sync PR is unmerged, `TAXIFY_MANIFEST_TOKEN` is unset, or",
+            "the entry needs a one-time citation/license before merge. Enrichment",
+            "drift: an enrichment publish updated one manifest but not the other;",
+            "regenerate the lagging side so both point at the same release.",
             "",
             sprintf("*Last checked: %s UTC*", format(Sys.time(), "%Y-%m-%d %H:%M")))
           writeLines(paste(lines, collapse = "\n"), "issue_body.md")

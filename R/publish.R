@@ -223,9 +223,10 @@ update_manifest <- function(manifest_path, backend_name, version,
 #' Enrichment `.vtr` files are published under a single rolling release tag
 #' (e.g. `enrichment-2026.06`) regardless of the dataset's own version. The
 #' manifest entry therefore records two distinct versions: `latest` holds the
-#' dataset version (from the meta sidecar) while the download URL points at the
-#' rolling release. Pass `release_version` to set the release tag explicitly;
-#' when omitted it falls back to the dataset version (correct only when the two
+#' rolling release version (matching the `enrichment-<latest>` download tag)
+#' while `source_version` holds the dataset's own version (from the meta
+#' sidecar). Pass `release_version` to set the release tag explicitly; when
+#' omitted it falls back to the dataset version (correct only when the two
 #' happen to coincide).
 #'
 #' @param manifest_path Character. Path to manifest.json.
@@ -267,9 +268,15 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   entry <- manifest$enrichments[[name]]
   if (is.null(entry)) entry <- list()
 
-  entry$latest   <- meta$version
-  entry$full_url <- sprintf("%s/%s.vtr", base_url, name)
-  entry$nrow     <- meta$nrow
+  # `latest` is the rolling release version (the enrichment-<latest> tag the URL
+  # points at); the dataset's own version is recorded separately in
+  # `source_version`. taxify's runtime writes the downloaded meta$version from
+  # `latest`, so the once-per-session freshness check (meta$version != latest)
+  # only fires when a new release is cut -- keeping the two versions distinct.
+  entry$latest         <- release_tag_version
+  entry$source_version <- meta$version
+  entry$full_url       <- sprintf("%s/%s.vtr", base_url, name)
+  entry$nrow           <- meta$nrow
   # md5 of the .vtr (from the build sidecar); taxify's runtime uses it to detect
   # a same-tag republish and refresh an otherwise version-locked enrichment cache
   # -- the enrichment analogue of what update_manifest() records for backbones.

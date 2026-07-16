@@ -32,8 +32,9 @@ The updated manifest (invisibly).
 Enrichment \code{.vtr} files are published under a single rolling release tag
 (e.g. \code{enrichment-2026.06}) regardless of the dataset's own version. The
 manifest entry therefore records two distinct versions: \code{latest} holds the
-dataset version (from the meta sidecar) while the download URL points at the
-rolling release. Pass \code{release_version} to set the release tag explicitly;
-when omitted it falls back to the dataset version (correct only when the two
+rolling release version (matching the \verb{enrichment-<latest>} download tag)
+while \code{source_version} holds the dataset's own version (from the meta
+sidecar). Pass \code{release_version} to set the release tag explicitly; when
+omitted it falls back to the dataset version (correct only when the two
 happen to coincide).
 }

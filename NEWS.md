@@ -1,3 +1,24 @@
+# taxifydb 0.1.13
+
+## Manifest fixes
+
+* `update_enrichment_manifest()` now records the rolling release version in
+  `latest` (matching the `enrichment-<latest>` download tag) and the dataset's
+  own version in a new `source_version` field. Previously `latest` held the
+  dataset version, so the build-side manifest disagreed with taxify's runtime
+  manifest on every entry whose dataset version differs from the release.
+
+* Regenerated `manifest/manifest.json` so all 89 enrichment entries match the
+  current `enrichment-2026.07` release (they had lagged `enrichment-2026.05`;
+  #20). The enrichment publish path had updated taxify's runtime manifest but
+  not this build-side copy, leaving it a stale second source of truth.
+
+* `scripts/check_manifest_coverage.R` (the weekly coverage cron) now also
+  compares the two manifests' enrichment entries directly, so a publish that
+  updates one manifest but not the other surfaces the same day instead of
+  lying dormant. Enrichments share one rolling tag, so there is no per-entry
+  release tag to compare against as with backbones.
+
 # taxifydb 0.1.12
 
 ## New enrichment

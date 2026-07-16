@@ -1,3 +1,18 @@
+# taxifydb 0.1.16
+
+## Cloudflare-gated builds find a curl_cffi Python without a manual override
+
+* `.cf_python()` no longer relies on PATH alone to locate an interpreter with
+  `curl_cffi`. Under `Rscript`, Rtools prepends its own `usr/bin/python` (which
+  lacks `curl_cffi`) to PATH, so the previous PATH-only probe picked the wrong
+  interpreter and errored even when a suitable python was installed -- forcing a
+  manual `TAXIFYDB_PYTHON`. Discovery now also scans pyenv-managed versions
+  (newest first, honouring `PYENV_ROOT`, both `pyenv-win` and unix layouts) and
+  interpreters registered with the Windows `py` launcher, then falls back to
+  PATH. The first candidate that can import `curl_cffi` wins, and the error
+  lists everything it tried. Building `hosts`, `usda_fungus_host` and `clopla`
+  now works out of the box on a pyenv or `py`-launcher setup.
+
 # taxifydb 0.1.15
 
 ## Enrichment runtime manifest fields populated from the build

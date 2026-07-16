@@ -335,26 +335,74 @@ download_dryad_file <- function(doi, dest_dir, filename,
 # pre-built .vtr and never touches python.
 
 
+#' pyenv-managed interpreters, newest version first
+#'
+#' PATH-based discovery cannot see these under Rscript, where Rtools' own
+#' `usr/bin/python` shadows the user's python on PATH. Scans the pyenv versions
+#' tree directly (Windows `pyenv-win` layout and the unix layout), honouring
+#' `PYENV_ROOT`.
+#' @return Character vector of python executable paths (may be empty).
+#' @noRd
+.pyenv_pythons <- function() {
+  win  <- .Platform$OS.type == "windows"
+  root <- Sys.getenv("PYENV_ROOT", unset = "")
+  if (!nzchar(root)) {
+    root <- if (win) file.path(path.expand("~"), ".pyenv", "pyenv-win")
+            else     file.path(path.expand("~"), ".pyenv")
+  }
+  glob <- if (win) file.path(root, "versions", "*", "python.exe")
+          else     file.path(root, "versions", "*", "bin", "python")
+  pv <- Sys.glob(glob)
+  if (!length(pv)) return(character(0))
+  # Order by the version directory name, newest first.
+  vdir  <- if (win) dirname(pv) else dirname(dirname(pv))
+  ord   <- tryCatch(order(numeric_version(basename(vdir), strict = FALSE),
+                          decreasing = TRUE),
+                    error = function(e) seq_along(pv))
+  pv[ord]
+}
+
+#' Paths registered with the Windows Python launcher (`py -0p`)
+#' @return Character vector of python executable paths (may be empty).
+#' @noRd
+.py_launcher_pythons <- function() {
+  if (.Platform$OS.type != "windows") return(character(0))
+  launcher <- Sys.which("py")
+  if (!nzchar(launcher)) return(character(0))
+  out <- tryCatch(system2(launcher, "-0p", stdout = TRUE, stderr = FALSE),
+                  error = function(e) character(0))
+  m <- regmatches(out, regexpr("[A-Za-z]:\\\\.*python\\.exe", out))
+  m[nzchar(m)]
+}
+
 #' Locate a Python interpreter that can import curl_cffi
 #'
-#' Honours `TAXIFYDB_PYTHON`, then tries `python` / `python3` on PATH. Errors
-#' with an install instruction if none has `curl_cffi`.
+#' Discovery is not limited to PATH, because under Rscript Rtools' bundled
+#' `usr/bin/python` (no curl_cffi) shadows the user's interpreter. Candidates,
+#' in order: `TAXIFYDB_PYTHON`, `RETICULATE_PYTHON`, pyenv-managed versions
+#' (newest first), interpreters registered with the Windows `py` launcher, then
+#' `python3` / `python` on PATH. The first candidate that can import `curl_cffi`
+#' wins. Errors (listing what was tried) if none qualifies.
 #' @return Path to a usable python executable.
 #' @noRd
 .cf_python <- function() {
   cands <- c(Sys.getenv("TAXIFYDB_PYTHON", ""),
-             Sys.which("python"), Sys.which("python3"))
-  cands <- cands[nzchar(cands)]
+             Sys.getenv("RETICULATE_PYTHON", ""),
+             .pyenv_pythons(),
+             .py_launcher_pythons(),
+             Sys.which("python3"), Sys.which("python"))
+  cands <- unique(unname(cands[nzchar(cands)]))
   for (py in cands) {
     ok <- tryCatch(
       system2(py, c("-c", shQuote("import curl_cffi")),
               stdout = FALSE, stderr = FALSE) == 0L,
       error = function(e) FALSE)
-    if (isTRUE(ok)) return(unname(py))
+    if (isTRUE(ok)) return(py)
   }
   stop("No Python with curl_cffi found. Cloudflare-gated enrichments ",
-       "(hosts, usda_fungus_host) need it at build time. Install with:\n",
-       "  pip install curl_cffi\n",
+       "(hosts, usda_fungus_host, clopla) need it at build time.\n",
+       "Tried:\n  ", paste(cands, collapse = "\n  "), "\n",
+       "Install with:\n  pip install curl_cffi\n",
        "or point TAXIFYDB_PYTHON at a suitable interpreter.", call. = FALSE)
 }
 

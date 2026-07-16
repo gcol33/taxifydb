@@ -1,0 +1,114 @@
+name: 'taxify runtime manifest sync'
+description: >
+  Open a PR on the taxify runtime repo recording a freshly published backbone
+  release in inst/manifest.json. Fails loudly when the token is missing or no
+  longer works, so a lapsed secret cannot drift the manifest behind a green
+  build.
+
+inputs:
+  backend:
+    description: 'Backend name, also the release tag prefix and file basename.'
+    required: true
+  version:
+    description: 'Version being published.'
+    required: true
+  delta_from:
+    description: >
+      Version the delta was cut against, from the vtr-delta action. Empty when
+      no patch was produced.
+    required: false
+    default: ''
+  token:
+    description: >
+      PAT with contents:write and pull-requests:write on the runtime repo.
+      Empty fails the step -- this sync is required, not optional.
+    required: true
+  runtime_repo:
+    description: 'owner/repo of the taxify runtime.'
+    required: false
+    default: 'gcol33/taxify'
+  rscript:
+    description: 'Rscript executable.'
+    required: false
+    default: 'Rscript'
+
+runs:
+  using: composite
+  steps:
+    - name: Sync the runtime manifest
+      shell: bash
+      env:
+        TAXIFY_MANIFEST_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+
+        BE="${{ inputs.backend }}"
+        VER="${{ inputs.version }}"
+        REPO="${{ inputs.runtime_repo }}"
+
+        # The sync is required: without it $REPO keeps serving the previous
+        # release while taxifydb advertises the new one. The .vtr and the
+        # taxifydb manifest are both committed before this step runs, so
+        # failing costs no artifact, and a green build carrying a drifted
+        # manifest is only caught by the weekly coverage cron.
+        if [ -z "${TAXIFY_MANIFEST_TOKEN:-}" ]; then
+          echo "::error title=taxify manifest not synced::TAXIFY_MANIFEST_TOKEN is unset, so $BE v$VER is published but $REPO still points at the previous release. Set the secret and re-run this step, or update inst/manifest.json by hand."
+          exit 1
+        fi
+
+        # Probe write access before doing any work. $REPO is public, so an
+        # expired or revoked PAT still clones anonymously and only trips much
+        # later on push, as a raw git auth error naming neither the secret nor
+        # the fix. Asking the API settles it up front.
+        if ! PERM=$(gh api "repos/${REPO}" --jq '.permissions.push' 2>&1); then
+          printf '%s\n' "$PERM"
+          echo "::error title=taxify manifest not synced::TAXIFY_MANIFEST_TOKEN cannot read $REPO; it is most likely expired or revoked. $BE v$VER is already published, so refresh the secret and re-run this step only."
+          exit 1
+        fi
+        if [ "$PERM" != "true" ]; then
+          echo "::error title=taxify manifest not synced::TAXIFY_MANIFEST_TOKEN reaches $REPO but has no write access (permissions.push=$PERM), so it cannot push the sync branch. Grant contents:write and pull-requests:write, then re-run this step."
+          exit 1
+        fi
+
+        VTR="$(pwd)/output/$BE/$BE.vtr"
+        DELTA="$(pwd)/output/$BE/$BE.xdelta"
+
+        rm -rf taxify_repo
+        git clone "https://x-access-token:${TAXIFY_MANIFEST_TOKEN}@github.com/${REPO}.git" taxify_repo
+        cd taxify_repo
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        BR="auto/manifest-$BE"
+        git checkout -B "$BR" origin/main
+
+        "${{ inputs.rscript }}" -e "p <- '$DELTA'; d <- '${{ inputs.delta_from }}'; taxifydb::update_manifest('inst/manifest.json', '$BE', '$VER', '$VTR', delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
+
+        git add inst/manifest.json
+        if git diff --staged --quiet; then
+          echo "$REPO manifest already current for $BE v$VER."
+          exit 0
+        fi
+
+        git commit -m "manifest: sync $BE v$VER from taxifydb release"
+        git push -f -u origin "$BR"
+
+        # An existing PR for this branch is the one tolerable failure here: the
+        # push above already refreshed it. Any other failure leaves the branch
+        # pushed with nothing to merge, so it has to surface.
+        if ! PR_OUT=$(gh pr create --repo "$REPO" --base main --head "$BR" \
+              --title "manifest: sync $BE v$VER" \
+              --body "Automated backend-manifest sync from the taxifydb \`$BE-$VER\` release. Mechanical fields (full_url, full_size, full_sha256, content_id, nrow, delta_url, source_url) are written by \`taxifydb::update_manifest()\`; curated fields (citation, license) are preserved from the existing entry. A brand-new backend needs its citation/license added once in this PR." \
+              2>&1); then
+          if printf '%s' "$PR_OUT" | grep -qi "already exists"; then
+            echo "PR for $BR already open; branch updated."
+          else
+            printf '%s\n' "$PR_OUT"
+            echo "::error title=taxify manifest not synced::Pushed $BR to $REPO but could not open the PR; TAXIFY_MANIFEST_TOKEN most likely lacks pull-requests:write. $BE v$VER stays unsynced until that PR exists."
+            exit 1
+          fi
+        else
+          printf '%s\n' "$PR_OUT"
+        fi

@@ -2053,11 +2053,11 @@
       "source_url": "https://doi.org/10.6084/m9.figshare.21777161"
     },
     "invacost": {
-      "latest": "4.1",
+      "latest": "2026.07",
       "source_version": "4.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/invacost.vtr",
-      "nrow": 905,
-      "content_id": "c8bffe4cf5ede0b753a6dbe5af93663b",
+      "nrow": 904,
+      "content_id": "7aeae7e92ab0381ee4f35a0164bd927e",
       "source_url": "https://ndownloader.figshare.com/files/33669518",
       "source_doi": "10.6084/m9.figshare.12668570",
       "license": "CC BY 4.0"

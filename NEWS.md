@@ -1,3 +1,14 @@
+# taxifydb 0.1.17
+
+## Documentation
+
+* Added a package README covering the build API, the two-repo split with
+  `taxify`, data hosting, requirements, and how to add a backbone or enrichment.
+
+* The DESCRIPTION `Description` field now names all 15 backbones; it had listed
+  only the original 12 and omitted FishBase, SeaLifeBase, and the Reptile
+  Database.
+
 # taxifydb 0.1.16
 
 ## Cloudflare-gated builds find a curl_cffi Python without a manual override

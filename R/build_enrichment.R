@@ -99,14 +99,19 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
 
   build_enrichment_vtr(
     df, vtr_path,
-    name        = name,
-    version     = version %||%
-                  (if (!is.null(url)) format(Sys.Date(), "%Y.%m") else reg$version),
-    source_url  = source_url,
-    source_doi  = if (!is.null(url)) NULL else reg$source_doi,
-    license     = reg$license,
-    attribution = reg$attribution,
-    group_col   = reg$group_col
+    name          = name,
+    version       = version %||%
+                    (if (!is.null(url)) format(Sys.Date(), "%Y.%m") else reg$version),
+    source_url    = source_url,
+    source_doi    = if (!is.null(url)) NULL else reg$source_doi,
+    license       = reg$license,
+    attribution   = reg$attribution,
+    group_col     = reg$group_col,
+    # Optional registry fields for the runtime manifest; sensible defaults when a
+    # registry entry omits them (species-grain, frozen snapshot).
+    species_col   = reg$species_col,
+    static        = reg$static %||% TRUE,
+    source_format = reg$source_format
   )
 
   if (verbose) {

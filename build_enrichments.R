@@ -45,10 +45,11 @@ if (action == "publish") {
   names <- if (target == "all") taxifydb::list_enrichments() else target
   db_manifest <- "manifest/manifest.json"
   # taxify's runtime manifest, when the two repos are checked out side by side.
-  # Written with the same updater as the build-side copy so the mechanical
-  # fields (latest, source_version, full_url, nrow, content_id, ...) stay in
-  # lockstep; curated runtime fields (trait_cols, citation, static) are merged
-  # and preserved. A brand-new enrichment still needs those added once by hand.
+  # Written with the same updater (runtime = TRUE) so the mechanical fields
+  # (latest, source_version, full_url, nrow, content_id, ...) stay in lockstep
+  # with the build-side copy, while the runtime fields (trait_cols, species_col,
+  # citation, static, source_format) are populated from the build for a new
+  # enrichment and preserved for an existing one -- no manual curation step.
   tx_manifest <- "../taxify/inst/manifest.json"
 
   built <- list()
@@ -74,7 +75,8 @@ if (action == "publish") {
                                          release_version = version)
     if (file.exists(tx_manifest)) {
       taxifydb::update_enrichment_manifest(tx_manifest, name, built[[name]],
-                                           release_version = version)
+                                           release_version = version,
+                                           runtime = TRUE)
     }
   }
 

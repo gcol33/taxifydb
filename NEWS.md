@@ -1,3 +1,25 @@
+# taxifydb 0.1.15
+
+## Enrichment runtime manifest fields populated from the build
+
+* A new enrichment's runtime manifest entry is now complete straight from the
+  build, with no manual curation step. `build_enrichment_vtr()` records
+  `trait_cols` (the built `.vtr` columns, minus the join key and group column),
+  `static`, and `source_format` in `meta.json`, and
+  `update_enrichment_manifest(runtime = TRUE)` populates `trait_cols`,
+  `species_col`, `static`, `source_format`, and `citation` (from the registry
+  attribution) on the runtime entry.
+
+* Runtime fields are filled only when absent, so a hand-curated value in an
+  existing entry is preserved; only the build-side manifest is written without
+  them (`runtime = FALSE`, the default), keeping it lean. The enrichment publish
+  path and the `taxify-enrichment-manifest-sync` action pass `runtime = TRUE`
+  when writing taxify's `inst/manifest.json`.
+
+* `build_enrichment_vtr()` gains `species_col`, `static`, and `source_format`
+  arguments; the registry may set them per enrichment (defaults: species-grain,
+  frozen snapshot).
+
 # taxifydb 0.1.14
 
 ## Automated enrichment publishing

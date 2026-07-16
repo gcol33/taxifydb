@@ -19,12 +19,22 @@
 #' @param attribution Character. Human-readable attribution string.
 #' @param group_col Character or NULL. Column to index for group-based
 #'   enrichments (e.g., "country_code", "tdwg_code", "lang").
+#' @param species_col Character or NULL. Name of the source column the taxa were
+#'   keyed on, recorded for the runtime manifest. `"genus"` marks a genus-grain
+#'   enrichment; `NULL` (the default) is species-grain.
+#' @param static Logical. Whether the enrichment is a frozen snapshot (the
+#'   default) rather than one the runtime re-checks against a live source. Drives
+#'   taxify's refresh gate (content-id for static, version for non-static).
+#' @param source_format Character or NULL. Raw source format (e.g. "csv",
+#'   "xlsx", "zip"), recorded for the runtime manifest.
 #' @param batch_size Integer. Row group size for vectra (default 50000).
 #' @return The path to the .vtr file (invisibly).
 #' @export
 build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
                                  source_doi = NULL, license = "unknown",
                                  attribution = NULL, group_col = NULL,
+                                 species_col = NULL, static = TRUE,
+                                 source_format = NULL,
                                  batch_size = 50000L) {
   if (!"canonical_name" %in% names(df)) {
     stop("Enrichment data.frame must have a 'canonical_name' column.")
@@ -56,6 +66,13 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     ))
   }
 
+  # trait_cols are every column the runtime exposes: all non-key columns. The
+  # group column is excluded -- it is surfaced through available_groups and the
+  # door's group argument, not as a trait. Recorded here so a new enrichment's
+  # runtime manifest entry is complete straight from the build, with no manual
+  # curation step.
+  trait_cols <- setdiff(names(df), c("canonical_name", group_col))
+
   meta <- list(
     type             = "enrichment",
     name             = name,
@@ -66,6 +83,10 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     attribution      = attribution,
     group_col        = group_col,
     available_groups = available_groups,
+    trait_cols       = as.list(trait_cols),
+    species_col      = species_col,
+    static           = isTRUE(static),
+    source_format    = source_format,
     built            = format(Sys.Date(), "%Y-%m-%d"),
     nrow             = nrow(df),
     # Content identity of the built .vtr (the exact bytes publish.R uploads).

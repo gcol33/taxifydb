@@ -85,7 +85,7 @@ runs:
         BR="auto/enrichment-manifest-$ENR"
         git checkout -B "$BR" origin/main
 
-        "${{ inputs.rscript }}" -e "taxifydb::update_enrichment_manifest('inst/manifest.json', '$ENR', '$VTR', release_version = '$VER')"
+        "${{ inputs.rscript }}" -e "taxifydb::update_enrichment_manifest('inst/manifest.json', '$ENR', '$VTR', release_version = '$VER', runtime = TRUE)"
 
         git add inst/manifest.json
         if git diff --staged --quiet; then
@@ -101,7 +101,7 @@ runs:
         # pushed with nothing to merge, so it has to surface.
         if ! PR_OUT=$(gh pr create --repo "$REPO" --base main --head "$BR" \
               --title "manifest: sync enrichment $ENR (enrichment-$VER)" \
-              --body "Automated enrichment-manifest sync from the taxifydb \`enrichment-$VER\` release. Mechanical fields (latest, source_version, full_url, nrow, content_id, source_url, license, available_groups) are written by \`taxifydb::update_enrichment_manifest()\`; curated fields (trait_cols, species_col, citation, static, source_format) are preserved from the existing entry. A brand-new enrichment needs those added once in this PR." \
+              --body "Automated enrichment-manifest sync from the taxifydb \`enrichment-$VER\` release. Written by \`taxifydb::update_enrichment_manifest(runtime = TRUE)\`: mechanical fields (latest, source_version, full_url, nrow, content_id, source_url, license, available_groups) are always refreshed; runtime fields (trait_cols, species_col, citation, static, source_format) are populated from the build for a new entry and preserved for an existing one. No manual curation needed." \
               2>&1); then
           if printf '%s' "$PR_OUT" | grep -qi "already exists"; then
             echo "PR for $BR already open; branch updated."

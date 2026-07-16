@@ -310,11 +310,19 @@ update_manifest <- function(manifest_path, backend_name, version,
 #'   download URL tag (`enrichment-<release_version>`). Defaults to the dataset
 #'   version from the meta sidecar.
 #' @param repo Character. GitHub repo for URL construction.
+#' @param runtime Logical. When `TRUE`, also populate the runtime-only fields the
+#'   taxify door needs (`trait_cols`, `species_col`, `static`, `source_format`,
+#'   `citation`) from the meta sidecar, filling only fields the entry does not
+#'   already carry so hand-curated values are preserved. Used when writing
+#'   taxify's `inst/manifest.json`; left `FALSE` for this repo's lean build-side
+#'   manifest. A new enrichment's runtime entry is then complete from the build
+#'   alone, with no manual curation step.
 #' @return The updated manifest (invisibly).
 #' @export
 update_enrichment_manifest <- function(manifest_path, name, vtr_path,
                                        release_version = NULL,
-                                       repo = "gcol33/taxifydb") {
+                                       repo = "gcol33/taxifydb",
+                                       runtime = FALSE) {
   meta_path <- file.path(dirname(vtr_path), "meta.json")
   if (!file.exists(meta_path)) {
     stop(sprintf("No meta.json found at: %s", meta_path))
@@ -362,6 +370,32 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
 
   if (!is.null(meta$available_groups)) {
     entry$available_groups <- meta$available_groups
+  }
+
+  # Runtime-only fields (what the taxify door reads). Filled only when absent so
+  # a hand-curated value in an existing entry is never overwritten; a brand-new
+  # entry gets the complete set straight from the build. trait_cols come from the
+  # built .vtr columns, citation from the registry attribution, and static
+  # defaults to a frozen snapshot.
+  if (isTRUE(runtime)) {
+    if (is.null(entry$trait_cols) && !is.null(meta$trait_cols)) {
+      entry$trait_cols <- as.list(meta$trait_cols)
+    }
+    if (is.null(entry$species_col) && !is.null(meta$species_col) &&
+        !is.na(meta$species_col)) {
+      entry$species_col <- meta$species_col
+    }
+    if (is.null(entry$static) && !is.null(meta$static)) {
+      entry$static <- isTRUE(meta$static)
+    }
+    if (is.null(entry$source_format) && !is.null(meta$source_format) &&
+        !is.na(meta$source_format)) {
+      entry$source_format <- meta$source_format
+    }
+    if (is.null(entry$citation)) {
+      cit <- if (!is.null(meta$citation)) meta$citation else meta$attribution
+      if (!is.null(cit) && !is.na(cit)) entry$citation <- cit
+    }
   }
 
   manifest$enrichments[[name]] <- drop_empty_fields(entry)

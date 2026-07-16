@@ -14,6 +14,9 @@ build_enrichment_vtr(
   license = "unknown",
   attribution = NULL,
   group_col = NULL,
+  species_col = NULL,
+  static = TRUE,
+  source_format = NULL,
   batch_size = 50000L
 )
 }
@@ -36,6 +39,17 @@ build_enrichment_vtr(
 
 \item{group_col}{Character or NULL. Column to index for group-based
 enrichments (e.g., "country_code", "tdwg_code", "lang").}
+
+\item{species_col}{Character or NULL. Name of the source column the taxa were
+keyed on, recorded for the runtime manifest. \code{"genus"} marks a genus-grain
+enrichment; \code{NULL} (the default) is species-grain.}
+
+\item{static}{Logical. Whether the enrichment is a frozen snapshot (the
+default) rather than one the runtime re-checks against a live source. Drives
+taxify's refresh gate (content-id for static, version for non-static).}
+
+\item{source_format}{Character or NULL. Raw source format (e.g. "csv",
+"xlsx", "zip"), recorded for the runtime manifest.}
 
 \item{batch_size}{Integer. Row group size for vectra (default 50000).}
 }

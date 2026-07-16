@@ -93,6 +93,80 @@ publish_release <- function(backend_name, version, vtr_path,
 }
 
 
+#' Publish enrichment `.vtr` files to the rolling enrichment release
+#'
+#' Every enrichment is published under one shared, rolling release tag
+#' (`enrichment-<version>`), unlike backbones which get a tag each. The release
+#' is therefore created only when missing and never deleted: assets are uploaded
+#' with `--clobber`, which replaces only the same-named file and leaves every
+#' other enrichment's `.vtr` in place. Deleting and recreating the tag (as the
+#' per-backbone workflow does) would wipe all the other enrichments' assets.
+#'
+#' @param version Character. Rolling release version (the `enrichment-<version>`
+#'   tag).
+#' @param vtr_paths Character vector. Paths to the enrichment `.vtr` files to
+#'   upload. Basenames become the release asset names.
+#' @param repo Character. GitHub repo (e.g. "gcol33/taxifydb").
+#' @param notes Character or NULL. Release notes, used only when the release is
+#'   created for the first time.
+#' @return The release tag (invisibly).
+#' @export
+publish_enrichment_release <- function(version, vtr_paths,
+                                       repo = "gcol33/taxifydb",
+                                       notes = NULL) {
+  tag <- sprintf("enrichment-%s", version)
+
+  missing <- vtr_paths[!file.exists(vtr_paths)]
+  if (length(missing) > 0L) {
+    stop("Missing enrichment .vtr files: ",
+         paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  if (is.null(notes)) {
+    notes <- sprintf("Enrichment .vtr assets (rolling release %s)", version)
+  }
+
+  # Create the shared release only if absent. It is never deleted -- doing so
+  # would drop every other enrichment's asset from the tag.
+  view_status <- suppressWarnings(system2(
+    "gh", c("release", "view", tag, "--repo", repo),
+    stdout = FALSE, stderr = FALSE
+  ))
+  if (view_status != 0L) {
+    create_status <- system2("gh", c(
+      "release", "create", tag,
+      "--repo", repo,
+      "--title", shQuote(sprintf("Enrichments %s", version)),
+      "--notes", shQuote(notes)
+    ))
+    if (create_status != 0L) {
+      stop(sprintf("gh release create failed for %s (exit %d)",
+                   tag, create_status), call. = FALSE)
+    }
+  }
+
+  upload_out <- system2("gh", c(
+    "release", "upload", tag,
+    vtr_paths,
+    "--repo", repo,
+    "--clobber"
+  ), stdout = TRUE, stderr = TRUE)
+  upload_status <- attr(upload_out, "status")
+  if (length(upload_out) > 0L) {
+    message(paste(upload_out, collapse = "\n"))
+  }
+  if (!is.null(upload_status) && upload_status != 0L) {
+    stop(sprintf("gh release upload failed for %s (exit %d)",
+                 tag, upload_status), call. = FALSE)
+  }
+
+  message(sprintf("Published enrichment release: %s (%d asset%s)",
+                  tag, length(vtr_paths),
+                  if (length(vtr_paths) == 1L) "" else "s"))
+  invisible(tag)
+}
+
+
 #' Count rows in a .vtr file
 #'
 #' @param vtr_path Character.

@@ -1,0 +1,114 @@
+name: Publish Enrichment
+
+# Build one enrichment, upload its .vtr to the rolling enrichment-<version>
+# release, and update BOTH manifests together: this repo's build-side
+# manifest/manifest.json (committed here) and taxify's runtime inst/manifest.json
+# (synced via PR). Publishing through this workflow is what keeps the two
+# manifests from drifting -- the failure behind issue #20, where an enrichment
+# publish updated only taxify's copy.
+#
+# Only enrichments whose source builds headlessly (figshare/Zenodo/DOI archives,
+# rfishbase, API pulls) are publishable here. Enrichments backed by local frozen
+# snapshots or scrape-only sources are built and published locally with
+# `Rscript build_enrichments.R publish <name> <version>`, which updates both
+# manifests the same way.
+
+on:
+  workflow_dispatch:
+    inputs:
+      enrichment:
+        description: 'Enrichment name to build and publish (e.g. invacost)'
+        required: true
+        type: string
+      version:
+        description: 'Rolling release version (enrichment-<version>); blank = current year.month'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.5.2'
+          use-public-rspm: true
+
+      - name: Install package dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::jsonlite, any::curl, any::digest, any::DBI, any::RSQLite, any::rfishbase, any::openxlsx2, local::.
+          cache-version: 1
+
+      - name: Resolve version
+        id: version
+        run: |
+          V="${{ github.event.inputs.version }}"
+          [ -z "$V" ] && V="$(date +%Y.%m)"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Build enrichment
+        run: |
+          taxifydb::build_enrichment(
+            "${{ github.event.inputs.enrichment }}",
+            output_dir = file.path("output", "enrichment", "${{ github.event.inputs.enrichment }}")
+          )
+        shell: Rscript {0}
+
+      - name: Upload .vtr to rolling release
+        run: |
+          taxifydb::publish_enrichment_release(
+            "${{ steps.version.outputs.version }}",
+            file.path("output", "enrichment", "${{ github.event.inputs.enrichment }}",
+                      "${{ github.event.inputs.enrichment }}.vtr")
+          )
+        shell: Rscript {0}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update and commit build-side manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          ENR="${{ github.event.inputs.enrichment }}"
+          VER="${{ steps.version.outputs.version }}"
+          for i in $(seq 1 10); do
+            # Re-apply on top of the latest remote so a concurrent commit never
+            # clobbers this entry.
+            git fetch origin main
+            git reset --hard origin/main
+            Rscript -e "taxifydb::update_enrichment_manifest('manifest/manifest.json', '$ENR', file.path('output','enrichment','$ENR','$ENR.vtr'), release_version = '$VER')"
+            git add manifest/manifest.json
+            if git diff --staged --quiet; then
+              echo "manifest unchanged"; break
+            fi
+            git commit -m "Update manifest: enrichment $ENR (enrichment-$VER)"
+            if git push origin HEAD:main; then
+              echo "manifest pushed"; break
+            fi
+            echo "push raced (attempt $i); retrying on latest main"
+            sleep $((RANDOM % 6 + 2))
+          done
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync taxify runtime manifest (PR)
+        uses: ./.github/actions/taxify-enrichment-manifest-sync
+        with:
+          enrichment: ${{ github.event.inputs.enrichment }}
+          version: ${{ steps.version.outputs.version }}
+          token: ${{ secrets.TAXIFY_MANIFEST_TOKEN }}

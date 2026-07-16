@@ -1,3 +1,24 @@
+# taxifydb 0.1.14
+
+## Automated enrichment publishing
+
+* New `publish_enrichment_release()` uploads enrichment `.vtr` files to the
+  shared, rolling `enrichment-<version>` release. The release is created only
+  when absent and never deleted; assets upload with `--clobber`, replacing only
+  the same-named file so other enrichments' assets stay in place.
+
+* New `build_enrichments.R publish <name|all> <version>` action builds the
+  enrichment(s), uploads to the release, and updates *both* manifests in one
+  step -- this repo's build-side `manifest/manifest.json` and, when `../taxify`
+  is checked out alongside, taxify's runtime `inst/manifest.json`. This closes
+  the root cause behind #20: previously the publish path had no single step that
+  moved both manifests together, so they could drift.
+
+* New `publish-enrichment.yml` workflow (dispatch) does the same in CI for
+  headlessly-buildable enrichments: build, upload, commit the build-side
+  manifest, and sync taxify's runtime manifest via a PR (new
+  `taxify-enrichment-manifest-sync` action, mirroring the backbone sync).
+
 # taxifydb 0.1.13
 
 ## Manifest fixes

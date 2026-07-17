@@ -16,11 +16,12 @@ Run slow from a spare host over days (571k accepted species):
     WORMS_MIN_INTERVAL=0.3 python3 crawl_worms_distributions.py
 
 Two phases, each resume-safe:
-  1. enumerate  page ChecklistBank dataset 2011 (WoRMS) nameusage search
-                (rank=species, status=accepted) -> species.tsv
-                (aphia_id, canonical_name, fossil). Uses ChecklistBank because
-                it pages cleanly and gives the AphiaID + clean binomial; the
-                distributions themselves come from WoRMS REST in phase 2.
+  1. enumerate  walk ChecklistBank dataset 2011 (WoRMS) by higher taxon,
+                recursing where a taxon's accepted-species count exceeds CLB's
+                100000 offset cap, and page each partition -> species.tsv
+                (aphia_id, canonical_name, fossil). Uses ChecklistBank because it
+                gives the AphiaID + clean binomial; the distributions themselves
+                come from WoRMS REST in phase 2.
   2. distribute per aphia_id: WoRMS AphiaDistributionsByAphiaID -> one NDJSON
                 line per (species, MRGID) record. done-set = distribute.done.
                 Fossil (dagger-marked) taxa have no modern range and are skipped
@@ -41,9 +42,12 @@ INCLUDE_FOSSIL = os.environ.get("WORMS_INCLUDE_FOSSIL", "0") == "1"
 UA = "taxifydb-worms-distribution-crawler (https://github.com/gcol33/taxifydb)"
 
 SPECIES_TSV = os.path.join(OUTDIR, "species.tsv")
-ENUM_STATE = os.path.join(OUTDIR, "enumerate.offset")
+ENUM_DONE = os.path.join(OUTDIR, "enumerate.done")
 DIST_JSONL = os.path.join(OUTDIR, "worms_distributions.jsonl")
 DIST_DONE = os.path.join(OUTDIR, "distribute.done")
+
+BIOTA = "urn:lsid:marinespecies.org:taxname:1"  # WoRMS root
+PAGE_CAP = 100000  # ChecklistBank hard-caps search/list offset at 100000
 
 _last = [0.0]
 
@@ -89,47 +93,122 @@ def mrgid_from_url(u):
 
 
 # ---------------------------------------------------------------- phase 1
+#
+# ChecklistBank hard-caps the search/list offset at 100000, so the 571k accepted
+# species cannot be paged linearly. Instead the WoRMS tree is walked and every
+# higher taxon whose accepted-species count exceeds the window is recursed into
+# (via /tree/{id}/children) until each leaf partition fits under the cap, then
+# each partition is paged with the TAXON_ID classification filter. Resume-safe:
+# leaf partitions fully paged are recorded in enumerate.done and skipped, and
+# rows are de-duplicated against the AphiaIDs already in species.tsv, so an
+# interrupted run picks up where it left off. Internal (recursed) nodes are not
+# marked done -- re-expanding them on resume is a couple of cheap calls and keeps
+# the walk from ever dropping a subtree.
+
+
+def species_count(taxon_id):
+    q = urllib.parse.urlencode({
+        "rank": "species", "status": "accepted", "limit": 0,
+        "TAXON_ID": taxon_id,
+    })
+    status, d = get(f"{CLB}/dataset/{WORMS_DATASET}/nameusage/search?{q}")
+    return d.get("total") if (status == 200 and d) else None
+
+
+def taxon_children(taxon_id):
+    out, offset = [], 0
+    while True:
+        q = urllib.parse.urlencode({"limit": 1000, "offset": offset})
+        tid = urllib.parse.quote(taxon_id, safe="")
+        status, d = get(f"{CLB}/dataset/{WORMS_DATASET}/tree/{tid}/children?{q}")
+        if status != 200 or not d:
+            break
+        res = d.get("result", [])
+        out.extend(c.get("id") for c in res if c.get("id"))
+        offset += 1000
+        if d.get("last") or not res:
+            break
+    return out
+
+
+def page_partition(taxon_id, total, out, seen):
+    offset = 0
+    while offset <= total and offset <= PAGE_CAP:
+        q = urllib.parse.urlencode({
+            "rank": "species", "status": "accepted",
+            "TAXON_ID": taxon_id, "offset": offset, "limit": 1000,
+        })
+        status, d = get(f"{CLB}/dataset/{WORMS_DATASET}/nameusage/search?{q}")
+        if status != 200 or not d:
+            time.sleep(10)
+            continue
+        res = d.get("result", [])
+        if not res:
+            break
+        for rec in res:
+            aid = aphia_from_lsid(rec.get("id"))
+            usage = rec.get("usage") or {}
+            name = (usage.get("name") or {}).get("scientificName")
+            label = usage.get("label") or ""
+            if not aid or not name or aid in seen:
+                continue
+            seen.add(aid)
+            fossil = "1" if label.strip().startswith("†") else "0"
+            out.write(f"{aid}\t{name}\t{fossil}\n")
+        out.flush()
+        offset += 1000
+        if d.get("last"):
+            break
+
 
 def enumerate_species():
     os.makedirs(OUTDIR, exist_ok=True)
-    offset = 0
-    if os.path.exists(ENUM_STATE):
-        offset = int(open(ENUM_STATE).read().strip() or "0")
-    limit = 1000
-    mode = "a" if offset else "w"
-    with open(SPECIES_TSV, mode, encoding="utf-8") as out:
+
+    seen = set()
+    if os.path.exists(SPECIES_TSV):
+        with open(SPECIES_TSV, encoding="utf-8") as f:
+            next(f, None)
+            for line in f:
+                aid = line.split("\t", 1)[0].strip()
+                if aid:
+                    seen.add(aid)
+    done = set()
+    if os.path.exists(ENUM_DONE):
+        done = set(l.strip() for l in open(ENUM_DONE) if l.strip())
+
+    mode = "a" if os.path.exists(SPECIES_TSV) else "w"
+    with open(SPECIES_TSV, mode, encoding="utf-8") as out, \
+         open(ENUM_DONE, "a", encoding="utf-8") as donef:
         if mode == "w":
             out.write("aphia_id\tcanonical_name\tfossil\n")
-        while True:
-            q = urllib.parse.urlencode({
-                "rank": "species", "status": "accepted",
-                "offset": offset, "limit": limit,
-            })
-            status, d = get(f"{CLB}/dataset/{WORMS_DATASET}/nameusage/search?{q}")
-            if status != 200 or not d:
-                print(f"  enumerate stalled at offset {offset} (status {status})",
-                      file=sys.stderr)
-                time.sleep(30)
+        stack = [BIOTA]
+        while stack:
+            tid = stack.pop()
+            if tid in done:
                 continue
-            res = d.get("result", [])
-            if not res:
-                break
-            for rec in res:
-                aid = aphia_from_lsid(rec.get("id"))
-                usage = rec.get("usage") or {}
-                name = (usage.get("name") or {}).get("scientificName")
-                label = usage.get("label") or ""
-                if not aid or not name:
-                    continue
-                fossil = "1" if label.strip().startswith("†") else "0"
-                out.write(f"{aid}\t{name}\t{fossil}\n")
-            out.flush()
-            offset += limit
-            open(ENUM_STATE, "w").write(str(offset))
-            if d.get("last"):
-                break
-            print(f"  enumerated {offset} / {d.get('total')}", file=sys.stderr)
-    print(f"phase 1 done: species list at {SPECIES_TSV}", file=sys.stderr)
+            n = species_count(tid)
+            if n is None:
+                print(f"  count failed for {tid}; will retry on resume",
+                      file=sys.stderr)
+                continue
+            if n == 0:
+                donef.write(tid + "\n"); donef.flush()
+                continue
+            if n > PAGE_CAP:
+                kids = taxon_children(tid)
+                if not kids:
+                    # No children to split an over-cap leaf (should not happen in
+                    # WoRMS); page what the window allows rather than drop it.
+                    page_partition(tid, n, out, seen)
+                    donef.write(tid + "\n"); donef.flush()
+                else:
+                    stack.extend(kids)
+                continue
+            page_partition(tid, n, out, seen)
+            donef.write(tid + "\n"); donef.flush()
+            print(f"  enumerated {len(seen)} species (partition {n})",
+                  file=sys.stderr)
+    print(f"phase 1 done: {len(seen)} species at {SPECIES_TSV}", file=sys.stderr)
 
 
 # ---------------------------------------------------------------- phase 2

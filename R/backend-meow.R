@@ -9,9 +9,12 @@
 # MEOW (Spalding et al. 2007) nests 232 ecoregions into 62 provinces and 12
 # realms; the ecoregion is the finest grain and its ECO_CODE is the join key
 # both here and in the marine_distribution enrichment. The GeoJSON is a frozen
-# snapshot released as a taxifydb asset (the Marine Regions / TNC download is a
-# form-gated shapefile with no stable programmatic URL), mirroring how the
-# ecoflora / floraweb scrape snapshots are frozen.
+# snapshot released as a taxifydb asset, assembled from the Marine Regions WFS
+# (CC BY) by inst/py/crawlers/build_meow_geojson.py -- it joins the
+# Ecoregions:ecoregions, :provinces and :realm layers into one file with
+# eco_code / ecoregion / province / realm properties (the canonical MEOW
+# shapefile is a form-gated download with no stable URL). Frozen like the
+# ecoflora / floraweb scrape snapshots.
 
 .meow_url <- paste0(
   "https://github.com/gcol33/taxifydb/releases/download/",

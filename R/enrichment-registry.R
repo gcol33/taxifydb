@@ -292,6 +292,41 @@
     requires    = character(0)
   ),
 
+  marine_distribution = list(
+    source_url  = paste(
+      paste0("https://github.com/gcol33/taxifydb/releases/download/",
+             "marine-snapshots-2026.07/worms_distributions.jsonl"),
+      paste0("https://github.com/gcol33/taxifydb/releases/download/",
+             "marine-snapshots-2026.07/mrgid_meow.tsv"),
+      sep = " ; "
+    ),
+    source_doi  = "10.14284/170",
+    version     = "2026.07",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "WoRMS Editorial Board (2026) World Register of Marine Species ",
+      "(doi:10.14284/170), CC BY 4.0. Species distributions harvested per ",
+      "taxon from the WoRMS REST API (AphiaDistributionsByAphiaID); the ",
+      "ChecklistBank export carries no distribution records. Each Marine ",
+      "Regions locality (MRGID) is rolled up to the Marine Ecoregions of the ",
+      "World it falls in (Spalding MD et al. (2007) Marine Ecoregions of the ",
+      "World: a bioregionalization of coastal and shelf areas. BioScience ",
+      "57:573-583), the marine analogue of the WCVP botanical range table. ",
+      "Recorded absences and doubtful records are dropped; a species native ",
+      "anywhere in an ecoregion is reported native there."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      urls <- strsplit(url, " ; ", fixed = TRUE)[[1L]]
+      download_curl_file(urls[1L], dest, "worms_distributions.jsonl")
+      download_curl_file(urls[2L], dest, "mrgid_meow.tsv")
+      dest
+    },
+    parse_fn    = function(path) parse_marine_distribution(path),
+    group_col   = "region_code",
+    requires    = character(0)
+  ),
+
   common_names = list(
     source_url  = paste(
       "https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip",

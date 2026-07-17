@@ -34,6 +34,10 @@ R/publish.R                — publish_release(), update_manifest(),
 R/backend-<name>.R         — per-backend download / read / build_<name>()
 R/build_backend.R          — build_backend(name, ...) dispatcher,
                               list_backends()
+R/backend-wgsrpd.R         — reference geometry (not a backbone): WGSRPD Level 3
+                              botanical regions -> wgsrpd.vtr (plant range polygons)
+R/backend-meow.R           — reference geometry (not a backbone): MEOW marine
+                              ecoregions -> meow.vtr (marine range polygons, #21)
 
 R/enrichment-helpers.R     — shared download helpers
 R/enrichment-parsers*.R    — 24 parse_<name>() functions
@@ -69,8 +73,8 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 
 ## Enrichments
 
-91 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
-`sealifebase`, and `groot`). Ecoflora and FloraWeb are built into `.vtr` files
+92 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
+`sealifebase`, `groot`, and `marine_distribution`). Ecoflora and FloraWeb are built into `.vtr` files
 from frozen per-species scrape snapshots. Only 1 on-demand source remains
 (Pignatti, copyrighted), catalogued in `.enrichment_scrape_only`
 (`list_scrape_only_enrichments()`) and accessed by taxify's `add_pignatti()` via
@@ -81,8 +85,23 @@ resolution before its `.vtr` is written:
 2. `resolve_enrichment_names()` expands each name across the 7 backbones
 3. `build_enrichment_vtr()` writes the indexed `.vtr` + `meta.json` sidecar
 
-Group-based enrichments (GRIIS, WCVP, common_names) pass `group_cols` so
-deduplication respects the grouping column.
+Group-based enrichments (GRIIS, WCVP, common_names, marine_distribution) pass
+`group_cols` so deduplication respects the grouping column.
+
+`marine_distribution` is the marine analogue of the WCVP range table (#21): a
+`canonical_name` + `region_code` + `native_status` asset so taxify's
+`region=`/`coords=` filter can constrain animal/marine matches, not just plants.
+WoRMS distributions are not in the ChecklistBank export, so they are harvested
+per taxon from the WoRMS REST API (`inst/py/crawlers/crawl_worms_distributions.py`,
+a multi-day throttled crawl like euromed) keyed on Marine Regions localities
+(MRGID). `inst/py/crawlers/crosswalk_mrgid_meow.py` rolls each MRGID up to the
+MEOW ecoregion(s) it falls in (point-in-polygon against the frozen MEOW
+GeoJSON), and `parse_marine_distribution()` joins the two frozen snapshots. Its
+`region_code` is the MEOW ECO_CODE, the same key `backend-meow.R`'s `meow.vtr`
+geometry is indexed on, so the runtime coords->region path is a drop-in beside
+`wgsrpd.vtr`. Both the WoRMS snapshot and the MEOW GeoJSON are frozen as
+`marine-snapshots-*` release assets (the WoRMS full copy is request-gated and
+the MEOW download is a form-gated shapefile with no stable URL).
 
 `gidias` carries two grains in one `.vtr`, keyed on `affected_taxon`: `"Any"`
 (every record for the species) plus one row per affected native taxon (`Plant`,

@@ -1,3 +1,26 @@
+# taxifydb 0.1.18
+
+## Marine distribution asset (issue #21)
+
+* New `marine_distribution` enrichment: the marine analogue of the WCVP range
+  table, so taxify's `region=`/`coords=` filter can constrain animal and marine
+  matches, not just vascular plants. It keys `canonical_name` on a MEOW
+  ecoregion `region_code` with a native/introduced status.
+
+* WoRMS distributions are not in the ChecklistBank/GBIF export (the per-taxon
+  distribution endpoint returns nothing there), so they are harvested per taxon
+  from the WoRMS REST API by `inst/py/crawlers/crawl_worms_distributions.py`,
+  keyed on Marine Regions localities (MRGID).
+  `inst/py/crawlers/crosswalk_mrgid_meow.py` rolls each MRGID up to the Marine
+  Ecoregions of the World (Spalding et al. 2007) it falls in by point-in-polygon
+  against the frozen MEOW GeoJSON, and `parse_marine_distribution()` joins the
+  two frozen snapshots, dropping recorded absences and doubtful records.
+
+* New reference-geometry backend `build_meow()` writes `meow.vtr` (MEOW
+  ecoregion boundary polygons), the marine counterpart of `build_wgsrpd()`,
+  indexed on the same ECO_CODE the enrichment's `region_code` uses so the
+  runtime coordinate-to-region path is a drop-in.
+
 # taxifydb 0.1.17
 
 ## Documentation

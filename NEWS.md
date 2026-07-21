@@ -14,12 +14,62 @@
   `inst/py/crawlers/crosswalk_mrgid_meow.py` rolls each MRGID up to the Marine
   Ecoregions of the World (Spalding et al. 2007) it falls in by point-in-polygon
   against the frozen MEOW GeoJSON, and `parse_marine_distribution()` joins the
-  two frozen snapshots, dropping recorded absences and doubtful records.
+  two frozen snapshots, dropping records that report non-presence or that WoRMS
+  flags as doubtful or inaccurate.
 
 * New reference-geometry backend `build_meow()` writes `meow.vtr` (MEOW
   ecoregion boundary polygons), the marine counterpart of `build_wgsrpd()`,
   indexed on the same ECO_CODE the enrichment's `region_code` uses so the
   runtime coordinate-to-region path is a drop-in.
+
+* `build_meow_geojson.py` reads each ecoregion's province and realm from the
+  Marine Regions gazetteer hierarchy instead of inferring them by point-in-
+  polygon on the ecoregion centroid. MEOW nests an ecoregion in exactly one
+  province and a province in exactly one realm, but assigning the two
+  independently produced combinations that cannot co-occur (a Cold Temperate
+  Northwest Pacific province under a Central Indo-Pacific realm) and misplaced
+  any ecoregion whose centroid falls outside its own polygon or spans the
+  antimeridian -- the Aleutian Islands were filed under the Lusitanian province
+  of the Temperate Northern Atlantic, and the Chukchi and Beaufort Seas under
+  Tropical Eastern Pacific. 39 of the 232 ecoregions carried a wrong province
+  or realm. Reading the stated hierarchy yields exactly MEOW's published 232
+  ecoregions / 62 provinces / 12 realms, with every province resolving to a
+  single realm. The geometry is unchanged, so `meow.vtr` is unaffected.
+
+* `parse_marine_distribution()` counts every WoRMS `establishmentMeans` variant
+  that states nativeness as native. WoRMS qualifies the value where it can, so
+  matching `"Native"` exactly scored the 16,663 `"Native - Endemic"` and 4,375
+  `"Native - Non-endemic"` records as unknown origin and left `range_mode =
+  "native"` missing a sixth of its evidence.
+
+* `crosswalk_mrgid_meow.py` handles ecoregions that cross the antimeridian.
+  Thirteen of the 232 run to both -180 and +180, so in the raw longitude framing
+  they measure 360 degrees wide and their centre lands at longitude 0: the
+  Aleutian Islands centred on the English Channel, Kamchatka and the Eastern
+  Bering Sea on the North Sea and Norway. Every coarse bounding box over Europe
+  therefore swept them in, attaching Pacific and Arctic ecoregions to European
+  records -- and "European Marine Waters" alone carries 19,763 of them. Such a
+  region is now held in 0..360 space, where it is contiguous, and query points
+  are shifted to match. An MRGID bounding box that crosses the antimeridian is
+  read as the union of its two halves rather than one interval.
+
+* `crosswalk_mrgid_meow.py` splits into a `fetch` phase that caches each MRGID's
+  gazetteer record and an `assign` phase that recomputes the crosswalk from that
+  cache. Revising how a locality maps to an ecoregion is now seconds of local
+  work instead of another throttled pass over 7,112 gazetteer records.
+
+* `crosswalk_mrgid_meow.py` skips the globe-spanning gazetteer entries (place
+  type `World`: "World" and "World Oceans"). They roll up to all 232 ecoregions,
+  which records a species as present everywhere and constrains nothing, so the
+  rows only inflate the asset. Genuinely coarse but real regions (ocean basins,
+  "European Marine Waters") are kept -- their breadth is a fact about the record.
+
+* `parse_marine_distribution()` also drops the occurrence values that report
+  non-presence rather than only `"Absent"`: a record retracted as `"Recorded in
+  error"`, a population that is `"Extirpated"` or `"Eradicated"`, and one held
+  only `"In captivity/cultivated"` are not evidence that a species lives in a
+  region. Borderline values (`"Uncertain"`, `"Sometimes present"`) still count
+  as presence, since the filter is a soft disambiguation aid.
 
 # taxifydb 0.1.17
 

@@ -16,13 +16,27 @@
 #                                 (crosswalk_mrgid_meow.py)
 
 
+# WoRMS occurrence values that are not evidence of wild presence: an explicit
+# absence, a retracted record, a population that is gone, or one held only under
+# human care. Every other value (including "Uncertain" and "Sometimes present")
+# is treated as presence, since the range filter is a soft disambiguation aid
+# and a borderline record should widen a species' range rather than narrow it.
+.worms_non_presence <- c(
+  "Absent",
+  "Recorded in error",
+  "Extirpated",
+  "Eradicated",
+  "In captivity/cultivated"
+)
+
+
 #' Parse WoRMS marine distributions rolled up to MEOW ecoregions
 #'
 #' Reads the frozen WoRMS distribution snapshot and the MRGID -> MEOW ecoregion
-#' crosswalk from `dir_path`, drops recorded absences and doubtful records,
-#' expands each distribution record to every MEOW ecoregion its MRGID maps to,
-#' and collapses to one row per (species, ecoregion) with a native/introduced
-#' status.
+#' crosswalk from `dir_path`, drops records WoRMS flags as doubtful or
+#' inaccurate along with those reporting non-presence, expands each remaining
+#' distribution record to every MEOW ecoregion its MRGID maps to, and collapses
+#' to one row per (species, ecoregion) with a native/introduced status.
 #'
 #' @param dir_path Character. Directory containing `worms_distributions.jsonl`
 #'   (or `*.ndjson`) and `mrgid_meow.tsv`.
@@ -51,26 +65,30 @@ parse_marine_distribution <- function(dir_path) {
   xw_df   <- utils::read.delim(xw_file[1L], stringsAsFactors = FALSE,
                                colClasses = "character", na.strings = "")
 
-  # A distribution record is evidence of presence only when it is a valid,
-  # non-absent record. "doubtful" records and explicit absences ("Absent") are
-  # dropped so the range filter never places a species where WoRMS says it is
-  # not, or only doubtfully, present.
+  # A distribution record is evidence of presence in the wild only when it is a
+  # valid record that does not itself report the species as absent. Records
+  # WoRMS flags "doubtful" or "inaccurate" are dropped, as are the occurrence
+  # values that assert non-presence (never there, no longer there) or presence
+  # only under human care, so the range filter never places a species where
+  # WoRMS says it is not, or only doubtfully, present.
   keep <- (is.na(dist_df$record_status) | dist_df$record_status == "valid") &
-    (is.na(dist_df$occurrence) | dist_df$occurrence != "Absent")
+    (is.na(dist_df$occurrence) | !dist_df$occurrence %in% .worms_non_presence)
   dist_df <- dist_df[keep, , drop = FALSE]
 
   dist_df <- dist_df[!is.na(dist_df$canonical_name) &
                        nchar(dist_df$canonical_name) > 0L &
                        !is.na(dist_df$mrgid), , drop = FALSE]
 
-  # WoRMS establishmentMeans is the primary native/alien signal; "None" (the
-  # unscored default) and anything unrecognised become "unknown". Presence still
-  # counts for the range filter regardless of status.
+  # WoRMS establishmentMeans is the primary native/alien signal. It qualifies
+  # nativeness ("Native - Endemic", "Native - Non-endemic") where it can, so
+  # every Native variant counts as native; "Origin unknown", "Origin uncertain"
+  # and the unscored default become "unknown". Presence still counts for the
+  # range filter regardless of status.
+  em <- dist_df$establishment_means
   dist_df$native_status <- ifelse(
-    dist_df$establishment_means == "Native", "native",
-    ifelse(dist_df$establishment_means == "Alien", "introduced", "unknown")
+    !is.na(em) & startsWith(em, "Native"), "native",
+    ifelse(!is.na(em) & em == "Alien", "introduced", "unknown")
   )
-  dist_df$native_status[is.na(dist_df$native_status)] <- "unknown"
 
   # Roll each MRGID up to its MEOW ecoregion(s). A coarse region (e.g. an ocean
   # basin) maps to several ecoregions, so this many-to-many join expands rows.

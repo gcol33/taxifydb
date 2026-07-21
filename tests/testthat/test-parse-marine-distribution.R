@@ -3,7 +3,7 @@
 # every ecoregion they cover, and lets a native record win over introduced for
 # the same (species, ecoregion).
 
-marine_fixture <- function() {
+marine_fixture <- function(extra_recs = list()) {
   dir <- tempfile("marine_")
   dir.create(dir)
 
@@ -29,6 +29,7 @@ marine_fixture <- function() {
          locality = "Bay", establishment_means = "Alien",
          invasiveness = "Invasive", occurrence = "Established", record_status = "valid")
   )
+  recs <- c(recs, extra_recs)
   jl <- file.path(dir, "worms_distributions.jsonl")
   writeLines(vapply(recs, function(r) jsonlite::toJSON(r, auto_unbox = TRUE),
                     character(1L)), jl)
@@ -97,4 +98,103 @@ test_that("absences and doubtful records are dropped", {
   # the Absent record (mrgid 20051x, not in the crosswalk anyway) contributes nothing
   expect_false(any(out$canonical_name == "Carcinus maenas" &
                      out$region_code == "20051" & out$native_status == "native"))
+})
+
+test_that("every WoRMS Native variant counts as native", {
+  # WoRMS qualifies nativeness where it can, so "Native" is a minority of the
+  # native signal: the snapshot carries 16663 "Native - Endemic" and 4375
+  # "Native - Non-endemic" records alongside 113140 bare "Native" ones. Matching
+  # "Native" exactly scored all of those "unknown" and emptied range_mode =
+  # "native" of a sixth of its evidence.
+  dir <- marine_fixture(list(
+    list(aphia_id = "1", canonical_name = "Mytilus edulis", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Native - Non-endemic",
+         invasiveness = "None", occurrence = "Established",
+         record_status = "valid"),
+    list(aphia_id = "2", canonical_name = "Patella candei", mrgid = "7777",
+         locality = "Bay", establishment_means = "Native - Endemic",
+         invasiveness = "None", occurrence = "Established",
+         record_status = "valid")
+  ))
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+
+  out <- parse_marine_distribution(dir)
+  expect_equal(out$native_status[out$canonical_name == "Mytilus edulis"], "native")
+  expect_equal(out$native_status[out$canonical_name == "Patella candei"], "native")
+})
+
+test_that("origin-unknown records stay unknown rather than becoming native", {
+  dir <- marine_fixture(list(
+    list(aphia_id = "3", canonical_name = "Sabella spallanzanii", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Origin unknown",
+         invasiveness = "None", occurrence = "Established",
+         record_status = "valid"),
+    list(aphia_id = "4", canonical_name = "Bugula neritina", mrgid = "7777",
+         locality = "Bay", establishment_means = "Origin uncertain",
+         invasiveness = "None", occurrence = "Established",
+         record_status = "valid")
+  ))
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+
+  out <- parse_marine_distribution(dir)
+  expect_equal(out$native_status[out$canonical_name == "Sabella spallanzanii"],
+               "unknown")
+  expect_equal(out$native_status[out$canonical_name == "Bugula neritina"],
+               "unknown")
+})
+
+test_that("non-presence occurrences and inaccurate records are dropped", {
+  # An absence is not the only way WoRMS says "not here": a retracted record, a
+  # population that is gone, and one held only under human care are all
+  # non-presence, and an "inaccurate" record is no more trustworthy than a
+  # doubtful one. Each species below has exactly one record, so surviving the
+  # filter would put it in the output.
+  dir <- marine_fixture(list(
+    list(aphia_id = "5", canonical_name = "Anguilla anguilla", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Native",
+         invasiveness = "None", occurrence = "Recorded in error",
+         record_status = "valid"),
+    list(aphia_id = "6", canonical_name = "Ostrea edulis", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Native",
+         invasiveness = "None", occurrence = "Extirpated",
+         record_status = "valid"),
+    list(aphia_id = "7", canonical_name = "Amphiprion ocellaris", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Alien",
+         invasiveness = "None", occurrence = "In captivity/cultivated",
+         record_status = "valid"),
+    list(aphia_id = "8", canonical_name = "Crassostrea gigas", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Alien",
+         invasiveness = "Invasive", occurrence = "Eradicated",
+         record_status = "valid"),
+    list(aphia_id = "9", canonical_name = "Homarus gammarus", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Native",
+         invasiveness = "None", occurrence = "Established",
+         record_status = "inaccurate")
+  ))
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+
+  out <- parse_marine_distribution(dir)
+  dropped <- c("Anguilla anguilla", "Ostrea edulis", "Amphiprion ocellaris",
+               "Crassostrea gigas", "Homarus gammarus")
+  expect_false(any(out$canonical_name %in% dropped))
+})
+
+test_that("a borderline occurrence still counts as presence", {
+  # The filter is a soft disambiguation aid, so an uncertain or intermittent
+  # record widens a species' range rather than narrowing it.
+  dir <- marine_fixture(list(
+    list(aphia_id = "10", canonical_name = "Sepia officinalis", mrgid = "2350",
+         locality = "North Sea", establishment_means = "Native",
+         invasiveness = "None", occurrence = "Uncertain",
+         record_status = "valid"),
+    list(aphia_id = "11", canonical_name = "Solea solea", mrgid = "7777",
+         locality = "Bay", establishment_means = "Native",
+         invasiveness = "None", occurrence = "Sometimes present",
+         record_status = "valid")
+  ))
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+
+  out <- parse_marine_distribution(dir)
+  expect_equal(out$region_code[out$canonical_name == "Sepia officinalis"], "20164")
+  expect_equal(out$region_code[out$canonical_name == "Solea solea"], "20051")
 })

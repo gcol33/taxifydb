@@ -187,6 +187,28 @@
         "url": "https://github.com/tdwg/wgsrpd"
       },
       "license": "CC BY 4.0"
+    },
+    "meow": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/meow-2026.07/meow.vtr",
+      "nrow": 196807,
+      "full_size": 2561305,
+      "full_sha256": "f67cd0e504409010ff15fd58a029f5040f5b913f132249e0386970adeb1b0e77",
+      "content_id": "04d20e2a9bc6ad18a1bdf40d8e7ce791",
+      "static": true,
+      "source_url": "https://github.com/gcol33/taxifydb/releases/download/marine-snapshots-2026.07/meow_ecos.geojson",
+      "citation": {
+        "key": "spalding2007meow",
+        "type": "article",
+        "authors": "Spalding MD, Fox HE, Allen GR, Davidson N, Ferdana ZA, Finlayson M, Halpern BS, Jorge MA, Lombana A, Lourie SA, Martin KD, McManus E, Molnar J, Recchia CA, Robertson J",
+        "year": "2007",
+        "title": "Marine Ecoregions of the World: a bioregionalization of coastal and shelf areas",
+        "journal": "BioScience",
+        "volume": "57",
+        "pages": "573-583",
+        "doi": "10.1641/B570707"
+      },
+      "license": "CC BY 4.0"
     }
   },
   "enrichments": {

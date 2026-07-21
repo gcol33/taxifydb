@@ -58,11 +58,14 @@
   cache. Revising how a locality maps to an ecoregion is now seconds of local
   work instead of another throttled pass over 7,112 gazetteer records.
 
-* `crosswalk_mrgid_meow.py` skips the globe-spanning gazetteer entries (place
-  type `World`: "World" and "World Oceans"). They roll up to all 232 ecoregions,
-  which records a species as present everywhere and constrains nothing, so the
-  rows only inflate the asset. Genuinely coarse but real regions (ocean basins,
-  "European Marine Waters") are kept -- their breadth is a fact about the record.
+* `crosswalk_mrgid_meow.py` discards a locality that covers every ecoregion.
+  "World", "World Oceans" and "High Seas" all roll up to the complete set of
+  232, which records a species as present everywhere and constrains nothing
+  while costing a row per ecoregion per species; "High Seas" alone accounted for
+  49,184 of them. This is the degenerate case rather than a threshold, so
+  regions that cover much of the globe without covering all of it are kept: the
+  hemispheres at 119 and 113 of 232, the ocean basins, and "European Marine
+  Waters" still carry information, and their breadth is a fact about the record.
 
 * `parse_marine_distribution()` also drops the occurrence values that report
   non-presence rather than only `"Absent"`: a record retracted as `"Recorded in

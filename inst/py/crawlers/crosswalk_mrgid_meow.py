@@ -15,9 +15,8 @@ geometric best effort, imperfect at region margins as accepted for #21):
   * for coarse MRGIDs (ocean basins, large seas) every ecoregion whose own
     centroid falls inside the MRGID bounding box, so a basin maps to all its
     ecoregions rather than the single one its centre happens to sit in.
-  * globe-spanning entries (gazetteer placeType "World") are skipped: they roll
-    up to all 232 ecoregions, which places a species everywhere and so
-    constrains nothing.
+  * a locality that covers every ecoregion is skipped ("World", "World Oceans",
+    "High Seas"): it places a species everywhere and so constrains nothing.
 
 Inputs:
   worms_distributions.jsonl  (the WoRMS snapshot; only its MRGIDs are read)
@@ -182,16 +181,16 @@ def point_in_eco(x, y, eco):
     return False
 
 
-# Gazetteer place types that span the whole globe. "World" / "World Oceans"
-# roll up to every one of the 232 ecoregions, which states that a species is
-# everywhere -- no constraint at all, so the rows only inflate the asset.
-GLOBAL_PLACE_TYPES = {"world"}
-
-
 def assign(rec, ecos):
-    """Return list of ecoregion dicts an MRGID gazetteer record maps to."""
-    if (rec.get("placeType") or "").strip().lower() in GLOBAL_PLACE_TYPES:
-        return []
+    """Return list of ecoregion dicts an MRGID gazetteer record maps to.
+
+    A locality covering every ecoregion is discarded. "World", "World Oceans"
+    and "High Seas" all roll up to the complete set, which records a species as
+    present everywhere and so constrains nothing, while costing a row per
+    ecoregion per species. This is the degenerate case rather than a threshold:
+    regions that cover much of the globe but not all of it (the hemispheres at
+    119 and 113 of 232, the ocean basins) still carry information and are kept.
+    """
     lat, lon = rec.get("latitude"), rec.get("longitude")
     hits = {}
     if lat is not None and lon is not None:
@@ -211,6 +210,8 @@ def assign(rec, ecos):
             in_lon = (cx >= x0 or cx <= x1) if wraps else (x0 <= cx <= x1)
             if in_lon and y0 <= e["cy"] <= y1:
                 hits[e["eco_code"]] = e
+    if len(hits) == len(ecos):
+        return []
     return list(hits.values())
 
 

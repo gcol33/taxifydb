@@ -124,6 +124,9 @@ test_that("every WoRMS Native variant counts as native", {
 })
 
 test_that("origin-unknown records stay unknown rather than becoming native", {
+  # An unscored record carries no establishmentMeans at all, which is 77% of the
+  # snapshot, so the unknown default has to survive a missing field as well as
+  # the two "Origin ..." spellings.
   dir <- marine_fixture(list(
     list(aphia_id = "3", canonical_name = "Sabella spallanzanii", mrgid = "2350",
          locality = "North Sea", establishment_means = "Origin unknown",
@@ -132,6 +135,9 @@ test_that("origin-unknown records stay unknown rather than becoming native", {
     list(aphia_id = "4", canonical_name = "Bugula neritina", mrgid = "7777",
          locality = "Bay", establishment_means = "Origin uncertain",
          invasiveness = "None", occurrence = "Established",
+         record_status = "valid"),
+    list(aphia_id = "12", canonical_name = "Ciona intestinalis", mrgid = "2350",
+         locality = "North Sea", occurrence = "Established",
          record_status = "valid")
   ))
   on.exit(unlink(dir, recursive = TRUE), add = TRUE)
@@ -140,6 +146,8 @@ test_that("origin-unknown records stay unknown rather than becoming native", {
   expect_equal(out$native_status[out$canonical_name == "Sabella spallanzanii"],
                "unknown")
   expect_equal(out$native_status[out$canonical_name == "Bugula neritina"],
+               "unknown")
+  expect_equal(out$native_status[out$canonical_name == "Ciona intestinalis"],
                "unknown")
 })
 

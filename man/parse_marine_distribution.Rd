@@ -16,8 +16,8 @@ string), \code{ecoregion}, \code{province}, \code{realm}, and \code{native_statu
 }
 \description{
 Reads the frozen WoRMS distribution snapshot and the MRGID -> MEOW ecoregion
-crosswalk from \code{dir_path}, drops recorded absences and doubtful records,
-expands each distribution record to every MEOW ecoregion its MRGID maps to,
-and collapses to one row per (species, ecoregion) with a native/introduced
-status.
+crosswalk from \code{dir_path}, drops records WoRMS flags as doubtful or
+inaccurate along with those reporting non-presence, expands each remaining
+distribution record to every MEOW ecoregion its MRGID maps to, and collapses
+to one row per (species, ecoregion) with a native/introduced status.
 }

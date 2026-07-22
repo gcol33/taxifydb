@@ -209,6 +209,24 @@
         "doi": "10.1641/B570707"
       },
       "license": "CC BY 4.0"
+    },
+    "genus_register": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.07/genus_register.vtr",
+      "full_size": 15438535,
+      "full_sha256": "a43dd080d239547e2daf2dbfc96f45b87ae3fcdb4a4bdd53a08f636a19743542",
+      "content_id": "d5a656508245fa06402a93b8c70004be",
+      "nrow": 496127,
+      "source_url": "derived from taxifydb-built backbones (see genus_register.meta url field)"
+    },
+    "backend_coverage": {
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.07/backend_coverage.vtr",
+      "full_size": 14295317,
+      "full_sha256": "4ab992348cbd1c8064c7505c721484ac81efefc25e4b6330c7b4d91fe7acfe95",
+      "content_id": "a1d0659d6d4b69f98bd431dcf52b4ce0",
+      "nrow": 1421182,
+      "source_url": "derived from taxifydb-built backbones (see backend_coverage.meta url field)"
     }
   },
   "enrichments": {

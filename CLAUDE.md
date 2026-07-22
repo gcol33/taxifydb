@@ -38,6 +38,11 @@ R/backend-wgsrpd.R         — reference geometry (not a backbone): WGSRPD Level
                               botanical regions -> wgsrpd.vtr (plant range polygons)
 R/backend-meow.R           — reference geometry (not a backbone): MEOW marine
                               ecoregions -> meow.vtr (marine range polygons, #21)
+R/register.R               — genus extractors, kingdom normalization,
+                              resolve_kingdom_via_gbif(), build_genus_register(),
+                              build_backend_coverage(), build_register() (#23)
+R/life-form.R              — family -> taxon_group / kingdom_group lookup table,
+                              assign_life_form()
 
 R/enrichment-helpers.R     — shared download helpers
 R/enrichment-parsers*.R    — 24 parse_<name>() functions
@@ -109,6 +114,35 @@ the MEOW download is a form-gated shapefile with no stable URL).
 union of the others and cannot be dropped — it is the only one carrying SEICAT
 and the negative records with no affected taxon recorded, so a door reading
 gidias without a group must select `affected_taxon == "Any"`.
+
+## Genus Register
+
+`genus_register.vtr` (one row per genus: classification + `kingdom_group` /
+`taxon_group` / `life_form`) and `backend_coverage.vtr` (long format, one row
+per genus x backend) are the cross-backbone index `taxify()`'s
+`kingdom_group`/`taxon_group`/`life_form` output and `inspect()` read (#23).
+Both are built here, not on the taxify runtime side, so every user downloads
+the same published register regardless of which backbones they have
+installed locally — taxify's own `build_genus_register()` used to assemble it
+from whatever the caller happened to have on disk, so two users running
+identical code could get different `kingdom_group`/`taxon_group` output.
+
+`build_register()` (or `build_genus_register()` / `build_backend_coverage()`
+individually) unions the fixed 13-backbone set `register_backbones()` returns
+(every backbone except Fungorum and AlgaeBase) via the extractor registry in
+`R/register.R`. Each backbone's `.vtr` resolves, in order: an explicit
+`backbone_paths` override, a local `output/<name>/<name>.vtr` build, or the
+version published in `manifest/manifest.json` (downloaded into
+`<output_dir>/_cache/`). Classification conflicts resolve by backbone
+priority (WoRMS > COL > WCVP > Reptile DB > GBIF > Euro+Med > LCVP > ITIS >
+NCBI > OTT > WFO > FishBase > SeaLifeBase); `kingdom_group`/`taxon_group`/
+`life_form` come from `R/life-form.R`'s family lookup table, with a GBIF
+parent-key hierarchy walk (`resolve_kingdom_via_gbif()`) as a second pass for
+genera the family table cannot place. Each `.vtr` publishes under its own
+release tag like a backbone (`genus_register-<version>`,
+`backend_coverage-<version>`), and both are recorded in `manifest.json`'s
+`backends` block (alongside `wgsrpd`/`meow`, the other non-taxonomic
+reference assets built there).
 
 ## Building locally
 

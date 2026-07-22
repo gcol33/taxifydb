@@ -1,3 +1,13 @@
+# taxifydb 0.1.19
+
+## `build_register()` reaches installations that resolve by version
+
+* `build_register()` was added to 0.1.18 after 0.1.18 had already been built
+  and cached, so anything resolving taxifydb by version string kept serving the
+  earlier code and `taxifydb::build_register` was missing from it. taxify's
+  register fallback calls that function, so the call failed wherever the older
+  0.1.18 was installed. The version now identifies the code that carries it.
+
 # taxifydb 0.1.18
 
 ## Marine distribution asset (issue #21)

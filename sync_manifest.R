@@ -1,8 +1,8 @@
 # Sync enrichment metadata from built output to taxify's bundled manifest.json.
 #
-# After running build_enrichments.R, this script propagates nrow and
-# available_groups from each enrichment's meta.json sidecar into the
-# taxify package's inst/manifest.json.
+# After running build_enrichments.R, this script propagates nrow,
+# available_groups, and group_col from each enrichment's meta.json sidecar
+# into the taxify package's inst/manifest.json.
 #
 # Usage:
 #   Rscript sync_manifest.R [taxify_manifest_path] [output_dir]
@@ -63,6 +63,11 @@ for (enr_dir in enrichment_dirs) {
       entry$available_groups <- as.list(meta$available_groups)
       changed <- TRUE
     }
+  }
+
+  if (!is.null(meta$group_col) && !identical(entry$group_col, meta$group_col)) {
+    entry$group_col <- meta$group_col
+    changed <- TRUE
   }
 
   if (changed) {

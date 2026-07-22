@@ -367,6 +367,7 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   if (!is.null(meta$source_url)) entry$source_url <- meta$source_url
   if (!is.null(meta$source_doi)) entry$source_doi <- meta$source_doi
   if (!is.null(meta$license))    entry$license    <- meta$license
+  if (!is.null(meta$group_col))  entry$group_col  <- meta$group_col
 
   if (!is.null(meta$available_groups)) {
     entry$available_groups <- meta$available_groups

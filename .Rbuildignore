@@ -14,3 +14,7 @@
 ^\.gitignore$
 ^README\.md$
 ^\.run-.*\.R$
+^scratchpad$
+^dev_notes$
+^todo\.md$
+^coverage_results\.json$

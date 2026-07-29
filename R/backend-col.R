@@ -286,6 +286,37 @@ col_resolve_classification <- function(df) {
     }
   }
 
+  # Family-to-higher fallback. Many COL sub-checklists give a family but no
+  # kingdom/phylum/class/order in their own parent chain, so those ranks stay
+  # empty even where the family's placement is fixed by other rows. Fill each
+  # higher rank from the dominant value seen for that family elsewhere, so a
+  # well-placed family carries its order/class/phylum/kingdom to sparsely
+  # classified members (the same table an external consumer would otherwise
+  # rebuild by hand). Only a clearly dominant value (>= 90% of the family's
+  # classified rows) is used, so a family homonymous across nomenclatural codes
+  # stays empty rather than mislabelled.
+  fill_from_family <- function(target) {
+    fam_ok <- !is.na(family) & nzchar(family)
+    known  <- fam_ok & !is.na(target) & nzchar(target)
+    if (!any(known)) return(target)
+    parts <- split(target[known], family[known])
+    best  <- vapply(parts, function(x) {
+      tb <- sort(table(x), decreasing = TRUE)
+      if (tb[[1L]] / length(x) >= 0.9) names(tb)[1L] else NA_character_
+    }, character(1L))
+    best <- best[!is.na(best)]
+    if (!length(best)) return(target)
+    need_idx <- which((is.na(target) | !nzchar(target)) & fam_ok)
+    fillv <- unname(best[family[need_idx]])
+    hit   <- !is.na(fillv)
+    target[need_idx[hit]] <- fillv[hit]
+    target
+  }
+  kingdom <- fill_from_family(kingdom)
+  phylum  <- fill_from_family(phylum)
+  class   <- fill_from_family(class)
+  order   <- fill_from_family(order)
+
   list(kingdom = kingdom, phylum = phylum, class = class,
        order = order, family = family)
 }

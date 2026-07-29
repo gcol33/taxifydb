@@ -59,6 +59,33 @@ test_that("col_resolve_classification denormalizes the full lineage (#24)", {
   expect_equal(cls$kingdom[1], "Animalia")
 })
 
+test_that("col fills higher ranks from the family's dominant placement (#24)", {
+  # Subtree A places Canidae under Carnivora/Mammalia/Chordata/Animalia. Subtree
+  # B is an orphan Canidae node with no chain above the family, so its members
+  # get family via the tree but no higher ranks -- they should inherit A's.
+  df <- data.frame(
+    taxonID           = as.character(1:10),
+    parentNameUsageID = c(NA, "1", "2", "3", "4", "5", "6",   # A: K>P>C>O>F>G>SP
+                          NA, "8", "9"),                       # B: orphan F>G>SP
+    taxonRank         = c("KINGDOM", "PHYLUM", "CLASS", "ORDER", "FAMILY",
+                          "GENUS", "SPECIES",
+                          "FAMILY", "GENUS", "SPECIES"),
+    canonicalName     = c("Animalia", "Chordata", "Mammalia", "Carnivora",
+                          "Canidae", "Vulpes", "Vulpes vulpes",
+                          "Canidae", "Canis", "Canis lupus"),
+    genericName       = c(NA, NA, NA, NA, NA, "Vulpes", "Vulpes",
+                          NA, "Canis", "Canis"),
+    stringsAsFactors  = FALSE
+  )
+  cls <- taxifydb:::col_resolve_classification(df)
+  # Canis lupus (row 10) has family Canidae from the tree but no higher chain;
+  # the fallback fills its order/class/kingdom from Canidae's known placement.
+  expect_equal(cls$family[10],  "Canidae")
+  expect_equal(cls$order[10],   "Carnivora")
+  expect_equal(cls$class[10],   "Mammalia")
+  expect_equal(cls$kingdom[10], "Animalia")
+})
+
 test_that("col family fallback fills from genericName on a broken parent link (#24)", {
   df <- data.frame(
     taxonID           = c("5", "6", "9"),

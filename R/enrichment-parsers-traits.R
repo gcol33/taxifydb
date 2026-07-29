@@ -239,6 +239,7 @@ parse_funguild <- function(path) {
 
   out <- data.frame(
     canonical_name  = merged$canonical_name,
+    SpecCode        = as.character(merged$SpecCode),
     body_length_cm  = safe_num("Length"),
     body_mass_g     = safe_num("Weight"),
     trophic_level   = troph,
@@ -255,6 +256,30 @@ parse_funguild <- function(path) {
              drop = FALSE]
   out <- out[!duplicated(out$canonical_name), , drop = FALSE]
 
+  # Attach one representative POPLW length-weight fit (W = a * L^b) per species,
+  # so a consumer can convert the length columns to a mass. The length columns
+  # cover far more species than Weight does, so the coefficients unlock them.
+  # See gcol33/taxifydb#25.
+  ltmax <- grep("^ltypemaxm$", names(merged), ignore.case = TRUE, value = TRUE)[1L]
+  spec_ltype <- if (!is.na(ltmax)) {
+    stats::setNames(trimws(as.character(merged[[ltmax]])),
+                    as.character(merged$SpecCode))
+  } else NULL
+  lw <- .rfishbase_lw_table(server, spec_ltype)
+  lw_cols <- c("lw_a", "lw_b", "lw_type", "lw_method", "lw_sex", "lw_n", "lw_r2")
+  if (!is.null(lw)) {
+    idx <- match(out$SpecCode, lw$SpecCode)
+    for (col in lw_cols) out[[col]] <- lw[[col]][idx]
+  } else {
+    for (col in lw_cols) {
+      out[[col]] <- if (col %in% c("lw_type", "lw_method", "lw_sex"))
+        NA_character_ else NA_real_
+    }
+  }
+
+  # SpecCode was only needed to join POPLW; canonical_name is the .vtr key.
+  out$SpecCode <- NULL
+
   # Keep every other merged species/taxonomy/ecology column.
   .append_all_cols(
     out, merged, merged$canonical_name,
@@ -262,6 +287,80 @@ parse_funguild <- function(path) {
              "FoodTroph", "DepthRangeShallow", "DepthRangeDeep",
              "Vulnerability", "DemersPelag", "Importance", "SpecCode")
   )
+}
+
+
+#' One representative POPLW length-weight fit per species
+#'
+#' FishBase/SeaLifeBase POPLW holds the `a` and `b` of `W = a * L^b`, often
+#' several rows per species (by length type, sex, method). The enrichment is
+#' keyed one row per species, so this reduces POPLW to a single representative
+#' fit per `SpecCode`, keeping the length convention (`Type`) beside the
+#' coefficient -- a coefficient fitted on TL applied to an SL length is a silent
+#' error. Among a species' fits it prefers: the length type matching the
+#' species' maximum-length type (so the coefficient applies to
+#' `body_length_cm`), then a general (unsexed/mixed) over a sex-specific fit,
+#' then a proper regression over a weak single-L-W-pair fit, then the larger
+#' sample. POPLW rows are real measured fits; FishBase's Bayesian congeneric
+#' estimates live in a separate table and are not included.
+#'
+#' @param server "fishbase" or "sealifebase".
+#' @param spec_ltype Optional named character vector (names = `SpecCode`, value
+#'   = the species' maximum-length type) used to prefer a matching-type fit.
+#' @return data.frame keyed on `SpecCode` with lw_a, lw_b, lw_type, lw_method,
+#'   lw_sex, lw_n, lw_r2 -- one row per species -- or NULL if POPLW is absent.
+#' @noRd
+.rfishbase_lw_table <- function(server, spec_ltype = NULL) {
+  lw <- tryCatch(
+    as.data.frame(rfishbase::length_weight(server = server),
+                  stringsAsFactors = FALSE),
+    error = function(e) NULL)
+  .rfishbase_lw_select(lw, spec_ltype)
+}
+
+
+#' Reduce a raw POPLW table to one representative fit per species
+#'
+#' The pure selection half of [.rfishbase_lw_table()], split out so the ranking
+#' is testable without a network fetch. `lw` is the raw `length_weight()` frame.
+#'
+#' @param lw Raw POPLW data.frame (needs at least SpecCode, a, b), or NULL.
+#' @param spec_ltype Optional named vector (SpecCode -> maximum-length type).
+#' @return data.frame keyed on SpecCode with the lw_* columns, or NULL.
+#' @noRd
+.rfishbase_lw_select <- function(lw, spec_ltype = NULL) {
+  if (is.null(lw) || !all(c("SpecCode", "a", "b") %in% names(lw))) return(NULL)
+
+  get <- function(nm, default = NA) {
+    if (nm %in% names(lw)) lw[[nm]] else rep(default, nrow(lw))
+  }
+  d <- data.frame(
+    SpecCode  = as.character(get("SpecCode")),
+    lw_a      = suppressWarnings(as.numeric(get("a"))),
+    lw_b      = suppressWarnings(as.numeric(get("b"))),
+    lw_type   = trimws(as.character(get("Type"))),
+    lw_method = trimws(as.character(get("Method"))),
+    lw_sex    = tolower(trimws(as.character(get("Sex")))),
+    lw_n      = suppressWarnings(as.numeric(get("Number"))),
+    lw_r2     = suppressWarnings(as.numeric(get("CoeffDetermination"))),
+    stringsAsFactors = FALSE
+  )
+  d <- d[!is.na(d$lw_a) & !is.na(d$lw_b), , drop = FALSE]
+  if (!nrow(d)) return(NULL)
+
+  pref_type  <- if (!is.null(spec_ltype)) unname(spec_ltype[d$SpecCode]) else NA
+  type_match <- !is.na(pref_type) & nzchar(d$lw_type) &
+                toupper(pref_type) == toupper(d$lw_type)
+  sex_score    <- ifelse(d$lw_sex == "unsexed", 3L,
+                         ifelse(d$lw_sex == "mixed", 2L, 1L))
+  method_score <- ifelse(grepl("regression", d$lw_method, ignore.case = TRUE),
+                         2L, 1L)
+  n_val <- ifelse(is.na(d$lw_n), 0, d$lw_n)
+
+  ord <- order(d$SpecCode, -as.integer(type_match), -sex_score, -method_score,
+               -n_val)
+  d <- d[ord, , drop = FALSE]
+  d[!duplicated(d$SpecCode), , drop = FALSE]
 }
 
 

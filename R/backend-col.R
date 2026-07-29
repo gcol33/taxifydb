@@ -27,17 +27,17 @@
   "parentNameUsageID"
 )
 
-# Extra columns preserved for add_col_info() at runtime
+# Extra columns preserved for add_col_info() at runtime.
+# kingdom/phylum/class/order are NOT taken from the source: COL's Taxon.tsv
+# leaves those Darwin Core columns empty (the higher classification is a
+# parent-tree of separate rows, not denormalized). They are resolved by walking
+# parentNameUsageID in col_resolve_classification() and mapped in read_col().
 .col_extra_cols <- c(
   "notho",
   "nomenclaturalCode",
   "nomenclaturalStatus",
   "namePublishedIn",
   "nameAccordingTo",
-  "kingdom",
-  "phylum",
-  "class",
-  "order",
   "superfamily",
   "subfamily",
   "tribe",
@@ -130,12 +130,17 @@ read_col <- function(col_dir, verbose = TRUE) {
     df$canonicalName <- df$scientificName
   }
 
-  if (verbose) message("Denormalizing family names...")
-  df$family <- col_resolve_family(df)
+  if (verbose) message("Denormalizing higher classification (kingdom..family)...")
+  cls <- col_resolve_classification(df)
+  df$kingdom <- cls$kingdom
+  df$phylum  <- cls$phylum
+  df$class   <- cls$class
+  df$order   <- cls$order
+  df$family  <- cls$family
 
   text_cols <- intersect(
-    c("canonicalName", "scientificName", "family", "genericName",
-      "specificEpithet", "scientificNameAuthorship"),
+    c("canonicalName", "scientificName", "kingdom", "phylum", "class", "order",
+      "family", "genericName", "specificEpithet", "scientificNameAuthorship"),
     names(df)
   )
   for (col in text_cols) {
@@ -149,6 +154,10 @@ read_col <- function(col_dir, verbose = TRUE) {
     taxon_rank              = "taxonRank",
     taxonomic_status        = "taxonomicStatus",
     accepted_name_usage_id  = "acceptedNameUsageID",
+    kingdom                 = "kingdom",
+    phylum                  = "phylum",
+    class                   = "class",
+    order                   = "order",
     family                  = "family",
     genus                   = "genericName",
     specific_epithet        = "specificEpithet",
@@ -214,42 +223,58 @@ build_col <- function(output_dir = "output/col", version = NULL,
 }
 
 
-#' Resolve family names for all COL rows via vectorized tree propagation
+#' Resolve the higher classification for all COL rows via tree propagation
 #'
-#' Family-rank rows seed their own name; the parent chain propagates the
-#' family down to descendants. Remaining gaps are filled by genericName ->
-#' genus family lookup.
+#' COL stores the higher classification as a parent-tree of separate rows, not
+#' as denormalized kingdom/phylum/class/order/family columns (those Darwin Core
+#' columns are shipped empty). For each target rank, the rank-matching rows seed
+#' their own canonicalName and the parent chain propagates the ancestor name
+#' down to every descendant. Family additionally fills any remaining gap from a
+#' genericName -> genus-family lookup, so a species whose family link is broken
+#' but whose genus resolves still gets a family.
 #'
 #' @param df The full COL data.frame with columns taxonID, taxonRank,
 #'   canonicalName, parentNameUsageID, genericName.
-#' @return Character vector of family names (same length as `nrow(df)`).
+#' @return A named list of character vectors (kingdom, phylum, class, order,
+#'   family), each of length `nrow(df)`.
 #' @noRd
-col_resolve_family <- function(df) {
-  n <- nrow(df)
-  family <- rep(NA_character_, n)
-
-  rank <- toupper(df$taxonRank)
-
-  is_family <- rank == "FAMILY"
-  family[is_family] <- df$canonicalName[is_family]
-
-  id_to_idx <- stats::setNames(seq_len(n), df$taxonID)
+col_resolve_classification <- function(df) {
+  n          <- nrow(df)
+  rank       <- toupper(df$taxonRank)
+  id_to_idx  <- stats::setNames(seq_len(n), df$taxonID)
   parent_idx <- unname(id_to_idx[df$parentNameUsageID])
 
-  for (iter in seq_len(15L)) {
-    missing <- is.na(family) & !is.na(parent_idx)
-    if (!any(missing)) break
-    parent_fam <- family[parent_idx[missing]]
-    resolved <- !is.na(parent_fam)
-    if (!any(resolved)) break
-    idx_missing <- which(missing)
-    family[idx_missing[resolved]] <- parent_fam[resolved]
+  # Propagate one ancestor rank's name from its rank-matching rows down through
+  # the parent chain. Level-by-level; converges in tree-depth iterations and
+  # breaks early once nothing more resolves. kingdom -> species can be deep, so
+  # the cap is generous rather than the family-only 15.
+  resolve_rank <- function(rank_label) {
+    val <- rep(NA_character_, n)
+    seed <- rank == rank_label
+    val[seed] <- df$canonicalName[seed]
+    for (iter in seq_len(60L)) {
+      missing <- is.na(val) & !is.na(parent_idx)
+      if (!any(missing)) break
+      parent_val <- val[parent_idx[missing]]
+      resolved <- !is.na(parent_val)
+      if (!any(resolved)) break
+      idx_missing <- which(missing)
+      val[idx_missing[resolved]] <- parent_val[resolved]
+    }
+    val
   }
 
-  is_genus <- rank == "GENUS"
-  genus_names <- df$canonicalName[is_genus]
+  kingdom <- resolve_rank("KINGDOM")
+  phylum  <- resolve_rank("PHYLUM")
+  class   <- resolve_rank("CLASS")
+  order   <- resolve_rank("ORDER")
+  family  <- resolve_rank("FAMILY")
+
+  # Family-only fallback: fill a still-missing family from the row's genus.
+  is_genus       <- rank == "GENUS"
+  genus_names    <- df$canonicalName[is_genus]
   genus_families <- family[is_genus]
-  has_fam <- !is.na(genus_families)
+  has_fam        <- !is.na(genus_families)
   if (any(has_fam)) {
     genus_fam_lookup <- stats::setNames(genus_families[has_fam],
                                         genus_names[has_fam])
@@ -261,5 +286,6 @@ col_resolve_family <- function(df) {
     }
   }
 
-  family
+  list(kingdom = kingdom, phylum = phylum, class = class,
+       order = order, family = family)
 }

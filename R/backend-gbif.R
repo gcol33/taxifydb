@@ -80,8 +80,17 @@ read_gbif <- function(gz_path, verbose = TRUE) {
   )
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
 
-  if (verbose) message("Denormalizing family names via self-join...")
-  df$family <- gbif_resolve_higher(df, df$family_key)
+  if (verbose) message("Denormalizing higher classification via self-join...")
+  # Resolve the denormalized ancestor names from each row's *_key columns while
+  # the KINGDOM/PHYLUM/CLASS/ORDER rows are still present (they are dropped
+  # below). Without this, only family is carried and the classification cannot
+  # be walked upward: taxify::upstream()/downstream() above family return zero
+  # rows. See gcol33/taxifydb#24.
+  df$kingdom <- gbif_resolve_higher(df, df$kingdom_key)
+  df$phylum  <- gbif_resolve_higher(df, df$phylum_key)
+  df$class   <- gbif_resolve_higher(df, df$class_key)
+  df$order   <- gbif_resolve_higher(df, df$order_key)
+  df$family  <- gbif_resolve_higher(df, df$family_key)
 
   df$status <- toupper(df$status)
   df$rank <- toupper(df$rank)
@@ -98,8 +107,8 @@ read_gbif <- function(gz_path, verbose = TRUE) {
   df$status <- gbif_status_to_standard(df$status)
 
   text_cols <- intersect(
-    c("canonical_name", "scientific_name", "family", "genus_or_above",
-      "specific_epithet", "authorship"),
+    c("canonical_name", "scientific_name", "kingdom", "phylum", "class",
+      "order", "family", "genus_or_above", "specific_epithet", "authorship"),
     names(df)
   )
   for (col in text_cols) {
@@ -125,6 +134,10 @@ read_gbif <- function(gz_path, verbose = TRUE) {
     taxon_rank              = "rank",
     taxonomic_status        = "status",
     accepted_name_usage_id  = "accepted_id",
+    kingdom                 = "kingdom",
+    phylum                  = "phylum",
+    class                   = "class",
+    order                   = "order",
     family                  = "family",
     genus                   = "genus_or_above",
     specific_epithet        = "specific_epithet",

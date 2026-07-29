@@ -10,28 +10,30 @@
       "source_url": "https://zenodo.org/records/14538251/files/_DwC_backbone_R.zip"
     },
     "col": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.06/col.vtr",
-      "full_size": 1960087252,
-      "full_sha256": "3f22e0feeb9d49b3db874a40a787cb374399823e7a4d7ed0eb5cf2dd6fae06ff",
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.07/col.vtr",
+      "full_size": 1965570364,
+      "full_sha256": "4d4a29b91135af2f01f36f240ac6c0810d13f01d68aa88418f4c94701e11c6aa",
       "nrow": 5302873,
       "source_url": "https://download.checklistbank.org/col/annual/2025_dwca.zip",
+      "content_id": "930d4196e0df71a0443652419715561b",
       "extras": [
         {
           "name": "col_species_profile.vtr",
-          "url": "https://github.com/gcol33/taxifydb/releases/download/col-2025-r1/col_species_profile.vtr",
+          "url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.07/col_species_profile.vtr",
           "size": 23971740,
           "sha256": "824573b5ff844791f0f1ba116cfef798fde93207b58ff6e450850d7ae4c730c5"
         }
       ]
     },
     "gbif": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.06/gbif.vtr",
-      "full_size": 1854505874,
-      "full_sha256": "9871c9619e5e13c1d1095c5eb93301ef8df12cb2cb8024a7f6e5492c62dfacd7",
+      "latest": "2026.07",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.07/gbif.vtr",
+      "full_size": 1865027233,
+      "full_sha256": "15ef1362a3216e04562209173db740b6ca9b27b0d91c3d64bce9377f4c90a1cb",
       "nrow": 6404001,
-      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz"
+      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz",
+      "content_id": "3721f67b89de4f9f3156b928ca4c459d"
     },
     "itis": {
       "latest": "2026.06",
@@ -1069,11 +1071,11 @@
     },
     "fishbase": {
       "latest": "2026.07",
-      "source_version": "2026.04",
+      "source_version": "2026.07",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/fishbase.vtr",
-      "nrow": 37805,
-      "content_id": "945e45208ed22598d6b112d0658bd7ec",
-      "source_url": "https://www.fishbase.se",
+      "nrow": 37819,
+      "content_id": "4c90d8f271db1a1ebf34237c07633aec",
+      "source_url": "https://fishbase.ropensci.org",
       "license": "CC BY-NC 4.0"
     },
     "zanne": {
@@ -1569,11 +1571,11 @@
     },
     "sealifebase": {
       "latest": "2026.07",
-      "source_version": "2026.06",
+      "source_version": "2026.07",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/sealifebase.vtr",
-      "nrow": 111710,
-      "content_id": "8b4d18daec3f89b059f63c739b453803",
-      "source_url": "https://www.sealifebase.org",
+      "nrow": 111776,
+      "content_id": "0090de15fc13957b909cfd48770e9475",
+      "source_url": "https://sealifebase.ropensci.org",
       "license": "CC BY-NC 4.0"
     },
     "globtherm": {

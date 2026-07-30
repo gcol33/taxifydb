@@ -2,8 +2,8 @@
 #
 # Every enrichment .vtr must be joinable regardless of which backbone produced
 # the user's taxify() result. This function resolves source names against all
-# 7 backends and expands the data.frame so each source row maps to every
-# distinct accepted name found across backends.
+# taxify backbones (list_backends()) and expands the data.frame so each source
+# row maps to every distinct accepted name found across backbones.
 
 #' Resolve enrichment names against all taxify backends
 #'
@@ -19,16 +19,15 @@
 #' @param df A data.frame with at least a `canonical_name` column.
 #' @param group_cols Character vector of grouping columns. Deduplication uses
 #'   `canonical_name` + `group_cols` as the key. Default `NULL`.
-#' @param backends Character vector of backend names. Default: all 7.
+#' @param backends Character vector of backend names. Default: every taxify
+#'   backbone ([list_backends()]).
 #' @param verbose Logical.
 #' @param use_lookup Logical. Try the hash-join fast path first. Default `TRUE`.
 #' @return The expanded data.frame.
 #' @export
 resolve_enrichment_names <- function(df,
                                      group_cols = NULL,
-                                     backends = c("wfo", "col", "gbif",
-                                                  "itis", "ncbi", "ott",
-                                                  "worms"),
+                                     backends = list_backends(),
                                      verbose = TRUE,
                                      use_lookup = TRUE) {
   if (!"canonical_name" %in% names(df)) {
@@ -68,9 +67,7 @@ resolve_enrichment_names <- function(df,
 #' @noRd
 .resolve_species_names <- function(df,
                                    group_cols = NULL,
-                                   backends = c("wfo", "col", "gbif",
-                                                "itis", "ncbi", "ott",
-                                                "worms"),
+                                   backends = list_backends(),
                                    verbose = TRUE,
                                    use_lookup = TRUE) {
   if (!"canonical_name" %in% names(df)) {
@@ -117,14 +114,14 @@ resolve_enrichment_names <- function(df,
 #' counts when several synonyms later collapse onto one accepted name.
 #'
 #' @param names Character vector of source names.
-#' @param backends Character vector of backend names. Default: all 7.
+#' @param backends Character vector of backend names. Default: every taxify
+#'   backbone ([list_backends()]).
 #' @param verbose Logical.
 #' @param use_lookup Logical. Try the hash-join fast path first. Default `TRUE`.
 #' @return data.frame with columns `input_name`, `accepted_name`.
 #' @export
 resolve_name_map <- function(names,
-                             backends = c("wfo", "col", "gbif", "itis",
-                                          "ncbi", "ott", "worms"),
+                             backends = list_backends(),
                              verbose = TRUE, use_lookup = TRUE) {
   unique_names <- unique(names[!is.na(names) & nzchar(names)])
   empty <- data.frame(input_name = character(), accepted_name = character(),
@@ -134,6 +131,17 @@ resolve_name_map <- function(names,
   map <- NULL
   if (use_lookup) {
     lookup_paths <- .find_lookup_paths(backends)
+    missing_lu <- setdiff(backends, names(lookup_paths))
+    if (length(missing_lu) > 0L) {
+      warning(sprintf(
+        paste0("Resolving against %d backbone(s) but %d lack a name_lookup.vtr ",
+               "(%s); the accepted-name union will be narrower than requested. ",
+               "Run build_all_name_lookups() for the full set before a ",
+               "production enrichment build."),
+        length(backends), length(missing_lu),
+        paste(missing_lu, collapse = ", ")),
+        call. = FALSE)
+    }
     if (length(lookup_paths) > 0L) {
       map <- .name_map_via_lookup(unique_names, lookup_paths, verbose)
     } else if (verbose) {

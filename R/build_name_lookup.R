@@ -89,13 +89,12 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
 #' Locates each backbone in the user's taxify data dir and writes a
 #' `{backend}_name_lookup.vtr` alongside it.
 #'
-#' @param backends Character vector. Default: 7 standard backends.
+#' @param backends Character vector. Default: every taxify backbone
+#'   ([list_backends()]).
 #' @param overwrite Logical. Rebuild even if the lookup .vtr already exists.
 #' @return Character vector of paths to the built lookups.
 #' @export
-build_all_name_lookups <- function(backends = c("wfo", "col", "gbif",
-                                                "itis", "ncbi", "ott",
-                                                "worms"),
+build_all_name_lookups <- function(backends = list_backends(),
                                    overwrite = FALSE) {
   data_root <- if (requireNamespace("taxify", quietly = TRUE)) {
     tryCatch(taxify::taxify_data_dir(), error = function(e) NULL)

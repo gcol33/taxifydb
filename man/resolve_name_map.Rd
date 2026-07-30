@@ -6,7 +6,7 @@
 \usage{
 resolve_name_map(
   names,
-  backends = c("wfo", "col", "gbif", "itis", "ncbi", "ott", "worms"),
+  backends = list_backends(),
   verbose = TRUE,
   use_lookup = TRUE
 )
@@ -14,7 +14,8 @@ resolve_name_map(
 \arguments{
 \item{names}{Character vector of source names.}
 
-\item{backends}{Character vector of backend names. Default: all 7.}
+\item{backends}{Character vector of backend names. Default: every taxify
+backbone (\code{\link[=list_backends]{list_backends()}}).}
 
 \item{verbose}{Logical.}
 

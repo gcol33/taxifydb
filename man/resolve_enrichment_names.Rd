@@ -7,7 +7,7 @@
 resolve_enrichment_names(
   df,
   group_cols = NULL,
-  backends = c("wfo", "col", "gbif", "itis", "ncbi", "ott", "worms"),
+  backends = list_backends(),
   verbose = TRUE,
   use_lookup = TRUE
 )
@@ -18,7 +18,8 @@ resolve_enrichment_names(
 \item{group_cols}{Character vector of grouping columns. Deduplication uses
 \code{canonical_name} + \code{group_cols} as the key. Default \code{NULL}.}
 
-\item{backends}{Character vector of backend names. Default: all 7.}
+\item{backends}{Character vector of backend names. Default: every taxify
+backbone (\code{\link[=list_backends]{list_backends()}}).}
 
 \item{verbose}{Logical.}
 

@@ -145,9 +145,16 @@ publish_enrichment_release <- function(version, vtr_paths,
     }
   }
 
+  # Quote each path: an asset path may contain spaces (e.g. a Windows user
+  # directory), and system2() does not quote its args. Use cmd-style quoting on
+  # Windows (double quotes, understood by CreateProcess) and sh-style elsewhere.
+  quoted_paths <- shQuote(
+    vtr_paths,
+    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
+  )
   upload_out <- system2("gh", c(
     "release", "upload", tag,
-    vtr_paths,
+    quoted_paths,
     "--repo", repo,
     "--clobber"
   ), stdout = TRUE, stderr = TRUE)

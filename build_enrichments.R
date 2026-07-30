@@ -35,6 +35,16 @@ if (!requireNamespace("taxifydb", quietly = TRUE)) {
   }
 }
 
+# Build-only enrichments carry a citation-only or unstated licence: taxifydb can
+# build them on a user's machine, but taxify redistributes no .vtr asset and no
+# manifest entry for them (tests assert their absence). They must never be
+# published or written to a manifest. The authoritative set lives in taxify;
+# the literal is a fallback for when that accessor is unreachable.
+.build_only_set <- tryCatch(
+  taxify:::.build_only_enrichments(),
+  error = function(e) c("ccdb", "gmpd", "plantatt", "bryoatt", "clopla")
+)
+
 if (action == "publish") {
   # Rscript build_enrichments.R publish <name|all> <version>
   target  <- if (length(args) >= 2L) args[2L] else stop(
@@ -42,7 +52,15 @@ if (action == "publish") {
   version <- if (length(args) >= 3L) args[3L] else stop(
     "publish needs a version: Rscript build_enrichments.R publish <name|all> <version>")
 
-  names <- if (target == "all") taxifydb::list_enrichments() else target
+  if (target == "all") {
+    names <- setdiff(taxifydb::list_enrichments(), .build_only_set)
+  } else if (target %in% .build_only_set) {
+    stop(sprintf(
+      "'%s' is a build-only enrichment (no redistribution licence); it must not be published.",
+      target), call. = FALSE)
+  } else {
+    names <- target
+  }
   db_manifest <- "manifest/manifest.json"
   # taxify's runtime manifest, when the two repos are checked out side by side.
   # Written with the same updater (runtime = TRUE) so the mechanical fields
@@ -52,10 +70,20 @@ if (action == "publish") {
   # enrichment and preserved for an existing one -- no manual curation step.
   tx_manifest <- "../taxify/inst/manifest.json"
 
+  # Set TAXIFYDB_PUBLISH_RESUME=1 to reuse an enrichment's already-built .vtr
+  # instead of rebuilding it, so a publish run interrupted partway resumes
+  # cheaply. Start from an empty output_dir for a clean full rebuild.
+  resume <- nzchar(Sys.getenv("TAXIFYDB_PUBLISH_RESUME", ""))
   built <- list()
   for (name in names) {
     enr_out <- file.path(output_dir, name)
     dir.create(enr_out, recursive = TRUE, showWarnings = FALSE)
+    existing <- list.files(enr_out, pattern = "\\.vtr$", full.names = TRUE)
+    if (resume && length(existing) == 1L) {
+      message(sprintf("RESUME: reusing built %s", basename(existing)))
+      built[[name]] <- existing
+      next
+    }
     vtr <- tryCatch(
       taxifydb::build_enrichment(name, output_dir = enr_out),
       error = function(e) {
@@ -95,7 +123,7 @@ if (action == "publish") {
   }
 } else if (action == "all") {
   results <- list()
-  for (name in taxifydb::list_enrichments()) {
+  for (name in setdiff(taxifydb::list_enrichments(), .build_only_set)) {
     enr_out <- file.path(output_dir, name)
     dir.create(enr_out, recursive = TRUE, showWarnings = FALSE)
     tryCatch(

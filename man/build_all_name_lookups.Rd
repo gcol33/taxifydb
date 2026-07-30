@@ -4,13 +4,11 @@
 \alias{build_all_name_lookups}
 \title{Build name-lookup tables for all installed taxify backbones}
 \usage{
-build_all_name_lookups(
-  backends = c("wfo", "col", "gbif", "itis", "ncbi", "ott", "worms"),
-  overwrite = FALSE
-)
+build_all_name_lookups(backends = list_backends(), overwrite = FALSE)
 }
 \arguments{
-\item{backends}{Character vector. Default: 7 standard backends.}
+\item{backends}{Character vector. Default: every taxify backbone
+(\code{\link[=list_backends]{list_backends()}}).}
 
 \item{overwrite}{Logical. Rebuild even if the lookup .vtr already exists.}
 }

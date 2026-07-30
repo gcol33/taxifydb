@@ -21,21 +21,24 @@ parse_common_names <- function(dir_path) {
 
   parts <- list()
 
+  # Assign provenance length-safely: a sub-parser may return 0 rows (OTT carries
+  # no vernaculars in recent releases), and `df$source <- "x"` errors on a
+  # 0-row data.frame ("replacement has 1 row, data has 0").
   if (dir.exists(gbif_dir)) {
     gbif <- parse_gbif_common_names(gbif_dir)
-    gbif$source <- "gbif"
+    gbif$source <- rep("gbif", nrow(gbif))
     parts <- c(parts, list(gbif))
   }
 
   if (dir.exists(ncbi_dir)) {
     ncbi <- parse_ncbi_common_names(ncbi_dir)
-    ncbi$source <- "ncbi"
+    ncbi$source <- rep("ncbi", nrow(ncbi))
     parts <- c(parts, list(ncbi))
   }
 
   if (dir.exists(ott_dir)) {
     ott <- parse_ott_common_names(ott_dir)
-    ott$source <- "ott"
+    ott$source <- rep("ott", nrow(ott))
     parts <- c(parts, list(ott))
   }
 

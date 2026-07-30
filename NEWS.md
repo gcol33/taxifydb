@@ -1,3 +1,26 @@
+# taxifydb 0.1.20
+
+## Enrichment name resolution spans all fifteen backbones
+
+* `resolve_enrichment_names()`, `resolve_name_map()`, `.resolve_species_names()`
+  and `build_all_name_lookups()` now default to every taxify backbone
+  (`list_backends()`), up from the seven broadest. An enrichment `.vtr` built
+  after this change carries the accepted-name variants from the domain-specific
+  backbones too (Euro+Med, Species Fungorum, AlgaeBase, FishBase, SeaLifeBase,
+  Reptile Database, LCVP, WCVP), so an enrichment join through one of those
+  backbones no longer falls through.
+
+* `resolve_name_map()` warns when a requested backbone lacks a
+  `name_lookup.vtr`, so a production build cannot silently resolve against a
+  narrower backbone set than intended.
+
+## Build-only enrichments are never published
+
+* `build_enrichments.R` no longer publishes or writes a manifest entry for a
+  build-only enrichment (ccdb, gmpd, plantatt, bryoatt, clopla): `publish all`
+  and `all` skip them, and `publish <name>` refuses a build-only name. These
+  sources carry a citation-only or unstated licence and are built locally only.
+
 # taxifydb 0.1.19
 
 ## `build_register()` reaches installations that resolve by version

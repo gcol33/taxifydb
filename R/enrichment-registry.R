@@ -1350,10 +1350,10 @@
     ),
     download_fn = function(url, dest) {
       dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-      download_curl_file(paste0(url, "3c655f2ab1d525d1b1f05ee78153e875"),
-                         dest, "mammal.csv")
-      download_curl_file(paste0(url, "5a86fde71322a1ff64d94ace0ed1982c"),
-                         dest, "bird.csv")
+      download_edi_file(paste0(url, "3c655f2ab1d525d1b1f05ee78153e875"),
+                        dest, "mammal.csv")
+      download_edi_file(paste0(url, "5a86fde71322a1ff64d94ace0ed1982c"),
+                        dest, "bird.csv")
       dest
     },
     parse_fn    = function(path) parse_frugivoria(path),
@@ -1908,7 +1908,7 @@
       "(source abbreviation codes kept verbatim)."
     ),
     download_fn = function(url, dest) {
-      download_curl_file(url, dest, "fw_insects_traits_by_genus.csv")
+      download_edi_file(url, dest, "fw_insects_traits_by_genus.csv")
     },
     parse_fn    = function(path) parse_fw_insects_conus(path),
     group_col   = NULL,

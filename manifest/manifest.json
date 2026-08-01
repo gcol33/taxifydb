@@ -1839,7 +1839,7 @@
       "source_version": "1.220.5",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/frugivoria.vtr",
       "nrow": 1932,
-      "content_id": "30ba5004ee7e1c5199bea75a63cbcd0c",
+      "content_id": "e0b9d4648aacfc1a8fcbd54915fc4693",
       "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/5/",
       "source_doi": "10.6073/pasta/frugivoria",
       "license": "CC BY 4.0"
@@ -2087,9 +2087,11 @@
       "latest": "2026.07",
       "source_version": "2021.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.07/freshwater_insects_conus.vtr",
-      "nrow": 1030,
-      "content_id": "aad00e742e09bfb2052e37bf950056ee",
-      "source_url": "https://portal.edirepository.org/nis/mapbrowse?packageid=edi.481.5"
+      "nrow": 1033,
+      "content_id": "75e232a5f88a10de79ce94e35cedfc2e",
+      "source_url": "https://pasta.lternet.edu/package/data/eml/edi/481/5/3a88bfdfefcfe6dcafb27afd3ce4e90c",
+      "source_doi": "10.6073/pasta/8238ea9bc15840844b3a023b6b6ed158",
+      "license": "CC BY 4.0"
     },
     "eurobat": {
       "latest": "2026.07",

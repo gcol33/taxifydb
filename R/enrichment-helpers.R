@@ -16,13 +16,16 @@
 #' @param filename Character. Output filename.
 #' @param referer Character or `NULL`. Optional Referer header.
 #' @param user_agent Character or `NULL`. Override the default User-Agent.
+#' @param extra_headers Named character vector or `NULL`. Additional request
+#'   headers (e.g. a `Cookie` for a session-authenticated source).
 #' @param max_tries Integer. Download attempts before giving up. Large live
 #'   exports (e.g. the World Spider Trait database) intermittently drop the TLS
 #'   connection mid-transfer; each retry uses exponential backoff.
 #' @return Path to the downloaded file.
 #' @export
 download_curl_file <- function(url, dest_dir, filename, referer = NULL,
-                               user_agent = NULL, max_tries = 4L) {
+                               user_agent = NULL, extra_headers = NULL,
+                               max_tries = 4L) {
   dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
   dest <- file.path(dest_dir, filename)
   if (file.exists(dest) && file.size(dest) > 100L) return(dest)
@@ -39,6 +42,7 @@ download_curl_file <- function(url, dest_dir, filename, referer = NULL,
                         low_speed_time = 120L)
     headers <- list("User-Agent" = ua)
     if (!is.null(referer)) headers[["Referer"]] <- referer
+    if (!is.null(extra_headers)) headers[names(extra_headers)] <- as.list(extra_headers)
     do.call(curl::handle_setheaders, c(list(h), headers))
 
     ok <- tryCatch({
@@ -60,6 +64,44 @@ download_curl_file <- function(url, dest_dir, filename, referer = NULL,
   stop(sprintf("Download failed after %d tries: %s%s", max_tries, url,
                if (!is.null(last_err)) paste0(" (", last_err, ")") else ""),
        call. = FALSE)
+}
+
+
+#' Download a file from EDI's PASTA repository, authenticated
+#'
+#' EDI has required authentication for all REST API access since 2026-07-30
+#' (an anti-DoS/scraping measure; see edirepository.org/news/news-20260727.00).
+#' Anonymous requests to `pasta.lternet.edu` now get a 403 ("Public Access is
+#' not authorized"). This wraps [download_curl_file()] with EDI's documented
+#' auth: an API Access Key appended as a `?key=` query parameter (the
+#' supported mechanism for "coded workflows, automated scripts, and other
+#' integrations", per <https://edirepository.org/resources/iam>), read from
+#' the `EDI_API_KEY` env var. `EDI_EDI_TOKEN` (a raw `edi-token` session JWT,
+#' from a logged-in browser) is an interactive fallback -- it expires in days,
+#' so it is not suitable for a scheduled/CI rebuild.
+#'
+#' @inheritParams download_curl_file
+#' @return Path to the downloaded file.
+download_edi_file <- function(url, dest_dir, filename, max_tries = 4L) {
+  api_key <- Sys.getenv("EDI_API_KEY", "")
+  session_token <- Sys.getenv("EDI_EDI_TOKEN", "")
+
+  if (nzchar(api_key)) {
+    sep <- if (grepl("?", url, fixed = TRUE)) "&" else "?"
+    url <- paste0(url, sep, "key=", utils::URLencode(api_key, reserved = TRUE))
+    download_curl_file(url, dest_dir, filename, max_tries = max_tries)
+  } else if (nzchar(session_token)) {
+    download_curl_file(url, dest_dir, filename,
+                       extra_headers = c(Cookie = paste0("edi-token=", session_token)),
+                       max_tries = max_tries)
+  } else {
+    stop(paste0(
+      "EDI requires API authentication for all REST access (since 2026-07-30). ",
+      "Set EDI_API_KEY to an access key from https://edirepository.org/resources/iam ",
+      "(create one under your profile's Access Keys), or EDI_EDI_TOKEN to a live ",
+      "session token for a one-off interactive build."
+    ), call. = FALSE)
+  }
 }
 
 

@@ -174,7 +174,56 @@ resolve_name_map <- function(names,
 }
 
 
+#' Drop accepted names a backbone reached through a cross-kingdom homonym
+#'
+#' The union across backbones is the point of this step: two backbones may file
+#' the same organism under different genera, and the enrichment has to join
+#' whichever the user's `taxify()` returned. But a binomial can also be occupied
+#' twice in different kingdoms, and then the two accepted names are not the same
+#' organism at all -- unioning them writes one organism's traits under the
+#' other's name.
+#'
+#' Lineage is what separates the two, and only at the kingdom rank, which is the
+#' one every backbone that has it agrees on: *Lasiurus cinereus* and *Aeorestes
+#' cinereus* are one bat reassigned between genera (Animalia both), whereas
+#' *Coronella austriaca* is a snake (Animalia) in six backbones and a fossil
+#' foraminiferan (Chromista) in WoRMS, which files the binomial under
+#' *Coronipora austriaca*.
+#'
+#' A source name's kingdom is taken to be the one most backbones give it, and an
+#' accepted name is dropped only on a positive contradiction. A backbone that
+#' records no kingdom -- the vascular-plant backbones do not -- never
+#' contradicts, so its mapping is always kept.
+#' @noRd
+.drop_cross_kingdom_names <- function(raw, verbose = TRUE) {
+  if (!nrow(raw) || !"kingdom" %in% names(raw)) return(raw)
+  k <- trimws(as.character(raw$kingdom))
+  k[!nzchar(k) | k == "NA"] <- NA_character_
+
+  known <- !is.na(k)
+  if (!any(known)) return(raw[, setdiff(names(raw), "kingdom"), drop = FALSE])
+
+  # Consensus kingdom per source key: the one the most backbones report.
+  tab <- table(raw$key_ci[known], k[known])
+  consensus <- colnames(tab)[max.col(tab, ties.method = "first")]
+  names(consensus) <- rownames(tab)
+
+  want <- consensus[raw$key_ci]
+  drop <- known & !is.na(want) & k != want
+  if (any(drop) && isTRUE(verbose)) {
+    message(sprintf(
+      "    [kingdom gate] dropped %s cross-kingdom homonym mapping(s)",
+      format(sum(drop), big.mark = ",")))
+  }
+  raw[!drop, setdiff(names(raw), "kingdom"), drop = FALSE]
+}
+
+
 #' Build the accepted-name map via per-backend taxify() (slow path)
+#'
+#' Note this path is not kingdom-gated: it is the fallback used when no
+#' `name_lookup.vtr` files exist, and it already warns that the union will be
+#' narrower than a production build.
 #' @noRd
 .name_map_via_taxify <- function(unique_names, backends, verbose) {
   if (!requireNamespace("taxify", quietly = TRUE)) {
@@ -296,15 +345,20 @@ resolve_name_map <- function(names,
     p  <- lookup_paths[i]
     t0 <- proc.time()
     matched <- tryCatch({
-      vectra::tbl(p) |>
+      have_k <- "kingdom" %in% names(
+        utils::head(vectra::collect(vectra::tbl(p)), 0L))
+      sel <- c("key_ci", "accepted_name", if (have_k) "kingdom")
+      out <- vectra::tbl(p) |>
         vectra::filter(key_ci %in% query_keys) |>
-        vectra::select("key_ci", "accepted_name") |>
+        vectra::select(!!!lapply(sel, as.name)) |>
         vectra::collect()
+      if (!have_k) out$kingdom <- NA_character_
+      out
     }, error = function(e) {
       warning(sprintf("Lookup [%s] failed: %s", nm, conditionMessage(e)),
               call. = FALSE)
       data.frame(key_ci = character(), accepted_name = character(),
-                 stringsAsFactors = FALSE)
+                 kingdom = character(), stringsAsFactors = FALSE)
     })
     elapsed <- (proc.time() - t0)["elapsed"]
     if (verbose) {
@@ -319,6 +373,7 @@ resolve_name_map <- function(names,
   raw <- do.call(rbind, all_mappings)
   raw <- raw[!is.na(raw$accepted_name) & nzchar(raw$accepted_name), ]
   raw <- unique(raw)
+  raw <- .drop_cross_kingdom_names(raw, verbose)
 
   mapping <- merge(query_df, raw, by = "key_ci")
   mapping <- mapping[, c("canonical_name", "accepted_name")]

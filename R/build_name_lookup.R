@@ -40,7 +40,11 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
                  basename(bb_path), paste(missing, collapse = ", ")),
          call. = FALSE)
   }
-  sel <- c(required, intersect("nomenclaturalStatus", schema))
+  # kingdom rides along so resolve_enrichment_names() can tell a genus
+  # reassignment from a homonym collision. Not every backbone carries one
+  # (the vascular-plant backbones have no kingdom column), and an absent
+  # kingdom must never contradict anything, so it stays NA.
+  sel <- c(required, intersect(c("nomenclaturalStatus", "kingdom"), schema))
 
   bb <- vectra::tbl(bb_path) |>
     vectra::select(!!!lapply(sel, as.name)) |>
@@ -60,7 +64,10 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   ord <- order(bb$key_ci, s$status_score, s$rank_score, s$valid_score,
                s$epithet_score, bb$taxon_id)
   bb <- bb[ord, , drop = FALSE]
-  bb <- bb[!duplicated(bb$key_ci), c("key_ci", "accepted_name"), drop = FALSE]
+  keep_cols <- c("key_ci", "accepted_name",
+                 if ("kingdom" %in% names(bb)) "kingdom")
+  bb <- bb[!duplicated(bb$key_ci), keep_cols, drop = FALSE]
+  if (!"kingdom" %in% names(bb)) bb$kingdom <- NA_character_
   rownames(bb) <- NULL
 
   if (verbose) {

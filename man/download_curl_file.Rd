@@ -10,6 +10,7 @@ download_curl_file(
   filename,
   referer = NULL,
   user_agent = NULL,
+  extra_headers = NULL,
   max_tries = 4L
 )
 }
@@ -23,6 +24,9 @@ download_curl_file(
 \item{referer}{Character or \code{NULL}. Optional Referer header.}
 
 \item{user_agent}{Character or \code{NULL}. Override the default User-Agent.}
+
+\item{extra_headers}{Named character vector or \code{NULL}. Additional request
+headers (e.g. a \code{Cookie} for a session-authenticated source).}
 
 \item{max_tries}{Integer. Download attempts before giving up. Large live
 exports (e.g. the World Spider Trait database) intermittently drop the TLS

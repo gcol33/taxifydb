@@ -2271,6 +2271,78 @@
     parse_fn    = function(path) parse_chowdhury(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  finand = list(
+    source_url  = paste0("https://zenodo.org/api/records/17184995/files/",
+                         "Species_traits_zenodo.xlsx/content"),
+    source_doi  = "10.5281/zenodo.17184995",
+    version     = "2025.09",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Finand B, Kotze DJ (2025) Habitat specialisation and dispersal ",
+      "capacity drive rapid carabid beetle responses to urban forest ",
+      "fragmentation. Zenodo, doi:10.5281/zenodo.17184995 (version 1 of ",
+      "concept doi:10.5281/zenodo.17184994). File Species_traits_zenodo.xlsx, ",
+      "md5 5613d2fc4cd703eaadba78822097810e. Version 1 is pinned; the trait ",
+      "file is byte-identical in version 2 (doi:10.5281/zenodo.21157452), ",
+      "which revised only the environmental table, species matrix and script."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest_dir = dest,
+                         filename = "finand_species_traits.xlsx")
+    },
+    parse_fn    = function(path) parse_finand(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
+  ),
+
+  eberswalde = list(
+    source_url  = paste0("https://pubdata.leuphana.de/server/api/core/",
+                         "bitstreams/1abc1f9b-d416-4ec8-8139-a3730724e77c/content"),
+    source_doi  = "10.48548/pubdata-46",
+    version     = "2024.1",
+    license     = "CC BY-SA 4.0",
+    attribution = paste0(
+      "Weiss F, von Wehrden H, Linde A (2024) Eberswalde Carabid Monitoring ",
+      "1999-2022 - Full Data. PubData Leuphana, doi:10.48548/pubdata-46, ",
+      "CC BY-SA 4.0. Companion to Weiss F, von Wehrden H, Linde A (2024) ",
+      "Long-term drought triggers severe declines in carabid beetles in a ",
+      "temperate forest. Ecography 2024(4):e07020, doi:10.1111/ecog.07020. ",
+      "File EWcarabids1999-2022_species_trends_traits.csv, md5 ",
+      "56d8fc881c2faa26e77e40b09cfeabd2. The size, wings and latitude columns ",
+      "are carabids.org (Homburg et al. 2014) per the deposit's own README ",
+      "and should be cited alongside."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest_dir = dest,
+                         filename = "eberswalde_species_trends_traits.csv")
+    },
+    parse_fn    = function(path) parse_eberswalde(path),
+    group_col   = NULL,
+    requires    = NULL
+  ),
+
+  imageomics_neon = list(
+    source_url  = paste0("https://huggingface.co/datasets/imageomics/",
+                         "2018-NEON-beetles/resolve/main/BeetleMeasurements.csv"),
+    source_doi  = NULL,
+    version     = "2024.1",
+    license     = "CC BY-SA 4.0",
+    attribution = paste0(
+      "Fluck IE, Chinniah I, Wolcheski R, et al. 2018-NEON-beetles. ",
+      "Hugging Face, https://huggingface.co/datasets/imageomics/",
+      "2018-NEON-beetles, CC BY-SA 4.0. Imageomics Institute, from National ",
+      "Ecological Observatory Network (NEON) 2018 carabid samples. File ",
+      "BeetleMeasurements.csv, md5 8cb80a42293b94ea49acb2f1185864c1."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest_dir = dest,
+                         filename = "neon_beetle_measurements.csv")
+    },
+    parse_fn    = function(path) parse_imageomics_neon(path),
+    group_col   = NULL,
+    requires    = NULL
   )
 )
 

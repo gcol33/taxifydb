@@ -2440,6 +2440,299 @@
       },
       "license": "CC BY 4.0",
       "source_doi": "10.14284/170"
+    },
+    "chowdhury": {
+      "latest": "2026.08",
+      "content_id": "cf4d3063643815e9b1ba9de3b4b3d8fa",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/chowdhury.vtr",
+      "nrow": 415,
+      "source_url": "https://onlinelibrary.wiley.com/doi/10.1111/ddi.70112",
+      "source_format": "xlsx",
+      "source_version": "2025.1",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "body_length_mm",
+        "wing_morph",
+        "trophic_level",
+        "habitat_pref",
+        "red_list_germany",
+        "red_list_iucn",
+        "threat_status",
+        "occupancy_trend",
+        "trend_status",
+        "trend_significance"
+      ],
+      "static": true,
+      "citation": {
+        "key": "chowdhury2025carabid",
+        "type": "article",
+        "authors": "Chowdhury S, Jansen F, Bowler DE, Vermeulen R, Assmann T, Bonn A, Eisenhauer N, Homburg K, Kaemper W, Kuhn E, Musche M, Schuldt A, Zumstein P, Boenisch G, Wirth C, Roemermann C, Bruelheide H",
+        "year": "2025",
+        "title": "Widespread Decline of Ground Beetles in Germany",
+        "journal": "Diversity and Distributions",
+        "doi": "10.1111/ddi.70112"
+      },
+      "license": "No separate licence stated for the Supporting Information; article is CC BY 4.0. Reuse basis: public scientific supporting data offered as the paper's trait dataset."
+    },
+    "finand": {
+      "latest": "2026.08",
+      "content_id": "5bc4457102e12b80cb6afd183c03b8c2",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/finand.vtr",
+      "nrow": 40,
+      "source_url": "https://zenodo.org/api/records/17184995/files/Species_traits_zenodo.xlsx/content",
+      "source_format": "xlsx",
+      "source_version": "2025.09",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "body_length_mm",
+        "wing_morph",
+        "feeding_type",
+        "habitat_pref",
+        "moisture_pref"
+      ],
+      "static": true,
+      "citation": {
+        "key": "finand2025carabid",
+        "type": "article",
+        "authors": "Finand B, Kotze DJ",
+        "year": "2025",
+        "title": "Habitat specialisation and dispersal capacity drive rapid carabid beetle responses to urban forest fragmentation",
+        "journal": "Zenodo",
+        "doi": "10.5281/zenodo.17184995"
+      },
+      "license": "CC BY 4.0"
+    },
+    "eberswalde": {
+      "latest": "2026.08",
+      "content_id": "114398839429fb5cd357fa9cfa3345a0",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/eberswalde.vtr",
+      "nrow": 30,
+      "source_url": "https://pubdata.leuphana.de/server/api/core/bitstreams/1abc1f9b-d416-4ec8-8139-a3730724e77c/content",
+      "source_format": "csv",
+      "source_version": "2024.1",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "body_length_mm",
+        "wing_morph",
+        "feeding_guild",
+        "humidity_pref",
+        "range_centre_lat",
+        "abundance_total",
+        "abundance_trend",
+        "drought_effect"
+      ],
+      "static": true,
+      "citation": {
+        "key": "weiss2024eberswalde",
+        "type": "misc",
+        "authors": "Weiss F, von Wehrden H, Linde A",
+        "year": "2024",
+        "title": "Eberswalde Carabid Monitoring 1999-2022 - Full Data",
+        "journal": "PubData Leuphana",
+        "doi": "10.48548/pubdata-46"
+      },
+      "license": "CC BY-SA 4.0"
+    },
+    "imageomics_neon": {
+      "latest": "2026.08",
+      "content_id": "7255248b72303b241694275e678cf37e",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/imageomics_neon.vtr",
+      "nrow": 79,
+      "source_url": "https://huggingface.co/datasets/imageomics/2018-NEON-beetles/resolve/main/BeetleMeasurements.csv",
+      "source_format": "csv",
+      "source_version": "2024.1",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "elytra_length_mm",
+        "elytra_width_mm",
+        "measurement_n"
+      ],
+      "static": true,
+      "citation": {
+        "key": "fluck2024neonbeetles",
+        "type": "misc",
+        "authors": "Fluck IE, Chinniah I, Wolcheski R, et al.",
+        "year": "2024",
+        "title": "2018-NEON-beetles",
+        "journal": "Hugging Face Datasets",
+        "doi": ""
+      },
+      "license": "CC BY-SA 4.0"
+    },
+    "alpine_carabids": {
+      "latest": "2026.08",
+      "content_id": "373dcedcdaa2bc0d2af686edb6f1d7db",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alpine_carabids.vtr",
+      "nrow": 213,
+      "source_url": "https://doi.org/10.5061/dryad.fn2z34tq1",
+      "source_format": "csv",
+      "source_version": "2021.1",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "body_length_mm",
+        "wing_morph"
+      ],
+      "static": true,
+      "citation": {
+        "key": "chamberlain2020alpine",
+        "type": "article",
+        "authors": "Chamberlain D, Gobbi M, Negro M, Caprio E, Palestrini C, Rolando A",
+        "year": "2020",
+        "title": "Trait-modulated decline of carabid beetle occurrence along elevation gradients across the European Alps",
+        "journal": "Journal of Biogeography",
+        "volume": "47",
+        "pages": "1030-1041",
+        "doi": "10.1111/jbi.13792"
+      },
+      "license": "CC0 1.0"
+    },
+    "hydraulics": {
+      "latest": "2026.08",
+      "content_id": "662404ef02349337553daba41be859b5",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/hydraulics.vtr",
+      "nrow": 2318,
+      "source_url": "https://ndownloader.figshare.com/files/23745155",
+      "source_format": "csv",
+      "source_version": "2020.1",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "p50_mpa",
+        "sapwood_conductivity",
+        "leaf_conductivity",
+        "huber_value_cm2_m2",
+        "min_water_potential_mpa",
+        "hydraulic_safety_margin_mpa",
+        "mean_annual_temp_c"
+      ],
+      "static": true,
+      "citation": {
+        "key": "sanchezmartinez2020hydraulics",
+        "type": "article",
+        "authors": "Sanchez-Martinez P, Martinez-Vilalta J, Dexter KG, Segovia RA, Mencuccini M",
+        "year": "2020",
+        "title": "Adaptation and coordinated evolution of plant hydraulic traits",
+        "journal": "Ecology Letters",
+        "volume": "23",
+        "pages": "1599-1610",
+        "doi": "10.1111/ele.13584"
+      },
+      "license": "CC BY 4.0"
+    },
+    "noddb": {
+      "latest": "2026.08",
+      "content_id": "18ea9bb938ea986e17d952e76edb9f5f",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/noddb.vtr",
+      "nrow": 855,
+      "source_url": "https://s3.hpc.ut.ee/plutof-public/original/3094fbed-e384-457d-af3f-694ef97e8df8.xlsx",
+      "source_format": "xlsx",
+      "source_version": "1.3b",
+      "species_col": "genus",
+      "trait_cols": [
+        "genus",
+        "nodulation_consensus",
+        "nodulation_type",
+        "nodulation_clade",
+        "nodulation_family",
+        "spp_recognized",
+        "spp_studied",
+        "positive_reports",
+        "negative_reports"
+      ],
+      "static": true,
+      "citation": {
+        "key": "tedersoo2018noddb",
+        "type": "article",
+        "authors": "Tedersoo L, Laanisto L, Rahimlou S, Toussaint A, Hallikma T, Partel M",
+        "year": "2018",
+        "title": "Global database of plants with root-symbiotic nitrogen fixation: NodDB",
+        "journal": "Journal of Vegetation Science",
+        "volume": "29",
+        "pages": "560-568",
+        "doi": "10.1111/jvs.12627"
+      },
+      "license": "CC BY-SA 4.0"
+    },
+    "faprotax": {
+      "latest": "2026.08",
+      "content_id": "7bd9d6d6ee89e57418842f9b6e49f000",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/faprotax.vtr",
+      "nrow": 4993,
+      "source_url": "https://pages.uoregon.edu/slouca/LoucaLab/archive/FAPROTAX/SECTION_Download/MODULE_Downloads/CLASS_Latest%20release/UNIT_FAPROTAX_1.2.12/FAPROTAX_1.2.12.zip",
+      "source_format": "txt",
+      "source_version": "1.2.12",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "faprotax_functions",
+        "faprotax_n_functions"
+      ],
+      "static": true,
+      "citation": {
+        "key": "louca2016faprotax",
+        "type": "article",
+        "authors": "Louca S, Parfrey LW, Doebeli M",
+        "year": "2016",
+        "title": "Decoupling function and taxonomy in the global ocean microbiome",
+        "journal": "Science",
+        "volume": "353",
+        "pages": "1272-1277",
+        "doi": "10.1126/science.aaf4507"
+      },
+      "license": "BSD-style. Copyright (c) 2025 Stilianos Louca, all rights reserved. Verbatim: 'Use and redistributions of the FAPROTAX database, including any associated software, with or without modification, are permitted provided that the following conditions are met' -- redistributions must retain the copyright notice, conditions and disclaimer; the author's name may not be used to endorse derived products; and modification must be clearly indicated. taxifydb reshapes the grouped list into a per-taxon table, which is a modification and is stated as such here."
+    },
+    "virion": {
+      "latest": "2026.08",
+      "content_id": "aab017aad715e5afc3f5b3cecaa14a7f",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/virion.vtr",
+      "nrow": 4547,
+      "source_url": "https://zenodo.org/api/records/21636520",
+      "source_format": "csv_gz",
+      "source_version": "2.0",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "virus_richness",
+        "virus_family_count",
+        "virus_record_count",
+        "host_class"
+      ],
+      "static": true,
+      "citation": {
+        "key": "carlson2022virion",
+        "type": "article",
+        "authors": "Carlson CJ, Gibb RJ, Albery GF, Brierley L, Connor RP, Dallas TA, Eskew EA, Fagre AC, Farrell MJ, Frank HK, Muylaert RL, Poisot T, Rasmussen AL, Ryan SJ, Seifert SN",
+        "year": "2022",
+        "title": "The Global Virome in One Network (VIRION): an atlas of vertebrate-virus associations",
+        "journal": "mBio",
+        "volume": "13",
+        "pages": "e0298521",
+        "doi": "10.1128/mbio.02985-21"
+      },
+      "license": "ODbL-1.0"
+    },
+    "sworm": {
+      "latest": "2026.08",
+      "content_id": "64d952c4872ffc2b23995bb2ee801d0e",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/sworm.vtr",
+      "nrow": 214,
+      "source_url": "https://idata.idiv.de/ddm/Data/DownloadZip/1880?version=4881",
+      "source_format": "csv",
+      "source_version": "2021.02",
+      "species_col": "canonical_name",
+      "trait_cols": [
+        "ecological_group"
+      ],
+      "static": true,
+      "citation": {
+        "key": "phillips2021sworm",
+        "type": "article",
+        "authors": "Phillips HRP, Guerra CA, Bartz MLC, Briones MJI, Brown G, Crowther TW, Ferlian O, Gongalsky KB, van den Hoogen J, Krebs J, Orgiazzi A, Routh D, Schwarz B, Bach EM, Bennett JM, Brose U, Decaens T, Konig-Ries B, Loreau M, Mathieu J, Mulder C, van der Putten WH, Ramirez KS, Rillig MC, Russell D, Rutgers M, Thakur MP, de Vries FT, Wall DH, Wardle DA, Eisenhauer N",
+        "year": "2021",
+        "title": "Global data on earthworm abundance, biomass, diversity and corresponding environmental properties",
+        "journal": "Scientific Data",
+        "volume": "8",
+        "pages": "136",
+        "doi": "10.1038/s41597-021-00912-z"
+      },
+      "license": "CC BY 4.0"
     }
   }
 }

@@ -2368,6 +2368,151 @@
     parse_fn    = function(path) parse_alpine_carabids(path),
     group_col   = NULL,
     requires    = NULL
+  ),
+
+  hydraulics = list(
+    source_url  = "https://ndownloader.figshare.com/files/23745155",
+    source_doi  = "10.6084/m9.figshare.12625418.v1",
+    version     = "2020.1",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Sanchez-Martinez P, Martinez-Vilalta J, Dexter KG, Segovia RA, ",
+      "Mencuccini M (2020) Adaptation and coordinated evolution of plant ",
+      "hydraulic traits. Ecology Letters 23:1599-1610, doi:10.1111/ele.13584. ",
+      "Data on figshare, doi:10.6084/m9.figshare.12625418.v1, CC BY 4.0. File ",
+      "HydraEvol2020.csv, md5 75e7fbe3f355973c4917d95fcab56299. A literature ",
+      "compilation that shares primary records with AusTraits and BROT, which ",
+      "should be cited alongside where their values are used."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "HydraEvol2020.csv")
+    },
+    parse_fn    = function(path) parse_hydraulics(path),
+    group_col   = NULL,
+    requires    = NULL
+  ),
+
+  noddb = list(
+    source_url  = paste0("https://s3.hpc.ut.ee/plutof-public/original/",
+                         "3094fbed-e384-457d-af3f-694ef97e8df8.xlsx"),
+    source_doi  = "10.15156/BIO/587469",
+    version     = "1.3b",
+    license     = "CC BY-SA 4.0",
+    attribution = paste0(
+      "Tedersoo L, Laanisto L, Rahimlou S, Toussaint A, Hallikma T, Partel M ",
+      "(2018) Global database of plants with root-symbiotic nitrogen fixation: ",
+      "NodDB. Journal of Vegetation Science 29:560-568, doi:10.1111/jvs.12627. ",
+      "Data deposited at PlutoF, doi:10.15156/BIO/587469, CC BY-SA 4.0. File ",
+      "'NodDB database v1.3b.xlsx', md5 5fa7d3458d9a0ec3f7e54d347d00b94c. ",
+      "Nodulation is recorded per plant genus."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "NodDB_v1.3b.xlsx")
+    },
+    parse_fn    = function(path) parse_noddb(path),
+    group_col   = NULL,
+    name_col    = "genus",
+    requires    = "openxlsx2"
+  ),
+
+  faprotax = list(
+    source_url  = paste0("https://pages.uoregon.edu/slouca/LoucaLab/archive/",
+                         "FAPROTAX/SECTION_Download/MODULE_Downloads/",
+                         "CLASS_Latest%20release/UNIT_FAPROTAX_1.2.12/",
+                         "FAPROTAX_1.2.12.zip"),
+    source_doi  = "10.1126/science.aaf4507",
+    version     = "1.2.12",
+    license     = paste0(
+      "BSD-style. Copyright (c) 2025 Stilianos Louca, all rights reserved. ",
+      "Verbatim: 'Use and redistributions of the FAPROTAX database, including ",
+      "any associated software, with or without modification, are permitted ",
+      "provided that the following conditions are met' -- redistributions must ",
+      "retain the copyright notice, conditions and disclaimer; the author's ",
+      "name may not be used to endorse derived products; and modification must ",
+      "be clearly indicated. taxifydb reshapes the grouped list into a ",
+      "per-taxon table, which is a modification and is stated as such here."
+    ),
+    attribution = paste0(
+      "Louca S, Parfrey LW, Doebeli M (2016) Decoupling function and taxonomy ",
+      "in the global ocean microbiome. Science 353:1272-1277, ",
+      "doi:10.1126/science.aaf4507. FAPROTAX version 1.2.12, ",
+      "loucalab.com/archive/FAPROTAX, md5 17c09be896e53e2987956fdb8fe6e468. ",
+      "MODIFIED by taxifydb: the group-per-block list is reshaped to one row ",
+      "per taxon carrying its function groups, and members below genus rank ",
+      "are reduced to a binomial. Group memberships are otherwise unaltered."
+    ),
+    download_fn = function(url, dest) {
+      download_and_unzip(url, dest, pattern = NULL)
+    },
+    parse_fn    = function(path) parse_faprotax(path),
+    group_col   = NULL,
+    requires    = NULL
+  ),
+
+  virion = list(
+    source_url  = "https://zenodo.org/api/records/21636520",
+    source_doi  = "10.5281/zenodo.21636520",
+    version     = "2.0",
+    license     = "ODbL-1.0",
+    attribution = paste0(
+      "Carlson CJ, Gibb RJ, Albery GF, Brierley L, Connor RP, Dallas TA, ",
+      "Eskew EA, Fagre AC, Farrell MJ, Frank HK, Muylaert RL, Poisot T, ",
+      "Rasmussen AL, Ryan SJ, Seifert SN (2022) The Global Virome in One ",
+      "Network (VIRION): an atlas of vertebrate-virus associations. mBio ",
+      "13:e0298521, doi:10.1128/mbio.02985-21. Data package on Zenodo, ",
+      "doi:10.5281/zenodo.21636520, ODbL-1.0. taxifydb redistributes only ",
+      "per-host derived counts computed from the association table, not the ",
+      "association records themselves."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      base <- "https://zenodo.org/api/records/21636520/files"
+      for (f in c("virion.csv.gz", "tax_table.csv.gz")) {
+        download_curl_file(file.path(base, f, "content"), dest, f)
+      }
+      dest
+    },
+    parse_fn    = function(path) parse_virion(path),
+    group_col   = NULL,
+    requires    = NULL
+  ),
+
+  sworm = list(
+    source_url  = "https://idata.idiv.de/ddm/Data/DownloadZip/1880?version=4881",
+    source_doi  = "10.25829/idiv.1880-15-2860",
+    version     = "2021.02",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Phillips HRP, Guerra CA, Bartz MLC, Briones MJI, Brown G, Crowther TW, ",
+      "Ferlian O, Gongalsky KB, van den Hoogen J, Krebs J, Orgiazzi A, ",
+      "Routh D, Schwarz B, Bach EM, Bennett JM, Brose U, Decaens T, ",
+      "Konig-Ries B, Loreau M, Mathieu J, Mulder C, van der Putten WH, ",
+      "Ramirez KS, Rillig MC, Russell D, Rutgers M, Thakur MP, de Vries FT, ",
+      "Wall DH, Wardle DA, Arai M, Ayuke FO, Baker GH, Eisenhauer N et al. ",
+      "(2021) Global data on earthworm abundance, biomass, diversity and ",
+      "corresponding environmental properties. Scientific Data 8:136, ",
+      "doi:10.1038/s41597-021-00912-z. Data in the iDiv Data Repository, ",
+      "dataset 1880. Only the per-species ecological group is used."
+    ),
+    download_fn = function(url, dest) {
+      dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+      outer <- download_curl_file(url, dest, "sworm_release.zip")
+      ex <- file.path(dest, "extracted")
+      if (!dir.exists(ex)) {
+        dir.create(ex, recursive = TRUE)
+        utils::unzip(outer, exdir = ex)
+      }
+      # The iDiv download wraps the data release in a metadata bundle, so the
+      # payload is a second zip inside the first.
+      inner <- list.files(ex, pattern = "\\.zip$", full.names = TRUE,
+                          recursive = TRUE)
+      inner <- inner[!grepl("__MACOSX", inner, fixed = TRUE)]
+      if (length(inner) > 0L) utils::unzip(inner[[1L]], exdir = ex)
+      ex
+    },
+    parse_fn    = function(path) parse_sworm(path),
+    group_col   = NULL,
+    requires    = NULL
   )
 )
 

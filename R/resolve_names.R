@@ -352,7 +352,10 @@ resolve_name_map <- function(names,
         vectra::filter(key_ci %in% query_keys) |>
         vectra::select(!!!lapply(sel, as.name)) |>
         vectra::collect()
-      if (!have_k) out$kingdom <- NA_character_
+      # rep() rather than a scalar: a lookup that matched nothing is a 0-row
+      # frame, and assigning a length-1 value to it errors, which the tryCatch
+      # would turn into a dropped backbone.
+      if (!have_k) out$kingdom <- rep(NA_character_, nrow(out))
       out
     }, error = function(e) {
       warning(sprintf("Lookup [%s] failed: %s", nm, conditionMessage(e)),

@@ -65,6 +65,21 @@ parse_bet <- function(path) {
     redlist_category    = chr("category"),
     stringsAsFactors    = FALSE
   )
+
+  # BET records substrate as four one-hot flags, and a trait-registry map sees
+  # one column at a time, so the primary substrate is derived here. 58.8% of the
+  # species carrying any flag carry several, which is real -- bryophytes grow on
+  # more than one thing -- so this reduces to one class by the same priority
+  # ITALIC's multi-substrate records already use (rock > bark > wood > soil),
+  # keeping the substrate trait single-token so the two sources coalesce.
+  # BET's `deadwood` is ITALIC's `lignum`: both are wood, and for these taxa
+  # typically dead or decorticated wood.
+  set <- function(v) !is.na(v) & v > 0
+  out$substrate <- ifelse(
+    set(out$substrate_rock), "rock",
+    ifelse(set(out$substrate_bark), "bark",
+      ifelse(set(out$substrate_deadwood), "wood",
+        ifelse(set(out$substrate_soil), "soil", NA_character_))))
   out <- .append_all_cols(
     out, df, cname,
     used = c("friendly_name", "gform", "lform", "lstrat", "sex", "size",

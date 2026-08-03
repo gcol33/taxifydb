@@ -1255,6 +1255,20 @@ parse_arthropod_traits <- function(dir_path) {
     stringsAsFactors = FALSE
   )
 
+  # The source measures Body_size differently by taxon: a true body length for
+  # spiders and beetles, but forewing length for Lepidoptera (Vanessa atalanta
+  # reads 29 mm against a 55 mm wingspan). One column cannot say which, and a
+  # trait-registry map sees one column at a time, so the order rides along and
+  # taxify hangs a per-record caution off it.
+  ord_col <- intersect(names(taxon), c("order", "Order", "dwc:order"))
+  out$taxon_order <- if (length(ord_col)) {
+    o <- trimws(as.character(taxon[[ord_col[1L]]]))
+    o[!nzchar(o) | o == "NA"] <- NA_character_
+    o
+  } else {
+    NA_character_
+  }
+
   # One long (name, trait, value) table from BOTH the MoF measurement rows and
   # the description extension rows, keyed to the species name via taxon_id.
   long_parts <- list()
@@ -1312,7 +1326,11 @@ parse_arthropod_traits <- function(dir_path) {
     data.frame(name = character(0), trait = character(0),
                value = character(0), stringsAsFactors = FALSE)
   }
-  .pivot_species_traits(long, curated)
+  res <- .pivot_species_traits(long, curated)
+  # One order per species, so the first match is the species' own.
+  res$taxon_order <- out$taxon_order[match(res$canonical_name,
+                                           out$canonical_name)]
+  res
 }
 
 

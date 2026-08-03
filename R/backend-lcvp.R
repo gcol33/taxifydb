@@ -68,6 +68,16 @@ read_lcvp <- function(rda_path, verbose = TRUE) {
   sub[!is_infra] <- NA_character_
   authors[!is.na(authors) & authors == "nil"] <- NA_character_
 
+  # "---" is LCVP's sentinel for a rank it does not place, in BOTH family and
+  # order (60,956 rows each). Passed through it becomes a literal value: it was
+  # the single most common "order" among LCVP-derived genera in the register,
+  # ahead of every real one, and any tabulation by order gained a spurious
+  # largest category. NA is what "not placed" means.
+  placed <- function(v) {
+    v[!is.na(v) & !grepl("[A-Za-z]", v)] <- NA_character_
+    v
+  }
+
   # Standard infraspecific marker rendering (forma -> "f."); the other LCVP
   # ranks (var., subsp., subvar.) are already botanical abbreviations.
   marker <- ifelse(rank == "forma", "f.", rank)
@@ -88,12 +98,12 @@ read_lcvp <- function(rda_path, verbose = TRUE) {
     taxon_rank             = rank,
     taxonomic_status       = ifelse(is_syn, "SYNONYM", "ACCEPTED"),
     accepted_name_usage_id = acc_id,
-    family                 = trimws(as.character(tab$Family)),
+    family                 = placed(trimws(as.character(tab$Family))),
     genus                  = genus,
     specific_epithet       = epithet,
     authorship             = authors,
     infraspecific_epithet  = sub,
-    order                  = trimws(as.character(tab$Order)),
+    order                  = placed(trimws(as.character(tab$Order))),
     stringsAsFactors       = FALSE
   )
 

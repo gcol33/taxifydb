@@ -194,6 +194,70 @@ test_that("resolve_genus_classification() unions genera across backends", {
   expect_true(all(c("Quercus", "Boletus") %in% resolved$genus))
 })
 
+test_that("a source contradicting itself is read by its own majority", {
+  # COL carries Pteropus three times: two flying-fox rows and one that files
+  # the bat family under Fungi. Priority alone let whichever row sorted first
+  # speak for the source, so the register read 66 species of flying fox as a
+  # fungus, welding Ascomycota to the order Chiroptera in one row.
+  col_genera <- data.frame(
+    genus   = rep("Pteropus", 3),
+    kingdom = c("Fungi", "Animalia", "Animalia"),
+    phylum  = c("Ascomycota", "Chordata", "Chordata"),
+    class   = c("Dothideomycetes", "Mammalia", "Mammalia"),
+    order   = c(NA_character_, "Chiroptera", "Chiroptera"),
+    family  = rep("Pteropodidae", 3),
+    stringsAsFactors = FALSE
+  )
+
+  resolved <- resolve_genus_classification(list(col = col_genera))
+
+  expect_equal(nrow(resolved), 1L)
+  expect_equal(resolved$kingdom, "Animalia")
+  # The whole row has to come from one kingdom, not just its first column.
+  expect_equal(resolved$phylum, "Chordata")
+  expect_equal(resolved$class, "Mammalia")
+  expect_equal(resolved$order, "Chiroptera")
+})
+
+test_that("the majority tiebreak never outranks a higher-priority backbone", {
+  # Support only breaks ties inside one source. WoRMS leads the priority order
+  # with a single row; COL agreeing with itself twice must not overtake it.
+  worms_genera <- data.frame(
+    genus = "Alaria", kingdom = "Animalia", phylum = "Mollusca",
+    class = "Gastropoda", order = NA_character_, family = "Aporrhaidae",
+    stringsAsFactors = FALSE
+  )
+  col_genera <- data.frame(
+    genus = rep("Alaria", 2), kingdom = rep("Chromista", 2),
+    phylum = rep("Ochrophyta", 2), class = rep("Phaeophyceae", 2),
+    order = rep("Laminariales", 2), family = rep("Alariaceae", 2),
+    stringsAsFactors = FALSE
+  )
+
+  resolved <- resolve_genus_classification(
+    list(worms = worms_genera, col = col_genera)
+  )
+
+  expect_equal(resolved$kingdom, "Animalia")
+  expect_equal(resolved$class, "Gastropoda")
+})
+
+test_that("an even split inside a source leaves the incoming order alone", {
+  col_genera <- data.frame(
+    genus = rep("Ambiguus", 2), kingdom = c("Plantae", "Animalia"),
+    phylum = c("Tracheophyta", "Chordata"),
+    class = c("Magnoliopsida", "Aves"),
+    order = c("Asterales", "Passeriformes"),
+    family = c("Compositae", "Sturnidae"),
+    stringsAsFactors = FALSE
+  )
+
+  resolved <- resolve_genus_classification(list(col = col_genera))
+
+  expect_equal(resolved$kingdom, "Plantae")
+  expect_equal(resolved$class, "Magnoliopsida")
+})
+
 test_that("resolve_genus_classification() returns empty_genus_df() schema on empty input", {
   resolved <- resolve_genus_classification(list())
   expect_equal(nrow(resolved), 0L)

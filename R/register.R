@@ -647,17 +647,34 @@ resolve_genus_classification <- function(genera_list) {
   valid <- !is.na(combined$genus) & nzchar(combined$genus)
   combined <- combined[valid, , drop = FALSE]
 
-  # Order by genus then priority so first non-NA per genus wins via match()
-  combined$priority_rank <- match(combined$source_backend, priority)
-  combined <- combined[order(combined$genus, combined$priority_rank), ]
-
-  genera_all <- combined$genus
-
   # Fold clade spellings to standard kingdoms up front. The caller normalizes
   # again afterwards and the map is idempotent, but the coherence gate below
   # compares kingdoms, and "Bacillati" and "Bacteria" are the same kingdom
   # under two names -- comparing raw strings would treat them as a conflict.
   combined$kingdom <- normalize_kingdom_names(combined$kingdom)
+
+  # A source can contradict itself: COL files 2012 genera under two kingdoms
+  # and WoRMS 1432, because a genus name may be occupied twice and a backbone
+  # carries both occupants. Ordering by priority alone left the winner to
+  # whichever of that source's rows happened to sort first, which handed 93
+  # genera their own source's minority reading -- Pteropus, 66 species of
+  # flying fox, resolved to Fungi on a single COL row against two Animalia
+  # ones. Rank each row by how often its source repeats that kingdom for that
+  # genus so the source's own majority speaks for it; an even split keeps the
+  # incoming order, and rows recording no kingdom stay where they are.
+  kg <- paste(combined$genus, combined$source_backend, combined$kingdom,
+              sep = "\r")
+  kg_tab <- table(kg)
+  support <- as.integer(kg_tab[match(kg, names(kg_tab))])
+  support[is.na(combined$kingdom) | !nzchar(combined$kingdom)] <- 0L
+
+  # Order by genus, then priority, then within-source kingdom support, so the
+  # first non-NA per genus wins via match()
+  combined$priority_rank <- match(combined$source_backend, priority)
+  combined <- combined[order(combined$genus, combined$priority_rank,
+                             -support), ]
+
+  genera_all <- combined$genus
 
   # Start with first row per genus (highest-priority backend)
   first_idx <- which(!duplicated(genera_all))

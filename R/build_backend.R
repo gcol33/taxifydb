@@ -21,7 +21,8 @@
   wcvp        = function(...) build_wcvp(...),
   lcvp        = function(...) build_lcvp(...),
   mdd         = function(...) build_mdd(...),
-  avilist     = function(...) build_avilist(...)
+  avilist     = function(...) build_avilist(...),
+  lpsn        = function(...) build_lpsn(...)
 )
 
 

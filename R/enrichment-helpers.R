@@ -257,8 +257,19 @@ download_gbif_api_pages <- function(base_url, params, limit = 1000L,
     html <- rawToChar(resp$content)
     p <- regexpr('id="anubis_challenge"', html, fixed = TRUE)
     if (p < 0L) {
-      # 202 / empty interstitial: the cookie may now be primed; back off.
-      Sys.sleep(2L * try)
+      # 202 with an empty body is Dryad staging the file, or throttling a
+      # client that has just pulled several. It is not an Anubis challenge and
+      # solving nothing will help; the only remedy is to wait longer each time.
+      # A linear back-off gives up inside a minute, which is short of what the
+      # throttle actually wants, so this doubles and honours Retry-After.
+      wait <- 5 * 2^(try - 1L)
+      ra <- suppressWarnings(as.numeric(
+        curl::parse_headers_list(resp$headers)[["retry-after"]]))
+      if (length(ra) == 1L && !is.na(ra) && ra > 0) wait <- max(wait, ra)
+      wait <- min(wait, 120)
+      message(sprintf("  [dryad] HTTP %d, no challenge (staging or throttled); waiting %gs",
+                      resp$status_code, wait))
+      Sys.sleep(wait)
       next
     }
 
@@ -301,10 +312,12 @@ download_gbif_api_pages <- function(base_url, params, limit = 1000L,
     # Cookie now set on the handle; re-fetch the stream directly.
     r3 <- curl::curl_fetch_memory(stream_url, handle = h)
     if (is_file(r3)) return(r3$content)
-    Sys.sleep(2L * try)
+    Sys.sleep(min(5 * 2^(try - 1L), 120))
   }
   stop("Dryad download did not yield a file after ", max_tries,
-       " attempts (Anubis challenge throttled).", call. = FALSE)
+       " attempts. The proof-of-work itself is not the obstacle -- an empty ",
+       "202 means the file is being staged or the client is being throttled. ",
+       "Retry in a few minutes.", call. = FALSE)
 }
 
 

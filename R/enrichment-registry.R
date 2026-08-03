@@ -2343,6 +2343,31 @@
     parse_fn    = function(path) parse_imageomics_neon(path),
     group_col   = NULL,
     requires    = NULL
+  ),
+
+  alpine_carabids = list(
+    source_url  = "https://doi.org/10.5061/dryad.fn2z34tq1",
+    source_doi  = "10.5061/dryad.fn2z34tq1",
+    version     = "2021.1",
+    license     = "CC0 1.0",
+    attribution = paste0(
+      "Chamberlain D, Gobbi M, Negro M, et al. (2020) Trait-modulated decline ",
+      "of carabid beetle occurrence along elevation gradients across the ",
+      "European Alps. Dryad, doi:10.5061/dryad.fn2z34tq1, CC0 1.0. Companion ",
+      "to Journal of Biogeography 47(5):1030-1041, doi:10.1111/jbi.13792. ",
+      "File Traits.csv, md5 19696d1c6027d03efc3167be7d3fc17d. Body sizes ",
+      "derive substantially from carabids.org (Homburg et al. 2014), which ",
+      "should be cited alongside. Dryad serves this behind an Anubis ",
+      "proof-of-work challenge, which download_dryad_file() solves."
+    ),
+    download_fn = function(url, dest) {
+      download_dryad_file(doi = "10.5061/dryad.fn2z34tq1", dest_dir = dest,
+                          filename = "alpine_traits.csv",
+                          file_pattern = "^Traits\\.csv$")
+    },
+    parse_fn    = function(path) parse_alpine_carabids(path),
+    group_col   = NULL,
+    requires    = NULL
   )
 )
 

@@ -281,3 +281,51 @@ parse_imageomics_neon <- function(path) {
 
   .trait_finalize(out)
 }
+
+
+#' Parse the Alpine elevational-gradient carabid trait table
+#'
+#' `Traits.csv` from the Dryad deposit behind Chamberlain et al.'s study of
+#' carabid occurrence along Alpine elevation gradients: 185 species recorded at
+#' 416 sites between 697 and 2840 m in the Italian Alps, semicolon-delimited.
+#'
+#' The widest European carabid trait block after the German table, and the one
+#' that reaches the Alpine fauna the lowland compilations miss. Its body sizes
+#' share the carabids.org ancestry every European carabid source has (23.9%
+#' exactly equal to the German table over 92 shared species), so agreement with
+#' those is not corroboration; it runs 1.03 against them, close enough to be
+#' the same quantity and far enough from 1.000 not to be a verbatim copy in the
+#' way the Eberswalde table is.
+#'
+#' The wing column ships as bare letters with no legend, so the codes were read
+#' off the data rather than assumed: crossed against the German table's words,
+#' `b` is short-winged (16 of 18), `m` long-winged (50 of 55) and `d` dimorphic
+#' (18 of 19), which is brachypterous, macropterous and dimorphic.
+#'
+#' @param path Character. Path to the downloaded `Traits.csv`.
+#' @return data.frame with `canonical_name`, `body_length_mm`, `wing_morph`.
+#' @export
+parse_alpine_carabids <- function(path) {
+  d <- utils::read.csv(path, sep = ";", stringsAsFactors = FALSE)
+  need <- c("Species", "Body_size", "Wings")
+  miss <- setdiff(need, names(d))
+  if (length(miss) > 0L) {
+    stop(sprintf("Alpine carabid table missing expected column(s): %s",
+                 paste(miss, collapse = ", ")), call. = FALSE)
+  }
+
+  wings <- c(b = "Short-winged", m = "Long-winged", d = "Dimorphic")
+  w <- tolower(trimws(as.character(d$Wings)))
+  w[!nzchar(w) | w == "na"] <- NA_character_
+
+  out <- data.frame(
+    canonical_name   = .to_utf8(trimws(as.character(d$Species))),
+    body_length_mm   = suppressWarnings(as.numeric(
+                         gsub(",", ".", trimws(as.character(d$Body_size)),
+                              fixed = TRUE))),
+    wing_morph       = unname(wings[w]),
+    stringsAsFactors = FALSE
+  )
+
+  .trait_finalize(out)
+}

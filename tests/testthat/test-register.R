@@ -203,11 +203,29 @@ test_that("resolve_genus_classification() returns empty_genus_df() schema on emp
 
 # ---- register_backbones() ----
 
-test_that("register_backbones() lists the fixed 13-backend set", {
+test_that("register_backbones() lists the fixed 18-backend set", {
   expect_setequal(register_backbones(), c(
     "wfo", "col", "gbif", "itis", "ncbi", "ott", "worms", "euromed",
-    "fishbase", "sealifebase", "reptiledb", "lcvp", "wcvp"
+    "fishbase", "sealifebase", "reptiledb", "lcvp", "wcvp",
+    "mdd", "avilist", "lpsn", "fungorum", "algaebase"
   ))
+})
+
+
+test_that("every registered extractor is placed in the classification priority", {
+  expect_setequal(names(.register_extractors), .register_priority())
+})
+
+
+test_that("resolve_genus_classification() errors on an unplaced extractor", {
+  reduced <- setdiff(.register_priority(), "lpsn")
+  expect_error(
+    with_mocked_bindings(
+      resolve_genus_classification(list()),
+      .register_priority = function() reduced
+    ),
+    "absent from .register_priority"
+  )
 })
 
 

@@ -315,16 +315,15 @@ extract_reptiledb_genera <- function(bb_path) {
 }
 
 
-#' Extract genera from a vascular-plant backbone (LCVP, WCVP)
+#' Extract genera as the union of genus-rank rows and accepted species
 #'
-#' Both are vascular-plant-only, so kingdom is always "Plantae". Genera are the
-#' union of any genus-rank rows (WCVP carries them; LCVP is species-and-below
-#' only) and the genera of accepted species, deduplicated. Family (and order,
-#' where the backbone stores it) are kept; neither source records phylum/class.
-#' Genus-rank rows sort first, so their family/order win over the species-
-#' derived value for a genus present at both ranks.
+#' Covers any backbone that carries genus-rank records, whether or not it also
+#' needs the species-derived fill: the two sets are stacked with the genus-rank
+#' rows first, so their classification wins for a genus present at both ranks,
+#' and a backbone carrying no genus rows degrades to the species-derived set.
+#' Classification columns absent from the backbone come back `NA`.
 #' @noRd
-.extract_plant_genera <- function(bb_path) {
+.extract_union_genera <- function(bb_path) {
   pick <- function(df, col) if (col %in% names(df)) df[[col]] else NA_character_
 
   gr <- tryCatch(
@@ -340,22 +339,24 @@ extract_reptiledb_genera <- function(bb_path) {
     error = function(e) NULL
   )
 
-  rows <- list()
-  if (!is.null(gr) && nrow(gr) > 0L) {
-    rows$genus_rank <- data.frame(
-      genus  = gr$canonical_name,
-      order  = pick(gr, "order"),
-      family = pick(gr, "family"),
+  as_rows <- function(df, genus_col) {
+    data.frame(
+      genus   = df[[genus_col]],
+      kingdom = pick(df, "kingdom"),
+      phylum  = pick(df, "phylum"),
+      class   = pick(df, "class"),
+      order   = pick(df, "order"),
+      family  = pick(df, "family"),
       stringsAsFactors = FALSE
     )
   }
+
+  rows <- list()
+  if (!is.null(gr) && nrow(gr) > 0L) {
+    rows$genus_rank <- as_rows(gr, "canonical_name")
+  }
   if (!is.null(sp) && nrow(sp) > 0L) {
-    rows$species <- data.frame(
-      genus  = sp$genus,
-      order  = pick(sp, "order"),
-      family = pick(sp, "family"),
-      stringsAsFactors = FALSE
-    )
+    rows$species <- as_rows(sp, "genus")
   }
   if (length(rows) == 0L) return(empty_genus_df())
 
@@ -363,21 +364,87 @@ extract_reptiledb_genera <- function(bb_path) {
   combined <- combined[!is.na(combined$genus) & nzchar(combined$genus), ,
                        drop = FALSE]
   if (nrow(combined) == 0L) return(empty_genus_df())
-  combined <- combined[!duplicated(combined$genus), , drop = FALSE]
 
-  data.frame(
-    genus   = combined$genus,
-    kingdom = "Plantae",
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = combined$order,
-    family  = combined$family,
-    stringsAsFactors = FALSE
-  )
+  combined[!duplicated(combined$genus), , drop = FALSE]
+}
+
+
+#' Extract genera from a vascular-plant backbone (LCVP, WCVP)
+#'
+#' Both are vascular-plant-only, so kingdom is always "Plantae" and neither
+#' source records phylum or class. Genera are the union of any genus-rank rows
+#' (WCVP carries them; LCVP is species-and-below only) and the genera of
+#' accepted species.
+#' @noRd
+.extract_plant_genera <- function(bb_path) {
+  out <- .extract_union_genera(bb_path)
+  if (nrow(out) == 0L) return(out)
+
+  out$kingdom <- "Plantae"
+  out$phylum  <- NA_character_
+  out$class   <- NA_character_
+  out
 }
 
 extract_lcvp_genera <- function(bb_path) .extract_plant_genera(bb_path)
 extract_wcvp_genera <- function(bb_path) .extract_plant_genera(bb_path)
+
+
+#' Extract genus rows from the Mammal Diversity Database backbone
+#'
+#' MDD is species-and-subspecies only (no genus-rank records), so genera are
+#' derived from accepted species. The backbone stamps a fixed higher
+#' classification (Animalia / Chordata / Mammalia) plus order and family.
+#' @noRd
+extract_mdd_genera <- function(bb_path) {
+  .extract_species_derived_genera(bb_path)
+}
+
+
+#' Extract genus rows from the AviList backbone
+#'
+#' AviList carries genus-rank rows alongside species and subspecies, with the
+#' higher classification denormalized onto every row and a fixed
+#' Animalia / Chordata / Aves stamp.
+#' @noRd
+extract_avilist_genera <- function(bb_path) {
+  .extract_union_genera(bb_path)
+}
+
+
+#' Extract genus rows from the LPSN backbone
+#'
+#' LPSN carries more genus-rank rows than the accepted species imply, since a
+#' validly published genus need not have an accepted species in the list, so
+#' the union keeps both. Kingdom is LPSN's domain (Bacteria / Archaea), which
+#' is already the form [normalize_kingdom_names()] produces for prokaryotes.
+#' @noRd
+extract_lpsn_genera <- function(bb_path) {
+  .extract_union_genera(bb_path)
+}
+
+
+#' Extract genus rows from the Index Fungorum backbone
+#'
+#' Fungorum is species-and-below only and the one classification column it
+#' carries is `family`, so its genera arrive with family alone. No kingdom is
+#' stamped: Index Fungorum covers slime moulds and oomycetes alongside true
+#' fungi, so a blanket "Fungi" would mislabel them.
+#' @noRd
+extract_fungorum_genera <- function(bb_path) {
+  .extract_union_genera(bb_path)
+}
+
+
+#' Extract genus rows from the AlgaeBase backbone
+#'
+#' AlgaeBase carries genus-rank rows but only `family` beyond them. No kingdom
+#' is stamped: "algae" spans Plantae, Chromista and the cyanobacteria, so there
+#' is no single correct value.
+#' @noRd
+extract_algaebase_genera <- function(bb_path) {
+  .extract_union_genera(bb_path)
+}
 
 
 # ---- Backbones the register unions ----
@@ -388,8 +455,6 @@ extract_wcvp_genera <- function(bb_path) .extract_plant_genera(bb_path)
 #' source of truth: [build_genus_register()] and [build_backend_coverage()]
 #' both read this instead of each keeping its own backend list.
 #'
-#' Fungorum and AlgaeBase are excluded, matching the set the register has
-#' always unioned in taxify's runtime implementation.
 #' @noRd
 .register_extractors <- list(
   wfo         = extract_wfo_genera,
@@ -404,8 +469,38 @@ extract_wcvp_genera <- function(bb_path) .extract_plant_genera(bb_path)
   sealifebase = extract_sealifebase_genera,
   reptiledb   = extract_reptiledb_genera,
   lcvp        = extract_lcvp_genera,
-  wcvp        = extract_wcvp_genera
+  wcvp        = extract_wcvp_genera,
+  mdd         = extract_mdd_genera,
+  avilist     = extract_avilist_genera,
+  lpsn        = extract_lpsn_genera,
+  fungorum    = extract_fungorum_genera,
+  algaebase   = extract_algaebase_genera
 )
+
+
+#' Backbone order used to resolve a genus's classification
+#'
+#' A genus is usually carried by several backbones. This is the order in which
+#' their classifications are consulted: for each of kingdom, phylum, class,
+#' order and family independently, the first backbone here that supplies a
+#' value wins, so a lower-priority source can still fill a rank the higher one
+#' leaves empty.
+#'
+#' Taxon authorities sit above the broad aggregators, since the point of
+#' carrying MDD, AviList, LPSN or the Reptile Database is to prefer their
+#' treatment over a general checklist's. Fungorum and AlgaeBase come last:
+#' family is the only rank they record, and neither has a single correct
+#' kingdom to offer.
+#'
+#' Must name every backbone in [.register_extractors]; the guard in
+#' [resolve_genus_classification()] fails loudly rather than let a newly
+#' registered extractor be dropped in silence.
+#' @noRd
+.register_priority <- function() {
+  c("worms", "col", "wcvp", "reptiledb", "mdd", "avilist", "lpsn",
+    "gbif", "euromed", "lcvp", "itis", "ncbi", "ott", "wfo",
+    "fishbase", "sealifebase", "fungorum", "algaebase")
+}
 
 
 #' Names of the backbones the genus register and backend coverage union
@@ -525,8 +620,16 @@ infer_kingdom_from_family <- function(resolved) {
 #' @return data.frame with deduplicated genera and resolved classification.
 #' @noRd
 resolve_genus_classification <- function(genera_list) {
-  priority <- c("worms", "col", "wcvp", "reptiledb", "gbif", "euromed",
-                "lcvp", "itis", "ncbi", "ott", "wfo", "fishbase", "sealifebase")
+  priority <- .register_priority()
+
+  # A registered extractor missing from the priority order would have its
+  # genera dropped here without a word, so drift is an error, not a silence.
+  missing <- setdiff(names(.register_extractors), priority)
+  if (length(missing) > 0L) {
+    stop(sprintf(
+      "Backbone(s) registered in .register_extractors but absent from .register_priority(): %s",
+      paste(missing, collapse = ", ")), call. = FALSE)
+  }
 
   # Combine all genera, tagging each with its source backend
   all_rows <- lapply(priority, function(be) {

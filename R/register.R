@@ -651,10 +651,13 @@ resolve_genus_classification <- function(genera_list) {
   combined$priority_rank <- match(combined$source_backend, priority)
   combined <- combined[order(combined$genus, combined$priority_rank), ]
 
-  # Vectorized: for each classification column, pick first non-NA per genus.
-  # Uses match() on deduplicated genus to find the first valid row per column.
-  class_cols <- c("kingdom", "phylum", "class", "order", "family")
   genera_all <- combined$genus
+
+  # Fold clade spellings to standard kingdoms up front. The caller normalizes
+  # again afterwards and the map is idempotent, but the coherence gate below
+  # compares kingdoms, and "Bacillati" and "Bacteria" are the same kingdom
+  # under two names -- comparing raw strings would treat them as a conflict.
+  combined$kingdom <- normalize_kingdom_names(combined$kingdom)
 
   # Start with first row per genus (highest-priority backend)
   first_idx <- which(!duplicated(genera_all))
@@ -663,19 +666,31 @@ resolve_genus_classification <- function(genera_list) {
     stringsAsFactors = FALSE
   )
 
-  # For each classification column, fill from first non-NA row per genus
-
-  for (col in class_cols) {
-    vals <- combined[[col]]
-    # Rows where this column has a usable value
-    has_val <- !is.na(vals) & nzchar(vals)
-    # Subset to rows with values, deduplicate by genus -> first hit per genus
-    sub_genus <- genera_all[has_val]
-    sub_vals  <- vals[has_val]
+  # For each classification column, take the first usable value per genus.
+  fill_col <- function(vals, usable) {
+    sub_genus <- genera_all[usable]
+    sub_vals  <- vals[usable]
     first_hit <- which(!duplicated(sub_genus))
-    # Map back to result via match
-    m <- match(result$genus, sub_genus[first_hit])
-    result[[col]] <- sub_vals[first_hit][m]
+    sub_vals[first_hit][match(result$genus, sub_genus[first_hit])]
+  }
+  is_val <- function(v) !is.na(v) & nzchar(v)
+
+  # Kingdom first: it decides which rows may speak for the ranks below it.
+  result$kingdom <- fill_col(combined$kingdom, is_val(combined$kingdom))
+
+  # A genus name can belong to two kingdoms at once -- Goodfellowia is a
+  # starling and a bacterium, Verreauxia a plant and a piculet -- and a flat
+  # genus index holds one answer. Resolving each rank independently let the
+  # losing kingdom still fill the ranks the winner left empty, which produced
+  # rows like a Plantae genus in the bird order Piciformes. A source may now
+  # only fill a rank if it agrees with the resolved kingdom, or records no
+  # kingdom at all (Fungorum, AlgaeBase and much of GBIF record none, and they
+  # stay eligible so the fill they provide is not lost).
+  win <- result$kingdom[match(genera_all, result$genus)]
+  coherent <- !is_val(combined$kingdom) | is.na(win) | combined$kingdom == win
+
+  for (col in c("phylum", "class", "order", "family")) {
+    result[[col]] <- fill_col(combined[[col]], is_val(combined[[col]]) & coherent)
   }
 
   result

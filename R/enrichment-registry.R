@@ -2230,6 +2230,47 @@
     parse_fn    = function(path) parse_clopla(path),
     group_col   = NULL,
     requires    = character(0)
+  ),
+
+  # The article is CC BY 4.0 but Wiley's agreement excludes Supporting
+  # Information from the licensed Contribution, so the spreadsheet itself
+  # carries no stated licence. It is offered as the paper's reusable trait
+  # dataset, named in the data-availability statement, and read by the authors'
+  # own public analysis repository, with no paywall, registration or contrary
+  # term -- the absent-licence case, not a refusal. Recorded as such rather
+  # than asserted to be CC BY; see the attribution string.
+  chowdhury = list(
+    source_url  = "https://onlinelibrary.wiley.com/doi/10.1111/ddi.70112",
+    source_doi  = "10.1111/ddi.70112",
+    version     = "2025.1",
+    license     = paste0(
+      "No separate licence stated for the Supporting Information; article is ",
+      "CC BY 4.0. Reuse basis: public scientific supporting data offered as ",
+      "the paper's trait dataset."
+    ),
+    attribution = paste0(
+      "Chowdhury S, Jansen F, Bowler DE, Vermeulen R, Assmann T, Bonn A, ",
+      "Eisenhauer N, Homburg K, Kaemper W, Kuhn E, Musche M, Schuldt A, ",
+      "Zumstein P, Boenisch G, Wirth C, Roemermann C, Bruelheide H (2025) ",
+      "Widespread Decline of Ground Beetles in Germany. Diversity and ",
+      "Distributions. doi:10.1111/ddi.70112. Trait values are the authors' ",
+      "compilation; body size and wing morphology derive substantially from ",
+      "carabids.org (Homburg et al. 2014), which should be cited alongside. ",
+      "Supporting Information Data S1, file ddi70112-sup-0001-DataS1.xlsx, ",
+      "md5 fcb4e19fb975ce533c49f95b84a58fd6."
+    ),
+    download_fn = function(url, dest) {
+      download_wiley_supplement(
+        article_url = url,
+        doi         = "10.1111/ddi.70112",
+        sup_file    = "ddi70112-sup-0001-DataS1.xlsx",
+        dest_dir    = dest,
+        filename    = "chowdhury_DataS1.xlsx"
+      )
+    },
+    parse_fn    = function(path) parse_chowdhury(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
   )
 )
 

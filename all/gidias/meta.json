@@ -1,0 +1,33 @@
+{
+  "type": "enrichment",
+  "name": "gidias",
+  "version": "2025.1",
+  "source_url": "https://ndownloader.figshare.com/files/53894801",
+  "source_doi": "10.6084/m9.figshare.27908838",
+  "license": "CC BY 4.0",
+  "attribution": "Bacher S et al. (2025) Global Impacts Dataset of Invasive Alien Species (GIDIAS). Scientific Data 12:832 (figshare doi:10.6084/m9.figshare.27908838), CC BY 4.0. Compiled for the IPBES thematic assessment of invasive alien species. Only per-species impact aggregates are distributed, not the raw impact records: the most-severe environmental (EICAT) and socio-economic (SEICAT) impact category, the direction of the impact on nature's contributions to people (NCP, which the source scores on no magnitude scale), driving mechanism, affected well-being constituents and contributions, realms, and record/source counts, both over all of a species' records (affected_taxon = \"Any\") and per affected native taxon.",
+  "group_col": "affected_taxon",
+  "available_groups": ["Any", "Fungi", "Invertebrate", "Microbe", "Plant", "Vertebrate"],
+  "trait_cols": [
+    "gidias_eicat_category",
+    "gidias_eicat_magnitude",
+    "gidias_eicat_mechanism",
+    "gidias_seicat_category",
+    "gidias_seicat_magnitude",
+    "gidias_seicat_affected",
+    "gidias_ncp_direction",
+    "gidias_ncp_affected",
+    "gidias_ias_taxon",
+    "gidias_kingdom",
+    "gidias_realms",
+    "gidias_n_records",
+    "gidias_n_negative",
+    "gidias_n_sources",
+    "gidias_global_extinction"
+  ],
+  "static": true,
+  "built": "2026-07-30",
+  "nrow": 6211,
+  "content_id": "f0fed2ae9140f40eb83f0298a4dba1f0",
+  "schema_version": 2
+}

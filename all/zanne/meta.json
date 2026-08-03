@@ -1,0 +1,18 @@
+{
+  "type": "enrichment",
+  "name": "zanne",
+  "version": "2014.1",
+  "source_url": "https://raw.githubusercontent.com/ejedwards/reanalysis_zanne2014/master/dryad/GlobalWoodinessDatabase.csv",
+  "source_doi": "10.5061/dryad.63q27",
+  "license": "CC0",
+  "attribution": "Zanne AE et al. (2014) Three keys to the radiation of angiosperms into freezing environments. Nature 506:89-92. (Dryad CSV mirrored unaltered in github.com/ejedwards/reanalysis_zanne2014.)",
+  "trait_cols": [
+    "woodiness",
+    "woodiness_count"
+  ],
+  "static": true,
+  "built": "2026-07-30",
+  "nrow": 56157,
+  "content_id": "6a275abf5c62958018b39fee73a281ee",
+  "schema_version": 2
+}

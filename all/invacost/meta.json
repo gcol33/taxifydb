@@ -1,0 +1,19 @@
+{
+  "type": "enrichment",
+  "name": "invacost",
+  "version": "4.1",
+  "source_url": "https://ndownloader.figshare.com/files/33669518",
+  "source_doi": "10.6084/m9.figshare.12668570",
+  "license": "CC BY 4.0",
+  "attribution": "Diagne C et al. (2020) InvaCost, a public database of the economic costs of biological invasions worldwide. Scientific Data 7:277 (figshare doi:10.6084/m9.figshare.12668570), database version 4.1, CC BY 4.0. Only derived per-species aggregates are distributed, not the raw estimate rows: cumulative cost (each estimate's standardised annual 2017-USD cost expanded across its documented impact period and summed, overlapping estimates not de-duplicated), the number of estimates, and the dominant cost type. Use the invacost R package for a rigorous cost analysis.",
+  "trait_cols": [
+    "cost_total_usd",
+    "cost_n",
+    "cost_type"
+  ],
+  "static": true,
+  "built": "2026-07-30",
+  "nrow": 926,
+  "content_id": "63246b277b19d4a337bae4db106369be",
+  "schema_version": 2
+}

@@ -1,0 +1,16 @@
+{
+  "type": "enrichment",
+  "name": "iucn",
+  "version": "2026.07",
+  "source_url": "https://hosted-datasets.gbif.org/datasets/iucn/iucn-latest.zip",
+  "license": "CC BY 4.0",
+  "attribution": "IUCN Red List of Threatened Species, published on GBIF as a Darwin Core Archive (dataset 19491596-35ae-4a91-9a98-85cf505f1bd3).",
+  "trait_cols": [
+    "conservation_status"
+  ],
+  "static": true,
+  "built": "2026-07-30",
+  "nrow": 192426,
+  "content_id": "e99ff9bce0f53a344957b0087bd98dac",
+  "schema_version": 2
+}

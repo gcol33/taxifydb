@@ -19,7 +19,9 @@
   sealifebase = function(...) build_sealifebase(...),
   reptiledb   = function(...) build_reptiledb(...),
   wcvp        = function(...) build_wcvp(...),
-  lcvp        = function(...) build_lcvp(...)
+  lcvp        = function(...) build_lcvp(...),
+  mdd         = function(...) build_mdd(...),
+  avilist     = function(...) build_avilist(...)
 )
 
 

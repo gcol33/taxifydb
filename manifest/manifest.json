@@ -213,8 +213,8 @@
       "license": "CC BY 4.0"
     },
     "genus_register": {
-      "latest": "2026.07",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.07/genus_register.vtr",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.08/genus_register.vtr",
       "full_size": 15438535,
       "full_sha256": "a43dd080d239547e2daf2dbfc96f45b87ae3fcdb4a4bdd53a08f636a19743542",
       "content_id": "d5a656508245fa06402a93b8c70004be",
@@ -222,13 +222,40 @@
       "source_url": "derived from taxifydb-built backbones (see genus_register.meta url field)"
     },
     "backend_coverage": {
-      "latest": "2026.07",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.07/backend_coverage.vtr",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.08/backend_coverage.vtr",
       "full_size": 14295317,
       "full_sha256": "4ab992348cbd1c8064c7505c721484ac81efefc25e4b6330c7b4d91fe7acfe95",
       "content_id": "a1d0659d6d4b69f98bd431dcf52b4ce0",
       "nrow": 1421182,
       "source_url": "derived from taxifydb-built backbones (see backend_coverage.meta url field)"
+    },
+    "mdd": {
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/mdd-2026.08/mdd.vtr",
+      "full_size": 10534251,
+      "full_sha256": "fc532bd3c8dff8ffcbcca677544db4b3ebe8aa538605fae7538c6acab2c2f05d",
+      "content_id": "dbc709c2f7008c14e341abc37e141082",
+      "nrow": 61862,
+      "source_url": "https://example"
+    },
+    "avilist": {
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/avilist-2026.08/avilist.vtr",
+      "full_size": 8209706,
+      "full_sha256": "fd97150acd8bb9e9a85f9c9370ecffddf760e1a052067bd35108cfed29a273f5",
+      "content_id": "8f16f7e07aadae4c0174d6279387e8b5",
+      "nrow": 40572,
+      "source_url": "https://avilist.org"
+    },
+    "lpsn": {
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/lpsn-2026.08/lpsn.vtr",
+      "full_size": 12451302,
+      "full_sha256": "9598b90af1b60f9fb974a2915b6958d3de45124b8884db9d68c042970155ef4c",
+      "content_id": "5d1af91a3fe782d61f8366c2f5a4fc52",
+      "nrow": 44885,
+      "source_url": "https://lpsn.dsmz.de"
     }
   },
   "enrichments": {

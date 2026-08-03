@@ -72,9 +72,17 @@ publish_release <- function(backend_name, version, vtr_path,
     artifacts <- c(artifacts, extras)
   }
 
+  # Quote each path: an artifact path may contain spaces (a Windows user
+  # directory does, and the backbone .vtr is read from the data dir), and
+  # system2() does not quote its args. Use cmd-style quoting on Windows
+  # (double quotes, understood by CreateProcess) and sh-style elsewhere.
+  quoted_artifacts <- shQuote(
+    artifacts,
+    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
+  )
   upload_out <- system2("gh", c(
     "release", "upload", tag,
-    artifacts,
+    quoted_artifacts,
     "--repo", repo,
     "--clobber"
   ), stdout = TRUE, stderr = TRUE)

@@ -2576,29 +2576,23 @@ list_scrape_only_enrichments <- function() {
 #
 # Each `license` string below was read from the source's own current live site
 # -- its terms/how-to-cite page where one exists (not an older data paper), per
-# the ITALIC 8.0 lesson -- with two documented exceptions:
+# the ITALIC 8.0 lesson -- with one documented exception:
 #   - NEMAPLEX is the borderline case: its live site publishes no terms page at
 #     all, so it is catalogued as licence-unstated rather than explicitly
 #     restricted, and a direct ask to the author could move it into the build
 #     registry.
-#   - BETSI could not be read because its live site is offline, not merely
-#     firewalled: the CNRS portal (portail.betsi.cnrs.fr, 193.49.134.90) TCP-
-#     times out on both 443 and 80 from the build environment AND from the
-#     university network (worky, general internet + DNS both fine), the former
-#     CESAB mirror betsi.cesab.org has lapsed to an unrelated squatter domain,
-#     betsi.cnrs.fr does not resolve, and the Wayback Machine is blocked at the
-#     fetcher. Its live terms/conditions page is therefore UNREAD, and its
-#     licence string is derived from the reachable evidence (FRB/CESAB project
-#     page, the portal's own "public data, by data request" description in
-#     search results) plus the Pey et al. 2014 thesaurus paper, not verified
-#     verbatim against the live page. Re-check when the portal is back up. The
-#     build-only placement does not rest on the unverified
-#     citation/attribution mechanics: by-request access with no published
-#     redistribution licence reserves third-party redistribution under any
-#     reading reachable from here.
 # A source moves out of this catalog into .enrichment_build_registry only if its
 # live licence changes to permit redistribution (e.g. a CC BY / CC BY-NC-SA
 # relicense).
+#
+# BETSI (soil-invertebrate traits, #31) was catalogued here but has since been
+# reclassified OUT: the decision (#42) is to serve it in the package as
+# informed-risk redistribution -- licence unconfirmed, scientific reuse
+# intended, redistribution risk accepted -- not as a refuse-to-redistribute
+# source. It is not in .enrichment_build_registry yet only because there is no
+# data on hand: the portal is offline network-wide, access is by-request with no
+# bulk export, and no Zenodo/figshare/GBIF deposit exists. Acquisition + build
+# are tracked in #42, which also holds the attribution statement and provenance.
 #' @noRd
 .enrichment_build_only <- list(
   freshwaterecology = list(
@@ -2649,52 +2643,6 @@ list_scrape_only_enrichments <- function() {
     attribution     = paste0(
       "Ferris H. NEMAPLEX: The Nematode-Plant Expert Information System. ",
       "University of California, Davis. http://nemaplex.ucdavis.edu/."
-    ),
-    issue           = 31L
-  ),
-
-  betsi = list(
-    source          = "BETSI (soil invertebrate trait database)",
-    organism_groups = "Collembola (and other soil invertebrates)",
-    candidate_trait = "morphological and life-history traits (e.g. body length, ecomorphological group)",
-    source_url      = "https://portail.betsi.cnrs.fr/",
-    license         = paste0(
-      "CNRS/CESAB BETSI project. Confirmed from reachable sources: the portal ",
-      "serves its holdings as queryable 'public data' by per-taxon/per-trait ",
-      "data request (no bulk export), and no Creative Commons or redistribution ",
-      "licence is published anywhere reachable. UNVERIFIED (live terms page ",
-      "unread -- the CNRS portal TCP-times out on 443 and 80 from both the ",
-      "build environment and the university network so it appears offline, the ",
-      "former CESAB mirror has lapsed to a squatter domain, and the Wayback ",
-      "Machine is blocked at the fetcher): the specific reuse ",
-      "mechanics (citing the relevant publication, crediting the individual ",
-      "BETSI coders and administrators) are taken from the BETSI reuse ",
-      "statements and the Pey et al. 2014 thesaurus paper, not read verbatim ",
-      "off the live page. Under the most permissive reading reachable from here, ",
-      "by-request access with no published redistribution licence still reserves ",
-      "third-party redistribution."
-    ),
-    access          = "by-request per taxon/trait (queryable 'public data', no bulk export); no published redistribution licence; live terms page unread (portal offline from both build env and university network)",
-    reason          = paste0(
-      "by-request access with no published redistribution licence, so trait ",
-      "values cannot ship in a .vtr; the build-only placement holds under the ",
-      "most permissive reading of the terms reachable from here and does not ",
-      "depend on the unverified citation/attribution mechanics"
-    ),
-    attribution     = paste0(
-      "Database descriptor: Joimel S, Nahmani J, Hedde M, Auclerc A, ",
-      "Beaumelle L, Bonfanti J, Cortet J, Ganault P, Maunoury-Danger F, ",
-      "Pey B (2021) A large database on functional traits for soil ecologists: ",
-      "BETSI. FAO Global Symposium on Soil Biodiversity (HAL hal-03581637). ",
-      "Trait thesaurus: Pey B, Laporte M-A, Nahmani J, Auclerc A, Capowiez Y, ",
-      "Caro G, Cluzeau D, Cortet J, Decaens T, Dubs F, Joimel S, Guernion M, ",
-      "Briard C, Grumiaux F, Laporte B, Pasquet A, Pelosi C, Pernin C, ",
-      "Ponge J-F, Salmon S, Santorufo L, Hedde M (2014) A thesaurus for soil ",
-      "invertebrate trait-based approaches. PLoS ONE 9:e108985. BETSI ",
-      "database, https://portail.betsi.cnrs.fr/. (The portal's own preferred ",
-      "how-to-cite is unconfirmed while the live site is offline; the database ",
-      "descriptor is the more likely primary citation for the trait data, the ",
-      "thesaurus paper defines the traits.)"
     ),
     issue           = 31L
   )

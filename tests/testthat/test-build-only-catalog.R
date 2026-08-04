@@ -1,10 +1,9 @@
 # The build-only catalog records candidate trait sources whose live licence
-# forbids redistribution (freshwaterecology.info, NEMAPLEX, BETSI). taxifydb
-# must build no .vtr and place nothing in the enrichment build registry or the
-# manifest for them, so the key invariants are: the licence-blocked names are
-# catalogued, none of them leaks into list_enrichments(), and every entry
-# carries the fields (licence, reason, attribution, issue) that justify the
-# exclusion.
+# forbids redistribution (freshwaterecology.info, NEMAPLEX). taxifydb must build
+# no .vtr and place nothing in the enrichment build registry or the manifest for
+# them, so the key invariants are: the licence-blocked names are catalogued,
+# none of them leaks into list_enrichments(), and every entry carries the fields
+# (licence, reason, attribution, issue) that justify the exclusion.
 
 test_that("list_build_only_enrichments() catalogs the licence-blocked sources", {
   bo <- list_build_only_enrichments()
@@ -15,7 +14,15 @@ test_that("list_build_only_enrichments() catalogs the licence-blocked sources", 
     "license", "access", "reason", "attribution", "issue"
   ) %in% names(bo)))
 
-  expect_true(all(c("freshwaterecology", "nemaplex", "betsi") %in% bo$name))
+  expect_true(all(c("freshwaterecology", "nemaplex") %in% bo$name))
+})
+
+test_that("BETSI is no longer a refuse-to-redistribute source", {
+  # BETSI was reclassified out of build-only (#42): the decision is to serve it
+  # as informed-risk redistribution, so it must NOT be catalogued here as a
+  # refuse-to-redistribute source. It is not in list_enrichments() yet either --
+  # that build is blocked on data acquisition, tracked in #42.
+  expect_false("betsi" %in% list_build_only_enrichments()$name)
 })
 
 test_that("build-only sources are never in the build registry or manifest", {

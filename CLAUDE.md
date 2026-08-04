@@ -89,16 +89,19 @@ citation/scientific use only, not third-party redistribution, are recorded in
 licence provenance, so taxifydb builds no `.vtr`, writes no manifest entry, and
 adds nothing to the cross-source trait registry for them: freshwaterecology.info
 (#33; non-commercial, registration-gated, (c) BOKU -- read off the live
-conditions.php), NEMAPLEX (#31; UC Davis, licence-unstated: the live site
-publishes no terms page, default copyright reserves it) and BETSI (#31; CNRS,
-by-request, no published redistribution licence -- live terms page UNREAD: the
-portal is offline (TCP timeout on 443/80 from both the build env and the
-university network) and the old CESAB mirror has lapsed to a squatter domain, so
-its mechanics are derived from the FRB/CESAB page and Pey et al. 2014, not
-verified verbatim). A source leaves
+conditions.php) and NEMAPLEX (#31; UC Davis, licence-unstated: the live site
+publishes no terms page, default copyright reserves it). A source leaves
 that catalog for `.enrichment_build_registry` only if its live licence is
-relicensed to permit redistribution. Every built enrichment goes
-through cross-backbone name resolution before its `.vtr` is written:
+relicensed to permit redistribution. BETSI (#31, Collembola/soil inverts) was
+catalogued here but reclassified OUT (#42): the decision is to serve it as
+**informed-risk redistribution** -- licence unconfirmed, scientific reuse
+intended, redistribution risk accepted -- not as a refuse-to-redistribute
+source. It is not built yet only because there is no data on hand (portal
+offline network-wide, by-request access, no bulk export, no deposit); the serve
+decision, attribution statement, provenance (Joimel et al. 2021 descriptor, Pey
+et al. 2014 thesaurus), and acquisition path are tracked in #42. Every built
+enrichment goes through cross-backbone name resolution before its `.vtr` is
+written:
 
 1. `parse_<name>()` cleans the source to `canonical_name` + trait columns
 2. `resolve_enrichment_names()` expands each name across the 7 backbones

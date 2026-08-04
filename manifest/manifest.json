@@ -133,9 +133,9 @@
       "latest": "3.0.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/lcvp-3.0.1/lcvp.vtr",
       "nrow": 1337891,
-      "full_size": 252318496,
-      "full_sha256": "98516d90690db6a9b4f7eb39e1691de495a7a899f7d6fd024f753dddcfc404ff",
-      "content_id": "4f57e33fa5b1a75fa163005fb1e1a979",
+      "full_size": 252318025,
+      "full_sha256": "0024621c610d054a12853f9e0540e1a5be4be07f9db6d481bb5159cc283dd851",
+      "content_id": "75e38b7a386640f40a0b4990afccf31e",
       "source_url": "https://raw.githubusercontent.com/idiv-biodiversity/LCVP/master/data/tab_lcvp.rda",
       "citation": {
         "key": "freiberg2020lcvp",

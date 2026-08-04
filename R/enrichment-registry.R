@@ -2590,9 +2590,11 @@ list_scrape_only_enrichments <- function() {
 # informed-risk redistribution -- licence unconfirmed, scientific reuse
 # intended, redistribution risk accepted -- not as a refuse-to-redistribute
 # source. It is not in .enrichment_build_registry yet only because there is no
-# data on hand: the portal is offline network-wide, access is by-request with no
-# bulk export, and no Zenodo/figshare/GBIF deposit exists. Acquisition + build
-# are tracked in #42, which also holds the attribution statement and provenance.
+# data on hand: the portal's "Trait data request" page exports per-query CSV
+# subsets but is currently intermittently unreachable, and a known 2021 snapshot
+# (BETSI_220221.csv, used by the SLIME project) is not publicly committed.
+# Acquisition + build are tracked in #42, which also holds the attribution
+# statement and provenance.
 #' @noRd
 .enrichment_build_only <- list(
   freshwaterecology = list(

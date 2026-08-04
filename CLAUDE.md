@@ -96,10 +96,13 @@ relicensed to permit redistribution. BETSI (#31, Collembola/soil inverts) was
 catalogued here but reclassified OUT (#42): the decision is to serve it as
 **informed-risk redistribution** -- licence unconfirmed, scientific reuse
 intended, redistribution risk accepted -- not as a refuse-to-redistribute
-source. It is not built yet only because there is no data on hand (portal
-offline network-wide, by-request access, no bulk export, no deposit); the serve
-decision, attribution statement, provenance (Joimel et al. 2021 descriptor, Pey
-et al. 2014 thesaurus), and acquisition path are tracked in #42. Every built
+source. It is not built yet only because there is no data on hand: the portal's
+"Trait data request" page exports per-query CSV subsets but is currently
+intermittently unreachable, and a known 2021 snapshot (`BETSI_220221.csv`, used
+by the SLIME project) is not publicly committed. The serve decision, attribution
+statement, provenance (Joimel et al. 2021 descriptor, Pey et al. 2014
+thesaurus), and acquisition path (SLIME/Le Guillarme, Selenium harvest, or the
+BETSI admins) are tracked in #42. Every built
 enrichment goes through cross-backbone name resolution before its `.vtr` is
 written:
 

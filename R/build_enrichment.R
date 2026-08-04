@@ -91,6 +91,15 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
                                    verbose = verbose, use_lookup = use_lookup)
   }
 
+  # A genus-grain source carries genus names in `canonical_name`, but the
+  # runtime joins such an enrichment on the `genus` column of a taxify result.
+  # Materialize that key from the resolved name so the asset is joinable at the
+  # grain the registry declares.
+  if (identical(reg$name_col, "genus") && !"genus" %in% names(df) &&
+      "canonical_name" %in% names(df)) {
+    df$genus <- df$canonical_name
+  }
+
   if (is.null(output_dir)) {
     output_dir <- file.path("output", "enrichment", name)
   }

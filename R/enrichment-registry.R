@@ -2682,12 +2682,19 @@ list_scrape_only_enrichments <- function() {
       "depend on the unverified citation/attribution mechanics"
     ),
     attribution     = paste0(
-      "Pey B, Laporte M-A, Nahmani J, Auclerc A, Capowiez Y, Caro G, ",
-      "Cluzeau D, Cortet J, Decaens T, Dubs F, Joimel S, Guernion M, ",
+      "Database descriptor: Joimel S, Nahmani J, Hedde M, Auclerc A, ",
+      "Beaumelle L, Bonfanti J, Cortet J, Ganault P, Maunoury-Danger F, ",
+      "Pey B (2021) A large database on functional traits for soil ecologists: ",
+      "BETSI. FAO Global Symposium on Soil Biodiversity (HAL hal-03581637). ",
+      "Trait thesaurus: Pey B, Laporte M-A, Nahmani J, Auclerc A, Capowiez Y, ",
+      "Caro G, Cluzeau D, Cortet J, Decaens T, Dubs F, Joimel S, Guernion M, ",
       "Briard C, Grumiaux F, Laporte B, Pasquet A, Pelosi C, Pernin C, ",
       "Ponge J-F, Salmon S, Santorufo L, Hedde M (2014) A thesaurus for soil ",
       "invertebrate trait-based approaches. PLoS ONE 9:e108985. BETSI ",
-      "database, https://portail.betsi.cnrs.fr/."
+      "database, https://portail.betsi.cnrs.fr/. (The portal's own preferred ",
+      "how-to-cite is unconfirmed while the live site is offline; the database ",
+      "descriptor is the more likely primary citation for the trait data, the ",
+      "thesaurus paper defines the traits.)"
     ),
     issue           = 31L
   )

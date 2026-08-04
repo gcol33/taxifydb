@@ -233,6 +233,11 @@ build_col <- function(output_dir = "output/col", version = NULL,
 #' genericName -> genus-family lookup, so a species whose family link is broken
 #' but whose genus resolves still gets a family.
 #'
+#' The fallback that fills the higher ranks from a family's dominant placement
+#' works coarsest rank first and pools only rows already agreeing on every
+#' coarser rank, because two nomenclatural codes can use one family name for two
+#' lineages. A genus name shared the same way fills no family at all.
+#'
 #' @param df The full COL data.frame with columns taxonID, taxonRank,
 #'   canonicalName, parentNameUsageID, genericName.
 #' @return A named list of character vectors (kingdom, phylum, class, order,
@@ -271,15 +276,25 @@ col_resolve_classification <- function(df) {
   family  <- resolve_rank("FAMILY")
 
   # Family-only fallback: fill a still-missing family from the row's genus.
-  is_genus       <- rank == "GENUS"
-  genus_names    <- df$canonicalName[is_genus]
-  genus_families <- family[is_genus]
-  has_fam        <- !is.na(genus_families)
-  if (any(has_fam)) {
-    genus_fam_lookup <- stats::setNames(genus_families[has_fam],
-                                        genus_names[has_fam])
-    needs_family <- is.na(family) & !is.na(df$genericName)
-    if (any(needs_family)) {
+  # A genus name can also belong to two lineages (Ficus is a fig and an aphid),
+  # so a name answering to more than one family fills nothing rather than
+  # whichever row happens to come first.
+  is_genus <- rank == "GENUS"
+  g_name   <- df$canonicalName[is_genus]
+  g_fam    <- family[is_genus]
+  usable   <- !is.na(g_name) & !is.na(g_fam)
+  if (any(usable)) {
+    g_name <- g_name[usable]
+    g_fam  <- g_fam[usable]
+
+    n_families <- vapply(split(g_fam, g_name),
+                         function(v) length(unique(v)), integer(1L))
+    single     <- names(n_families)[n_families == 1L]
+    first      <- !duplicated(g_name)
+    genus_fam_lookup <- stats::setNames(g_fam[first], g_name[first])[single]
+
+    needs_family <- which(is.na(family) & !is.na(df$genericName))
+    if (length(needs_family)) {
       family[needs_family] <- unname(
         genus_fam_lookup[df$genericName[needs_family]]
       )
@@ -292,30 +307,49 @@ col_resolve_classification <- function(df) {
   # higher rank from the dominant value seen for that family elsewhere, so a
   # well-placed family carries its order/class/phylum/kingdom to sparsely
   # classified members (the same table an external consumer would otherwise
-  # rebuild by hand). Only a clearly dominant value (>= 90% of the family's
-  # classified rows) is used, so a family homonymous across nomenclatural codes
-  # stays empty rather than mislabelled.
-  fill_from_family <- function(target) {
-    fam_ok <- !is.na(family) & nzchar(family)
-    known  <- fam_ok & !is.na(target) & nzchar(target)
+  # rebuild by hand).
+  #
+  # The group is the family name plus every coarser rank already settled, and
+  # the ranks are filled coarsest first, so each rank pools only rows that
+  # already agree above it. One family split across sub-checklists still pools,
+  # since those rows agree all the way up. Two lineages sharing a family name
+  # separate at the first rank where they differ, so the chordate "Elapidae"
+  # never draws a class from the arthropod one. Only a clearly dominant value
+  # (>= 90% of the group's classified rows) is taken, which catches a family
+  # placed inconsistently within one lineage.
+  fill_from_family <- function(target, key) {
+    ok    <- !is.na(key)
+    known <- ok & !is.na(target) & nzchar(target)
     if (!any(known)) return(target)
-    parts <- split(target[known], family[known])
+    parts <- split(target[known], key[known])
     best  <- vapply(parts, function(x) {
       tb <- sort(table(x), decreasing = TRUE)
       if (tb[[1L]] / length(x) >= 0.9) names(tb)[1L] else NA_character_
     }, character(1L))
     best <- best[!is.na(best)]
     if (!length(best)) return(target)
-    need_idx <- which((is.na(target) | !nzchar(target)) & fam_ok)
-    fillv <- unname(best[family[need_idx]])
+    need_idx <- which((is.na(target) | !nzchar(target)) & ok)
+    fillv <- unname(best[key[need_idx]])
     hit   <- !is.na(fillv)
     target[need_idx[hit]] <- fillv[hit]
     target
   }
-  kingdom <- fill_from_family(kingdom)
-  phylum  <- fill_from_family(phylum)
-  class   <- fill_from_family(class)
-  order   <- fill_from_family(order)
+
+  # Extend the group key with a settled rank. A row missing that rank drops out
+  # of every later fill rather than pooling with lineages it may not belong to.
+  extend_key <- function(key, value) {
+    ifelse(is.na(key) | is.na(value) | !nzchar(value), NA_character_,
+           paste(key, value, sep = "\r"))
+  }
+
+  fam_key <- ifelse(!is.na(family) & nzchar(family), family, NA_character_)
+  kingdom <- fill_from_family(kingdom, fam_key)
+  fam_key <- extend_key(fam_key, kingdom)
+  phylum  <- fill_from_family(phylum, fam_key)
+  fam_key <- extend_key(fam_key, phylum)
+  class   <- fill_from_family(class, fam_key)
+  fam_key <- extend_key(fam_key, class)
+  order   <- fill_from_family(order, fam_key)
 
   list(kingdom = kingdom, phylum = phylum, class = class,
        order = order, family = family)

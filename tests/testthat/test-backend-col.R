@@ -86,6 +86,54 @@ test_that("col fills higher ranks from the family's dominant placement (#24)", {
   expect_equal(cls$kingdom[10], "Animalia")
 })
 
+test_that("col keeps homonymous families in separate lineages (#26)", {
+  # "Elapidae" names a snake family and an ostracod family. COL leaves Squamata
+  # without a class, so every classified row under the shared name belongs to
+  # the ostracods, and a name-keyed fallback hands their class to the snakes.
+  df <- data.frame(
+    taxonID           = c("K1", "P1", "P2", "C1", "O1", "O2",
+                          "F1", "F2", "S1", "S2"),
+    parentNameUsageID = c(NA, "K1", "K1", "P2", "P1", "C1",
+                          "O1", "O2", "F1", "F2"),
+    taxonRank         = c("KINGDOM", "PHYLUM", "PHYLUM", "CLASS", "ORDER",
+                          "ORDER", "FAMILY", "FAMILY", "SPECIES", "SPECIES"),
+    canonicalName     = c("Animalia", "Chordata", "Arthropoda", "Ostracoda",
+                          "Squamata", "Podocopida", "Elapidae", "Elapidae",
+                          "Naja naja", "Elapid ostracod"),
+    genericName       = c(NA, NA, NA, NA, NA, NA, NA, NA, "Naja", "Elapid"),
+    stringsAsFactors  = FALSE
+  )
+  cls <- taxifydb:::col_resolve_classification(df)
+
+  # The snake family and its species take no class rather than the ostracod one.
+  expect_true(is.na(cls$class[7]))
+  expect_true(is.na(cls$class[9]))
+  expect_equal(cls$order[7],  "Squamata")
+  expect_equal(cls$order[9],  "Squamata")
+  expect_equal(cls$phylum[9], "Chordata")
+
+  # The ostracod family keeps its own placement.
+  expect_equal(cls$class[8],  "Ostracoda")
+  expect_equal(cls$order[8],  "Podocopida")
+  expect_equal(cls$class[10], "Ostracoda")
+  expect_equal(cls$order[10], "Podocopida")
+})
+
+test_that("col genus fallback skips a genus name held by two families (#26)", {
+  df <- data.frame(
+    taxonID           = c("F1", "F2", "G1", "G2", "S1"),
+    parentNameUsageID = c(NA, NA, "F1", "F2", "999"),
+    taxonRank         = c("FAMILY", "FAMILY", "GENUS", "GENUS", "SPECIES"),
+    canonicalName     = c("Moraceae", "Aphididae", "Ficus", "Ficus",
+                          "Ficus dubia"),
+    genericName       = c(NA, NA, "Ficus", "Ficus", "Ficus"),
+    stringsAsFactors  = FALSE
+  )
+  cls <- taxifydb:::col_resolve_classification(df)
+  # Two families answer to "Ficus", so the broken-link species gets neither.
+  expect_true(is.na(cls$family[5]))
+})
+
 test_that("col family fallback fills from genericName on a broken parent link (#24)", {
   df <- data.frame(
     taxonID           = c("5", "6", "9"),

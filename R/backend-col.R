@@ -234,9 +234,9 @@ build_col <- function(output_dir = "output/col", version = NULL,
 #' but whose genus resolves still gets a family.
 #'
 #' The fallback that fills the higher ranks from a family's dominant placement
-#' works coarsest rank first and pools only rows already agreeing on every
-#' coarser rank, because two nomenclatural codes can use one family name for two
-#' lineages. A genus name shared the same way fills no family at all.
+#' works coarsest rank first and pools only rows already agreeing on kingdom and
+#' phylum, because two nomenclatural codes can use one family name for two
+#' lineages.
 #'
 #' @param df The full COL data.frame with columns taxonID, taxonRank,
 #'   canonicalName, parentNameUsageID, genericName.
@@ -276,28 +276,49 @@ col_resolve_classification <- function(df) {
   family  <- resolve_rank("FAMILY")
 
   # Family-only fallback: fill a still-missing family from the row's genus.
-  # A genus name can also belong to two lineages (Ficus is a fig and an aphid),
-  # so a name answering to more than one family fills nothing rather than
-  # whichever row happens to come first.
+  # A genus name can belong to several lineages (Glyptopleura is a daisy and an
+  # ostracod), so the lookup is keyed on the genus name together with the
+  # kingdom the row already carries, which settles those rows on their own side.
+  # A row whose chain gives it no kingdom either has nothing to be keyed on and
+  # takes the commonest family for the name.
   is_genus <- rank == "GENUS"
   g_name   <- df$canonicalName[is_genus]
   g_fam    <- family[is_genus]
+  g_king   <- kingdom[is_genus]
   usable   <- !is.na(g_name) & !is.na(g_fam)
   if (any(usable)) {
     g_name <- g_name[usable]
     g_fam  <- g_fam[usable]
+    g_king <- g_king[usable]
 
-    n_families <- vapply(split(g_fam, g_name),
-                         function(v) length(unique(v)), integer(1L))
-    single     <- names(n_families)[n_families == 1L]
-    first      <- !duplicated(g_name)
-    genus_fam_lookup <- stats::setNames(g_fam[first], g_name[first])[single]
+    gk      <- paste(g_name, g_king, sep = "\r")
+    keep_gk <- !is.na(g_king) & !duplicated(gk)
+    by_genus_kingdom <- stats::setNames(g_fam[keep_gk], gk[keep_gk])
+
+    keep_g        <- !duplicated(g_name)
+    by_genus      <- stats::setNames(g_fam[keep_g],  g_name[keep_g])
+    by_genus_king <- stats::setNames(g_king[keep_g], g_name[keep_g])
 
     needs_family <- which(is.na(family) & !is.na(df$genericName))
     if (length(needs_family)) {
-      family[needs_family] <- unname(
-        genus_fam_lookup[df$genericName[needs_family]]
-      )
+      gen      <- df$genericName[needs_family]
+      row_king <- kingdom[needs_family]
+      fill     <- unname(by_genus_kingdom[paste(gen, row_king, sep = "\r")])
+
+      # Nothing recorded for the row's own kingdom: fall back to the genus name
+      # alone, unless the family that name reaches sits in another kingdom.
+      # Whichever genus row came first must not hand a plant family to an
+      # animal, so those rows keep no family at all.
+      miss <- is.na(fill)
+      if (any(miss)) {
+        cand      <- unname(by_genus[gen[miss]])
+        cand_king <- unname(by_genus_king[gen[miss]])
+        clash     <- !is.na(cand_king) & !is.na(row_king[miss]) &
+                     cand_king != row_king[miss]
+        cand[clash] <- NA_character_
+        fill[miss]  <- cand
+      }
+      family[needs_family] <- fill
     }
   }
 
@@ -309,14 +330,19 @@ col_resolve_classification <- function(df) {
   # classified members (the same table an external consumer would otherwise
   # rebuild by hand).
   #
-  # The group is the family name plus every coarser rank already settled, and
-  # the ranks are filled coarsest first, so each rank pools only rows that
-  # already agree above it. One family split across sub-checklists still pools,
-  # since those rows agree all the way up. Two lineages sharing a family name
-  # separate at the first rank where they differ, so the chordate "Elapidae"
-  # never draws a class from the arthropod one. Only a clearly dominant value
-  # (>= 90% of the group's classified rows) is taken, which catches a family
-  # placed inconsistently within one lineage.
+  # The group is the family name plus the kingdom and phylum already settled,
+  # filled in that order, so each rank pools only rows agreeing above the
+  # family. One family split across sub-checklists still pools, since those rows
+  # agree all the way up. Two lineages sharing a family name separate at kingdom
+  # or phylum, which is where every observed homonym pair parts: a snake and an
+  # ostracod Elapidae, a fish and a snail Cepolidae, a fungal and an animal
+  # Clavicipitaceae.
+  #
+  # The key stops at phylum rather than running down to class. COL records no
+  # class for Squamata, so a key carrying class would leave every snake row
+  # unable to draw the order its own family plainly has. Only a clearly dominant
+  # value (>= 90% of the group's classified rows) is taken, which catches a
+  # family placed inconsistently within one lineage.
   fill_from_family <- function(target, key) {
     ok    <- !is.na(key)
     known <- ok & !is.na(target) & nzchar(target)
@@ -348,7 +374,6 @@ col_resolve_classification <- function(df) {
   phylum  <- fill_from_family(phylum, fam_key)
   fam_key <- extend_key(fam_key, phylum)
   class   <- fill_from_family(class, fam_key)
-  fam_key <- extend_key(fam_key, class)
   order   <- fill_from_family(order, fam_key)
 
   list(kingdom = kingdom, phylum = phylum, class = class,

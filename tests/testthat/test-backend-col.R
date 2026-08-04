@@ -119,19 +119,44 @@ test_that("col keeps homonymous families in separate lineages (#26)", {
   expect_equal(cls$order[10], "Podocopida")
 })
 
-test_that("col genus fallback skips a genus name held by two families (#26)", {
+test_that("col genus fallback picks the family matching the row's kingdom (#26)", {
+  # "Glyptopleura" is a daisy and an ostracod. A species with a broken parent
+  # link but its own kingdom takes the family from its own lineage.
   df <- data.frame(
-    taxonID           = c("F1", "F2", "G1", "G2", "S1"),
-    parentNameUsageID = c(NA, NA, "F1", "F2", "999"),
-    taxonRank         = c("FAMILY", "FAMILY", "GENUS", "GENUS", "SPECIES"),
-    canonicalName     = c("Moraceae", "Aphididae", "Ficus", "Ficus",
-                          "Ficus dubia"),
-    genericName       = c(NA, NA, "Ficus", "Ficus", "Ficus"),
+    taxonID           = c("K1", "K2", "P2", "F1", "F2", "G1", "G2",
+                          "S1", "S2"),
+    parentNameUsageID = c(NA, NA, "K2", "K1", "P2", "F1", "F2", "K1", "P2"),
+    taxonRank         = c("KINGDOM", "KINGDOM", "PHYLUM", "FAMILY", "FAMILY",
+                          "GENUS", "GENUS", "SPECIES", "SPECIES"),
+    canonicalName     = c("Plantae", "Animalia", "Arthropoda", "Asteraceae",
+                          "Glyptopleuridae", "Glyptopleura", "Glyptopleura",
+                          "Glyptopleura setulosa", "Glyptopleura triserta"),
+    genericName       = c(NA, NA, NA, NA, NA, "Glyptopleura", "Glyptopleura",
+                          "Glyptopleura", "Glyptopleura"),
     stringsAsFactors  = FALSE
   )
   cls <- taxifydb:::col_resolve_classification(df)
-  # Two families answer to "Ficus", so the broken-link species gets neither.
-  expect_true(is.na(cls$family[5]))
+  # The plant species takes the plant family, the animal one the animal family.
+  expect_equal(cls$family[8], "Asteraceae")
+  expect_equal(cls$family[9], "Glyptopleuridae")
+})
+
+test_that("col fills an order for a family whose class COL omits (#26)", {
+  # COL records no class for Squamata. The family group key must stop above
+  # class, or every snake row loses the order its own family plainly carries.
+  df <- data.frame(
+    taxonID           = c("K1", "P1", "O1", "F1", "S1", "S2"),
+    parentNameUsageID = c(NA, "K1", "P1", "O1", "F1", "999"),
+    taxonRank         = c("KINGDOM", "PHYLUM", "ORDER", "FAMILY",
+                          "SPECIES", "SPECIES"),
+    canonicalName     = c("Animalia", "Chordata", "Squamata", "Colubridae",
+                          "Natrix natrix", "Coronella austriaca"),
+    genericName       = c(NA, NA, NA, NA, "Natrix", "Coronella"),
+    stringsAsFactors  = FALSE
+  )
+  cls <- taxifydb:::col_resolve_classification(df)
+  expect_equal(cls$order[5], "Squamata")
+  expect_true(is.na(cls$class[5]))
 })
 
 test_that("col family fallback fills from genericName on a broken parent link (#24)", {

@@ -1135,6 +1135,33 @@
     requires    = "openxlsx2"
   ),
 
+  ellers_collembola = list(
+    source_url  = paste0("https://zenodo.org/api/records/4934993/files/",
+                         "Collembola_trait_data.csv/content"),
+    source_doi  = "10.5061/dryad.m6dn0g8",
+    version     = "2019.04",
+    license     = "CC0 1.0",
+    attribution = paste0(
+      "Ellers J, Berg MP, Dias ATC, Fontana S, Ooms A, Moretti M (2018) ",
+      "Diversity in form and function: vertical distribution of soil fauna ",
+      "mediates multidimensional trait variation. Journal of Animal Ecology ",
+      "87:933-944, doi:10.1111/1365-2656.12838. Collembola trait table from the ",
+      "Dryad deposit doi:10.5061/dryad.m6dn0g8 (CC0), 278 European Collembola ",
+      "species: vertical stratification, body size, reproduction mode and ",
+      "climatic preferences. Taxonomy follows the Checklist of the Collembola ",
+      "of the World. The openly-licensed analogue of BETSI's legend-locked ",
+      "multi-trait matrices; its body size agrees with the taxifydb BETSI ",
+      "body-length floor at Pearson r = 0.96 over 262 shared species (see ",
+      "gcol33/taxifydb#42)."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "ellers_collembola.csv")
+    },
+    parse_fn    = function(path) parse_ellers_collembola(path),
+    group_col   = NULL,
+    requires    = NULL
+  ),
+
   nesttrait = list(
     source_url  = paste0("https://zenodo.org/records/10128906/files/",
                          "NestTrait_v2.csv?download=1"),

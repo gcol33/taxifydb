@@ -2576,10 +2576,21 @@ list_scrape_only_enrichments <- function() {
 #
 # Each `license` string below was read from the source's own current live site
 # -- its terms/how-to-cite page where one exists (not an older data paper), per
-# the ITALIC 8.0 lesson. NEMAPLEX is the borderline case: its live site
-# publishes no terms page at all, so it is catalogued as licence-unstated
-# rather than explicitly restricted, and a direct ask to the author could move
-# it into the build registry.
+# the ITALIC 8.0 lesson -- with two documented exceptions:
+#   - NEMAPLEX is the borderline case: its live site publishes no terms page at
+#     all, so it is catalogued as licence-unstated rather than explicitly
+#     restricted, and a direct ask to the author could move it into the build
+#     registry.
+#   - BETSI could not be read: the CNRS portal (portail.betsi.cnrs.fr) refuses
+#     connections from the build environment and the Wayback Machine is blocked
+#     at the fetcher, so its live terms/conditions page is UNREAD. Its licence
+#     string is derived from the reachable evidence (FRB/CESAB project page, the
+#     portal's own "public data, by data request" description in search results)
+#     plus the Pey et al. 2014 thesaurus paper, not verified verbatim against
+#     the live page. The build-only placement does not rest on the unverified
+#     citation/attribution mechanics: by-request access with no published
+#     redistribution licence reserves third-party redistribution under any
+#     reading reachable from here.
 # A source moves out of this catalog into .enrichment_build_registry only if its
 # live licence changes to permit redistribution (e.g. a CC BY / CC BY-NC-SA
 # relicense).
@@ -2643,17 +2654,25 @@ list_scrape_only_enrichments <- function() {
     candidate_trait = "morphological and life-history traits (e.g. body length, ecomorphological group)",
     source_url      = "https://portail.betsi.cnrs.fr/",
     license         = paste0(
-      "CNRS BETSI project. Reuse terms require citing the relevant ",
-      "publication and crediting the individual BETSI coders and ",
-      "administrators, the BETSI project, and the literature sources; access ",
-      "is by-request per taxon/trait. No third-party redistribution licence. ",
-      "(The live CNRS portal was unreachable from the build environment; terms ",
-      "taken from the BETSI dataset reuse statements and data paper.)"
+      "CNRS/CESAB BETSI project. Confirmed from reachable sources: the portal ",
+      "serves its holdings as queryable 'public data' by per-taxon/per-trait ",
+      "data request (no bulk export), and no Creative Commons or redistribution ",
+      "licence is published anywhere reachable. UNVERIFIED (live terms page ",
+      "unread -- the CNRS portal refuses connections from the build environment ",
+      "and the Wayback Machine is blocked at the fetcher): the specific reuse ",
+      "mechanics (citing the relevant publication, crediting the individual ",
+      "BETSI coders and administrators) are taken from the BETSI reuse ",
+      "statements and the Pey et al. 2014 thesaurus paper, not read verbatim ",
+      "off the live page. Under the most permissive reading reachable from here, ",
+      "by-request access with no published redistribution licence still reserves ",
+      "third-party redistribution."
     ),
-    access          = "by-request; citation and per-coder attribution required; no redistribution",
+    access          = "by-request per taxon/trait (queryable 'public data', no bulk export); no published redistribution licence; live terms page unread (portal unreachable from build env)",
     reason          = paste0(
-      "citation-only reuse with per-coder attribution and by-request access, ",
-      "so trait values cannot ship in a .vtr"
+      "by-request access with no published redistribution licence, so trait ",
+      "values cannot ship in a .vtr; the build-only placement holds under the ",
+      "most permissive reading of the terms reachable from here and does not ",
+      "depend on the unverified citation/attribution mechanics"
     ),
     attribution     = paste0(
       "Pey B, Laporte M-A, Nahmani J, Auclerc A, Capowiez Y, Caro G, ",

@@ -2564,3 +2564,134 @@ list_scrape_only_enrichments <- function() {
     )
   }))
 }
+
+
+# Build-only catalog: candidate trait sources whose licence forbids
+# redistribution, so taxifydb builds no `.vtr`, records nothing in
+# manifest.json, and places nothing in the cross-source trait registry. Unlike
+# .enrichment_scrape_only (Pignatti), these have no runtime accessor either --
+# taxify cannot reach them at all. The catalog exists so a licence decision that
+# was verified once is not re-litigated from scratch each time the source is
+# proposed again.
+#
+# Each `license` string below was read from the source's own current live
+# terms/how-to-cite page (not an older data paper), per the ITALIC 8.0 lesson.
+# A source moves out of this catalog into .enrichment_build_registry only if its
+# live licence changes to permit redistribution (e.g. a CC BY / CC BY-NC-SA
+# relicense).
+#' @noRd
+.enrichment_build_only <- list(
+  freshwaterecology = list(
+    source          = "freshwaterecology.info",
+    organism_groups = "freshwater macroinvertebrates, fish, diatoms, macrophytes",
+    candidate_trait = "saprobic values, feeding types, habitat preference, WFD ecological-quality indices",
+    source_url      = "https://www.freshwaterecology.info/",
+    license         = paste0(
+      "(c) 2001-2026 BOKU University of Natural Resources and Life Sciences, ",
+      "Vienna. conditions.php: \"You may download, store, display, print and ",
+      "copy information from this site for scientific and non-commercial ",
+      "purposes only\"; commercialisation needs prior approval; no third-party ",
+      "redistribution granted. Access is registration-gated."
+    ),
+    access          = "registration-gated; non-commercial use only; no redistribution",
+    reason          = paste0(
+      "licence permits scientific/non-commercial use with citation only, not ",
+      "third-party redistribution, so the trait values cannot ship in a .vtr"
+    ),
+    attribution     = paste0(
+      "Schmidt-Kloiber A, Hering D (2015) www.freshwaterecology.info -- an ",
+      "online tool that unifies, standardises and codifies more than 20,000 ",
+      "European freshwater organisms and their ecological preferences. ",
+      "Ecological Indicators 53:271-282, doi:10.1016/j.ecolind.2014.02.007."
+    ),
+    issue           = 33L
+  ),
+
+  nemaplex = list(
+    source          = "NEMAPLEX (Nematode-Plant Expert Information System)",
+    organism_groups = "nematodes",
+    candidate_trait = "feeding groups, colonizer-persister (c-p) scale",
+    source_url      = "http://nemaplex.ucdavis.edu/",
+    license         = paste0(
+      "UC Davis / H. Ferris. The live site (uppermnus/topmnu.htm) states a ",
+      "citation requirement but grants no redistribution licence; rights are ",
+      "reserved by default. Reuse is by contact with the author."
+    ),
+    access          = "citation required; no redistribution licence stated (all rights reserved)",
+    reason          = paste0(
+      "no redistribution grant on the live site; feeding-group / c-p values ",
+      "cannot ship in a .vtr without permission from the author"
+    ),
+    attribution     = paste0(
+      "Ferris H. NEMAPLEX: The Nematode-Plant Expert Information System. ",
+      "University of California, Davis. http://nemaplex.ucdavis.edu/."
+    ),
+    issue           = 31L
+  ),
+
+  betsi = list(
+    source          = "BETSI (soil invertebrate trait database)",
+    organism_groups = "Collembola (and other soil invertebrates)",
+    candidate_trait = "morphological and life-history traits (e.g. body length, ecomorphological group)",
+    source_url      = "https://portail.betsi.cnrs.fr/",
+    license         = paste0(
+      "CNRS BETSI project. Reuse terms require citing the relevant ",
+      "publication and crediting the individual BETSI coders and ",
+      "administrators, the BETSI project, and the literature sources; access ",
+      "is by-request per taxon/trait. No third-party redistribution licence. ",
+      "(The live CNRS portal was unreachable from the build environment; terms ",
+      "taken from the BETSI dataset reuse statements and data paper.)"
+    ),
+    access          = "by-request; citation and per-coder attribution required; no redistribution",
+    reason          = paste0(
+      "citation-only reuse with per-coder attribution and by-request access, ",
+      "so trait values cannot ship in a .vtr"
+    ),
+    attribution     = paste0(
+      "Pey B, Laporte M-A, Nahmani J, Auclerc A, Capowiez Y, Caro G, ",
+      "Cluzeau D, Cortet J, Decaens T, Dubs F, Joimel S, Guernion M, ",
+      "Briard C, Grumiaux F, Laporte B, Pasquet A, Pelosi C, Pernin C, ",
+      "Ponge J-F, Salmon S, Santorufo L, Hedde M (2014) A thesaurus for soil ",
+      "invertebrate trait-based approaches. PLoS ONE 9:e108985. BETSI ",
+      "database, https://portail.betsi.cnrs.fr/."
+    ),
+    issue           = 31L
+  )
+)
+
+
+#' List build-only (non-redistributable) candidate trait sources
+#'
+#' Candidate enrichment sources that taxifydb deliberately does **not** build
+#' into a `.vtr`, record in `manifest.json`, or place in the cross-source trait
+#' registry, because each source's own current licence permits citation and
+#' personal/scientific use only, not third-party redistribution. Unlike the
+#' scrape-only sources in [list_scrape_only_enrichments()] (which taxify still
+#' reaches at runtime on the user's own machine), these have no runtime
+#' accessor. The catalog records the verified licence decision so a source that
+#' resurfaces is not re-evaluated from scratch; a source moves into the build
+#' registry only if its live licence is relicensed to permit redistribution.
+#'
+#' @return A data.frame with columns `name`, `source`, `organism_groups`,
+#'   `candidate_trait`, `source_url`, `license`, `access`, `reason`,
+#'   `attribution`, and `issue`.
+#' @seealso [list_scrape_only_enrichments()], [list_enrichments()]
+#' @export
+list_build_only_enrichments <- function() {
+  do.call(rbind, lapply(names(.enrichment_build_only), function(n) {
+    e <- .enrichment_build_only[[n]]
+    data.frame(
+      name            = n,
+      source          = e$source,
+      organism_groups = e$organism_groups,
+      candidate_trait = e$candidate_trait,
+      source_url      = e$source_url,
+      license         = e$license,
+      access          = e$access,
+      reason          = e$reason,
+      attribution     = e$attribution,
+      issue           = e$issue,
+      stringsAsFactors = FALSE
+    )
+  }))
+}

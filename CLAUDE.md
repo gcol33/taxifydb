@@ -83,8 +83,16 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
 from frozen per-species scrape snapshots. Only 1 on-demand source remains
 (Pignatti, copyrighted), catalogued in `.enrichment_scrape_only`
 (`list_scrape_only_enrichments()`) and accessed by taxify's `add_pignatti()` via
-the TR8 package. Every built enrichment goes through cross-backbone name
-resolution before its `.vtr` is written:
+the TR8 package. Licence-blocked candidate sources whose live terms permit
+citation/scientific use only, not third-party redistribution, are recorded in
+`.enrichment_build_only` (`list_build_only_enrichments()`) with the verified
+licence, so taxifydb builds no `.vtr`, writes no manifest entry, and adds
+nothing to the cross-source trait registry for them: freshwaterecology.info
+(#33; non-commercial, registration-gated, (c) BOKU), NEMAPLEX (#31; UC Davis,
+no redistribution grant) and BETSI (#31; CNRS, citation-only, by-request). A
+source leaves that catalog for `.enrichment_build_registry` only if its live
+licence is relicensed to permit redistribution. Every built enrichment goes
+through cross-backbone name resolution before its `.vtr` is written:
 
 1. `parse_<name>()` cleans the source to `canonical_name` + trait columns
 2. `resolve_enrichment_names()` expands each name across the 7 backbones

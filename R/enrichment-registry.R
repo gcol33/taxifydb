@@ -1107,6 +1107,34 @@
     requires    = character(0)
   ),
 
+  betsi = list(
+    source_url  = paste0("https://zenodo.org/api/records/1292461/files/",
+                         "BETSI_Trait%20data%20request_Collembola_Body%20length",
+                         "_01062017.xlsx/content"),
+    source_doi  = "10.5281/zenodo.1292461",
+    version     = "2018.1",
+    license     = "CC BY-NC 4.0",
+    attribution = paste0(
+      "Bonfanti J (2018) Body length trait values from the BETSI database, on ",
+      "all Collembola species, all literature sources, requested on 2017-06-01 ",
+      "(Zenodo doi:10.5281/zenodo.1292461), CC BY-NC 4.0. BETSI (Biological and ",
+      "Ecological Traits of Soil Invertebrates; Hedde et al., ",
+      "portail.betsi.cnrs.fr) live portal is offline, so this is built from the ",
+      "openly-licensed public export. Per-species body length (mm) aggregated ",
+      "by taxifydb from the 3,581 per-source measurements: median, with min/max ",
+      "and the measurement and source counts. Body-length slice of BETSI's ",
+      "Collembola coverage; the multi-trait INRAE matrices ",
+      "(doi:10.15454/UU2FQT, /UCYSLH) are not merged, having no published ",
+      "species-code legend (see gcol33/taxifydb#42)."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "betsi_bodylength.xlsx")
+    },
+    parse_fn    = function(path) parse_betsi(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
+  ),
+
   nesttrait = list(
     source_url  = paste0("https://zenodo.org/records/10128906/files/",
                          "NestTrait_v2.csv?download=1"),
@@ -2585,16 +2613,18 @@ list_scrape_only_enrichments <- function() {
 # live licence changes to permit redistribution (e.g. a CC BY / CC BY-NC-SA
 # relicense).
 #
-# BETSI (soil-invertebrate traits, #31) was catalogued here but has since been
-# reclassified OUT: the decision (#42) is to serve it in the package as
-# informed-risk redistribution -- licence unconfirmed, scientific reuse
-# intended, redistribution risk accepted -- not as a refuse-to-redistribute
-# source. It is not in .enrichment_build_registry yet only because there is no
-# data on hand: the portal's "Trait data request" page exports per-query CSV
-# subsets but is currently intermittently unreachable, and a known 2021 snapshot
-# (BETSI_220221.csv, used by the SLIME project) is not publicly committed.
-# Acquisition + build are tracked in #42, which also holds the attribution
-# statement and provenance.
+# BETSI (soil-invertebrate traits, #31/#42) is now partly built: the `betsi`
+# entry in .enrichment_build_registry above ships the openly-licensed Zenodo
+# body-length export (Bonfanti 2018, CC BY-NC 4.0) as per-species Collembola
+# body length -- the clean floor that needs no species-code legend. The live
+# portal (which exports the full multi-trait, multi-taxon database) is offline
+# network-wide as of 2026-08 (confirmed from three independent networks), and
+# the 2021 SLIME snapshot (BETSI_220221.csv) is not publicly committed, so the
+# remaining traits are not yet built. The openly-licensed multi-trait INRAE
+# matrices (doi:10.15454/UU2FQT, /UCYSLH) key on undocumented 6-letter species
+# codes with no published legend (a string-reconstructed legend matched only
+# 58% of codes), so they await a code->binomial map. Full acquisition and a
+# literature-reconstruction pipeline are tracked in #42.
 #' @noRd
 .enrichment_build_only <- list(
   freshwaterecology = list(

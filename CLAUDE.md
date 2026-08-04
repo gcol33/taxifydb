@@ -91,9 +91,11 @@ adds nothing to the cross-source trait registry for them: freshwaterecology.info
 (#33; non-commercial, registration-gated, (c) BOKU -- read off the live
 conditions.php), NEMAPLEX (#31; UC Davis, licence-unstated: the live site
 publishes no terms page, default copyright reserves it) and BETSI (#31; CNRS,
-by-request, no published redistribution licence -- live terms page UNREAD, the
-portal refuses connections from the build env, so its mechanics are derived from
-the FRB/CESAB page and Pey et al. 2014, not verified verbatim). A source leaves
+by-request, no published redistribution licence -- live terms page UNREAD: the
+portal is offline (TCP timeout on 443/80 from both the build env and the
+university network) and the old CESAB mirror has lapsed to a squatter domain, so
+its mechanics are derived from the FRB/CESAB page and Pey et al. 2014, not
+verified verbatim). A source leaves
 that catalog for `.enrichment_build_registry` only if its live licence is
 relicensed to permit redistribution. Every built enrichment goes
 through cross-backbone name resolution before its `.vtr` is written:

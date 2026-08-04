@@ -2581,13 +2581,18 @@ list_scrape_only_enrichments <- function() {
 #     all, so it is catalogued as licence-unstated rather than explicitly
 #     restricted, and a direct ask to the author could move it into the build
 #     registry.
-#   - BETSI could not be read: the CNRS portal (portail.betsi.cnrs.fr) refuses
-#     connections from the build environment and the Wayback Machine is blocked
-#     at the fetcher, so its live terms/conditions page is UNREAD. Its licence
-#     string is derived from the reachable evidence (FRB/CESAB project page, the
-#     portal's own "public data, by data request" description in search results)
-#     plus the Pey et al. 2014 thesaurus paper, not verified verbatim against
-#     the live page. The build-only placement does not rest on the unverified
+#   - BETSI could not be read because its live site is offline, not merely
+#     firewalled: the CNRS portal (portail.betsi.cnrs.fr, 193.49.134.90) TCP-
+#     times out on both 443 and 80 from the build environment AND from the
+#     university network (worky, general internet + DNS both fine), the former
+#     CESAB mirror betsi.cesab.org has lapsed to an unrelated squatter domain,
+#     betsi.cnrs.fr does not resolve, and the Wayback Machine is blocked at the
+#     fetcher. Its live terms/conditions page is therefore UNREAD, and its
+#     licence string is derived from the reachable evidence (FRB/CESAB project
+#     page, the portal's own "public data, by data request" description in
+#     search results) plus the Pey et al. 2014 thesaurus paper, not verified
+#     verbatim against the live page. Re-check when the portal is back up. The
+#     build-only placement does not rest on the unverified
 #     citation/attribution mechanics: by-request access with no published
 #     redistribution licence reserves third-party redistribution under any
 #     reading reachable from here.
@@ -2658,8 +2663,10 @@ list_scrape_only_enrichments <- function() {
       "serves its holdings as queryable 'public data' by per-taxon/per-trait ",
       "data request (no bulk export), and no Creative Commons or redistribution ",
       "licence is published anywhere reachable. UNVERIFIED (live terms page ",
-      "unread -- the CNRS portal refuses connections from the build environment ",
-      "and the Wayback Machine is blocked at the fetcher): the specific reuse ",
+      "unread -- the CNRS portal TCP-times out on 443 and 80 from both the ",
+      "build environment and the university network so it appears offline, the ",
+      "former CESAB mirror has lapsed to a squatter domain, and the Wayback ",
+      "Machine is blocked at the fetcher): the specific reuse ",
       "mechanics (citing the relevant publication, crediting the individual ",
       "BETSI coders and administrators) are taken from the BETSI reuse ",
       "statements and the Pey et al. 2014 thesaurus paper, not read verbatim ",
@@ -2667,7 +2674,7 @@ list_scrape_only_enrichments <- function() {
       "by-request access with no published redistribution licence still reserves ",
       "third-party redistribution."
     ),
-    access          = "by-request per taxon/trait (queryable 'public data', no bulk export); no published redistribution licence; live terms page unread (portal unreachable from build env)",
+    access          = "by-request per taxon/trait (queryable 'public data', no bulk export); no published redistribution licence; live terms page unread (portal offline from both build env and university network)",
     reason          = paste0(
       "by-request access with no published redistribution licence, so trait ",
       "values cannot ship in a .vtr; the build-only placement holds under the ",

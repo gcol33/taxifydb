@@ -2574,8 +2574,12 @@ list_scrape_only_enrichments <- function() {
 # was verified once is not re-litigated from scratch each time the source is
 # proposed again.
 #
-# Each `license` string below was read from the source's own current live
-# terms/how-to-cite page (not an older data paper), per the ITALIC 8.0 lesson.
+# Each `license` string below was read from the source's own current live site
+# -- its terms/how-to-cite page where one exists (not an older data paper), per
+# the ITALIC 8.0 lesson. NEMAPLEX is the borderline case: its live site
+# publishes no terms page at all, so it is catalogued as licence-unstated
+# rather than explicitly restricted, and a direct ask to the author could move
+# it into the build registry.
 # A source moves out of this catalog into .enrichment_build_registry only if its
 # live licence changes to permit redistribution (e.g. a CC BY / CC BY-NC-SA
 # relicense).
@@ -2613,14 +2617,18 @@ list_scrape_only_enrichments <- function() {
     candidate_trait = "feeding groups, colonizer-persister (c-p) scale",
     source_url      = "http://nemaplex.ucdavis.edu/",
     license         = paste0(
-      "UC Davis / H. Ferris. The live site (uppermnus/topmnu.htm) states a ",
-      "citation requirement but grants no redistribution licence; rights are ",
-      "reserved by default. Reuse is by contact with the author."
+      "UC Davis / H. Ferris. Licence UNSTATED: the live site publishes no ",
+      "terms-of-use or copyright page, only a citation request. This is the ",
+      "greyest of the build-only entries -- there is no explicit prohibition, ",
+      "but there is no redistribution grant either, so default copyright ",
+      "applies. Reuse would need a direct ask to the author (hferris@ucdavis.edu)."
     ),
-    access          = "citation required; no redistribution licence stated (all rights reserved)",
+    access          = "citation requested; no licence or terms of use published (unstated)",
     reason          = paste0(
-      "no redistribution grant on the live site; feeding-group / c-p values ",
-      "cannot ship in a .vtr without permission from the author"
+      "no licence published on the live site and no redistribution grant, so ",
+      "default copyright reserves the feeding-group / c-p values; the issue ",
+      "routes citation-only OR unstated sources here. A direct ask to the ",
+      "author could relicense it into the build registry"
     ),
     attribution     = paste0(
       "Ferris H. NEMAPLEX: The Nematode-Plant Expert Information System. ",

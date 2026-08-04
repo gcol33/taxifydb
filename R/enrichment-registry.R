@@ -1162,6 +1162,30 @@
     requires    = NULL
   ),
 
+  ecomorphosis = list(
+    source_url  = paste0("https://zenodo.org/api/records/7194559/files/",
+                         "Annex_ASE_Online_db.xlsx/content"),
+    source_doi  = "10.5281/zenodo.7194559",
+    version     = "2022.10",
+    license     = "CC BY 4.0",
+    attribution = paste0(
+      "Bonfanti J (2022) Species list of Collembola known to display ",
+      "ecomorphosis (extended). Zenodo, doi:10.5281/zenodo.7194559, CC BY 4.0. ",
+      "Curated presence list accompanying Bonfanti J, Krogh PH, Hedde M, ",
+      "Cortet J (2022) Ecomorphosis in European Collembola: a review in the ",
+      "context of trait-based ecology. Applied Soil Ecology, ",
+      "doi:10.1016/j.apsoil.2022.104692. Each of the 43 species carries the ",
+      "literature record establishing its ecomorphic form. See ",
+      "gcol33/taxifydb#42."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "ecomorphosis.xlsx")
+    },
+    parse_fn    = function(path) parse_ecomorphosis(path),
+    group_col   = NULL,
+    requires    = "openxlsx2"
+  ),
+
   nesttrait = list(
     source_url  = paste0("https://zenodo.org/records/10128906/files/",
                          "NestTrait_v2.csv?download=1"),

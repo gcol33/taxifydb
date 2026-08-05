@@ -45,27 +45,33 @@ jobs:
           res <- jsonlite::fromJSON("coverage_results.json")
           drift <- res[res$status %in% c("missing_in_manifest",
                                          "missing_in_taxifydb",
-                                         "stale_in_manifest"), ]
+                                         "stale_in_manifest",
+                                         "asset_drift",
+                                         "asset_missing"), ]
           lines <- c(
             "## taxify manifest is out of sync with taxifydb releases",
             "",
             "The entries below differ between what `gcol33/taxifydb` has released",
-            "(build-side `manifest/manifest.json` and per-backbone release tags)",
-            "and taxify's runtime `inst/manifest.json`. Backbone drift silently",
-            "degrades users to build-from-source; enrichment drift leaves one of",
-            "the two manifests a stale second source of truth.",
+            "(build-side `manifest/manifest.json`, per-backbone release tags and",
+            "the release assets themselves) and taxify's runtime",
+            "`inst/manifest.json`. Backbone drift silently degrades users to",
+            "build-from-source; asset drift means the manifest describes bytes",
+            "that are no longer served; enrichment drift leaves one of the two",
+            "manifests a stale second source of truth.",
             "",
-            "| Kind | Name | taxifydb | taxify manifest | Status |",
-            "|---|---|---|---|---|"
+            "| Kind | Name | taxifydb | taxify manifest | Status | Detail |",
+            "|---|---|---|---|---|---|"
           )
+          detail <- if ("detail" %in% names(drift)) drift$detail else rep("", nrow(drift))
           for (i in seq_len(nrow(drift))) {
             lines <- c(lines, sprintf(
-              "| %s | `%s` | %s | %s | **%s** |",
+              "| %s | `%s` | %s | %s | **%s** | %s |",
               drift$kind[i],
               drift$name[i],
               ifelse(is.na(drift$release[i]), "(none)", drift$release[i]),
               ifelse(is.na(drift$manifest[i]), "(none)", drift$manifest[i]),
-              drift$status[i]
+              drift$status[i],
+              ifelse(is.na(detail[i]) || !nzchar(detail[i]), "", detail[i])
             ))
           }
           lines <- c(lines, "",
@@ -74,6 +80,11 @@ jobs:
             "the entry needs a one-time citation/license before merge. Enrichment",
             "drift: an enrichment publish updated one manifest but not the other;",
             "regenerate the lagging side so both point at the same release.",
+            "`asset_drift`: the asset was re-uploaded under an unchanged tag, so",
+            "re-run `update_manifest()` for that entry and commit both manifests,",
+            "which refreshes `full_size`, `full_sha256` and `content_id` together.",
+            "`asset_missing`: the manifest points at an asset the release does not",
+            "carry, so the download URL 404s for every user.",
             "",
             sprintf("*Last checked: %s UTC*", format(Sys.time(), "%Y-%m-%d %H:%M")))
           writeLines(paste(lines, collapse = "\n"), "issue_body.md")

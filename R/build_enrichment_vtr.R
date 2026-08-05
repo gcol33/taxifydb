@@ -73,6 +73,11 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
   # curation step.
   trait_cols <- setdiff(names(df), c("canonical_name", group_col))
 
+  # Canonical T-SITA vocabulary for the trait columns and their values, so the
+  # sidecar names each trait the way BETSI and the wider soil-fauna community do.
+  # NULL for an enrichment with no crosswalk; drop_empty_fields() then omits it.
+  tsita <- .tsita_enrichment_meta(name, columns = trait_cols)
+
   meta <- list(
     type             = "enrichment",
     name             = name,
@@ -84,6 +89,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     group_col        = group_col,
     available_groups = available_groups,
     trait_cols       = as.list(trait_cols),
+    tsita            = tsita,
     species_col      = species_col,
     static           = isTRUE(static),
     source_format    = source_format,

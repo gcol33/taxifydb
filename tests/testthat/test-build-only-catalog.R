@@ -17,12 +17,26 @@ test_that("list_build_only_enrichments() catalogs the licence-blocked sources", 
   expect_true(all(c("freshwaterecology", "nemaplex") %in% bo$name))
 })
 
-test_that("BETSI is no longer a refuse-to-redistribute source", {
+test_that("BETSI is a buildable enrichment, not a refuse-to-redistribute one", {
   # BETSI was reclassified out of build-only (#42): the decision is to serve it
-  # as informed-risk redistribution, so it must NOT be catalogued here as a
-  # refuse-to-redistribute source. It is not in list_enrichments() yet either --
-  # that build is blocked on data acquisition, tracked in #42.
-  expect_false("betsi" %in% list_build_only_enrichments()$name)
+  # as informed-risk redistribution, so no BETSI entry may be catalogued here as
+  # refuse-to-redistribute. Its Collembola body-length export (Bonfanti 2018,
+  # CC BY-NC 4.0) builds; the multi-trait INRAE matrices stay unbuilt for want
+  # of a species-code legend, which is why the buildable asset is named for the
+  # one trait of the one class it actually carries.
+  expect_false(any(grepl("^betsi", list_build_only_enrichments()$name)))
+  expect_true("betsi_collembola_body_length" %in% list_enrichments())
+})
+
+test_that("the Collembola body-length assets are named for what they carry", {
+  # Both mine a single trait from a far larger source -- BETSI is multi-trait
+  # and multi-taxon, a Plazi treatment states chaetotaxy, distribution and
+  # ecology -- so an unqualified `betsi` or `plazi_collembola` would claim more
+  # than the asset delivers.
+  enr <- list_enrichments()
+  expect_true(all(c("betsi_collembola_body_length",
+                    "plazi_collembola_body_length") %in% enr))
+  expect_false(any(c("betsi", "plazi_collembola") %in% enr))
 })
 
 test_that("build-only sources are never in the build registry or manifest", {

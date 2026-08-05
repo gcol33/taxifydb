@@ -1107,7 +1107,11 @@
     requires    = character(0)
   ),
 
-  betsi = list(
+  # Named for the slice it actually is. BETSI is a multi-trait, multi-taxon
+  # database whose live portal is offline network-wide; what ships here is one
+  # exported trait of one class. Calling the asset `betsi` would claim the
+  # database. The remaining traits are tracked in #42.
+  betsi_collembola_body_length = list(
     source_url  = paste0("https://zenodo.org/api/records/1292461/files/",
                          "BETSI_Trait%20data%20request_Collembola_Body%20length",
                          "_01062017.xlsx/content"),
@@ -1130,7 +1134,7 @@
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "betsi_bodylength.xlsx")
     },
-    parse_fn    = function(path) parse_betsi(path),
+    parse_fn    = function(path) parse_betsi_collembola_body_length(path),
     group_col   = NULL,
     requires    = "openxlsx2"
   ),
@@ -1162,6 +1166,40 @@
     requires    = NULL
   ),
 
+  # Body length only: a treatment carries chaetotaxy, distribution and ecology
+  # that this parser does not touch, so the name says which trait it delivers.
+  plazi_collembola_body_length = list(
+    source_url  = paste0("https://api.gbif.org/v1/dataset/search?publishingOrg=",
+                         "7ce8aef0-9e92-11dc-8738-b8a03c50a862&taxonKey=10713444"),
+    source_doi  = NULL,
+    version     = "2026.08",
+    license     = "CC0 1.0",
+    attribution = paste0(
+      "Plazi TreatmentBank (plazi.org), taxonomic treatments republished as ",
+      "Darwin Core Archives through GBIF (publisher ",
+      "7ce8aef0-9e92-11dc-8738-b8a03c50a862). Harvested 2026-08-05: 508 ",
+      "checklist datasets covering class Collembola, of which 405 carry a ",
+      "usable measurement, every one released CC0 1.0. Body length (mm) is ",
+      "mined by taxifydb from the treatment prose and aggregated per species: ",
+      "median, with min/max and the measurement and treatment-paper counts. ",
+      "Cite the individual treatments through their datasets for any ",
+      "species-level use. 998 species from 1,117 measurements. Complements ",
+      "`betsi_collembola_body_length`, a fixed 2017 export of the European ",
+      "compendia: the two ",
+      "share only 35 species, so this adds 963 species BETSI does not cover and ",
+      "takes taxifydb's Collembola body-length coverage from 1,258 to 2,221. On ",
+      "the 35 shared species the mined values track BETSI at Pearson r = 0.906 ",
+      "(Spearman 0.955), median difference -0.050 mm, median absolute ",
+      "difference 0.150 mm."
+    ),
+    download_fn = function(url, dest) {
+      harvest_plazi_dwca(10713444L, dest, query = "Collembola")
+    },
+    parse_fn    = function(path) parse_plazi_collembola_body_length(path),
+    group_col   = NULL,
+    requires    = "jsonlite"
+  ),
+
   ecomorphosis = list(
     source_url  = paste0("https://zenodo.org/api/records/7194559/files/",
                          "Annex_ASE_Online_db.xlsx/content"),
@@ -1184,6 +1222,51 @@
     parse_fn    = function(path) parse_ecomorphosis(path),
     group_col   = NULL,
     requires    = "openxlsx2"
+  ),
+
+  # taxifydb's own body-length extraction from three primary Collembola
+  # monographs, mined by the same core the plazi enrichment uses
+  # (parse_monograph_body_length). The books are copyrighted, so the mining runs
+  # once and only the extracted values -- facts, not the book text -- are frozen
+  # and served. Not BETSI: BETSI drew body lengths from the same European
+  # compendia, but no BETSI data is used here, and Stach's Neelidae/Dicyrtomidae
+  # are outside its coverage.
+  monograph_collembola_body_length = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "monograph-snapshots-2026.08/",
+                         "collembola_monograph_bodylength_2026-08-05.csv"),
+    source_doi  = NULL,
+    version     = "2026.08",
+    license     = paste0(
+      "Extracted measurements (facts); source monographs copyright their ",
+      "publishers, served for non-commercial scientific reuse (informed-risk, #42)"
+    ),
+    attribution = paste0(
+      "Body length (mm) mined by taxifydb from three primary Collembola ",
+      "monographs and aggregated per species (median of the per-monograph ",
+      "medians, with min/max and the measurement and monograph counts): ",
+      "Stach J (1957) The Apterygotan Fauna of Poland in Relation to the World ",
+      "Fauna of this Group of Insects. Neelidae, Dicyrtomidae. Panstwowe ",
+      "Wydawnictwo Naukowe, Krakow; Hopkin SP (2007) A Key to the Collembola ",
+      "(Springtails) of Britain and Ireland. FSC Publications, Shrewsbury; ",
+      "Bretfeld G (1999) Synopses on Palaearctic Collembola, Volume 2: ",
+      "Symphypleona. Abhandlungen und Berichte des Naturkundemuseums Goerlitz ",
+      "71(1). The source monographs are copyright their publishers; only the ",
+      "extracted measurements are redistributed, for non-commercial scientific ",
+      "use (informed-risk, see gcol33/taxifydb#42). 481 species from 679 ",
+      "measurements. Complements betsi_collembola_body_length: BETSI's fixed ",
+      "2017 export drew body lengths from the same European compendia, but none ",
+      "of BETSI's data is used here -- this is taxifydb's own re-extraction, ",
+      "more complete on the shared books (210 vs 145 species mined from Bretfeld ",
+      "1999) and Stach's Neelidae and Dicyrtomidae fall outside BETSI's ",
+      "Collembola coverage entirely."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "collembola_monograph_bodylength.csv")
+    },
+    parse_fn    = function(path) parse_monograph_collembola(path),
+    group_col   = NULL,
+    requires    = character(0)
   ),
 
   nesttrait = list(
@@ -2664,8 +2747,9 @@ list_scrape_only_enrichments <- function() {
 # live licence changes to permit redistribution (e.g. a CC BY / CC BY-NC-SA
 # relicense).
 #
-# BETSI (soil-invertebrate traits, #31/#42) is now partly built: the `betsi`
-# entry in .enrichment_build_registry above ships the openly-licensed Zenodo
+# BETSI (soil-invertebrate traits, #31/#42) is now partly built: the
+# `betsi_collembola_body_length` entry in .enrichment_build_registry above --
+# named for the slice it is, not for the database -- ships the Zenodo
 # body-length export (Bonfanti 2018, CC BY-NC 4.0) as per-species Collembola
 # body length -- the clean floor that needs no species-code legend. The live
 # portal (which exports the full multi-trait, multi-taxon database) is offline

@@ -609,3 +609,94 @@ download_supabase_table <- function(base, key, table, select,
   if (length(out) == 0L) return(data.frame(stringsAsFactors = FALSE))
   do.call(rbind, out)
 }
+
+
+#' Harvest the Plazi Darwin Core archives covering a taxon
+#'
+#' Plazi republishes each marked-up paper as its own GBIF checklist dataset, so
+#' a taxon's treatments are spread over hundreds of small archives rather than
+#' one bulk file. Discovery is the union of two GBIF dataset-search filters
+#' because neither is complete alone: `taxonKey` depends on GBIF having indexed
+#' the dataset's taxonomic coverage, and the free-text `query` depends on the
+#' paper's title or abstract naming the taxon. For class Collembola the two
+#' return 210 and 489 datasets and their union is 508.
+#'
+#' Each dataset is resolved to its `DWC_ARCHIVE` endpoint and cached as
+#' `<dataset key>.zip`, so a re-run only fetches what is new.
+#'
+#' @param taxon_key Integer. GBIF backbone key of the taxon (10713444 is class
+#'   Collembola).
+#' @param dest_dir Character. Directory to cache the archives in. Created if
+#'   missing.
+#' @param query Character or `NULL`. Free-text term for the second discovery
+#'   pass, usually the taxon name.
+#' @param max_datasets Integer. Safety bound on the number of datasets.
+#' @return Path to the directory holding the cached archives.
+#' @export
+harvest_plazi_dwca <- function(taxon_key, dest_dir, query = NULL,
+                               max_datasets = 20000L) {
+  plazi_org <- "7ce8aef0-9e92-11dc-8738-b8a03c50a862"
+  dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+
+  search_page <- function(extra) {
+    keys <- character(0L)
+    offset <- 0L
+    limit <- 300L
+    repeat {
+      if (offset >= max_datasets) break
+      url <- sprintf(paste0("https://api.gbif.org/v1/dataset/search",
+                            "?publishingOrg=%s&limit=%d&offset=%d%s"),
+                     plazi_org, limit, offset, extra)
+      j <- tryCatch(jsonlite::fromJSON(url), error = function(e) NULL)
+      if (is.null(j) || is.null(j$results) || !NROW(j$results)) break
+      res <- j$results
+      is_cl <- if (is.null(res$type)) TRUE else res$type == "CHECKLIST"
+      keys <- c(keys, res$key[is_cl])
+      if (isTRUE(j$endOfRecords)) break
+      offset <- offset + limit
+    }
+    keys
+  }
+
+  keys <- search_page(sprintf("&taxonKey=%d", as.integer(taxon_key)))
+  if (!is.null(query)) {
+    keys <- c(keys, search_page(paste0("&q=",
+                                       utils::URLencode(query, reserved = TRUE))))
+  }
+  keys <- unique(keys[!is.na(keys)])
+  if (!length(keys)) {
+    stop("No Plazi datasets found for taxonKey ", taxon_key, call. = FALSE)
+  }
+
+  for (key in keys) {
+    dest <- file.path(dest_dir, paste0(key, ".zip"))
+    if (file.exists(dest) && file.size(dest) > 200L) next
+
+    ep <- tryCatch(jsonlite::fromJSON(
+      sprintf("https://api.gbif.org/v1/dataset/%s/endpoint", key)),
+      error = function(e) NULL)
+    if (is.null(ep) || !NROW(ep) || is.null(ep$type)) next
+    hit <- which(ep$type == "DWC_ARCHIVE")
+    if (!length(hit)) next
+
+    h <- curl::new_handle()
+    curl::handle_setopt(h, followlocation = TRUE, connecttimeout = 60L,
+                        timeout = 600L)
+    curl::handle_setheaders(h, "User-Agent" = "Mozilla/5.0 (compatible; taxifydb/0.1)")
+    ok <- tryCatch({
+      curl::curl_download(ep$url[hit[1L]], dest, handle = h)
+      TRUE
+    }, error = function(e) FALSE)
+    if (!ok && file.exists(dest)) unlink(dest)
+    Sys.sleep(0.15)
+  }
+
+  got <- length(list.files(dest_dir, pattern = "\\.zip$"))
+  if (!got) {
+    stop("Plazi harvest downloaded no archives for taxonKey ", taxon_key,
+         call. = FALSE)
+  }
+  message(sprintf("Plazi: %d of %d datasets cached in %s", got, length(keys),
+                  dest_dir))
+  dest_dir
+}

@@ -1,5 +1,10 @@
 # BETSI Collembola body-length trait values.
 #
+# Named for exactly what it is. BETSI itself is a multi-trait, multi-taxon
+# database whose live portal is offline; this is one exported slice of it, one
+# trait of one class, so the enrichment is `betsi_collembola_body_length` rather
+# than `betsi`. The rest of BETSI is not here (see gcol33/taxifydb#42).
+#
 # BETSI (Biological and Ecological Traits of Soil Invertebrates; Hedde et al.,
 # portail.betsi.cnrs.fr) is a European soil-fauna trait database. Its live
 # portal is offline (confirmed 2026-08 from three independent networks), so this
@@ -52,7 +57,7 @@
 #' @return data.frame with `canonical_name` and the `betsi_body_length_*`
 #'   columns, one row per species.
 #' @export
-parse_betsi <- function(path) {
+parse_betsi_collembola_body_length <- function(path) {
   if (!requireNamespace("openxlsx2", quietly = TRUE)) {
     stop("Package 'openxlsx2' is required to parse BETSI.", call. = FALSE)
   }

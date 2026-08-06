@@ -22,6 +22,10 @@
 #' @param species_col Character or NULL. Name of the source column the taxa were
 #'   keyed on, recorded for the runtime manifest. `"genus"` marks a genus-grain
 #'   enrichment; `NULL` (the default) is species-grain.
+#' @param provenance Named list or NULL. Per-column provenance: maps each trait
+#'   column to its provenance tier, recorded in `meta.json`. Used by assets whose
+#'   columns come from mixed sources (the BETSI-recovery matrices); `NULL` (the
+#'   default) writes no provenance block.
 #' @param static Logical. Whether the enrichment is a frozen snapshot (the
 #'   default) rather than one the runtime re-checks against a live source. Drives
 #'   taxify's refresh gate (content-id for static, version for non-static).
@@ -34,7 +38,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
                                  source_doi = NULL, license = "unknown",
                                  attribution = NULL, group_col = NULL,
                                  species_col = NULL, static = TRUE,
-                                 source_format = NULL,
+                                 source_format = NULL, provenance = NULL,
                                  batch_size = 50000L) {
   if (!"canonical_name" %in% names(df)) {
     stop("Enrichment data.frame must have a 'canonical_name' column.")
@@ -90,6 +94,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     available_groups = available_groups,
     trait_cols       = as.list(trait_cols),
     tsita            = tsita,
+    provenance       = provenance,
     species_col      = species_col,
     static           = isTRUE(static),
     source_format    = source_format,

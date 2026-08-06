@@ -1139,6 +1139,83 @@
     requires    = "openxlsx2"
   ),
 
+  # BETSI-derived earthworm trait matrix (gap G2), rebuilt from a published
+  # study's appendix rather than the offline portal. The fuzzy % vectors are
+  # kept in full, one column per (trait, modality) bin; provenance_tier tags the
+  # values as betsi_derived. See R/betsi-recovery.R and gcol33/taxifydb#42.
+  betsi_earthworm_traits = list(
+    source_url  = "https://doi.org/10.1016/j.apsoil.2013.10.005",
+    source_doi  = "10.1016/j.apsoil.2013.10.005",
+    version     = "2026.08",
+    license     = paste0(
+      "Extracted trait values (facts); BETSI-derived, served for ",
+      "non-commercial scientific reuse (informed-risk, #42)"
+    ),
+    attribution = paste0(
+      "Pelosi C, Pey B, Hedde M, Caro G, Capowiez Y, Guernion M, Peigne J, ",
+      "Piron D, Bertrand M, Cluzeau D (2014) Reducing tillage in cultivated ",
+      "fields increases earthworm functional diversity. Applied Soil Ecology ",
+      "83:79-87 (doi:10.1016/j.apsoil.2013.10.005). Earthworm functional ",
+      "traits the authors compiled from BETSI (Biological and Ecological ",
+      "Traits of Soil Invertebrates; Hedde et al., portail.betsi.cnrs.fr, live ",
+      "portal offline), extracted from the paper's Appendix 1: 11 species x 7 ",
+      "fuzzy-coded traits (body length, mass:length ratio, cocoon diameter, ",
+      "epithelium, typhlosolis, soil carbon preference, vertical ",
+      "distribution). Each (species, trait) affinity vector sums to 100, the ",
+      "fuzzy-coding invariant that self-validates the extraction; the full ",
+      "0-100 affinity vectors are kept, one column per modality bin. ",
+      "provenance_tier = betsi_derived (a published matrix drawn from BETSI, ",
+      "not a raw portal export). Body length and soil carbon preference are ",
+      "crosswalked to the T-SITA thesaurus; the earthworm-specific axes T-SITA ",
+      "does not cover keep their own column names. See gcol33/taxifydb#42."
+    ),
+    download_fn   = function(url, dest) {
+      .betsi_recovery_stage("betsi_earthworm_traits", dest)
+    },
+    parse_fn      = function(path) parse_betsi_recovery("betsi_earthworm_traits", path),
+    provenance_fn = function(cols) .betsi_recovery_provenance("betsi_earthworm_traits", cols),
+    group_col     = NULL,
+    requires      = character(0)
+  ),
+
+  # BETSI-derived Collembola multi-trait matrix (gap G1), rebuilt from Lu 2025's
+  # Appendix S1. Six traits are BETSI-derived; vertical distribution, trophic
+  # guild and life form are the authors' own (per-column provenance in
+  # meta.json). Hard-value per-species table. See R/betsi-recovery.R and #42.
+  betsi_collembola_traits = list(
+    source_url  = "https://doi.org/10.1002/eap.70034",
+    source_doi  = "10.1002/eap.70034",
+    version     = "2026.08",
+    license     = paste0(
+      "Extracted trait values (facts); mixed provenance (see meta.json), ",
+      "served for non-commercial scientific reuse (informed-risk, #42)"
+    ),
+    attribution = paste0(
+      "Lu J-Z, Yang J, Bluhm C, Foltran E, Rivera Perez CA, Glatthorn J, ",
+      "Ammer C, Lamersdorf N, Polle A, Berg M, Potapov AM, Scheu S (2025) ",
+      "Mixed forests with native species mitigate impacts of introduced ",
+      "Douglas fir on soil decomposers (Collembola). Ecological Applications ",
+      "35:e70034 (doi:10.1002/eap.70034). Per-species Collembola functional ",
+      "traits from Appendix S1 Table S1 (26 species). Trait values were derived ",
+      "from the BETSI database (Pey et al. 2014; Biological and Ecological ",
+      "Traits of Soil Invertebrates, portail.betsi.cnrs.fr, live portal ",
+      "offline) for reproductive mode, body size, antenna/body length ratio, ",
+      "furcal size, pigmentation and number of ocelli; vertical distribution ",
+      "(stratification) and trophic guild were measured in this study and life ",
+      "form assigned per Potapov et al. (2016). The provenance tier of each ",
+      "trait column is recorded in meta.json (betsi_derived vs source_study). ",
+      "Body length is the maximum body length. Numeric codings follow Lu 2025 ",
+      "Table S1. See gcol33/taxifydb#42."
+    ),
+    download_fn   = function(url, dest) {
+      .betsi_recovery_stage("betsi_collembola_traits", dest)
+    },
+    parse_fn      = function(path) parse_betsi_recovery("betsi_collembola_traits", path),
+    provenance_fn = function(cols) .betsi_recovery_provenance("betsi_collembola_traits", cols),
+    group_col     = NULL,
+    requires      = character(0)
+  ),
+
   ellers_collembola = list(
     source_url  = paste0("https://zenodo.org/api/records/4934993/files/",
                          "Collembola_trait_data.csv/content"),

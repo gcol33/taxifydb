@@ -1,3 +1,30 @@
+# taxifydb 0.1.21
+
+## BETSI recovery: earthworm and Collembola trait matrices (#42)
+
+* `R/betsi-recovery.R` rebuilds published BETSI-derived trait matrices into
+  per-taxon enrichment assets, since BETSI's live portal is offline and no
+  complete export is recoverable. `build_betsi_recovery()` /
+  `list_betsi_recovery()` scope the recovery subset; `parse_betsi_recovery()`
+  dispatches on each source's matrix shape; `gen_spe()` builds the six-letter
+  species code the code-keyed matrices use.
+
+* `betsi_earthworm_traits` (gap G2): Pelosi et al. (2014) Appendix 1, 11
+  earthworm species x 7 fuzzy-coded traits. Each (species, trait) affinity block
+  is checked to sum to 100 on ingest, and the full fuzzy vectors are kept as one
+  numeric column per `<trait>__<modality>` bin.
+
+* `betsi_collembola_traits` (gap G1): Lu et al. (2025) Appendix S1, 26 Collembola
+  species. Fills pigmentation, number of ocelli and furcula, which had no prior
+  Collembola coverage. Six traits are BETSI-derived; vertical distribution,
+  trophic guild and life form were measured by the source study.
+
+* Provenance is recorded per column in each asset's `meta.json` `provenance`
+  block (`betsi_export` / `betsi_derived` / `literature_reconstruction` /
+  `source_study`), never flattened onto rows a tier does not describe.
+  `build_enrichment_vtr()` gains a `provenance` argument that the registry
+  supplies through a per-enrichment `provenance_fn`.
+
 # taxifydb 0.1.20
 
 ## Enrichment name resolution spans all fifteen backbones

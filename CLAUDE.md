@@ -52,6 +52,11 @@ R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
                               enrichment_emergency_fallback()
 R/tsita-vocab.R            — T-SITA controlled-vocabulary crosswalk: tsita_vocab(),
                               tsita_crosswalk(), .tsita_enrichment_meta() (#42)
+R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices ->
+                              per-taxon enrichment assets. gen_spe(),
+                              parse_betsi_recovery(), build_betsi_recovery(),
+                              list_betsi_recovery(); frozen matrices in
+                              inst/extdata/betsi/, data-raw/betsi_recovery.R (#42)
 ```
 
 ## Backends
@@ -80,8 +85,9 @@ R/tsita-vocab.R            — T-SITA controlled-vocabulary crosswalk: tsita_voc
 
 ## Enrichments
 
-92 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
-`sealifebase`, `groot`, and `marine_distribution`). Ecoflora and FloraWeb are built into `.vtr` files
+112 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
+`sealifebase`, `groot`, `marine_distribution`, and the BETSI-recovery assets).
+Ecoflora and FloraWeb are built into `.vtr` files
 from frozen per-species scrape snapshots. Only 1 on-demand source remains
 (Pignatti, copyrighted), catalogued in `.enrichment_scrape_only`
 (`list_scrape_only_enrichments()`) and accessed by taxify's `add_pignatti()` via
@@ -139,6 +145,31 @@ pseudocelli) is left out of the crosswalk rather than forced onto a near-miss:
 the column keeps its own name and carries no T-SITA identifier. taxify reads
 `meta$tsita` to expose canonical trait names; an enrichment with no crosswalk
 row simply writes no `tsita` field.
+
+**BETSI recovery (#42).** BETSI's live portal is offline and no complete export
+is recoverable, so `R/betsi-recovery.R` rebuilds the trait matrices individual
+studies downloaded from BETSI and printed or deposited, into per-taxon assets.
+Each source has a descriptor in `.betsi_recovery_sources`; `parse_betsi_recovery()`
+dispatches on its `shape`. A `"fuzzy"` matrix (per-species % affinities across a
+trait's modality bins) is validated (trait set, modalities, and the sum-to-100
+invariant, all hard errors) and pivoted to one numeric column per
+`<trait>__<modality>` bin (0-100) -- the full fuzzy vectors are kept, not
+collapsed. A `"hard"` matrix (one scalar/categorical value per trait) is read and
+type-checked into one column per trait. Provenance is per column, not per row: a
+source can carry BETSI-derived columns beside its own primary ones, so each
+column's tier (`betsi_export` / `betsi_derived` / `literature_reconstruction` /
+`source_study`) is written to `meta.json`'s `provenance` block by
+`.betsi_recovery_provenance()` (via `build_enrichment_vtr(provenance = )`), never
+flattened onto rows it does not describe. The frozen matrices live in
+`inst/extdata/betsi/` (committed; regenerated from the local
+`dev_notes/betsi_recovery/` sources by `data-raw/betsi_recovery.R`), and each
+recovery asset is a normal `.enrichment_build_registry` entry (with a
+`provenance_fn`) built through the shared pipeline. `build_betsi_recovery()` /
+`list_betsi_recovery()` scope the recovery subset; `gen_spe()` builds the
+6-letter `GEN_SPE` code the code-keyed matrices key on. Assets: `betsi_earthworm_traits`
+(Pelosi 2014, 11 earthworm species x 7 fuzzy traits, gap G2) and
+`betsi_collembola_traits` (Lu 2025, 26 Collembola species, hard-value; 6 BETSI-derived
+traits + 3 the study measured itself, gap G1 -- pigment/ocelli/furca).
 
 `marine_distribution` is the marine analogue of the WCVP range table (#21): a
 `canonical_name` + `region_code` + `native_status` asset so taxify's

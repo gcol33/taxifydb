@@ -17,6 +17,7 @@ build_enrichment_vtr(
   species_col = NULL,
   static = TRUE,
   source_format = NULL,
+  provenance = NULL,
   batch_size = 50000L
 )
 }
@@ -50,6 +51,11 @@ taxify's refresh gate (content-id for static, version for non-static).}
 
 \item{source_format}{Character or NULL. Raw source format (e.g. "csv",
 "xlsx", "zip"), recorded for the runtime manifest.}
+
+\item{provenance}{Named list or NULL. Per-column provenance: maps each trait
+column to its provenance tier, recorded in \code{meta.json}. Used by assets whose
+columns come from mixed sources (the BETSI-recovery matrices); \code{NULL} (the
+default) writes no provenance block.}
 
 \item{batch_size}{Integer. Row group size for vectra (default 50000).}
 }

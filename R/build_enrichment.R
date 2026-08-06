@@ -106,6 +106,10 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   vtr_path <- file.path(output_dir, paste0(name, ".vtr"))
 
+  # Per-column provenance (BETSI-recovery assets): resolved from the final column
+  # set, since name resolution may have reshaped rows but not trait columns.
+  provenance <- if (is.function(reg$provenance_fn)) reg$provenance_fn(names(df)) else NULL
+
   build_enrichment_vtr(
     df, vtr_path,
     name          = name,
@@ -120,7 +124,8 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     # registry entry omits them (species-grain, frozen snapshot).
     species_col   = reg$species_col,
     static        = reg$static %||% TRUE,
-    source_format = reg$source_format
+    source_format = reg$source_format,
+    provenance    = provenance
   )
 
   if (verbose) {

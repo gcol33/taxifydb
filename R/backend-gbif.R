@@ -80,17 +80,36 @@ read_gbif <- function(gz_path, verbose = TRUE) {
   )
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
 
+  normalize_gbif(df, gbif_higher_lookup(df$id, df$canonical_name),
+                 verbose = verbose)
+}
+
+
+#' Normalize one block of GBIF rows to the unified schema
+#'
+#' Split out of [read_gbif()] so the streaming build can apply it to a chunk at
+#' a time. Everything here depends only on the row in hand once `higher` is
+#' supplied, which is the whole reason that lookup is a separate argument: the
+#' `*_key` columns point at rows anywhere in the file.
+#'
+#' @param df A data.frame of raw GBIF rows, named by [.gbif_col_names].
+#' @param higher Named character vector of canonical names by id, from
+#'   [gbif_higher_lookup()].
+#' @param verbose Logical.
+#' @return A normalized data.frame ready for [precompute_backbone()].
+#' @export
+normalize_gbif <- function(df, higher, verbose = TRUE) {
   if (verbose) message("Denormalizing higher classification via self-join...")
   # Resolve the denormalized ancestor names from each row's *_key columns while
   # the KINGDOM/PHYLUM/CLASS/ORDER rows are still present (they are dropped
   # below). Without this, only family is carried and the classification cannot
   # be walked upward: taxify::upstream()/downstream() above family return zero
   # rows. See gcol33/taxifydb#24.
-  df$kingdom <- gbif_resolve_higher(df, df$kingdom_key)
-  df$phylum  <- gbif_resolve_higher(df, df$phylum_key)
-  df$class   <- gbif_resolve_higher(df, df$class_key)
-  df$order   <- gbif_resolve_higher(df, df$order_key)
-  df$family  <- gbif_resolve_higher(df, df$family_key)
+  df$kingdom <- gbif_resolve_higher(higher, df$kingdom_key)
+  df$phylum  <- gbif_resolve_higher(higher, df$phylum_key)
+  df$class   <- gbif_resolve_higher(higher, df$class_key)
+  df$order   <- gbif_resolve_higher(higher, df$order_key)
+  df$family  <- gbif_resolve_higher(higher, df$family_key)
 
   df$status <- toupper(df$status)
   df$rank <- toupper(df$rank)
@@ -170,28 +189,60 @@ build_gbif <- function(output_dir = "output/gbif", version = NULL,
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
   gz_path <- download_gbif(dest = tmp, verbose = verbose)
-  df <- read_gbif(gz_path, verbose = verbose)
+  txt_path <- gunzip_file(gz_path, file.path(tmp, "gbif_simple.txt"),
+                          verbose = verbose)
+  unlink(gz_path)
 
-  if (verbose) message("Precomputing keys and embedding synonyms...")
-  df <- precompute_backbone(df)
+  # The five *_key columns name rows anywhere in the file, and the rows they
+  # name at kingdom, phylum, class and order rank are dropped by the filter
+  # below, so the lookup is built before the streaming pass rather than during
+  # it. Only referenced ids are kept, which is a few tens of thousands of rows.
+  if (verbose) message("Building higher-classification lookup...")
+  higher <- delim_fk_lookup(
+    txt_path, id_col = "id", value_col = "canonical_name",
+    key_cols = c("kingdom_key", "phylum_key", "class_key", "order_key",
+                 "family_key"),
+    quote = "", na_strings = "\\N", col_names = .gbif_col_names,
+    verbose = verbose
+  )
 
+  # Staged a block at a time rather than assembled in memory. The parsing
+  # arguments match read_gbif(): simple.txt carries no header row, quoting is
+  # off, and \N is the NULL marker.
   vtr_path <- file.path(output_dir, "gbif.vtr")
-  build_vtr(df, vtr_path, "gbif", version, .gbif_url)
+  build_vtr_streamed(
+    delim_chunk_feed(txt_path,
+                     normalize = function(chunk) {
+                       normalize_gbif(chunk, higher, verbose = FALSE)
+                     },
+                     quote = "", na_strings = "\\N",
+                     col_names = .gbif_col_names, verbose = verbose),
+    vtr_path, "gbif", version, .gbif_url, verbose = verbose
+  )
 
   invisible(vtr_path)
 }
 
 
-#' Resolve higher classification keys to names via self-join on `id`
+#' Build the id -> canonical name lookup the `*_key` columns resolve against
 #'
-#' @param df The full GBIF data.frame.
-#' @param key_col Integer vector of keys to resolve.
+#' @param id Vector of row identifiers.
+#' @param canonical_name Character vector of canonical names.
+#' @return A named character vector of names by id.
+#' @noRd
+gbif_higher_lookup <- function(id, canonical_name) {
+  stats::setNames(canonical_name, as.character(id))
+}
+
+
+#' Resolve higher classification keys to names
+#'
+#' @param higher Named character vector from [gbif_higher_lookup()].
+#' @param key_col Vector of keys to resolve.
 #' @return Character vector of resolved names.
 #' @noRd
-gbif_resolve_higher <- function(df, key_col) {
-  lookup <- stats::setNames(df$canonical_name, as.character(df$id))
-  resolved <- lookup[as.character(key_col)]
-  unname(resolved)
+gbif_resolve_higher <- function(higher, key_col) {
+  unname(higher[as.character(key_col)])
 }
 
 

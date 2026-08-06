@@ -13,6 +13,7 @@ delim_chunk_feed(
   encoding = "UTF-8",
   select = NULL,
   na_strings = c("", "NA"),
+  col_names = NULL,
   verbose = TRUE
 )
 }
@@ -33,6 +34,9 @@ file's own column names) and returning it in the normalized schema.}
 \item{select}{Character vector of columns to read, or \code{NULL} for all.}
 
 \item{na_strings}{Character vector read as \code{NA}.}
+
+\item{col_names}{Character vector naming the columns of a file that carries
+no header row, in file order, or \code{NULL} when the first line is a header.}
 
 \item{verbose}{Logical.}
 }

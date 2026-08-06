@@ -115,12 +115,24 @@ test_that("a synonym pointing at a missing id stays a synonym of itself", {
 })
 
 
-test_that("the store is sorted by genus and carries its indexes", {
+test_that("the store groups each genus into one run and carries its indexes", {
   skip_if_not_installed("withr")
   b <- build_both(make_backbone(), chunk_size = 2L, withr::local_tempdir())
 
-  g <- b$streamed$genus
-  expect_false(is.unsorted(g[!is.na(g)]))
+  # The genus sort exists so a genus filter can prune row groups, which needs
+  # every row of a genus to sit in one contiguous run. It does NOT need the two
+  # builders to agree on the order of the genera themselves: build_vtr() sorts
+  # with order(), which follows the build machine's LC_COLLATE, while the
+  # streamed path sorts inside vectra, which compares bytes. The two disagree
+  # wherever a genus is non-ASCII -- Achmaeops written with the ligature sorts
+  # beside "ae" under a locale and after "o" under byte order -- so runs, not
+  # is.unsorted(), is the invariant to assert.
+  runs <- function(g) {
+    g[is.na(g)] <- "\001NA"
+    length(rle(g)$lengths)
+  }
+  expect_equal(runs(b$streamed$genus), length(unique(b$streamed$genus)))
+  expect_equal(runs(b$streamed$genus), runs(b$direct$genus))
 
   # An index makes a genus filter return the same rows a scan would.
   hit <- vectra::collect(vectra::filter(vectra::tbl(b$streamed_path),

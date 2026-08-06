@@ -19,7 +19,8 @@ build_vtr_streamed(
 \arguments{
 \item{feed}{A function of no arguments returning the next chunk of rows as a
 normalized data.frame (the schema \code{\link[=normalize_backbone]{normalize_backbone()}} produces), or
-\code{NULL} when the source is exhausted.}
+\code{NULL} when the source is exhausted. A zero-row data.frame means the block
+was filtered out entirely, not that the source has ended.}
 
 \item{vtr_path}{Character. Output path for the .vtr file.}
 

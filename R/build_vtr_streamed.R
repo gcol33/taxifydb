@@ -26,6 +26,12 @@
 # The peak is therefore one chunk plus that three-column link projection, not
 # the backbone. It is bounded by the number of identifiers rather than by the
 # table's width, so it does not grow as columns are added to a backbone.
+#
+# A backbone's own reader can be non-row-local too, when it denormalizes a
+# higher classification held as foreign keys. delim_fk_lookup() handles that
+# case the same way: only the referenced ids are ever looked up, so the lookup
+# is the size of the ranks the keys point at rather than of the table, and the
+# normalization becomes row-local once it is in hand.
 
 
 #' Build a backbone .vtr from a stream of normalized chunks
@@ -37,7 +43,8 @@
 #'
 #' @param feed A function of no arguments returning the next chunk of rows as a
 #'   normalized data.frame (the schema [normalize_backbone()] produces), or
-#'   `NULL` when the source is exhausted.
+#'   `NULL` when the source is exhausted. A zero-row data.frame means the block
+#'   was filtered out entirely, not that the source has ended.
 #' @param vtr_path Character. Output path for the .vtr file.
 #' @param backend_name Character. Backend identifier (e.g. `"colxr"`).
 #' @param version Character. Version string.
@@ -68,12 +75,19 @@ build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
 
   n_rows <- 0L
   n_chunks <- 0L
+  n_blocks <- 0L
   link_parts <- list()
   genus_col <- NULL
 
   repeat {
     chunk <- feed()
-    if (is.null(chunk) || nrow(chunk) == 0L) break
+    # Only NULL ends the feed. A block that normalizes to zero rows is one the
+    # source filtered away entirely -- GBIF drops every KINGDOM, PHYLUM, CLASS
+    # and ORDER row, which are contiguous in the file -- and reading that as the
+    # end of the source would truncate the backbone silently.
+    if (is.null(chunk)) break
+    n_blocks <- n_blocks + 1L
+    if (nrow(chunk) == 0L) next
 
     chunk <- precompute_backbone_rowwise(chunk)
     if (is.null(genus_col)) {
@@ -103,8 +117,8 @@ build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
 
   if (n_rows == 0L) stop("`feed` yielded no rows.", call. = FALSE)
   if (verbose) {
-    message(sprintf("Staged %s rows in %d chunks.",
-                    format(n_rows, big.mark = ","), n_chunks))
+    message(sprintf("Staged %s rows from %d blocks.",
+                    format(n_rows, big.mark = ","), n_blocks))
   }
 
   # ---- Resolve synonym chains on the link projection ----
@@ -163,6 +177,14 @@ build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
 
   # arrange() captures its sort columns unevaluated, so the column name is
   # substituted into the call rather than passed as a string.
+  #
+  # This sorts by byte order where build_vtr()'s order() follows the build
+  # machine's LC_COLLATE, so the two builders lay a non-ASCII genus down in a
+  # different place. What the sort is for survives either way: each genus still
+  # occupies one contiguous run, which is what lets a genus filter prune row
+  # groups. Byte order is the more useful of the two here, since it matches the
+  # collation vectra compares with and does not vary with the locale of the
+  # machine that ran the build.
   node <- eval(bquote(vectra::arrange(node, .(as.name(genus_col)))))
 
   dir.create(dirname(vtr_path), recursive = TRUE, showWarnings = FALSE)
@@ -228,6 +250,8 @@ precompute_backbone_rowwise <- function(df) {
 #' @param encoding Character. Passed to `data.table::fread()`.
 #' @param select Character vector of columns to read, or `NULL` for all.
 #' @param na_strings Character vector read as `NA`.
+#' @param col_names Character vector naming the columns of a file that carries
+#'   no header row, in file order, or `NULL` when the first line is a header.
 #' @param verbose Logical.
 #' @return A function of no arguments suitable as the `feed` of
 #'   [build_vtr_streamed()].
@@ -235,26 +259,35 @@ precompute_backbone_rowwise <- function(df) {
 delim_chunk_feed <- function(path, normalize, chunk_rows = 500000L,
                              sep = "\t", quote = "", encoding = "UTF-8",
                              select = NULL, na_strings = c("", "NA"),
-                             verbose = TRUE) {
-  if (!requireNamespace("data.table", quietly = TRUE)) {
-    stop("Package 'data.table' is required to stream a delimited file.",
-         call. = FALSE)
+                             col_names = NULL, verbose = TRUE) {
+  header <- delim_header(path, sep, quote, encoding, col_names)
+  keep <- if (is.null(select)) seq_along(header) else which(header %in% select)
+  if (length(keep) == 0L) {
+    stop("None of `select` matched a column of the file.", call. = FALSE)
   }
-  header <- names(data.table::fread(path, sep = sep, quote = quote,
-                                    nrows = 0L, encoding = encoding,
-                                    showProgress = FALSE))
-  keep <- if (is.null(select)) NULL else intersect(select, header)
-  offset <- 0L
+  keep_names <- header[keep]
+  # A header row is skipped once; a headerless file starts at its first line.
+  head_rows <- if (is.null(col_names)) 1L else 0L
+  # fread() errors rather than returning nothing when `skip` reaches the end of
+  # the file, which a row count that divides evenly by `chunk_rows` walks into.
+  # Knowing the total up front stops the feed on the boundary instead.
+  total <- count_data_lines(path, head_rows)
+  offset <- 0
   done <- FALSE
 
   function() {
     if (done) return(NULL)
-    args <- list(
-      path, sep = sep, quote = quote, skip = offset + 1L, nrows = chunk_rows,
-      col.names = header, na.strings = na_strings, encoding = encoding,
-      colClasses = "character", showProgress = FALSE, header = FALSE
+    remaining <- total - offset
+    if (remaining <= 0) {
+      done <<- TRUE
+      return(NULL)
+    }
+    raw <- data.table::fread(
+      path, sep = sep, quote = quote, skip = offset + head_rows,
+      nrows = min(chunk_rows, remaining), select = keep,
+      na.strings = na_strings, encoding = encoding, colClasses = "character",
+      showProgress = FALSE, header = FALSE
     )
-    raw <- do.call(data.table::fread, args)
     if (nrow(raw) == 0L) {
       done <<- TRUE
       return(NULL)
@@ -265,7 +298,156 @@ delim_chunk_feed <- function(path, normalize, chunk_rows = 500000L,
       message(sprintf("  read %s rows", format(offset, big.mark = ",")))
     }
     raw <- as.data.frame(raw, stringsAsFactors = FALSE)
-    if (!is.null(keep)) raw <- raw[, keep, drop = FALSE]
+    names(raw) <- keep_names
     normalize(raw)
   }
+}
+
+
+#' Count the data lines of a delimited file
+#'
+#' Counts newlines rather than parsed records, which is the same line-equals-
+#' record assumption the chunked read already makes when it skips by row offset.
+#'
+#' @param path Character. Path to the file.
+#' @param head_rows Integer. Header lines to discount.
+#' @return The number of data lines.
+#' @noRd
+count_data_lines <- function(path, head_rows = 0L) {
+  con <- file(path, "rb")
+  on.exit(close(con), add = TRUE)
+  newline <- as.raw(10L)
+  n <- 0
+  last <- newline
+  repeat {
+    block <- readBin(con, "raw", 16777216L)
+    if (length(block) == 0L) break
+    n <- n + sum(block == newline)
+    last <- block[length(block)]
+  }
+  # A final line with no trailing newline still holds a record.
+  if (!identical(last, newline)) n <- n + 1
+  max(0, n - head_rows)
+}
+
+
+#' Column names of a delimited file
+#'
+#' @param path,sep,quote,encoding As in [delim_chunk_feed()].
+#' @param col_names Character vector for a headerless file, or `NULL`.
+#' @return Character vector of column names in file order.
+#' @noRd
+delim_header <- function(path, sep, quote, encoding, col_names) {
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("Package 'data.table' is required to stream a delimited file.",
+         call. = FALSE)
+  }
+  if (!is.null(col_names)) return(col_names)
+  names(data.table::fread(path, sep = sep, quote = quote, nrows = 0L,
+                          encoding = encoding, showProgress = FALSE))
+}
+
+
+#' Build an id -> value lookup for the ids a file's foreign keys reference
+#'
+#' A backbone that denormalizes its higher classification stores foreign keys
+#' rather than names, so normalizing a row needs a name that lives in some other
+#' row. GBIF is the case: kingdom, phylum, class, order and family all arrive as
+#' `*_key` columns pointing at rows that the build then drops.
+#'
+#' The whole id -> name map would be as large as the backbone, but only the ids
+#' actually referenced are ever looked up, and those are the few thousand rows
+#' at the ranks the keys point to. Two scans find them without holding the map:
+#' the first collects the distinct keys, the second keeps the `id`/`value` pair
+#' of each row a key names. What comes back is small enough to sit beside a
+#' chunk, which makes the rest of the normalization row-local.
+#'
+#' The result is exactly the lookup a whole-table self-join would produce; it is
+#' restricted by which ids are referenced, never by an assumption about the rank
+#' a key points at.
+#'
+#' @param path Character. Path to the delimited file.
+#' @param id_col Character. Column holding the row's own identifier.
+#' @param value_col Character. Column whose value the keys resolve to.
+#' @param key_cols Character vector of foreign-key columns.
+#' @param chunk_rows Integer. Rows to read per scan chunk.
+#' @param sep,quote,encoding,na_strings,col_names As in [delim_chunk_feed()].
+#' @param verbose Logical.
+#' @return A named character vector of `value`, named by `id`.
+#' @export
+delim_fk_lookup <- function(path, id_col, value_col, key_cols,
+                            chunk_rows = 1000000L, sep = "\t", quote = "",
+                            encoding = "UTF-8", na_strings = c("", "NA"),
+                            col_names = NULL, verbose = TRUE) {
+  scan_feed <- function(cols) {
+    delim_chunk_feed(path, normalize = identity, chunk_rows = chunk_rows,
+                     sep = sep, quote = quote, encoding = encoding,
+                     select = cols, na_strings = na_strings,
+                     col_names = col_names, verbose = FALSE)
+  }
+
+  if (verbose) message("  scanning for referenced keys...")
+  wanted <- character(0)
+  feed <- scan_feed(key_cols)
+  repeat {
+    chunk <- feed()
+    if (is.null(chunk)) break
+    keys <- unlist(chunk, use.names = FALSE)
+    wanted <- unique(c(wanted, keys[!is.na(keys)]))
+  }
+
+  if (verbose) {
+    message(sprintf("  resolving %s referenced keys...",
+                    format(length(wanted), big.mark = ",")))
+  }
+  ids <- list()
+  vals <- list()
+  n <- 0L
+  feed <- scan_feed(c(id_col, value_col))
+  repeat {
+    chunk <- feed()
+    if (is.null(chunk)) break
+    hit <- chunk[[id_col]] %in% wanted
+    if (!any(hit)) next
+    n <- n + 1L
+    ids[[n]] <- chunk[[id_col]][hit]
+    vals[[n]] <- chunk[[value_col]][hit]
+  }
+
+  lookup <- stats::setNames(unlist(vals, use.names = FALSE),
+                            unlist(ids, use.names = FALSE))
+  if (verbose) {
+    message(sprintf("  resolved %s of %s keys",
+                    format(length(lookup), big.mark = ","),
+                    format(length(wanted), big.mark = ",")))
+  }
+  lookup
+}
+
+
+#' Decompress a gzipped file to a plain file
+#'
+#' A chunked reader seeks by row offset, and every seek into a `.gz` restarts
+#' the decompression, so a gzipped source is expanded once up front instead.
+#'
+#' @param gz_path Character. Path to the `.gz` file.
+#' @param out_path Character. Path to write the decompressed file to.
+#' @param verbose Logical.
+#' @return `out_path`, invisibly.
+#' @export
+gunzip_file <- function(gz_path, out_path, verbose = TRUE) {
+  if (verbose) message(sprintf("Decompressing %s...", basename(gz_path)))
+  con <- gzfile(gz_path, "rb")
+  on.exit(close(con), add = TRUE)
+  out <- file(out_path, "wb")
+  on.exit(close(out), add = TRUE)
+  repeat {
+    block <- readBin(con, "raw", 16777216L)
+    if (length(block) == 0L) break
+    writeBin(block, out)
+  }
+  if (verbose) {
+    message(sprintf("  %.1f MB", file.size(out_path) / 1048576))
+  }
+  invisible(out_path)
 }

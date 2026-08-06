@@ -28,6 +28,7 @@ test_that("gbif_resolve_higher resolves higher-rank keys to names (#24)", {
     stringsAsFactors = FALSE
   )
   keys <- c("1", "3", "4", NA, "999")
-  expect_equal(taxifydb:::gbif_resolve_higher(df, keys),
+  higher <- taxifydb:::gbif_higher_lookup(df$id, df$canonical_name)
+  expect_equal(taxifydb:::gbif_resolve_higher(higher, keys),
                c("Animalia", "Mammalia", "Carnivora", NA, NA))
 })

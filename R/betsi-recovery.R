@@ -125,6 +125,68 @@ gen_spe <- function(binomial) {
 }
 
 
+#' Resolve BETSI six-letter species codes to binomials
+#'
+#' The code-keyed BETSI-derived matrices (INRAE UU2FQT / UCYSLH, Bonfanti 2022)
+#' key traits on a `GEN_SPE` code with no published legend. This decodes each
+#' code against a reference pool of binomials: a code with a single pool species
+#' sharing its [gen_spe()] code resolves directly; a collision is split by body
+#' length when both the code and its candidates carry one; a genus-level `_X`
+#' code, or one with no pool candidate, is left unresolved for the caller to tag
+#' and drop rather than guess (label, never decide). Calibrated on the Bonfanti
+#' 2022 legend, whose scheme is pure first-three + first-three with no
+#' disambiguation.
+#'
+#' The reference pool is supplied by the caller; in practice it is the union of
+#' accepted binomials across taxifydb's built Collembola assets
+#' (`betsi_collembola_body_length`, `ellers_collembola`, `betsi_collembola_traits`,
+#' the monograph and Plazi length sources), with `pool_bl` their body lengths.
+#'
+#' @param codes Character vector of `GEN_SPE` codes.
+#' @param pool Character vector of candidate binomials.
+#' @param code_bl Named numeric mapping code -> estimated body length (mm), or
+#'   `NULL`. Only used to split a `gen_spe()` collision.
+#' @param pool_bl Named numeric mapping binomial -> body length (mm), or `NULL`.
+#' @return A data.frame with one row per input code: `code`, `binomial` (`NA`
+#'   when unresolved) and `method` (why it resolved or did not).
+#' @seealso [gen_spe()]
+#' @export
+resolve_betsi_codes <- function(codes, pool, code_bl = NULL, pool_bl = NULL) {
+  codes <- unique(as.character(codes))
+  pool  <- unique(as.character(pool[!is.na(pool)]))
+  by    <- split(pool, gen_spe(pool))  # gen_spe -> binomials; NA codes dropped
+
+  binomial <- rep(NA_character_, length(codes))
+  method   <- character(length(codes))
+  for (i in seq_along(codes)) {
+    code <- codes[[i]]
+    if (grepl("_X$", code)) {
+      method[[i]] <- "genus-level (_X)"
+      next
+    }
+    cands <- by[[code]]
+    if (length(cands) == 1L) {
+      binomial[[i]] <- cands
+      method[[i]]   <- "unique GEN_SPE"
+    } else if (length(cands) > 1L) {
+      cbl <- if (!is.null(code_bl)) code_bl[[code]] else NULL
+      pbl <- if (!is.null(pool_bl)) unname(pool_bl[cands]) else NULL
+      if (!is.null(cbl) && !is.na(cbl) && !is.null(pbl) && any(!is.na(pbl))) {
+        j <- which.min(abs(pbl - cbl))
+        binomial[[i]] <- cands[[j]]
+        method[[i]]   <- sprintf("body-length split (%d candidates)", length(cands))
+      } else {
+        method[[i]] <- sprintf("ambiguous (%d candidates)", length(cands))
+      }
+    } else {
+      method[[i]] <- "no candidate"
+    }
+  }
+  data.frame(code = codes, binomial = binomial, method = method,
+             stringsAsFactors = FALSE)
+}
+
+
 #' List the BETSI-recovery enrichments
 #'
 #' The per-taxon assets rebuilt from published BETSI-derived matrices. Each is a

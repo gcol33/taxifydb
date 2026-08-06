@@ -21,6 +21,40 @@ test_that("gen_spe builds the 6-letter GEN_SPE code", {
   expect_true(is.na(gen_spe(NA)))
 })
 
+test_that("resolve_betsi_codes decodes GEN_SPE against a reference pool", {
+  pool <- c("Brachystomella parvula", "Ceratophysella denticulata",
+            "Heteromurus nitidus", "Folsomia candida", "Folsomia fimetaria")
+  r <- resolve_betsi_codes(
+    c("BRA_PAR", "CER_DEN", "HET_NIT", "FOL_CAN", "FOL_FIM", "DES_X", "ZZZ_ZZZ"),
+    pool)
+  rr <- stats::setNames(r$binomial, r$code)
+  expect_equal(rr[["BRA_PAR"]], "Brachystomella parvula")
+  expect_equal(rr[["CER_DEN"]], "Ceratophysella denticulata")
+  # decodes to the correct spelling even though Bonfanti's legend carries the
+  # upstream typo "Heretomurus"
+  expect_equal(rr[["HET_NIT"]], "Heteromurus nitidus")
+  expect_equal(rr[["FOL_CAN"]], "Folsomia candida")
+  expect_equal(rr[["FOL_FIM"]], "Folsomia fimetaria")
+  # genus-level and absent codes are left for the caller to drop, not guessed
+  expect_true(is.na(rr[["DES_X"]]))
+  expect_true(is.na(rr[["ZZZ_ZZZ"]]))
+  expect_match(r$method[r$code == "DES_X"], "genus-level")
+  expect_match(r$method[r$code == "ZZZ_ZZZ"], "no candidate")
+})
+
+test_that("resolve_betsi_codes splits a GEN_SPE collision by body length", {
+  pool <- c("Genus alpha", "Genusx alphax")   # both encode GEN_ALP
+  pbl  <- c("Genus alpha" = 2.0, "Genusx alphax" = 5.0)
+  r <- resolve_betsi_codes("GEN_ALP", pool,
+                           code_bl = c(GEN_ALP = 4.8), pool_bl = pbl)
+  expect_equal(r$binomial, "Genusx alphax")
+  expect_match(r$method, "body-length split")
+  # with no body length the collision is left unresolved, never guessed
+  r2 <- resolve_betsi_codes("GEN_ALP", pool)
+  expect_true(is.na(r2$binomial))
+  expect_match(r2$method, "ambiguous")
+})
+
 test_that("the recovery enrichments are registered and vocabulary-consistent", {
   expect_setequal(list_betsi_recovery(),
                   c("betsi_earthworm_traits", "betsi_collembola_traits"))

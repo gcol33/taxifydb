@@ -2786,6 +2786,36 @@
       },
       "license": "CC BY 4.0",
       "source_doi": "10.25829/idiv.1880-15-2860"
+    },
+    "betsi_earthworm_traits": {
+      "latest": "2026.08",
+      "source_version": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/betsi_earthworm_traits.vtr",
+      "nrow": 13,
+      "content_id": "d22f60c8bbe4fe36dc2f88f7a323f078",
+      "source_url": "https://doi.org/10.1016/j.apsoil.2013.10.005",
+      "source_doi": "10.1016/j.apsoil.2013.10.005",
+      "license": "Extracted trait values (facts); BETSI-derived, served for non-commercial scientific reuse (informed-risk, #42)"
+    },
+    "betsi_collembola_traits": {
+      "latest": "2026.08",
+      "source_version": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/betsi_collembola_traits.vtr",
+      "nrow": 34,
+      "content_id": "e627ec1a6a745a13b8c4078d14d68aa0",
+      "source_url": "https://doi.org/10.1002/eap.70034",
+      "source_doi": "10.1002/eap.70034",
+      "license": "Extracted trait values (facts); mixed provenance (see meta.json), served for non-commercial scientific reuse (informed-risk, #42)"
+    },
+    "inrae_collembola_traits": {
+      "latest": "2026.08",
+      "source_version": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/inrae_collembola_traits.vtr",
+      "nrow": 160,
+      "content_id": "82d79d8e8bb0da95c216473c09ee4b1f",
+      "source_url": "https://doi.org/10.15454/UU2FQT ; https://doi.org/10.15454/UCYSLH",
+      "source_doi": "10.15454/UU2FQT",
+      "license": "Extracted trait values (facts); BETSI-derived, served for non-commercial scientific reuse (informed-risk, #42)"
     }
   }
 }

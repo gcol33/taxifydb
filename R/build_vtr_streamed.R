@@ -212,33 +212,49 @@ precompute_backbone_rowwise <- function(df) {
 #' Reads a header once, then hands back successive blocks of rows, so a file
 #' larger than memory can be normalized and staged block by block.
 #'
+#' `quote` and `encoding` must be set to whatever the backbone's whole-file
+#' reader uses. They decide how the text is parsed, not just how fast it is
+#' read: WoRMS ships its TSV with every field wrapped in double quotes, so
+#' reading it with quoting disabled leaves the quote characters inside the
+#' names and breaks every downstream join, while a source carrying genuine
+#' embedded quotes in informal names needs quoting disabled to keep them.
+#'
 #' @param path Character. Path to the delimited file.
 #' @param normalize A function taking one raw chunk (a data.frame with the
 #'   file's own column names) and returning it in the normalized schema.
 #' @param chunk_rows Integer. Rows to read per chunk.
 #' @param sep Character. Field separator.
+#' @param quote Character. Quoting character, or `""` to disable quoting.
+#' @param encoding Character. Passed to `data.table::fread()`.
+#' @param select Character vector of columns to read, or `NULL` for all.
+#' @param na_strings Character vector read as `NA`.
 #' @param verbose Logical.
 #' @return A function of no arguments suitable as the `feed` of
 #'   [build_vtr_streamed()].
 #' @export
 delim_chunk_feed <- function(path, normalize, chunk_rows = 500000L,
-                             sep = "\t", verbose = TRUE) {
+                             sep = "\t", quote = "", encoding = "UTF-8",
+                             select = NULL, na_strings = c("", "NA"),
+                             verbose = TRUE) {
   if (!requireNamespace("data.table", quietly = TRUE)) {
     stop("Package 'data.table' is required to stream a delimited file.",
          call. = FALSE)
   }
-  header <- names(data.table::fread(path, sep = sep, quote = "", nrows = 0L,
+  header <- names(data.table::fread(path, sep = sep, quote = quote,
+                                    nrows = 0L, encoding = encoding,
                                     showProgress = FALSE))
+  keep <- if (is.null(select)) NULL else intersect(select, header)
   offset <- 0L
   done <- FALSE
 
   function() {
     if (done) return(NULL)
-    raw <- data.table::fread(
-      path, sep = sep, quote = "", skip = offset + 1L, nrows = chunk_rows,
-      col.names = header, na.strings = c("", "NA"), encoding = "UTF-8",
+    args <- list(
+      path, sep = sep, quote = quote, skip = offset + 1L, nrows = chunk_rows,
+      col.names = header, na.strings = na_strings, encoding = encoding,
       colClasses = "character", showProgress = FALSE, header = FALSE
     )
+    raw <- do.call(data.table::fread, args)
     if (nrow(raw) == 0L) {
       done <<- TRUE
       return(NULL)
@@ -248,6 +264,8 @@ delim_chunk_feed <- function(path, normalize, chunk_rows = 500000L,
     if (verbose) {
       message(sprintf("  read %s rows", format(offset, big.mark = ",")))
     }
-    normalize(as.data.frame(raw, stringsAsFactors = FALSE))
+    raw <- as.data.frame(raw, stringsAsFactors = FALSE)
+    if (!is.null(keep)) raw <- raw[, keep, drop = FALSE]
+    normalize(raw)
   }
 }

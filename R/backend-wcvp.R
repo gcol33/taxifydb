@@ -94,7 +94,21 @@ read_wcvp <- function(names_path, verbose = TRUE) {
     df$accepted_plant_name_id <- as.character(df$accepted_plant_name_id)
   }
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
+  normalize_wcvp(df, verbose = verbose)
+}
 
+
+#' Normalize one block of WCVP rows to the unified schema
+#'
+#' Split out of [read_wcvp()] so the streaming build can apply it to a chunk at
+#' a time. Acceptance is read from a comparison of two columns of the same row,
+#' so nothing here depends on rows outside the block.
+#'
+#' @param df A data.frame of raw WCVP rows.
+#' @param verbose Logical.
+#' @return A normalized data.frame ready for [precompute_backbone()].
+#' @export
+normalize_wcvp <- function(df, verbose = TRUE) {
   # Acceptance from the accepted_plant_name_id link: a name pointing at another
   # name is a synonym (of any WCVP flavour); a self-pointing or unplaced name is
   # its own accepted concept.
@@ -145,13 +159,21 @@ build_wcvp <- function(output_dir = "output/wcvp", version = NULL,
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
   names_path <- download_wcvp(dest = tmp, verbose = verbose)
-  df <- read_wcvp(names_path, verbose = verbose)
 
-  if (verbose) message("Precomputing keys and embedding synonyms...")
-  df <- precompute_backbone(df)
-
+  # Staged a block at a time rather than assembled in memory. The parsing
+  # arguments match read_wcvp() exactly: quote = "" keeps the genuine embedded
+  # double-quotes in informal names literal, since Kew ships the pipe-delimited
+  # file without field-wrapping quotes.
   vtr_path <- file.path(output_dir, "wcvp.vtr")
-  build_vtr(df, vtr_path, "wcvp", version, .wcvp_url)
+  build_vtr_streamed(
+    delim_chunk_feed(names_path,
+                     normalize = function(chunk) {
+                       normalize_wcvp(chunk, verbose = FALSE)
+                     },
+                     sep = "|", quote = "", encoding = "UTF-8",
+                     select = .wcvp_read_cols, verbose = verbose),
+    vtr_path, "wcvp", version, .wcvp_url, verbose = verbose
+  )
 
   invisible(vtr_path)
 }

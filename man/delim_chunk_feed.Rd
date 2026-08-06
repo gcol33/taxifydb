@@ -9,6 +9,10 @@ delim_chunk_feed(
   normalize,
   chunk_rows = 500000L,
   sep = "\\t",
+  quote = "",
+  encoding = "UTF-8",
+  select = NULL,
+  na_strings = c("", "NA"),
   verbose = TRUE
 )
 }
@@ -22,6 +26,14 @@ file's own column names) and returning it in the normalized schema.}
 
 \item{sep}{Character. Field separator.}
 
+\item{quote}{Character. Quoting character, or \code{""} to disable quoting.}
+
+\item{encoding}{Character. Passed to \code{data.table::fread()}.}
+
+\item{select}{Character vector of columns to read, or \code{NULL} for all.}
+
+\item{na_strings}{Character vector read as \code{NA}.}
+
 \item{verbose}{Logical.}
 }
 \value{
@@ -31,4 +43,12 @@ A function of no arguments suitable as the \code{feed} of
 \description{
 Reads a header once, then hands back successive blocks of rows, so a file
 larger than memory can be normalized and staged block by block.
+}
+\details{
+\code{quote} and \code{encoding} must be set to whatever the backbone's whole-file
+reader uses. They decide how the text is parsed, not just how fast it is
+read: WoRMS ships its TSV with every field wrapped in double quotes, so
+reading it with quoting disabled leaves the quote characters inside the
+names and breaks every downstream join, while a source carrying genuine
+embedded quotes in informal names needs quoting disabled to keep them.
 }

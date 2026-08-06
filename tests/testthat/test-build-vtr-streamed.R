@@ -147,3 +147,76 @@ test_that("an empty feed is an error rather than an empty store", {
     "yielded no rows"
   )
 })
+
+
+# The parsing arguments a chunk feed uses have to match the whole-file reader
+# it replaces. WoRMS ships every TSV field wrapped in double quotes, and
+# reading that with quoting disabled leaves the quote characters inside the
+# names, which is what broke every marine enrichment join before worms-2026.07
+# (taxifydb#2). Other sources carry genuine embedded quotes in informal names
+# and need quoting off. The feed must be able to express both.
+
+test_that("a chunk feed honours the quoting its source needs", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "quoted.tsv")
+  writeLines(c("taxonID\tscientificName",
+               "\"1\"\t\"Aglaophamus malmgreni\"",
+               "\"2\"\t\"Gyrodactylus barbatuli\""), path)
+
+  seen <- NULL
+  feed <- delim_chunk_feed(path, normalize = function(ch) { seen <<- ch; ch },
+                           quote = "\"", verbose = FALSE)
+  feed()
+  expect_equal(seen$scientificName, c("Aglaophamus malmgreni",
+                                      "Gyrodactylus barbatuli"))
+  expect_false(any(grepl('"', seen$scientificName, fixed = TRUE)))
+})
+
+
+test_that("a chunk feed can keep genuine embedded quotes", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "embedded.tsv")
+  writeLines(c("taxonID\tscientificName",
+               "1\tGyrodactylus sp. \"A\""), path)
+
+  seen <- NULL
+  feed <- delim_chunk_feed(path, normalize = function(ch) { seen <<- ch; ch },
+                           quote = "", verbose = FALSE)
+  feed()
+  expect_equal(seen$scientificName, 'Gyrodactylus sp. "A"')
+})
+
+
+test_that("a chunk feed reads only the selected columns", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "wide.tsv")
+  writeLines(c("a\tb\tc", "1\t2\t3", "4\t5\t6"), path)
+
+  seen <- NULL
+  feed <- delim_chunk_feed(path, normalize = function(ch) { seen <<- ch; ch },
+                           select = c("a", "c"), verbose = FALSE)
+  feed()
+  expect_equal(names(seen), c("a", "c"))
+  expect_equal(seen$c, c("3", "6"))
+})
+
+
+test_that("a chunk feed splits a file into the expected blocks", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "rows.tsv")
+  writeLines(c("a", as.character(1:10)), path)
+
+  got <- c()
+  feed <- delim_chunk_feed(path, normalize = identity, chunk_rows = 4L,
+                           verbose = FALSE)
+  repeat {
+    ch <- feed()
+    if (is.null(ch)) break
+    got <- c(got, ch$a)
+  }
+  expect_equal(got, as.character(1:10))
+})

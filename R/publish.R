@@ -195,6 +195,35 @@ count_vtr_rows <- function(vtr_path) {
 }
 
 
+#' Validate a provenance URL before it reaches the manifest
+#'
+#' `source_url` is the link a reader follows from a manifest entry back to the
+#' original data, so a value with no resolvable host ships a dead link wearing
+#' the look of real provenance. Every reachable host carries a dot inside it,
+#' which is what separates a source from a stand-in. A field holding several
+#' sources separated by `;` is checked piece by piece, and a value that is not
+#' a URL at all (the register's `derived from: ...`) is left alone.
+#'
+#' @param url Character or NULL. The candidate `source_url`.
+#' @param what Character. Entry name, used in the error message.
+#' @return `url`, unchanged.
+#' @noRd
+check_source_url <- function(url, what) {
+  if (is.null(url) || !nzchar(url)) return(url)
+
+  parts <- trimws(strsplit(url, ";", fixed = TRUE)[[1L]])
+  urls  <- parts[grepl("^https?://", parts)]
+  hosts <- sub("[/?#].*$", "", sub("^https?://", "", urls))
+  bad   <- urls[!grepl(".\\..", hosts)]
+
+  if (length(bad) > 0L) {
+    stop(sprintf("%s: source_url has no resolvable host: %s",
+                 what, paste(bad, collapse = ", ")), call. = FALSE)
+  }
+  url
+}
+
+
 #' Update manifest.json after a successful backbone build
 #'
 #' @param manifest_path Character. Path to manifest.json.
@@ -264,7 +293,7 @@ update_manifest <- function(manifest_path, backend_name, version,
     }
   }
   if (!is.null(source_url) && nzchar(source_url)) {
-    entry$source_url <- source_url
+    entry$source_url <- check_source_url(source_url, backend_name)
   }
 
   if (!is.null(delta_path) && file.exists(delta_path)) {
@@ -379,7 +408,9 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # -- the enrichment analogue of what update_manifest() records for backbones.
   if (!is.null(meta$content_id)) entry$content_id <- meta$content_id
 
-  if (!is.null(meta$source_url)) entry$source_url <- meta$source_url
+  if (!is.null(meta$source_url)) {
+    entry$source_url <- check_source_url(meta$source_url, name)
+  }
   if (!is.null(meta$source_doi)) entry$source_doi <- meta$source_doi
   if (!is.null(meta$license))    entry$license    <- meta$license
   if (!is.null(meta$group_col))  entry$group_col  <- meta$group_col

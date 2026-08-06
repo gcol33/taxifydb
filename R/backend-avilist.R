@@ -111,18 +111,15 @@ read_avilist <- function(xlsx_path, verbose = TRUE) {
   auth   <- trimws(as.character(d$Authority))
   auth[!nzchar(auth)] <- NA_character_
 
-  tok    <- strsplit(name, "[[:space:]]+")
-  ntok   <- lengths(tok)
-  tok1   <- vapply(tok, function(p) p[[1L]], character(1L))
-  tok2   <- vapply(tok, function(p) if (length(p) >= 2L) p[[2L]] else NA_character_, character(1L))
-  tok3   <- vapply(tok, function(p) if (length(p) >= 3L) p[[3L]] else NA_character_, character(1L))
+  parts <- split_scientific_name(name)
 
-  # Genus is the name itself on a genus row and the first token below it; the
+  # Genus is the name itself on a genus row and the first word below it; the
   # order and family rows have no genus.
+  below_genus <- rank %in% c("species", "subspecies")
   genus <- ifelse(rank == "genus", name,
-                  ifelse(rank %in% c("species", "subspecies"), tok1, NA_character_))
-  epithet <- ifelse(rank %in% c("species", "subspecies"), tok2, NA_character_)
-  infra   <- ifelse(rank == "subspecies" & ntok >= 3L, tok3, NA_character_)
+                  ifelse(below_genus, parts$genus, NA_character_))
+  epithet <- ifelse(below_genus, parts$specific, NA_character_)
+  infra   <- ifelse(rank == "subspecies", parts$infraspecific, NA_character_)
 
   extinct <- trimws(as.character(d$Extinct_or_possibly_extinct))
   extinct[!nzchar(extinct) | extinct == "EXTINCTION STATUS"] <- NA_character_
@@ -162,7 +159,7 @@ read_avilist <- function(xlsx_path, verbose = TRUE) {
                     format(sum(cand), big.mark = ",")))
   }
 
-  syn_tok <- strsplit(low[usable], "[[:space:]]+")
+  syn_parts <- split_scientific_name(low[usable])
   synonyms <- data.frame(
     taxon_id               = paste0("avilist_syn_", seq_id[usable]),
     canonical_name         = low[usable],
@@ -170,8 +167,8 @@ read_avilist <- function(xlsx_path, verbose = TRUE) {
     taxonomic_status       = "SYNONYM",
     accepted_name_usage_id = seq_id[usable],
     family                 = family[usable],
-    genus                  = vapply(syn_tok, function(p) p[[1L]], character(1L)),
-    specific_epithet       = vapply(syn_tok, function(p) p[[2L]], character(1L)),
+    genus                  = syn_parts$genus,
+    specific_epithet       = syn_parts$specific,
     authorship             = auth[usable],
     infraspecific_epithet  = NA_character_,
     order                  = order_[usable],

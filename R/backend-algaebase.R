@@ -302,7 +302,7 @@ algaebase_normalize <- function(df, verbose = TRUE) {
                      "infraspecific name", "infrasubspecific name")
   no_genus <- is.na(genus) & rank_lower %in% species_ranks
   if (any(no_genus)) {
-    genus[no_genus] <- sub(" .*", "", df$canonical_name[no_genus])
+    genus[no_genus] <- split_scientific_name(df$canonical_name[no_genus])$genus
   }
 
   data.frame(

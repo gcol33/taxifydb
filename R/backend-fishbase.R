@@ -42,8 +42,7 @@
     if (col %in% names(df)) as.character(df[[col]]) else rep(default, nrow(df))
   }
 
-  epithet <- sub("^\\S+\\s+", "", tx$Species)
-  epithet[epithet == tx$Species] <- NA_character_
+  epithet <- split_scientific_name(tx$Species, tx$Genus)$specific
 
   acc <- data.frame(
     taxon_id               = as.character(tx$SpecCode),
@@ -77,6 +76,7 @@
   syn <- syn[nword >= 2L, , drop = FALSE]
 
   ai <- match(syn$SpecCode, tx$SpecCode)
+  syn_parts <- split_scientific_name(syn$synonym)
   syndf <- data.frame(
     taxon_id               = paste0(server, "-syn-", syn$SynCode),
     canonical_name         = as.character(syn$synonym),
@@ -84,8 +84,8 @@
     taxonomic_status       = "SYNONYM",
     accepted_name_usage_id = as.character(syn$SpecCode),
     family                 = acc$family[ai],
-    genus                  = sub("\\s.*$", "", syn$synonym),
-    specific_epithet       = sub("^\\S+\\s+", "", syn$synonym),
+    genus                  = syn_parts$genus,
+    specific_epithet       = syn_parts$specific,
     authorship             = NA_character_,
     infraspecific_epithet  = NA_character_,
     kingdom                = acc$kingdom[ai],

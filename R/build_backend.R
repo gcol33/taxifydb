@@ -11,6 +11,7 @@
   worms     = function(...) build_worms(...),
   wfo       = function(...) build_wfo(...),
   col       = function(...) build_col(...),
+  colxr     = function(...) build_colxr(...),
   gbif      = function(...) build_gbif(...),
   euromed   = function(...) build_euromed(...),
   fungorum  = function(...) build_fungorum(...),

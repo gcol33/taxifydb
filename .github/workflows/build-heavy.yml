@@ -4,6 +4,11 @@ on:
   schedule:
     # 1st of January and July at 04:00 UTC (after light builds)
     - cron: '0 4 1 1,7 *'
+    # COL XR alone, on the 20th of each month. The Extended Release is
+    # published monthly against the Base Release's annual cycle, so building it
+    # only twice a year would leave it as stale as the sources it exists to
+    # improve on. The 20th clears the mid-month COL release date.
+    - cron: '0 4 20 * *'
   workflow_dispatch:
     inputs:
       backend:
@@ -15,6 +20,7 @@ on:
           - all
           - wfo
           - col
+          - colxr
           - gbif
           - euromed
           - fungorum
@@ -33,7 +39,12 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["wfo", "col", "gbif", "euromed", "fungorum", "algaebase", "wcvp", "lcvp"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'col')) }}
+        backend: >-
+          ${{ github.event.schedule == '0 4 20 * *'
+              && fromJSON('["colxr"]')
+              || (github.event.inputs.backend == 'all'
+                  && fromJSON('["wfo", "col", "colxr", "gbif", "euromed", "fungorum", "algaebase", "wcvp", "lcvp"]')
+                  || fromJSON(format('["{0}"]', github.event.inputs.backend || 'col'))) }}
 
     steps:
       - name: Checkout

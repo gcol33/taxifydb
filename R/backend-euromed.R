@@ -184,7 +184,7 @@ read_euromed <- function(jsonl_path, nodes_path, verbose = TRUE) {
       taxon_rank             = pull("rank"),
       taxonomic_status       = "SYNONYM",
       accepted_name_usage_id = rep(recs$uuid[has], n_syn[has]),
-      genus                  = sub(" .*", "", syn_name),
+      genus                  = split_scientific_name(syn_name)$genus,
       stringsAsFactors       = FALSE
     )
     all_rows <- rbind(acc, syn)

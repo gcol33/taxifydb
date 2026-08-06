@@ -29,6 +29,7 @@
     },
     "gbif": {
       "latest": "2026.07",
+      "source_date": "2023-08-28",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.07/gbif.vtr",
       "full_size": 1865027233,
       "full_sha256": "15ef1362a3216e04562209173db740b6ca9b27b0d91c3d64bce9377f4c90a1cb",

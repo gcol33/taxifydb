@@ -267,9 +267,9 @@ test_that("resolve_genus_classification() returns empty_genus_df() schema on emp
 
 # ---- register_backbones() ----
 
-test_that("register_backbones() lists the fixed 18-backend set", {
+test_that("register_backbones() lists the fixed 19-backend set", {
   expect_setequal(register_backbones(), c(
-    "wfo", "col", "gbif", "itis", "ncbi", "ott", "worms", "euromed",
+    "wfo", "col", "colxr", "gbif", "itis", "ncbi", "ott", "worms", "euromed",
     "fishbase", "sealifebase", "reptiledb", "lcvp", "wcvp",
     "mdd", "avilist", "lpsn", "fungorum", "algaebase"
   ))

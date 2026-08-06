@@ -128,3 +128,72 @@ resolve_hierarchy <- function(df, target_ranks = c("family", "genus"),
 
   df
 }
+
+
+#' Split a scientific name into genus and epithets
+#'
+#' Several sources publish a name without the parsed parts the unified schema
+#' carries, so the genus, specific epithet and infraspecific epithet are taken
+#' from the name itself.
+#'
+#' When `genus` is supplied and the name begins with it, the split is anchored
+#' there; otherwise the first word of the name is taken as the genus. Anchoring
+#' on a known genus rather than on a rank vocabulary means a rank spelling this
+#' function has never seen still resolves, and it keeps a two-word genus from
+#' being read as a binomial.
+#'
+#' The infraspecific epithet is the last word following the specific epithet,
+#' so a name carrying a rank marker (`Poa annua subsp. exilis`) and a bare
+#' trinomial (`Larus fuscus graellsii`) both resolve to the epithet itself. A
+#' free-standing hybrid multiplication sign is dropped rather than read as an
+#' epithet.
+#'
+#' The caller decides which rows to apply this to: a name above genus rank
+#' still returns its first word as `genus`, so a source that stores family and
+#' order rows in the same table gates on rank itself.
+#'
+#' @param name Character vector of scientific names.
+#' @param genus Character vector of known genus names (same length as `name`),
+#'   or `NULL` to take the genus from the name.
+#' @return A list of three character vectors: `genus`, `specific` and
+#'   `infraspecific`, each the length of `name`. Absent parts are `NA`.
+#' @export
+#' @examples
+#' split_scientific_name("Poa annua subsp. exilis")
+#' split_scientific_name("Larus fuscus graellsii")
+#' split_scientific_name("Quercus", genus = "Quercus")
+split_scientific_name <- function(name, genus = NULL) {
+  n <- gsub("\\s+", " ", trimws(name))
+  n[!is.na(n) & !nzchar(n)] <- NA_character_
+
+  first <- ifelse(is.na(n), NA_character_, sub(" .*$", "", n))
+
+  if (is.null(genus)) {
+    g <- first
+  } else {
+    g <- trimws(genus)
+    g[!is.na(g) & !nzchar(g)] <- NA_character_
+    # A supplied genus is only usable as the anchor when the name actually
+    # starts with it; otherwise the name leads and the first word wins.
+    usable <- !is.na(g) & !is.na(n) & (n == g | startsWith(n, paste0(g, " ")))
+    g <- ifelse(usable, g, first)
+  }
+
+  rest <- ifelse(is.na(g) | is.na(n) | n == g, NA_character_,
+                 substring(n, nchar(g) + 2L))
+
+  rest <- gsub("(^| )\u00d7(?= )", "", rest, perl = TRUE)
+  rest <- trimws(gsub("\\s+", " ", rest))
+  rest[!is.na(rest) & !nzchar(rest)] <- NA_character_
+
+  specific <- ifelse(is.na(rest), NA_character_, sub(" .*$", "", rest))
+
+  # Counting spaces is the cheap vectorized way to ask whether anything follows
+  # the specific epithet.
+  extra <- ifelse(is.na(rest), 0L,
+                  nchar(rest) - nchar(gsub(" ", "", rest, fixed = TRUE)))
+  infraspecific <- ifelse(!is.na(rest) & extra >= 1L,
+                          sub("^.* ", "", rest), NA_character_)
+
+  list(genus = g, specific = specific, infraspecific = infraspecific)
+}

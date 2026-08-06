@@ -54,11 +54,13 @@ extract_wfo_genera <- function(bb_path) {
 }
 
 
-#' Extract genus rows from COL backbone
+#' Extract genus rows from a COL backbone
 #'
-#' COL stores kingdom/phylum/class/order as direct columns.
+#' COL stores kingdom/phylum/class/order as direct columns. Serves both the
+#' Base Release and the Extended Release, whose `.vtr` carries the same
+#' columns.
 #'
-#' @param bb_path Character. Path to COL .vtr file.
+#' @param bb_path Character. Path to a COL .vtr file.
 #' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
 #' @noRd
 extract_col_genera <- function(bb_path) {
@@ -459,6 +461,7 @@ extract_algaebase_genera <- function(bb_path) {
 .register_extractors <- list(
   wfo         = extract_wfo_genera,
   col         = extract_col_genera,
+  colxr       = extract_col_genera,
   gbif        = extract_gbif_genera,
   itis        = extract_itis_genera,
   ncbi        = extract_ncbi_genera,
@@ -497,7 +500,7 @@ extract_algaebase_genera <- function(bb_path) {
 #' registered extractor be dropped in silence.
 #' @noRd
 .register_priority <- function() {
-  c("worms", "col", "wcvp", "reptiledb", "mdd", "avilist", "lpsn",
+  c("worms", "colxr", "col", "wcvp", "reptiledb", "mdd", "avilist", "lpsn",
     "gbif", "euromed", "lcvp", "itis", "ncbi", "ott", "wfo",
     "fishbase", "sealifebase", "fungorum", "algaebase")
 }

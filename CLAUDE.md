@@ -85,7 +85,7 @@ R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices 
 
 ## Enrichments
 
-112 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
+113 enrichments registered in `.enrichment_build_registry` (includes `fishbase`,
 `sealifebase`, `groot`, `marine_distribution`, and the BETSI-recovery assets).
 Ecoflora and FloraWeb are built into `.vtr` files
 from frozen per-species scrape snapshots. Only 1 on-demand source remains
@@ -166,10 +166,22 @@ flattened onto rows it does not describe. The frozen matrices live in
 recovery asset is a normal `.enrichment_build_registry` entry (with a
 `provenance_fn`) built through the shared pipeline. `build_betsi_recovery()` /
 `list_betsi_recovery()` scope the recovery subset; `gen_spe()` builds the
-6-letter `GEN_SPE` code the code-keyed matrices key on. Assets: `betsi_earthworm_traits`
-(Pelosi 2014, 11 earthworm species x 7 fuzzy traits, gap G2) and
-`betsi_collembola_traits` (Lu 2025, 26 Collembola species, hard-value; 6 BETSI-derived
-traits + 3 the study measured itself, gap G1 -- pigment/ocelli/furca).
+6-letter `GEN_SPE` code the code-keyed matrices key on; `resolve_betsi_codes()`
+decodes the legend-less INRAE codes against a Collembola reference pool, with
+`inrae_genus_dict()` supplying the bespoke genus abbreviations and the unresolved
+dropped, never guessed. Assets: `betsi_earthworm_traits`
+(Pelosi 2014, 11 earthworm species x 7 fuzzy traits, gap G2), `betsi_collembola_traits`
+(Lu 2025, 26 Collembola species, hard-value; 6 BETSI-derived traits + 3 the study
+measured itself, gap G1 -- pigment/ocelli/furca), and `inrae_collembola_traits`
+(the two Data INRAE deposits UU2FQT/UCYSLH decoded and merged, 135 Collembola
+species x 7 shared fuzzy traits -- ocelli, furca, post-antennal organ,
+pigmentation, body shape, scales, reproduction, gap G1). The INRAE source is
+`sparse`: it records different traits for different species (post-antennal organ
+for a minority), so the fuzzy parser keeps a wholly-absent trait block as NA but
+rejects a partial one, rather than dropping the species to force a complete
+rectangle. Body length (incompatible bin schemes across the two deposits, covered
+by four dedicated length assets), trichobothria (one deposit only) and
+ecomorphosis (its own asset) are not carried.
 
 `marine_distribution` is the marine analogue of the WCVP range table (#21): a
 `canonical_name` + `region_code` + `native_status` asset so taxify's

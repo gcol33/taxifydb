@@ -125,58 +125,94 @@ gen_spe <- function(binomial) {
 }
 
 
-#' Resolve BETSI six-letter species codes to binomials
+#' Resolve BETSI species codes to binomials
 #'
 #' The code-keyed BETSI-derived matrices (INRAE UU2FQT / UCYSLH, Bonfanti 2022)
-#' key traits on a `GEN_SPE` code with no published legend. This decodes each
-#' code against a reference pool of binomials: a code with a single pool species
-#' sharing its [gen_spe()] code resolves directly; a collision is split by body
-#' length when both the code and its candidates carry one; a genus-level `_X`
-#' code, or one with no pool candidate, is left unresolved for the caller to tag
-#' and drop rather than guess (label, never decide). Calibrated on the Bonfanti
-#' 2022 legend, whose scheme is pure first-three + first-three with no
-#' disambiguation.
+#' key traits on a `TOKEN_SPP` code with no published legend, where `SPP` is the
+#' first three letters of the specific epithet and `TOKEN` abbreviates the genus.
+#' This decodes each code against a reference pool of binomials: the token
+#' selects one or more pool genera and the epithet prefix selects the species
+#' within them. A single pool species resolves directly; a collision is split by
+#' body length when both the code and its candidates carry one; a genus-level
+#' `_X` code, an unmapped token, or a code with no pool candidate is left
+#' unresolved for the caller to tag and drop rather than guess (label, never
+#' decide).
+#'
+#' The token is resolved two ways. Bonfanti 2022 uses the plain first three
+#' letters of the genus (`ISO_PAL` for *Isotomurus palustris*), and with
+#' `genus_dict = NULL` a three-letter token matches every pool genus sharing
+#' those three letters. INRAE instead disambiguates colliding genera with bespoke
+#' abbreviations -- the `Iso*` genera split into `ISO` = *Isotomiella*, `ISA` =
+#' *Isotoma*, `ISU` = *Isotomurus*, `ISODES` = *Isotomodes* -- so pass that
+#' mapping as `genus_dict` and a listed token resolves to exactly its genus, with
+#' the three-letter rule kept only as the fallback for unlisted three-letter
+#' tokens. A token that is neither listed nor a plain three-letter prefix is left
+#' unresolved rather than forced onto a near-match; INRAE's verified mapping is
+#' shipped in `inst/extdata/betsi/inrae_genus_abbr.csv`.
 #'
 #' The reference pool is supplied by the caller; in practice it is the union of
 #' accepted binomials across taxifydb's built Collembola assets
 #' (`betsi_collembola_body_length`, `ellers_collembola`, `betsi_collembola_traits`,
 #' the monograph and Plazi length sources), with `pool_bl` their body lengths.
 #'
-#' @param codes Character vector of `GEN_SPE` codes.
+#' @param codes Character vector of `TOKEN_SPP` codes.
 #' @param pool Character vector of candidate binomials.
 #' @param code_bl Named numeric mapping code -> estimated body length (mm), or
-#'   `NULL`. Only used to split a `gen_spe()` collision.
+#'   `NULL`. Only used to split a collision.
 #' @param pool_bl Named numeric mapping binomial -> body length (mm), or `NULL`.
+#' @param genus_dict Named character vector (or list) mapping a genus token to
+#'   its genus name(s), or `NULL` for the plain first-three-letters rule.
 #' @return A data.frame with one row per input code: `code`, `binomial` (`NA`
 #'   when unresolved) and `method` (why it resolved or did not).
 #' @seealso [gen_spe()]
 #' @export
-resolve_betsi_codes <- function(codes, pool, code_bl = NULL, pool_bl = NULL) {
+resolve_betsi_codes <- function(codes, pool, code_bl = NULL, pool_bl = NULL,
+                                genus_dict = NULL) {
   codes <- unique(as.character(codes))
   pool  <- unique(as.character(pool[!is.na(pool)]))
-  by    <- split(pool, gen_spe(pool))  # gen_spe -> binomials; NA codes dropped
+
+  # decompose the pool into genus + first-three-of-epithet once
+  pat  <- "^([A-Z][a-z]+)\\s+([a-z][a-z-]*).*$"
+  keep <- grepl(pat, pool)
+  pool    <- pool[keep]
+  pgenus  <- sub(pat, "\\1", pool)
+  pepi3   <- toupper(substr(gsub("-", "", sub(pat, "\\2", pool)), 1L, 3L))
+  pfirst3 <- toupper(substr(pgenus, 1L, 3L))
 
   binomial <- rep(NA_character_, length(codes))
   method   <- character(length(codes))
   for (i in seq_along(codes)) {
     code <- codes[[i]]
-    if (grepl("_X$", code)) {
-      method[[i]] <- "genus-level (_X)"
+    if (grepl("_X$", code)) { method[[i]] <- "genus-level (_X)"; next }
+    parts <- strsplit(code, "_", fixed = TRUE)[[1]]
+    if (length(parts) != 2L) { method[[i]] <- "malformed code"; next }
+    token <- parts[[1]]
+    spp   <- toupper(substr(gsub("[^A-Za-z]", "", parts[[2]]), 1L, 3L))
+
+    if (!is.null(genus_dict) && token %in% names(genus_dict)) {
+      sel <- pgenus %in% genus_dict[[token]]
+      via <- "dict"
+    } else if (grepl("^[A-Z]{3}$", token)) {
+      sel <- pfirst3 == token
+      via <- "first3"
+    } else {
+      method[[i]] <- sprintf("unmapped token (%s)", token)
       next
     }
-    cands <- by[[code]]
+    cands <- pool[sel & pepi3 == spp]
+
     if (length(cands) == 1L) {
       binomial[[i]] <- cands
-      method[[i]]   <- "unique GEN_SPE"
+      method[[i]]   <- sprintf("unique (%s)", via)
     } else if (length(cands) > 1L) {
       cbl <- if (!is.null(code_bl)) code_bl[[code]] else NULL
       pbl <- if (!is.null(pool_bl)) unname(pool_bl[cands]) else NULL
       if (!is.null(cbl) && !is.na(cbl) && !is.null(pbl) && any(!is.na(pbl))) {
         j <- which.min(abs(pbl - cbl))
         binomial[[i]] <- cands[[j]]
-        method[[i]]   <- sprintf("body-length split (%d candidates)", length(cands))
+        method[[i]]   <- sprintf("body-length split (%s, %d candidates)", via, length(cands))
       } else {
-        method[[i]] <- sprintf("ambiguous (%d candidates)", length(cands))
+        method[[i]] <- sprintf("ambiguous (%s, %d candidates)", via, length(cands))
       }
     } else {
       method[[i]] <- "no candidate"
@@ -184,6 +220,25 @@ resolve_betsi_codes <- function(codes, pool, code_bl = NULL, pool_bl = NULL) {
   }
   data.frame(code = codes, binomial = binomial, method = method,
              stringsAsFactors = FALSE)
+}
+
+
+#' INRAE genus-abbreviation dictionary
+#'
+#' The verified `TOKEN -> genus` mapping for the bespoke genus abbreviations in
+#' the INRAE UU2FQT / UCYSLH code-keyed matrices, read from
+#' `inst/extdata/betsi/inrae_genus_abbr.csv`. Each token is confirmed by a named
+#' Collembola species in COLTRAIT (Salmon et al. 2014) or the built reference
+#' pool; unconfirmable tokens are omitted so [resolve_betsi_codes()] leaves them
+#' unresolved. Suitable to pass as the `genus_dict` argument.
+#'
+#' @return Named character vector mapping token to genus.
+#' @seealso [resolve_betsi_codes()]
+#' @export
+inrae_genus_dict <- function() {
+  f <- system.file("extdata/betsi/inrae_genus_abbr.csv", package = "taxifydb")
+  d <- utils::read.csv(f, stringsAsFactors = FALSE)
+  stats::setNames(d$genus, d$token)
 }
 
 

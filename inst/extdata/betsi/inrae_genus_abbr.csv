@@ -1,0 +1,19 @@
+token,genus,evidence
+ISO,Isotomiella,COLTRAIT Isotomiella minor
+ISA,Isotoma,COLTRAIT Isotoma viridis
+ISU,Isotomurus,COLTRAIT Isotomurus palustris
+ISODES,Isotomodes,pool Isotomodes productus
+SMIDES,Sminthurides,COLTRAIT Sminthurides schoetti
+SMINUS,Sminthurinus,COLTRAIT Sminthurinus aureus
+PROT,Protaphorura,COLTRAIT Protaphorura armata
+PROC,Proctostephanus,pool Proctostephanus stuckeni
+PTUL,Paratullbergia,COLTRAIT Paratullbergia callipygos
+PATUL,Paratullbergia,pool Paratullbergia callipygos
+NTUL,Neotullbergia,pool Neotullbergia ramicuspis
+MEGX,Megalothorax,COLTRAIT Megalothorax minimus
+STERAL,Stenaphorurella,COLTRAIT Stenaphorurella denisi
+FODES,Folsomides,pool Folsomides parvulus
+DEUT,Deuteraphorura,pool Deuteraphorura inermis
+XDES,Xenyllodes,pool Xenyllodes armatus
+MUCRO,Mucrosomia,pool Mucrosomia garretti
+SUPRA,Supraphorura,pool Supraphorura furcifera

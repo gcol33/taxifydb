@@ -55,6 +55,46 @@ test_that("resolve_betsi_codes splits a GEN_SPE collision by body length", {
   expect_match(r2$method, "ambiguous")
 })
 
+test_that("genus_dict disambiguates a first-three-letter genus collision", {
+  # three genera share the first three letters "ISO" and the epithet "minor";
+  # INRAE disambiguates them with a bespoke token, Bonfanti's plain rule cannot
+  pool <- c("Isotomiella minor", "Isotoma minor", "Isotomurus minor")
+  dict <- c(ISO = "Isotomiella", ISA = "Isotoma", ISU = "Isotomurus")
+
+  # without the dictionary ISO_MIN matches all three -> ambiguous
+  amb <- resolve_betsi_codes("ISO_MIN", pool)
+  expect_true(is.na(amb$binomial))
+  expect_match(amb$method, "ambiguous")
+
+  # with the dictionary each token resolves to exactly its genus
+  r <- resolve_betsi_codes(c("ISO_MIN", "ISA_MIN", "ISU_MIN"), pool,
+                           genus_dict = dict)
+  rr <- stats::setNames(r$binomial, r$code)
+  expect_equal(rr[["ISO_MIN"]], "Isotomiella minor")
+  expect_equal(rr[["ISA_MIN"]], "Isotoma minor")
+  expect_equal(rr[["ISU_MIN"]], "Isotomurus minor")
+  expect_true(all(grepl("dict", r$method)))
+
+  # a bespoke token absent from the dictionary is not forced onto a near-match
+  u <- resolve_betsi_codes("ISODES_MIN", pool, genus_dict = dict)
+  expect_true(is.na(u$binomial))
+  expect_match(u$method, "unmapped token")
+})
+
+test_that("inrae_genus_dict ships a verified token -> genus mapping", {
+  d <- inrae_genus_dict()
+  expect_type(d, "character")
+  expect_true(all(nzchar(names(d))) && !anyNA(d))
+  # the four-way Iso* split and a couple of other confirmed tokens
+  expect_equal(unname(d[["ISO"]]),    "Isotomiella")
+  expect_equal(unname(d[["ISU"]]),    "Isotomurus")
+  expect_equal(unname(d[["ISODES"]]), "Isotomodes")
+  expect_equal(unname(d[["MEGX"]]),   "Megalothorax")
+  # tokens are upper-case abbreviations, genera are capitalised names
+  expect_true(all(grepl("^[A-Z]+$", names(d))))
+  expect_true(all(grepl("^[A-Z][a-z]+$", d)))
+})
+
 test_that("the recovery enrichments are registered and vocabulary-consistent", {
   expect_setequal(list_betsi_recovery(),
                   c("betsi_earthworm_traits", "betsi_collembola_traits"))

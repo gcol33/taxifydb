@@ -2,19 +2,28 @@
 % Please edit documentation in R/betsi-recovery.R
 \name{resolve_betsi_codes}
 \alias{resolve_betsi_codes}
-\title{Resolve BETSI six-letter species codes to binomials}
+\title{Resolve BETSI species codes to binomials}
 \usage{
-resolve_betsi_codes(codes, pool, code_bl = NULL, pool_bl = NULL)
+resolve_betsi_codes(
+  codes,
+  pool,
+  code_bl = NULL,
+  pool_bl = NULL,
+  genus_dict = NULL
+)
 }
 \arguments{
-\item{codes}{Character vector of \code{GEN_SPE} codes.}
+\item{codes}{Character vector of \code{TOKEN_SPP} codes.}
 
 \item{pool}{Character vector of candidate binomials.}
 
 \item{code_bl}{Named numeric mapping code -> estimated body length (mm), or
-\code{NULL}. Only used to split a \code{gen_spe()} collision.}
+\code{NULL}. Only used to split a collision.}
 
 \item{pool_bl}{Named numeric mapping binomial -> body length (mm), or \code{NULL}.}
+
+\item{genus_dict}{Named character vector (or list) mapping a genus token to
+its genus name(s), or \code{NULL} for the plain first-three-letters rule.}
 }
 \value{
 A data.frame with one row per input code: \code{code}, \code{binomial} (\code{NA}
@@ -22,16 +31,29 @@ when unresolved) and \code{method} (why it resolved or did not).
 }
 \description{
 The code-keyed BETSI-derived matrices (INRAE UU2FQT / UCYSLH, Bonfanti 2022)
-key traits on a \code{GEN_SPE} code with no published legend. This decodes each
-code against a reference pool of binomials: a code with a single pool species
-sharing its \code{\link[=gen_spe]{gen_spe()}} code resolves directly; a collision is split by body
-length when both the code and its candidates carry one; a genus-level \verb{_X}
-code, or one with no pool candidate, is left unresolved for the caller to tag
-and drop rather than guess (label, never decide). Calibrated on the Bonfanti
-2022 legend, whose scheme is pure first-three + first-three with no
-disambiguation.
+key traits on a \code{TOKEN_SPP} code with no published legend, where \code{SPP} is the
+first three letters of the specific epithet and \code{TOKEN} abbreviates the genus.
+This decodes each code against a reference pool of binomials: the token
+selects one or more pool genera and the epithet prefix selects the species
+within them. A single pool species resolves directly; a collision is split by
+body length when both the code and its candidates carry one; a genus-level
+\verb{_X} code, an unmapped token, or a code with no pool candidate is left
+unresolved for the caller to tag and drop rather than guess (label, never
+decide).
 }
 \details{
+The token is resolved two ways. Bonfanti 2022 uses the plain first three
+letters of the genus (\code{ISO_PAL} for \emph{Isotomurus palustris}), and with
+\code{genus_dict = NULL} a three-letter token matches every pool genus sharing
+those three letters. INRAE instead disambiguates colliding genera with bespoke
+abbreviations -- the \verb{Iso*} genera split into \code{ISO} = \emph{Isotomiella}, \code{ISA} =
+\emph{Isotoma}, \code{ISU} = \emph{Isotomurus}, \code{ISODES} = \emph{Isotomodes} -- so pass that
+mapping as \code{genus_dict} and a listed token resolves to exactly its genus, with
+the three-letter rule kept only as the fallback for unlisted three-letter
+tokens. A token that is neither listed nor a plain three-letter prefix is left
+unresolved rather than forced onto a near-match; INRAE's verified mapping is
+shipped in \code{inst/extdata/betsi/inrae_genus_abbr.csv}.
+
 The reference pool is supplied by the caller; in practice it is the union of
 accepted binomials across taxifydb's built Collembola assets
 (\code{betsi_collembola_body_length}, \code{ellers_collembola}, \code{betsi_collembola_traits},

@@ -14,6 +14,7 @@ delim_chunk_feed(
   select = NULL,
   na_strings = c("", "NA"),
   col_names = NULL,
+  file_encoding = NULL,
   verbose = TRUE
 )
 }
@@ -38,6 +39,11 @@ file's own column names) and returning it in the normalized schema.}
 \item{col_names}{Character vector naming the columns of a file that carries
 no header row, in file order, or \code{NULL} when the first line is a header.}
 
+\item{file_encoding}{Character or \code{NULL}. The encoding of the file's bytes,
+meaning what \code{fileEncoding} means to \code{\link[utils:read.delim]{utils::read.delim()}}: character
+columns are converted from it once the block is parsed. WFO is the case,
+whose reader decodes as \code{"latin1"}.}
+
 \item{verbose}{Logical.}
 }
 \value{
@@ -49,10 +55,31 @@ Reads a header once, then hands back successive blocks of rows, so a file
 larger than memory can be normalized and staged block by block.
 }
 \details{
-\code{quote} and \code{encoding} must be set to whatever the backbone's whole-file
-reader uses. They decide how the text is parsed, not just how fast it is
-read: WoRMS ships its TSV with every field wrapped in double quotes, so
-reading it with quoting disabled leaves the quote characters inside the
-names and breaks every downstream join, while a source carrying genuine
-embedded quotes in informal names needs quoting disabled to keep them.
+\code{quote}, \code{encoding} and \code{file_encoding} must be set to whatever the
+backbone's whole-file reader uses. They decide how the text is parsed, not
+just how fast it is read: WoRMS ships its TSV with every field wrapped in
+double quotes, so reading it with quoting disabled leaves the quote
+characters inside the names and breaks every downstream join, while a source
+carrying genuine embedded quotes in informal names needs quoting disabled to
+keep them.
+
+\code{quote} also decides which reader is used, because quoting is the only thing
+that makes the two readers taxifydb's backbones are read with distinguishable.
+With quoting disabled a newline always ends a record and there is no escape
+to interpret, so blocks are taken by row offset and \code{data.table::fread()}
+reads each directly, which is the faster path and the one the unquoted
+sources use.
+
+With quoting enabled both stop holding. A field may contain a newline, and
+then a line offset is not a record offset: WoRMS carries 4,626 newlines
+inside quoted \code{namePublishedIn} fields, and \code{fread()}'s \code{skip} counts lines,
+so by record 200,000 a line-offset read is 445 records adrift and silently
+repeats rows. A field may also contain \code{""}, which
+\code{\link[utils:read.delim]{utils::read.delim()}} collapses to one quote per RFC 4180 and \code{fread()}
+returns doubled (Rdatatable/data.table#1109); WFO has 4,117 such fields, and
+reading them the other way would leave stray quote characters in the
+published values, which is the defect worms-2026.07 was cut to fix. A quoted
+source is therefore parsed with \code{read.delim()} itself, block by block, and
+cut only where the running quote count is even -- the cut cannot be
+delegated, since \code{read.delim()}'s own \code{nrows} counts lines as well.
 }

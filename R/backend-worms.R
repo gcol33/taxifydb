@@ -58,27 +58,69 @@ download_worms <- function(dest = tempdir(), verbose = TRUE) {
 #' @return A normalized data.frame.
 #' @export
 read_worms <- function(worms_dir, verbose = TRUE) {
+  taxon_file <- worms_taxon_file(worms_dir)
+
+  if (verbose) message("Reading WoRMS taxon data...")
+  # ChecklistBank double-quotes its TSV fields; parse them as quotes so the
+  # surrounding quote characters are stripped. Only " is a quote (not '), so
+  # apostrophes in authorship (d'Orbigny, O'Brien) stay intact.
+  # scan() gives up at the first record whose quoting it cannot close, keeps
+  # what it has, and says so only in a warning. On the 2026-08-01 archive that
+  # returned 1,363,240 of 1,562,065 rows -- 198,825 marine taxa missing, the
+  # last few hundred of them filled with fragments of the citation that broke
+  # the parse. A backbone short of an eighth of its rows must not be buildable
+  # by accident, so the warning ends the read.
+  df <- withCallingHandlers(
+    utils::read.delim(
+      taxon_file,
+      fileEncoding = "UTF-8",
+      stringsAsFactors = FALSE,
+      quote = "\"",
+      na.strings = "",
+      check.names = FALSE,
+      # Types fixed rather than inferred, so every read agrees on them.
+      colClasses = "character"
+    ),
+    warning = function(w) {
+      if (grepl("EOF within quoted string", conditionMessage(w), fixed = TRUE)) {
+        stop("The WoRMS taxon file ends inside a quoted field, so read.delim ",
+             "stopped early and the rows after that point are missing. ",
+             "See gcol33/taxifydb#43.", call. = FALSE)
+      }
+    }
+  )
+  if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
+  normalize_worms(df, verbose = verbose)
+}
+
+
+#' Locate the taxon core of an extracted WoRMS DwC-A
+#'
+#' @param worms_dir Character. Path to the extracted archive.
+#' @return Path to the taxon file.
+#' @noRd
+worms_taxon_file <- function(worms_dir) {
   taxon_files <- list.files(worms_dir,
                             pattern = "Taxon\\.tsv$|taxon\\.txt$",
                             ignore.case = TRUE, full.names = TRUE)
   if (length(taxon_files) == 0L) {
     stop("Taxon file not found in WoRMS directory.")
   }
+  taxon_files[1L]
+}
 
-  if (verbose) message("Reading WoRMS taxon data...")
-  # ChecklistBank double-quotes its TSV fields; parse them as quotes so the
-  # surrounding quote characters are stripped. Only " is a quote (not '), so
-  # apostrophes in authorship (d'Orbigny, O'Brien) stay intact.
-  df <- utils::read.delim(
-    taxon_files[1L],
-    fileEncoding = "UTF-8",
-    stringsAsFactors = FALSE,
-    quote = "\"",
-    na.strings = "",
-    check.names = FALSE
-  )
-  if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
 
+#' Normalize one block of WoRMS rows to the unified schema
+#'
+#' Split out of [read_worms()] so the streaming build can apply it to a chunk at
+#' a time. Nothing here depends on rows outside the block.
+#'
+#' @param df A data.frame of raw WoRMS rows, with the archive's own column
+#'   names.
+#' @param verbose Logical.
+#' @return A normalized data.frame.
+#' @export
+normalize_worms <- function(df, verbose = TRUE) {
   names(df) <- sub("^[a-z]+:", "", names(df))
 
   if ("taxonID" %in% names(df)) {

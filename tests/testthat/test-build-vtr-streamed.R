@@ -216,6 +216,157 @@ test_that("a chunk feed reads only the selected columns", {
 })
 
 
+# A quoted field may hold a newline, and then a line offset is not a record
+# offset. WoRMS carries 4,626 of them in its reference column, and fread()'s
+# skip counts lines, so chunking that by row offset re-reads rows it has
+# already emitted -- silently, since the rows are real ones. These pin the cut
+# to record boundaries.
+
+test_that("a record spanning several lines is read as one row", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "wrapped.tsv")
+  writeLines(c("taxonID\tscientificName\treference",
+               "1\tAglaophamus malmgreni\t\"Carter, J. G. (2000).",
+               "Cladistic notes.\"",
+               "2\tGyrodactylus barbatuli\t\"Short ref.\"",
+               "3\tNuculana pernula\t\"Line one",
+               "line two",
+               "line three\""), path)
+
+  seen <- list()
+  feed <- delim_chunk_feed(path, normalize = identity, quote = "\"",
+                           verbose = FALSE)
+  repeat {
+    ch <- feed()
+    if (is.null(ch)) break
+    seen[[length(seen) + 1L]] <- ch
+  }
+  got <- do.call(rbind, seen)
+
+  expect_equal(nrow(got), 3L)
+  expect_equal(got$scientificName,
+               c("Aglaophamus malmgreni", "Gyrodactylus barbatuli",
+                 "Nuculana pernula"))
+  expect_equal(got$reference[1L], "Carter, J. G. (2000).\nCladistic notes.")
+  expect_equal(got$reference[3L], "Line one\nline two\nline three")
+})
+
+
+test_that("chunking a line-wrapped file does not repeat or drop records", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "wrapped.tsv")
+
+  # 40 records, every third one wrapped over two physical lines, so a
+  # line-offset cut drifts further out of step with each block.
+  rows <- vapply(1:40, function(i) {
+    if (i %% 3L == 0L) {
+      sprintf("%d\tName %d\t\"ref %d\nsecond line\"", i, i, i)
+    } else {
+      sprintf("%d\tName %d\t\"ref %d\"", i, i, i)
+    }
+  }, character(1))
+  writeLines(c("taxonID\tscientificName\treference", rows), path)
+
+  collect <- function(chunk_rows) {
+    parts <- list()
+    feed <- delim_chunk_feed(path, normalize = identity, quote = "\"",
+                             chunk_rows = chunk_rows, verbose = FALSE)
+    repeat {
+      ch <- feed()
+      if (is.null(ch)) break
+      parts[[length(parts) + 1L]] <- ch
+    }
+    do.call(rbind, parts)
+  }
+
+  full <- collect(1000L)
+  expect_equal(nrow(full), 40L)
+  expect_equal(full$taxonID, as.character(1:40))
+
+  for (n in c(2L, 3L, 5L, 7L, 13L)) {
+    got <- collect(n)
+    expect_equal(nrow(got), 40L)
+    expect_equal(got$taxonID, as.character(1:40))
+    expect_equal(anyDuplicated(got$taxonID), 0L)
+  }
+})
+
+
+test_that("a doubled quote inside a quoted field is unescaped once", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "escaped.tsv")
+
+  # RFC 4180 writes a literal quote inside a quoted field as "". read.delim
+  # collapses it, fread returns it doubled (Rdatatable/data.table#1109). WFO has
+  # 4,117 of these, and reading them the other way leaves stray quote characters
+  # in published values -- the defect worms-2026.07 was cut to fix.
+  writeLines(c("taxonID\tnamePublishedIn",
+               "1\t\"Index Seminum 9: \"\"32, 80\"\" 1843\"",
+               "2\tFlora Europaea 3: 12"), path)
+
+  seen <- NULL
+  feed <- delim_chunk_feed(path, normalize = function(ch) { seen <<- ch; ch },
+                           quote = "\"", na_strings = "", verbose = FALSE)
+  feed()
+
+  direct <- utils::read.delim(path, stringsAsFactors = FALSE, na.strings = "",
+                              colClasses = "character")
+  expect_equal(seen$namePublishedIn, direct$namePublishedIn)
+  expect_equal(seen$namePublishedIn[1L], "Index Seminum 9: \"32, 80\" 1843")
+})
+
+
+test_that("a block read fixes column types instead of inferring them", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "sparse.tsv")
+
+  # acceptedNameUsageID is empty for the whole first block and populated in the
+  # second. Left to infer, the first block would come back logical and the
+  # staged store would take that type for the column.
+  writeLines(c("taxonID\tacceptedNameUsageID",
+               "1\t", "2\t", "3\t7", "4\t8"), path)
+
+  types <- character(0)
+  feed <- delim_chunk_feed(path, normalize = function(ch) {
+    types <<- c(types, class(ch$acceptedNameUsageID)); ch
+  }, quote = "\"", na_strings = "", chunk_rows = 2L, verbose = FALSE)
+  repeat if (is.null(feed())) break
+
+  expect_equal(types, c("character", "character"))
+})
+
+
+test_that("file_encoding decodes the bytes the way read.delim does", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "latin.tsv")
+
+  # UTF-8 bytes for the multiplication sign, which WFO's reader decodes as
+  # latin1 on purpose and then repairs.
+  con <- file(path, "wb")
+  writeBin(charToRaw("taxonID\tscientificName\n"), con)
+  writeBin(c(charToRaw("1\tQuercus "), as.raw(c(0xC3, 0x97)),
+             charToRaw(" rosacea\n")), con)
+  close(con)
+
+  seen <- NULL
+  feed <- delim_chunk_feed(path, normalize = function(ch) { seen <<- ch; ch },
+                           quote = "\"", na_strings = "",
+                           file_encoding = "latin1", verbose = FALSE)
+  feed()
+
+  direct <- utils::read.delim(path, fileEncoding = "latin1",
+                              stringsAsFactors = FALSE, na.strings = "")
+  expect_equal(seen$scientificName, direct$scientificName)
+  expect_equal(charToRaw(seen$scientificName),
+               charToRaw(direct$scientificName))
+})
+
+
 test_that("a chunk feed splits a file into the expected blocks", {
   skip_if_not_installed("withr")
   dir <- withr::local_tempdir()

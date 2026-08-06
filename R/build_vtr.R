@@ -22,30 +22,69 @@ build_vtr <- function(df, vtr_path, backend_name, version, source_url,
   dir.create(dirname(vtr_path), recursive = TRUE, showWarnings = FALSE)
   vectra::write_vtr(df, vtr_path, batch_size = batch_size)
 
+  index_backbone_vtr(vtr_path, genus_col)
+  write_backbone_meta(vtr_path, backend_name, version, source_url, nrow(df))
+  report_built_backbone(vtr_path, backend_name, nrow(df))
+
+  invisible(vtr_path)
+}
+
+
+#' Create the hash indexes every backbone .vtr carries
+#'
+#' @param vtr_path Character. Path to the written .vtr.
+#' @param genus_col Character. Name of the genus column.
+#' @return Invisible `NULL`.
+#' @noRd
+index_backbone_vtr <- function(vtr_path, genus_col = "genus") {
   vectra::create_index(vtr_path, genus_col)
   vectra::create_index(vtr_path, "canonical_name")
   vectra::create_index(vtr_path, "key_ci")
+  invisible(NULL)
+}
 
-  # Field names follow the .meta contract taxify reads: download_date /
-  # download_timestamp / url (the publish date of the built artifact).
+
+#' Write the .meta sidecar taxify reads next to a backbone .vtr
+#'
+#' Field names follow the .meta contract taxify reads: download_date /
+#' download_timestamp / url (the publish date of the built artifact).
+#'
+#' @param vtr_path Character. Path to the written .vtr.
+#' @param backend_name Character. Backend identifier.
+#' @param version Character. Version string.
+#' @param source_url Character. URL the source data was downloaded from.
+#' @param n_rows Integer. Row count of the built store.
+#' @return Invisible path to the .meta file.
+#' @noRd
+write_backbone_meta <- function(vtr_path, backend_name, version, source_url,
+                                n_rows) {
   meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
-  lines <- c(
+  writeLines(c(
     paste0("backend=", backend_name),
     paste0("version=", version),
     paste0("download_date=", format(Sys.time(), "%Y-%m-%d")),
     paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
     paste0("url=", source_url),
-    paste0("nrow=", nrow(df))
-  )
-  writeLines(lines, meta_path)
+    paste0("nrow=", n_rows)
+  ), meta_path)
+  invisible(meta_path)
+}
 
+
+#' Report a finished backbone build
+#'
+#' @param vtr_path Character. Path to the written .vtr.
+#' @param backend_name Character. Backend identifier.
+#' @param n_rows Integer. Row count of the built store.
+#' @return Invisible `NULL`.
+#' @noRd
+report_built_backbone <- function(vtr_path, backend_name, n_rows) {
   message(sprintf(
     "[%s] Built %s: %s rows, %.1f MB",
-    backend_name, basename(vtr_path), nrow(df),
+    backend_name, basename(vtr_path), n_rows,
     file.size(vtr_path) / 1048576
   ))
-
-  invisible(vtr_path)
+  invisible(NULL)
 }
 
 

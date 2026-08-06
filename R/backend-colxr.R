@@ -175,7 +175,21 @@ read_colxr <- function(tsv_path, verbose = TRUE) {
                             colClasses = "character")
   }
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
+  normalize_colxr(df, verbose = verbose)
+}
 
+
+#' Normalize one block of COL XR rows to the unified schema
+#'
+#' Split out of [read_colxr()] so the streaming build can apply it to a chunk
+#' at a time. Nothing here depends on rows outside the block.
+#'
+#' @param df A data.frame of raw COL XR rows, with the export's own column
+#'   names.
+#' @param verbose Logical.
+#' @return A normalized data.frame.
+#' @export
+normalize_colxr <- function(df, verbose = TRUE) {
   # Strip namespace prefixes (dwc:taxonID -> taxonID, clb:taxGroup -> taxGroup)
   names(df) <- sub("^[a-z]+:", "", names(df))
 
@@ -240,16 +254,23 @@ build_colxr <- function(output_dir = "output/colxr", version = NULL,
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
   tsv_path <- download_colxr(dest = tmp, key = release$key, verbose = verbose)
-  df <- read_colxr(tsv_path, verbose = verbose)
 
-  if (verbose) message("Precomputing keys and embedding synonyms...")
-  # COL uses MISAPPLIED alongside ACCEPTED/SYNONYM, and both flavours of
-  # synonym are treated as synonyms for matching, exactly as for the Base
-  # Release. PROVISIONALLY ACCEPTED stays an accepted concept.
-  df <- precompute_backbone(df, synonym_pattern = "SYNONYM|MISAPPLIED")
-
+  # The export inflates to a multi-gigabyte TSV, so it is staged a block at a
+  # time rather than assembled in memory. COL uses MISAPPLIED alongside
+  # ACCEPTED/SYNONYM, and both flavours of synonym are treated as synonyms for
+  # matching, exactly as for the Base Release. PROVISIONALLY ACCEPTED stays an
+  # accepted concept.
   vtr_path <- file.path(output_dir, "colxr.vtr")
-  build_vtr(df, vtr_path, "colxr", version, colxr_export_url(release$key))
+  build_vtr_streamed(
+    delim_chunk_feed(tsv_path,
+                     normalize = function(chunk) {
+                       normalize_colxr(chunk, verbose = FALSE)
+                     },
+                     verbose = verbose),
+    vtr_path, "colxr", version, colxr_export_url(release$key),
+    synonym_pattern = "SYNONYM|MISAPPLIED",
+    verbose = verbose
+  )
 
   invisible(vtr_path)
 }

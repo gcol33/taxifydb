@@ -54,13 +54,31 @@ if (action == "publish") {
 
   if (target == "all") {
     names <- setdiff(taxifydb::list_enrichments(), .build_only_set)
-  } else if (target %in% .build_only_set) {
-    stop(sprintf(
-      "'%s' is a build-only enrichment (no redistribution licence); it must not be published.",
-      target), call. = FALSE)
   } else {
-    names <- target
+    # A comma-separated target publishes a named subset in one release upload and
+    # one dual-manifest pass. Every name is validated up front: an unknown name,
+    # or a build-only (no-redistribution) name, is rejected before any build runs
+    # rather than part-way through a multi-name publish.
+    names <- trimws(strsplit(target, ",", fixed = TRUE)[[1L]])
+    names <- names[nzchar(names)]
+    unknown <- setdiff(names, taxifydb::list_enrichments())
+    if (length(unknown) > 0L) {
+      stop(sprintf("Unknown enrichment(s): %s",
+                   paste(unknown, collapse = ", ")), call. = FALSE)
+    }
+    blocked <- intersect(names, .build_only_set)
+    if (length(blocked) > 0L) {
+      stop(sprintf(paste0(
+        "Build-only enrichment(s) have no redistribution licence and must not ",
+        "be published: %s"), paste(blocked, collapse = ", ")), call. = FALSE)
+    }
   }
+  # The publish action's positional args are <target> <version>; there is no
+  # output_dir slot, so the global `output_dir <- args[2L]` above is the target
+  # string here, not a directory. Builds and TAXIFYDB_PUBLISH_RESUME reuse must
+  # go through the standard enrichment output base -- the same tree that
+  # `build_enrichments.R all` writes to -- so resume actually finds prior builds.
+  output_dir <- "output/enrichment"
   db_manifest <- "manifest/manifest.json"
   # taxify's runtime manifest, when the two repos are checked out side by side.
   # Written with the same updater (runtime = TRUE) so the mechanical fields

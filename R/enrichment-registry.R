@@ -1216,6 +1216,55 @@
     requires      = character(0)
   ),
 
+  # BETSI-derived Collembola fuzzy morphology matrix (gap G1), decoded from the
+  # two Data INRAE code-keyed deposits and merged by binomial. Seven fuzzy traits
+  # both deposits share; sparse (post-antennal organ is scored for a minority).
+  # See R/betsi-recovery.R and #42.
+  inrae_collembola_traits = list(
+    source_url  = paste0("https://doi.org/10.15454/UU2FQT ; ",
+                         "https://doi.org/10.15454/UCYSLH"),
+    source_doi  = "10.15454/UU2FQT",
+    version     = "2026.08",
+    license     = paste0(
+      "Extracted trait values (facts); BETSI-derived, served for ",
+      "non-commercial scientific reuse (informed-risk, #42)"
+    ),
+    attribution = paste0(
+      "Joimel S, Chassain C, Artige E, Barda L, Balvay S, Belnou T, Bur T, ",
+      "Cortet J, Coussin-Grellier S, Hedde M et al. Collembola functional ",
+      "traits. Two code-keyed Data INRAE deposits: land-use survey ",
+      "(doi:10.15454/UU2FQT, 129 species) and the ANDRA gradient ",
+      "(doi:10.15454/UCYSLH, 100 species), the datasets behind Joimel et al. ",
+      "(2021) Collembola are among the most flexible soil fauna: a comparison ",
+      "across land uses. Frontiers in Ecology and Evolution 9:630919. Fuzzy-",
+      "coded functional traits the authors compiled from BETSI (Biological and ",
+      "Ecological Traits of Soil Invertebrates; Pey et al. 2014, ",
+      "portail.betsi.cnrs.fr, live portal offline). The seven traits the two ",
+      "deposits share are kept -- number of ocelli, furca, post-antennal organ, ",
+      "pigmentation, body shape, scales and reproduction -- each fuzzy-coded so ",
+      "its per-species affinity vector sums to 100. The deposits' species codes ",
+      "carry no legend; each is decoded to a binomial against a Collembola ",
+      "reference pool with the verified genus-abbreviation dictionary ",
+      "(inst/extdata/betsi/inrae_genus_abbr.csv), and codes the decoder cannot ",
+      "resolve are dropped, never guessed. UU2FQT is primary and UCYSLH fills ",
+      "its gaps; where the two deposits bin a trait differently (furca long/",
+      "short) the shared presence/absence axis is kept. Body length (the two ",
+      "deposits' bin schemes differ and four dedicated length assets cover it), ",
+      "trichobothria (one deposit only) and ecomorphosis (its own asset) are ",
+      "not carried. provenance_tier = betsi_derived. Ocelli, furca, ",
+      "post-antennal organ, body shape, scales and reproduction are crosswalked ",
+      "to the T-SITA thesaurus; pigmentation, which T-SITA does not cover, keeps ",
+      "its own column names. See gcol33/taxifydb#42."
+    ),
+    download_fn   = function(url, dest) {
+      .betsi_recovery_stage("inrae_collembola_traits", dest)
+    },
+    parse_fn      = function(path) parse_betsi_recovery("inrae_collembola_traits", path),
+    provenance_fn = function(cols) .betsi_recovery_provenance("inrae_collembola_traits", cols),
+    group_col     = NULL,
+    requires      = character(0)
+  ),
+
   ellers_collembola = list(
     source_url  = paste0("https://zenodo.org/api/records/4934993/files/",
                          "Collembola_trait_data.csv/content"),

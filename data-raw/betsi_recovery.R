@@ -16,7 +16,9 @@ devtools::load_all(".", quiet = TRUE)
 # hard: species + one column per trait).
 sources <- list(
   pelosi2014_earthworm = "dev_notes/betsi_recovery/pelosi2014_appendix1.csv",
-  lu2025_collembola    = "dev_notes/betsi_recovery/lu2025_collembola.csv"
+  lu2025_collembola    = "dev_notes/betsi_recovery/lu2025_collembola.csv",
+  # decoded + merged + normalized by dev_notes/betsi_recovery/scripts/build_inrae_long.R
+  inrae_collembola     = "dev_notes/betsi_recovery/inrae_collembola_long.csv"
 )
 
 out_dir <- file.path("inst", "extdata", "betsi")
@@ -46,7 +48,12 @@ for (key in names(sources)) {
                   key, spec$shape, nrow(wide),
                   length(setdiff(names(wide), "canonical_name"))))
 
+  # Write LF, not the platform line ending: a plain path opens a text-mode
+  # connection that translates "\n" to CRLF on Windows, so a re-freeze there would
+  # rewrite every committed (LF) row. A binary connection keeps the bytes stable.
   dest <- file.path(out_dir, spec$file)
-  utils::write.csv(tab, dest, row.names = FALSE)
+  con <- file(dest, open = "wb")
+  utils::write.csv(tab, con, row.names = FALSE)
+  close(con)
   message(sprintf("[%s] wrote %s (%d rows)", key, dest, nrow(tab)))
 }

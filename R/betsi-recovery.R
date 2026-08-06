@@ -95,6 +95,34 @@
       trophic_position      = "categorical",
       life_form             = "categorical"
     )
+  ),
+
+  # INRAE Collembola fuzzy morphology matrices (gap G1), decoded from the two
+  # code-keyed deposits (Data INRAE UU2FQT land-uses + UCYSLH ANDRA) and merged
+  # by binomial. Seven BETSI-derived fuzzy traits both deposits share; a source
+  # `sparse` because they record different traits for different species (post-
+  # antennal organ for a minority). Body length (incompatible bin schemes across
+  # the two, covered by four dedicated length assets), trichobothria (one deposit
+  # only) and ecomorphosis (its own asset) are excluded upstream in data-raw. The
+  # species codes carry no legend; inrae_genus_dict() + resolve_betsi_codes()
+  # decode them and the unresolved are dropped, never guessed. See #42.
+  inrae_collembola = list(
+    enrichment         = "inrae_collembola_traits",
+    taxon              = "collembola",
+    key_type           = "binomial",
+    shape              = "fuzzy",
+    sparse             = TRUE,
+    file               = "inrae_collembola.csv",
+    provenance_default = "betsi_derived",
+    traits = list(
+      ocelli              = c("1_3", "4_7", "8", "absent"),
+      furca               = c("present", "absent"),
+      post_antennal_organ = c("present", "absent"),
+      pigmentation        = c("present", "absent"),
+      body_shape          = c("cylindrical", "spherical"),
+      scales              = c("present", "absent"),
+      reproduction        = c("sexual", "asexual")
+    )
   )
 )
 
@@ -422,6 +450,14 @@ parse_betsi_recovery <- function(enrichment, path) {
     }
   }
 
+  # A sparse source records different traits for different species (compiled
+  # trait data, e.g. the INRAE Collembola matrices, where post-antennal organ is
+  # scored for a minority): a wholly-absent block is genuine missing data, kept
+  # as NA. A complete matrix (the default) requires every species to carry every
+  # trait, so a wholly-absent block is an incomplete-extraction error. A block
+  # that is present for some but not all of its modalities is corruption either
+  # way. [Never Cap the Data]: sparsity is not a reason to drop a species.
+  sparse <- isTRUE(s$sparse)
   species <- sort(unique(long$species))
   lut <- stats::setNames(long$pct,
                          paste(long$species, long$trait, long$class,
@@ -434,21 +470,34 @@ parse_betsi_recovery <- function(enrichment, path) {
       out[[col]] <- unname(lut[paste(species, tr, cls, sep = "\r")])
       block_cols <- c(block_cols, col)
     }
-    block <- out[block_cols]
-    if (anyNA(block)) {
-      i <- which(rowSums(is.na(block)) > 0L)[1L]
+    block   <- out[block_cols]
+    n_cls   <- length(block_cols)
+    na_row  <- rowSums(is.na(block))
+    partial <- na_row > 0L & na_row < n_cls
+    if (any(partial)) {
+      i <- which(partial)[1L]
+      stop(sprintf(paste0("BETSI-recovery matrix '%s', '%s' trait '%s' has a ",
+                          "partial fuzzy block (%d of %d modalities recorded) -- ",
+                          "the frozen matrix is corrupt."),
+                   key, species[i], tr, n_cls - na_row[i], n_cls), call. = FALSE)
+    }
+    if (!sparse && any(na_row == n_cls)) {
+      i <- which(na_row == n_cls)[1L]
       stop(sprintf(paste0("BETSI-recovery matrix '%s' has no value for '%s', ",
                           "trait '%s' -- the frozen matrix is incomplete."),
                    key, species[i], tr), call. = FALSE)
     }
-    block_sum <- rowSums(block)
-    bad <- which(abs(block_sum - 100) > 1.5)
-    if (length(bad)) {
-      stop(sprintf(paste0("BETSI-recovery matrix '%s' fails the fuzzy-coding ",
-                          "invariant: '%s' trait '%s' affinities sum to %.1f, ",
-                          "not 100."),
-                   key, species[bad[1L]], tr, block_sum[bad[1L]]),
-           call. = FALSE)
+    present <- na_row == 0L
+    if (any(present)) {
+      block_sum <- rowSums(block[present, , drop = FALSE])
+      bad <- which(abs(block_sum - 100) > 1.5)
+      if (length(bad)) {
+        stop(sprintf(paste0("BETSI-recovery matrix '%s' fails the fuzzy-coding ",
+                            "invariant: '%s' trait '%s' affinities sum to %.1f, ",
+                            "not 100."),
+                     key, species[present][bad[1L]], tr, block_sum[bad[1L]]),
+             call. = FALSE)
+      }
     }
   }
   out

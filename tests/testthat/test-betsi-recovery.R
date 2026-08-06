@@ -97,7 +97,8 @@ test_that("inrae_genus_dict ships a verified token -> genus mapping", {
 
 test_that("the recovery enrichments are registered and vocabulary-consistent", {
   expect_setequal(list_betsi_recovery(),
-                  c("betsi_earthworm_traits", "betsi_collembola_traits"))
+                  c("betsi_earthworm_traits", "betsi_collembola_traits",
+                    "inrae_collembola_traits"))
   expect_true(all(list_betsi_recovery() %in% list_enrichments()))
   expect_error(build_betsi_recovery("not_a_recovery"), "not a BETSI-recovery")
 })
@@ -196,6 +197,101 @@ test_that("betsi_collembola_traits maps its BETSI axes to T-SITA", {
   expect_null(m$columns$trophic_position)
   expect_null(m$columns$pigment_scaled)
   expect_null(m$columns$antenna_body_ratio)
+})
+
+# ---- Collembola INRAE (sparse fuzzy) ---------------------------------------
+
+test_that("the sparse fuzzy parser keeps a wholly-absent block but rejects a partial one", {
+  spec <- list(shape = "fuzzy", sparse = TRUE,
+               traits = list(a = c("x", "y"), b = c("p", "q")))
+  # Genus one and three carry both traits; Genus two carries only trait a, so its
+  # trait-b block is wholly absent -- kept as NA under sparse, an error when not.
+  long <- data.frame(
+    species = c("Genus one", "Genus one", "Genus one", "Genus one",
+                "Genus two", "Genus two",
+                "Genus three", "Genus three", "Genus three", "Genus three"),
+    trait   = c("a", "a", "b", "b", "a", "a", "a", "a", "b", "b"),
+    class   = c("x", "y", "p", "q", "x", "y", "x", "y", "p", "q"),
+    pct     = c(100, 0, 50, 50, 100, 0, 0, 100, 50, 50),
+    stringsAsFactors = FALSE)
+
+  w <- taxifydb:::.betsi_pivot_matrix(long, spec, "synthetic")
+  expect_equal(nrow(w), 3L)
+  expect_true(is.na(w$b__p[w$canonical_name == "Genus two"]))
+  expect_equal(w$a__x[w$canonical_name == "Genus two"], 100)
+
+  # drop one modality of Genus one's trait b: the class still appears (Genus
+  # three has it) so it is a partial block, i.e. corruption, not missing data
+  partial <- long[!(long$species == "Genus one" & long$trait == "b" &
+                    long$class == "q"), ]
+  expect_error(taxifydb:::.betsi_pivot_matrix(partial, spec, "synthetic"),
+               "partial fuzzy block")
+
+  # the same wholly-absent block is an incomplete-extraction error when the
+  # source is a complete (non-sparse) matrix
+  spec2 <- spec; spec2$sparse <- FALSE
+  expect_error(taxifydb:::.betsi_pivot_matrix(long, spec2, "synthetic"),
+               "incomplete")
+})
+
+test_that("the frozen INRAE matrix parses to sparse per-species fuzzy vectors", {
+  ex <- system.file("extdata", "betsi", package = "taxifydb")
+  skip_if(!nzchar(ex) ||
+          !file.exists(file.path(ex, "inrae_collembola.csv")),
+          "run data-raw/betsi_recovery.R to freeze the matrix")
+
+  df <- parse_betsi_recovery("inrae_collembola_traits", ex)
+  expect_equal(nrow(df), 135L)
+  expect_setequal(
+    setdiff(names(df), "canonical_name"),
+    c("ocelli__1_3", "ocelli__4_7", "ocelli__8", "ocelli__absent",
+      "furca__present", "furca__absent",
+      "post_antennal_organ__present", "post_antennal_organ__absent",
+      "pigmentation__present", "pigmentation__absent",
+      "body_shape__cylindrical", "body_shape__spherical",
+      "scales__present", "scales__absent",
+      "reproduction__sexual", "reproduction__asexual"))
+
+  # every present fuzzy block sums to 100; a wholly-absent block is NA, not zero
+  for (tr in c("ocelli", "furca", "post_antennal_organ", "pigmentation",
+               "body_shape", "scales", "reproduction")) {
+    cols    <- grep(paste0("^", tr, "__"), names(df), value = TRUE)
+    present <- rowSums(!is.na(df[cols])) == length(cols)
+    expect_true(all(abs(rowSums(df[present, cols, drop = FALSE]) - 100) <= 1.5),
+                info = tr)
+  }
+
+  # post-antennal organ is scored for a minority (genuinely sparse), pigmentation
+  # for every species
+  expect_lt(sum(!is.na(df$post_antennal_organ__present)), nrow(df))
+  expect_equal(sum(!is.na(df$pigmentation__present)), nrow(df))
+
+  # Allacma gallica is a globular springtail: spherical body, full 8 ocelli
+  ag <- df[df$canonical_name == "Allacma gallica", ]
+  expect_equal(ag$body_shape__spherical, 100)
+  expect_equal(ag$ocelli__8, 100)
+})
+
+test_that("inrae_collembola_traits maps its shared BETSI axes to T-SITA, not pigmentation", {
+  m <- taxifydb:::.tsita_enrichment_meta("inrae_collembola_traits")
+  expect_equal(m$columns$ocelli__8$trait_label, "Max_number_of_visual_organs")
+  expect_equal(m$columns$furca__present$trait_label, "Furcula_length")
+  expect_equal(m$columns$post_antennal_organ__present$trait_label, "Postantennal_organ")
+  expect_equal(m$columns$body_shape__spherical$trait_label, "Body_shape")
+  expect_equal(m$columns$scales__present$trait_label, "Scales")
+  expect_equal(m$columns$reproduction__sexual$trait_label, "Reproduction_type")
+  # pigmentation has no faithful T-SITA concept, left unmapped by design
+  expect_null(m$columns$pigmentation__present)
+  expect_null(m$columns$pigmentation__absent)
+})
+
+test_that(".betsi_recovery_provenance tiers every INRAE column betsi_derived", {
+  df   <- c("canonical_name", "ocelli__8", "furca__present",
+            "pigmentation__absent", "reproduction__sexual")
+  prov <- taxifydb:::.betsi_recovery_provenance("inrae_collembola_traits", df)
+  expect_null(prov[["canonical_name"]])
+  expect_true(all(unlist(prov) == "betsi_derived"))
+  expect_equal(prov[["pigmentation__absent"]], "betsi_derived")
 })
 
 # ---- Built .vtr metadata (both shapes) -------------------------------------

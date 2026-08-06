@@ -2816,6 +2816,54 @@
       "source_url": "https://doi.org/10.15454/UU2FQT ; https://doi.org/10.15454/UCYSLH",
       "source_doi": "10.15454/UU2FQT",
       "license": "Extracted trait values (facts); BETSI-derived, served for non-commercial scientific reuse (informed-risk, #42)"
+    },
+    "betsi_collembola_body_length": {
+      "latest": "2026.08",
+      "source_version": "2018.1",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/betsi_collembola_body_length.vtr",
+      "nrow": 1374,
+      "content_id": "12f8947e43497a3c62e2faa7ce92f594",
+      "source_url": "https://zenodo.org/api/records/1292461/files/BETSI_Trait%20data%20request_Collembola_Body%20length_01062017.xlsx/content",
+      "source_doi": "10.5281/zenodo.1292461",
+      "license": "CC BY-NC 4.0"
+    },
+    "plazi_collembola_body_length": {
+      "latest": "2026.08",
+      "source_version": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/plazi_collembola_body_length.vtr",
+      "nrow": 1049,
+      "content_id": "4121f9834e4ae37630e88b459da3a051",
+      "source_url": "https://api.gbif.org/v1/dataset/search?publishingOrg=7ce8aef0-9e92-11dc-8738-b8a03c50a862&taxonKey=10713444",
+      "license": "CC0 1.0"
+    },
+    "monograph_collembola_body_length": {
+      "latest": "2026.08",
+      "source_version": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/monograph_collembola_body_length.vtr",
+      "nrow": 534,
+      "content_id": "2af581fb950bc496a7a6a222b556d1e5",
+      "source_url": "https://github.com/gcol33/taxifydb/releases/download/monograph-snapshots-2026.08/collembola_monograph_bodylength_2026-08-05.csv",
+      "license": "Extracted measurements (facts); source monographs copyright their publishers, served for non-commercial scientific reuse (informed-risk, #42)"
+    },
+    "ellers_collembola": {
+      "latest": "2026.08",
+      "source_version": "2019.04",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ellers_collembola.vtr",
+      "nrow": 314,
+      "content_id": "68c8b27e7834d3ce65d22dfea610e24a",
+      "source_url": "https://zenodo.org/api/records/4934993/files/Collembola_trait_data.csv/content",
+      "source_doi": "10.5061/dryad.m6dn0g8",
+      "license": "CC0 1.0"
+    },
+    "ecomorphosis": {
+      "latest": "2026.08",
+      "source_version": "2022.10",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ecomorphosis.vtr",
+      "nrow": 49,
+      "content_id": "710b0a17250edfa1aa2062eb10aecd21",
+      "source_url": "https://zenodo.org/api/records/7194559/files/Annex_ASE_Online_db.xlsx/content",
+      "source_doi": "10.5281/zenodo.7194559",
+      "license": "CC BY 4.0"
     }
   }
 }

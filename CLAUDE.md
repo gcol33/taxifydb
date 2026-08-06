@@ -121,6 +121,25 @@ written:
 Group-based enrichments (GRIIS, WCVP, common_names, marine_distribution) pass
 `group_cols` so deduplication respects the grouping column.
 
+**Enrichment granularity: one source, many traits = columns; one trait, many
+sources = separate enrichments.** Multiple traits from a single source are
+columns in one enrichment (`pantheria`, `betsi_collembola_traits` with 9 trait
+columns). The same trait recovered from several sources stays as separate
+enrichments, never merged into a consensus column: body mass rides `pantheria`,
+`elton_traits`, `animaltraits`, `amniote`, `phylacine`, `combine` and
+`combine_imputed` as its own entry each ("shipped as its own enrichment, not as
+a replacement for PanTHERIA or EltonTraits"), and the Collembola body-length
+trio (`betsi_collembola_body_length`, `plazi_collembola_body_length`,
+`monograph_collembola_body_length`) is the same pattern -- source-prefixed
+columns (`betsi_body_length_mm` / `plazi_body_length_mm` /
+`monograph_body_length_mm`) a consumer adds side by side, each carrying its own
+licence, citation and `_n` / `_sources`. Merging multiple sources into ONE
+enrichment is reserved for interchangeable labels with no per-source citation
+obligation or cross-source comparison value: only `common_names` (GBIF + NCBI +
+OTT) and `marine_distribution` (WoRMS + MEOW) do it. Keeping same-trait sources
+apart is exactly what lets them be cross-validated against each other (Plazi vs
+BETSI Pearson r = 0.906; Ellers vs the BETSI body-length floor r = 0.96).
+
 **T-SITA trait vocabulary (#42).** The soil-fauna enrichments (Ellers,
 ecomorphosis, the mined monographs, the BETSI body-length floor, and the
 planned INRAE / monograph-payload multi-trait assets) each name their traits

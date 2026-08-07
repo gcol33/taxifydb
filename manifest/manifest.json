@@ -85,13 +85,16 @@
       ]
     },
     "euromed": {
-      "latest": "2026.07",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.07/euromed.vtr",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.08/euromed.vtr",
       "full_size": 34576063,
       "full_sha256": "4515c73ed5ab65dcdb87f94be55e747ff6e4095321ffe6cb697f1da8e25f1731",
       "nrow": 146922,
       "source_url": "https://europlusmed.org",
-      "content_id": "066682024bbd866f476d0aeaf3c02e00"
+      "content_id": "066682024bbd866f476d0aeaf3c02e00",
+      "delta_from": "2026.07",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.08/euromed.xdelta",
+      "delta_size": 166
     },
     "fungorum": {
       "latest": "2026.06",

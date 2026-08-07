@@ -1,5 +1,35 @@
 # taxifydb 0.1.21
 
+## A rebuild that changed nothing no longer cuts a release
+
+* Builds stamp `date +%Y.%m`, which records when a build ran rather than what
+  it read. Several backbones read a pinned source and rebuild to identical
+  bytes every time -- Euro+Med from a frozen snapshot release, WFO from a fixed
+  Zenodo record, COL from the pinned annual archive -- so releasing them again
+  minted a version whose only difference was its name. taxify's runtime treats
+  a fresh version as reason to refetch, so every user downloaded a file they
+  already held: 740 MB of it for WFO.
+
+* New `vtr_changed()` compares the built `.vtr` against the `full_sha256` the
+  manifest already records, and both workflows gate the delta, release,
+  manifest commit and runtime sync behind it. It fails open -- no manifest, no
+  entry, no recorded hash, a first-ever build all count as changed -- so an
+  undecidable case still publishes. A skipped release is reported as a run
+  notice rather than passing silently.
+
+## Six backbones moved off a runner that does not exist
+
+* `build-heavy.yml` targets `self-hosted` and no runner is registered on the
+  repository, so no job of its has ever been picked up. WFO, WCVP, LCVP,
+  Fungorum, AlgaeBase and Euro+Med all sit below OTT (3.7M rows) and NCBI
+  (2.8M), which build on the hosted runner today, and need no dependency the
+  light workflow lacks. They move to `build-light.yml`, leaving COL, COL XR and
+  GBIF. Euro+Med built there in 2m41s.
+
+* Both `build-heavy.yml` crons are held while it has no runner. A schedule that
+  queues a job nothing can pick up produces a stuck run a month, which the COL
+  XR monthly cron had been doing since it was added.
+
 ## A release without sidecars no longer deletes the ones on record
 
 * `update_manifest()` cleared the `extras` block whenever no sidecar was

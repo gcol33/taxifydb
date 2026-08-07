@@ -74,8 +74,18 @@ jobs:
           "${{ steps.rscript.outputs.path }}" -e "taxifydb::build_backend('${{ matrix.backend }}', output_dir = file.path('output', '${{ matrix.backend }}'))"
         shell: bash
 
+      - name: Did the data change?
+        id: changed
+        run: |
+          echo "value=$("${{ steps.rscript.outputs.path }}" scripts/vtr_changed.R \
+            manifest/manifest.json \
+            "${{ matrix.backend }}" \
+            "output/${{ matrix.backend }}/${{ matrix.backend }}.vtr")" >> "$GITHUB_OUTPUT"
+        shell: bash
+
       - name: Create delta vs previous release
         id: delta
+        if: steps.changed.outputs.value == 'true'
         continue-on-error: true
         uses: ./.github/actions/vtr-delta
         with:
@@ -86,6 +96,7 @@ jobs:
           rscript: ${{ steps.rscript.outputs.path }}
 
       - name: Create release and upload
+        if: steps.changed.outputs.value == 'true'
         run: |
           TAG="${{ matrix.backend }}-${{ steps.version.outputs.version }}"
 
@@ -114,6 +125,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update and commit manifest
+        if: steps.changed.outputs.value == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -144,6 +156,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync taxify runtime manifest (PR)
+        if: steps.changed.outputs.value == 'true'
         uses: ./.github/actions/taxify-manifest-sync
         with:
           backend: ${{ matrix.backend }}
@@ -151,3 +164,9 @@ jobs:
           delta_from: ${{ steps.delta.outputs.prev_version }}
           token: ${{ secrets.TAXIFY_MANIFEST_TOKEN }}
           rscript: ${{ steps.rscript.outputs.path }}
+
+      - name: No release (data unchanged)
+        if: steps.changed.outputs.value != 'true'
+        run: |
+          echo "::notice title=${{ matrix.backend }}::Built .vtr is identical to the published asset; no release cut."
+        shell: bash

@@ -321,6 +321,14 @@ Three workflows under `.github/workflows/`:
 - `check-enrichment-versions.yml` — weekly cron, opens/updates a GitHub
   issue labeled `enrichment-outdated` when upstream versions advance
 
+Both builds gate their delta, release, manifest commit and runtime sync behind
+`vtr_changed()` (`scripts/vtr_changed.R`), which compares the built `.vtr`
+against the `full_sha256` the manifest records. A build stamps `date +%Y.%m`,
+so without the gate a backbone reading a pinned source re-releases identical
+bytes under a new version and every taxify user refetches a file they hold. The
+gate fails open: no manifest, no entry, no recorded hash and a first-ever build
+all count as changed.
+
 Membership is by measured size, not by guess. OTT (3.7M rows) and NCBI (2.8M)
 build on the hosted runner today, so anything under them belongs there: that
 is what moved WFO, WCVP, LCVP, Fungorum, AlgaeBase and Euro+Med (147k rows)

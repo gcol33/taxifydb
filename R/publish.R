@@ -463,3 +463,37 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   message(sprintf("Manifest enrichment updated: %s v%s", name, meta$version))
   invisible(manifest)
 }
+
+
+#' Did a build produce bytes the manifest is not already pointing at?
+#'
+#' The version a build stamps is `date +%Y.%m`, which records when it ran rather
+#' than what it read. Several backbones read a pinned source and rebuild to the
+#' same bytes every time -- Euro+Med from a frozen snapshot release, WFO from a
+#' fixed Zenodo record, COL from the pinned annual archive. Releasing those again
+#' mints a version whose only difference is its name, and taxify's runtime treats
+#' a fresh version as reason to refetch, so every user downloads a file they
+#' already hold.
+#'
+#' Fails open: anything that cannot be determined -- no manifest, no entry for
+#' this backbone, no recorded hash, a first-ever build -- counts as changed, so
+#' an uncertain case still publishes.
+#'
+#' @param manifest_path Character. Path to `manifest.json`.
+#' @param backend_name Character. Backend identifier.
+#' @param vtr_path Character. Path to the freshly built `.vtr`.
+#' @return Logical scalar. `TRUE` when the build differs from the published
+#'   asset and a release is warranted.
+#' @export
+vtr_changed <- function(manifest_path, backend_name, vtr_path) {
+  if (!file.exists(manifest_path) || !file.exists(vtr_path)) return(TRUE)
+
+  entry <- tryCatch(
+    jsonlite::read_json(manifest_path, simplifyVector = FALSE)$backends[[backend_name]],
+    error = function(e) NULL
+  )
+  published <- entry$full_sha256
+  if (is.null(published) || !nzchar(published)) return(TRUE)
+
+  !identical(as.character(published), sha256(vtr_path))
+}

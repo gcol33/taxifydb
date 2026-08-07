@@ -383,3 +383,89 @@ test_that("a chunk feed splits a file into the expected blocks", {
   }
   expect_equal(got, as.character(1:10))
 })
+
+
+test_that("a lone carriage return inside a field does not end a record", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "lonecr.tsv")
+
+  # WoRMS carries 59 of these. R's own line readers treat a lone CR as a
+  # terminator, which invents a line the file does not have; read as text it
+  # also drops quote characters, and losing one flips the parity the record
+  # boundary is found from.
+  con <- file(path, "wb")
+  writeBin(charToRaw(paste0(
+    "taxonID\tnamePublishedIn\n",
+    "1\t\"Carter, J. G.\rCladistic notes.\"\n",
+    "2\t\"Plain ref\"\n")), con)
+  close(con)
+
+  seen <- list()
+  feed <- delim_chunk_feed(path, normalize = identity, quote = "\"",
+                           na_strings = "", verbose = FALSE)
+  repeat {
+    ch <- feed()
+    if (is.null(ch)) break
+    seen[[length(seen) + 1L]] <- ch
+  }
+  got <- do.call(rbind, seen)
+
+  expect_equal(nrow(got), 2L)
+  expect_equal(got$taxonID, c("1", "2"))
+  expect_equal(got$namePublishedIn[1L], "Carter, J. G.\rCladistic notes.")
+})
+
+
+test_that("CRLF line endings are not left on the last field of a row", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "crlf.tsv")
+
+  con <- file(path, "wb")
+  writeBin(charToRaw(paste0(
+    "taxonID\tscientificName\r\n",
+    "1\tAglaophamus malmgreni\r\n",
+    "2\tNuculana pernula\r\n")), con)
+  close(con)
+
+  seen <- NULL
+  feed <- delim_chunk_feed(path, normalize = function(ch) { seen <<- ch; ch },
+                           quote = "\"", na_strings = "", verbose = FALSE)
+  feed()
+
+  expect_equal(seen$scientificName,
+               c("Aglaophamus malmgreni", "Nuculana pernula"))
+})
+
+
+test_that("a quoted file is cut on records even when a block boundary splits one", {
+  skip_if_not_installed("withr")
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "cr_wrapped.tsv")
+
+  # Every second record wraps, and one of the wraps uses a lone CR rather than a
+  # newline, so a reader treating CR as a terminator drifts out of step.
+  rows <- vapply(1:20, function(i) {
+    if (i %% 2L == 0L) sprintf("%d\t\"ref %d\rsecond part\"", i, i)
+    else sprintf("%d\t\"ref %d\nsecond line\"", i, i)
+  }, character(1))
+  con <- file(path, "wb")
+  writeBin(charToRaw(paste0("taxonID\treference\n",
+                            paste(rows, collapse = "\n"), "\n")), con)
+  close(con)
+
+  for (n in c(2L, 3L, 5L, 7L)) {
+    parts <- list()
+    feed <- delim_chunk_feed(path, normalize = identity, quote = "\"",
+                             na_strings = "", chunk_rows = n, verbose = FALSE)
+    repeat {
+      ch <- feed()
+      if (is.null(ch)) break
+      parts[[length(parts) + 1L]] <- ch
+    }
+    got <- do.call(rbind, parts)
+    expect_equal(nrow(got), 20L)
+    expect_equal(got$taxonID, as.character(1:20))
+  }
+})

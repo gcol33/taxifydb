@@ -61,36 +61,73 @@ read_worms <- function(worms_dir, verbose = TRUE) {
   taxon_file <- worms_taxon_file(worms_dir)
 
   if (verbose) message("Reading WoRMS taxon data...")
-  # ChecklistBank double-quotes its TSV fields; parse them as quotes so the
-  # surrounding quote characters are stripped. Only " is a quote (not '), so
-  # apostrophes in authorship (d'Orbigny, O'Brien) stay intact.
-  # scan() gives up at the first record whose quoting it cannot close, keeps
-  # what it has, and says so only in a warning. On the 2026-08-01 archive that
-  # returned 1,363,240 of 1,562,065 rows -- 198,825 marine taxa missing, the
-  # last few hundred of them filled with fragments of the citation that broke
-  # the parse. A backbone short of an eighth of its rows must not be buildable
-  # by accident, so the warning ends the read.
-  df <- withCallingHandlers(
-    utils::read.delim(
-      taxon_file,
-      fileEncoding = "UTF-8",
-      stringsAsFactors = FALSE,
-      quote = "\"",
-      na.strings = "",
-      check.names = FALSE,
-      # Types fixed rather than inferred, so every read agrees on them.
-      colClasses = "character"
-    ),
-    warning = function(w) {
-      if (grepl("EOF within quoted string", conditionMessage(w), fixed = TRUE)) {
-        stop("The WoRMS taxon file ends inside a quoted field, so read.delim ",
-             "stopped early and the rows after that point are missing. ",
-             "See gcol33/taxifydb#43.", call. = FALSE)
-      }
-    }
-  )
+  df <- read_worms_tsv(taxon_file)
+  assert_worms_taxon_core(df)
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
   normalize_worms(df, verbose = verbose)
+}
+
+
+#' Read one WoRMS TSV
+#'
+#' ChecklistBank double-quotes its TSV fields, so they are parsed as quoted and
+#' the wrapping quotes come off. Only `"` is a quoting character, not `'`, which
+#' leaves the apostrophe of an authorship (d'Orbigny, O'Brien) alone.
+#'
+#' [utils::read.delim()] cannot read this file. It carries 4,626 newlines and 59
+#' lone carriage returns inside quoted fields; R reads a lone `CR` as the end of
+#' a line and, in text mode, loses bytes doing it, so 49 of the file's quote
+#' characters go missing and the quoting stops balancing. `scan()` then reaches
+#' a record it cannot close, keeps what it has and says so only in a warning --
+#' on the 2026-08-01 archive it returned 1,363,240 of 1,562,065 rows, the last
+#' few hundred of them filled with fragments of the citation that broke it
+#' (gcol33/taxifydb#43). `fread()` reads the bytes and returns every record.
+#'
+#' What `fread()` does not do is unescape a doubled quote, so that is done after
+#' it. The 11 names carrying a genuine quote (`Gyrodactylus barbatuli f. "A"`)
+#' come back with one, and no field keeps the wrapping quotes that broke every
+#' marine enrichment join before worms-2026.07.
+#'
+#' @param path Character. Path to the TSV.
+#' @return A data.frame of character columns.
+#' @noRd
+read_worms_tsv <- function(path) {
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("Package 'data.table' is required to read the WoRMS archive.",
+         call. = FALSE)
+  }
+  df <- data.table::fread(
+    path, sep = "\t", quote = "\"", na.strings = "",
+    # Types fixed rather than inferred, so every read agrees on them.
+    colClasses = "character", showProgress = FALSE, data.table = FALSE
+  )
+  unescape_quotes(df, "\"")
+}
+
+
+#' Check that a WoRMS taxon core identifies its rows
+#'
+#' A taxon core names every row exactly once, so a missing or repeated
+#' `taxonID` means the file was not read as its records. That is what a reader
+#' stopping partway through looks like from the inside: the rows it did return
+#' stay well formed, and only the identifiers show that a record was cut in two.
+#'
+#' @param df A data.frame of raw WoRMS rows.
+#' @return `df`, invisibly.
+#' @noRd
+assert_worms_taxon_core <- function(df) {
+  if (nrow(df) == 0L) {
+    stop("The WoRMS taxon file parsed to no rows.", call. = FALSE)
+  }
+  n_bad <- sum(is.na(df$taxonID) | !nzchar(df$taxonID))
+  n_dup <- anyDuplicated(df$taxonID)
+  if (n_bad > 0L || n_dup > 0L) {
+    stop(sprintf(
+      "The WoRMS taxon core does not identify its rows: %s without a taxonID, %s repeated. The file was not read as its records.",
+      format(n_bad, big.mark = ","),
+      format(sum(duplicated(df$taxonID)), big.mark = ",")), call. = FALSE)
+  }
+  invisible(df)
 }
 
 
@@ -215,26 +252,27 @@ build_worms <- function(output_dir = "output/worms", version = NULL,
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
   worms_dir <- download_worms(dest = tmp, verbose = verbose)
-  df <- read_worms(worms_dir, verbose = verbose)
+  taxon_file <- worms_taxon_file(worms_dir)
 
-  if (verbose) message("Precomputing keys and embedding synonyms...")
-  df <- precompute_backbone(df)
-
+  # The taxon core is over a gigabyte unpacked, so it is staged a block at a
+  # time rather than assembled in memory. The parsing arguments are the ones
+  # read_worms() reads it with: tab separated, double-quoted fields, an empty
+  # field is NA.
   vtr_path <- file.path(output_dir, "worms.vtr")
-  build_vtr(df, vtr_path, "worms", version, .worms_url)
+  build_vtr_streamed(
+    delim_chunk_feed(taxon_file,
+                     normalize = function(chunk) {
+                       normalize_worms(chunk, verbose = FALSE)
+                     },
+                     quote = "\"", na_strings = "", verbose = verbose),
+    vtr_path, "worms", version, .worms_url, verbose = verbose
+  )
 
   sp_files <- list.files(tmp, pattern = "SpeciesProfile|speciesprofile",
                          ignore.case = TRUE, full.names = TRUE)
   if (length(sp_files) > 0L) {
     if (verbose) message("Converting SpeciesProfile to .vtr...")
-    sp_df <- utils::read.delim(
-      sp_files[1L],
-      fileEncoding = "UTF-8",
-      stringsAsFactors = FALSE,
-      quote = "\"",
-      na.strings = "",
-      check.names = FALSE
-    )
+    sp_df <- read_worms_tsv(sp_files[1L])
     names(sp_df) <- sub("^[a-z]+:", "", names(sp_df))
     sp_vtr <- file.path(output_dir, "worms_species_profile.vtr")
     vectra::write_vtr(sp_df, sp_vtr)

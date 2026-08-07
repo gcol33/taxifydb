@@ -1,5 +1,42 @@
 # taxifydb 0.1.21
 
+## WoRMS reads short, and the streaming feed learns why (#43)
+
+* `read_worms()` no longer uses `utils::read.delim()`, which cannot read the
+  WoRMS taxon core at all. `Taxon.tsv` carries 4,626 newlines and 59 lone
+  carriage returns inside quoted fields; R reads a lone `CR` as the end of a
+  line, and in text mode loses bytes doing it, so the file's 15,419,038 quote
+  characters come back as 15,418,989. The quoting stops balancing, `scan()`
+  reaches a record it cannot close, and it returns 1,363,240 of 1,562,065 rows
+  -- 198,825 marine taxa missing, the last few hundred filled with fragments of
+  the citation that broke the parse -- reporting it only as a warning. The
+  reader is now `data.table::fread()` followed by `unescape_quotes()`, since
+  `fread()` leaves RFC 4180's doubled quote as it found it
+  (Rdatatable/data.table#1109) where `read.delim()` collapses it.
+
+  Not shipped: published `worms-2026.07` has 1,557,860 rows. The next rebuild
+  would have been short an eighth of the marine backbone.
+
+* `assert_worms_taxon_core()` fails the build when a `taxonID` is missing or
+  repeated. A reader stopping partway through leaves the rows it did return
+  well formed, so the identifiers are what show that a record was cut in two.
+
+* `build_worms()` streams. The taxon core is over a gigabyte unpacked and was
+  the largest backbone still assembled in memory.
+
+* `delim_block_feed()` no longer parses with `read.delim()`, and the choice of
+  reader no longer decides what a value ends up as. Blocks are parsed with
+  `fread()` and the RFC 4180 unescaping is done in `unescape_quotes()`, so it
+  holds whichever source is read. `delim_lf_reader()` splits blocks on `LF` or
+  `CRLF` and never on a bare `CR`, and a block reaches the parser as a file
+  rather than as text, since `fread(text=)` splits its input into lines itself
+  and so cannot carry a record that spans them.
+
+  Verified against both real sources: WFO is identical to its previous read
+  across all 1,638,552 rows and all 20 columns, and WoRMS streams to the same
+  1,562,065 rows and 14 columns as the whole-file read, building to 115,741
+  genera in 115,741 contiguous runs with all 857,427 synonyms resolved.
+
 ## BETSI recovery: earthworm and Collembola trait matrices (#42)
 
 * `R/betsi-recovery.R` rebuilds published BETSI-derived trait matrices into

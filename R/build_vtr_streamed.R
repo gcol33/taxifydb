@@ -242,25 +242,34 @@ precompute_backbone_rowwise <- function(df) {
 #' carrying genuine embedded quotes in informal names needs quoting disabled to
 #' keep them.
 #'
-#' `quote` also decides which reader is used, because quoting is the only thing
-#' that makes the two readers taxifydb's backbones are read with distinguishable.
-#' With quoting disabled a newline always ends a record and there is no escape
-#' to interpret, so blocks are taken by row offset and `data.table::fread()`
-#' reads each directly, which is the faster path and the one the unquoted
-#' sources use.
+#' `quote` also decides how the file is cut. With quoting disabled a newline
+#' always ends a record, so blocks are taken by row offset and
+#' `data.table::fread()` reads each directly, which is the faster path and the
+#' one the unquoted sources use.
 #'
-#' With quoting enabled both stop holding. A field may contain a newline, and
-#' then a line offset is not a record offset: WoRMS carries 4,626 newlines
-#' inside quoted `namePublishedIn` fields, and `fread()`'s `skip` counts lines,
-#' so by record 200,000 a line-offset read is 445 records adrift and silently
-#' repeats rows. A field may also contain `""`, which
-#' [utils::read.delim()] collapses to one quote per RFC 4180 and `fread()`
-#' returns doubled (Rdatatable/data.table#1109); WFO has 4,117 such fields, and
-#' reading them the other way would leave stray quote characters in the
-#' published values, which is the defect worms-2026.07 was cut to fix. A quoted
-#' source is therefore parsed with `read.delim()` itself, block by block, and
-#' cut only where the running quote count is even -- the cut cannot be
-#' delegated, since `read.delim()`'s own `nrows` counts lines as well.
+#' With quoting enabled that stops holding: a field may contain a newline, and
+#' then a line offset is not a record offset. WoRMS carries 4,626 newlines
+#' inside quoted `namePublishedIn` fields, and every reader's row argument
+#' counts lines -- `fread()`'s `skip` does, and so does `read.delim(nrows=)`
+#' through `scan()`'s `nlines` -- so a line-offset read is 445 records adrift by
+#' record 200,000 and silently repeats rows. A quoted source is therefore cut
+#' only where the running count of quote characters is even, which is the one
+#' place a record can end, and the number of records that implies is checked
+#' against the number the parser returns.
+#'
+#' Lines are taken at the byte level, split on `LF` alone. R's own line reader
+#' recognizes a lone `CR` as a terminator as well, and WoRMS holds 59 of them
+#' inside fields: read as text it manufactures 57 lines the file does not have
+#' and drops 49 quote characters, which flips the parity and is why
+#' [utils::read.delim()] gives up on that file partway through.
+#'
+#' A field may also contain `""`, which RFC 4180 defines as one literal quote.
+#' [utils::read.delim()] collapses it and `fread()` returns it doubled
+#' (Rdatatable/data.table#1109); WFO has 4,117 such fields, and leaving them
+#' doubled would put stray quote characters in the published values, which is
+#' the defect worms-2026.07 was cut to fix. Rather than let the choice of reader
+#' decide that, the blocks are parsed with `fread()` and the unescaping is done
+#' here, so it holds whichever source is being read.
 #'
 #' @param path Character. Path to the delimited file.
 #' @param normalize A function taking one raw chunk (a data.frame with the
@@ -276,7 +285,8 @@ precompute_backbone_rowwise <- function(df) {
 #' @param file_encoding Character or `NULL`. The encoding of the file's bytes,
 #'   meaning what `fileEncoding` means to [utils::read.delim()]: character
 #'   columns are converted from it once the block is parsed. WFO is the case,
-#'   whose reader decodes as `"latin1"`.
+#'   whose reader decodes as `"latin1"`. A file needing this is read block by
+#'   block whether or not it is quoted, since the conversion happens there.
 #' @param verbose Logical.
 #' @return A function of no arguments suitable as the `feed` of
 #'   [build_vtr_streamed()].
@@ -306,15 +316,15 @@ delim_chunk_feed <- function(path, normalize, chunk_rows = 500000L,
     normalize(raw)
   }
 
-  # `file_encoding` also picks the reader, because converting the bytes is
-  # something the connection does and only the read.delim() path reads from one.
+  # `file_encoding` picks the block path too: the conversion is applied to a
+  # parsed block, so a file needing one is cut rather than read by row offset.
   if (identical(quote, "") && is.null(file_encoding)) {
     args <- list(sep = sep, quote = quote, encoding = encoding,
                  na.strings = na_strings, colClasses = "character",
                  showProgress = FALSE, header = FALSE)
     delim_line_feed(path, emit, keep, chunk_rows, head_rows, args)
   } else {
-    delim_block_feed(path, emit, header, keep, chunk_rows, head_rows, sep,
+    delim_block_feed(path, emit, keep, chunk_rows, head_rows, sep,
                      quote, na_strings, file_encoding)
   }
 }
@@ -363,42 +373,145 @@ delim_line_feed <- function(path, emit, keep, chunk_rows, head_rows, args) {
 }
 
 
-#' Chunk a quoted delimited file on record boundaries
+#' Read a file as lines, splitting on LF or CRLF but never a lone CR
 #'
-#' Cuts the file itself and parses each block with [utils::read.delim()], the
-#' reader the quoted backbones are read by, so quote unescaping and
-#' `fileEncoding` are decided by the function that defines the backbone's rows.
+#' R's own line readers recognize a lone `CR` as a terminator as well. WoRMS
+#' holds 59 of them inside fields, and reading them that way both invents lines
+#' the file does not have and loses bytes: its 15,419,038 quote characters come
+#' back as 15,418,989, which is enough to flip the running parity the record
+#' boundary is found from.
 #'
-#' The cut cannot be delegated with it. `read.delim(con, nrows = n)` reads `n`
-#' through `scan()`'s `nlines`, which counts lines, so a block boundary landing
-#' inside a record that spans lines truncates it, warns `EOF within quoted
-#' string`, and returns short -- on WoRMS that lost 198,825 of 1,562,065 rows.
-#' Blocks are therefore cut only where the running count of quote characters is
-#' even, which is the one place a record can end. The number of records that
-#' implies is checked against the number `read.delim()` returns, so a file that
-#' escapes quotes some other way stops the build rather than staging shifted
-#' rows.
+#' Splitting the bytes on `LF` and then dropping one trailing `CR` per line
+#' keeps a `CRLF` file's lines clean while leaving a `CR` that is not at the end
+#' of a line where the file put it.
+#'
+#' @param path Character. Path to the file.
+#' @param chunk_bytes Integer. Bytes to pull from the connection at a time.
+#' @return A list of `read(n)`, returning up to `n` further lines and a
+#'   zero-length vector at end of file, and `close()`.
+#' @noRd
+delim_lf_reader <- function(path, chunk_bytes = 33554432L) {
+  con <- file(path, "rb")
+  pending <- character(0)
+  tail <- ""
+  eof <- FALSE
+
+  # A CR immediately before the LF is that line's terminator and comes off with
+  # it. One anywhere else is a character of the field, so this is applied only
+  # to lines already known to be complete -- never to the tail, whose CR may yet
+  # turn out to be followed by the LF in the next chunk.
+  drop_cr <- function(x) sub("\r$", "", x, useBytes = TRUE)
+
+  fill <- function(n) {
+    while (length(pending) < n && !eof) {
+      raw <- readBin(con, "raw", chunk_bytes)
+      if (length(raw) == 0L) {
+        eof <<- TRUE
+        # A final line with no trailing newline still holds a record.
+        if (nzchar(tail)) {
+          pending <<- c(pending, drop_cr(tail))
+          tail <<- ""
+        }
+        break
+      }
+      if (any(raw == as.raw(0L))) {
+        stop("The file contains a null byte, which no delimited reader carries.",
+             call. = FALSE)
+      }
+      parts <- strsplit(paste0(tail, rawToChar(raw)), "\n",
+                        fixed = TRUE, useBytes = TRUE)[[1L]]
+      if (length(parts) == 0L) {
+        tail <<- ""
+        next
+      }
+      # strsplit() drops the empty piece after a trailing separator, so whether
+      # the last piece is a whole line is read off the bytes rather than it.
+      if (identical(raw[length(raw)], as.raw(10L))) {
+        pending <<- c(pending, drop_cr(parts))
+        tail <<- ""
+      } else {
+        pending <<- c(pending, drop_cr(parts[-length(parts)]))
+        tail <<- parts[length(parts)]
+      }
+    }
+  }
+
+  list(
+    read = function(n) {
+      fill(n)
+      take <- min(n, length(pending))
+      if (take == 0L) return(character(0))
+      out <- pending[seq_len(take)]
+      pending <<- pending[-seq_len(take)]
+      out
+    },
+    close = function() close(con)
+  )
+}
+
+
+#' Collapse the doubled quotes of a quoted field
+#'
+#' RFC 4180 writes a literal quote inside a quoted field as two, which
+#' [utils::read.delim()] collapses on the way in and `data.table::fread()`
+#' returns as it found (Rdatatable/data.table#1109). Doing it here rather than
+#' by choosing a reader keeps the published values the same whichever parser a
+#' backbone is read with.
+#'
+#' @param df A data.frame of parsed fields.
+#' @param quote Character. The quoting character, or `""` when quoting is off,
+#'   in which case nothing was escaped and `df` is returned unchanged.
+#' @return `df` with each character column unescaped.
+#' @noRd
+unescape_quotes <- function(df, quote = "\"") {
+  if (!nzchar(quote)) return(df)
+  doubled <- paste0(quote, quote)
+  for (j in seq_along(df)) {
+    v <- df[[j]]
+    if (is.character(v)) {
+      df[[j]] <- gsub(doubled, quote, v, fixed = TRUE)
+    }
+  }
+  df
+}
+
+
+#' Chunk a delimited file on record boundaries
+#'
+#' Cuts the file itself, so a record spanning several lines is never split.
+#' Every reader's row argument counts lines rather than records --
+#' `fread(skip=)` does, and `read.delim(nrows=)` does through `scan()`'s
+#' `nlines` -- so the cut cannot be delegated to one. `read.delim()` reading the
+#' whole of WoRMS is the same fault at file scale: it stops at the first record
+#' whose quoting it cannot close and returns 1,363,240 of 1,562,065 rows with
+#' only a warning.
+#'
+#' Blocks end only where the running count of quote characters is even, which is
+#' the one place a record can end, and the number of records that implies is
+#' checked against the number the parser returns, so a file that escapes quotes
+#' some other way stops the build rather than staging shifted rows.
 #'
 #' @param path Character. Path to the file.
 #' @param emit Function applied to each parsed block.
-#' @param header Character vector of the file's column names, in file order.
 #' @param keep Integer column positions to keep.
 #' @param chunk_rows,head_rows Integer.
 #' @param sep,quote Character. Field separator and quoting character.
 #' @param na_strings Character vector read as `NA`.
 #' @param file_encoding Character or `NULL`. Encoding of the file's bytes,
-#'   handed to the connection exactly as `read.delim()` hands `fileEncoding` to
-#'   its own.
+#'   applied to the parsed block exactly as `read.delim()` applies
+#'   `fileEncoding` to what it read.
 #' @return A feed function.
 #' @noRd
-delim_block_feed <- function(path, emit, header, keep, chunk_rows, head_rows,
+delim_block_feed <- function(path, emit, keep, chunk_rows, head_rows,
                              sep, quote, na_strings, file_encoding) {
-  con <- if (is.null(file_encoding)) {
-    file(path, "rt")
-  } else {
-    file(path, "rt", encoding = file_encoding)
-  }
-  if (head_rows > 0L) readLines(con, n = head_rows, warn = FALSE)
+  reader <- delim_lf_reader(path)
+  if (head_rows > 0L) reader$read(head_rows)
+
+  # Each block is handed to the parser as a file rather than as text. fread()
+  # splits a `text` argument into lines itself, which is the one thing a record
+  # spanning lines cannot survive; from a file it reads the record whole. The
+  # same scratch file is rewritten for every block.
+  block_file <- tempfile("vtr_block_", fileext = ".tsv")
 
   carry <- character(0)
   eof <- FALSE
@@ -414,6 +527,12 @@ delim_block_feed <- function(path, emit, header, keep, chunk_rows, head_rows,
     vapply(m, function(p) if (p[1L] == -1L) 0L else length(p), integer(1))
   }
 
+  pull <- function(n) {
+    more <- reader$read(n)
+    if (length(more) == 0L) eof <<- TRUE
+    more
+  }
+
   function() {
     if (done) return(NULL)
 
@@ -423,8 +542,7 @@ delim_block_feed <- function(path, emit, header, keep, chunk_rows, head_rows,
     repeat {
       short <- chunk_rows - length(lines)
       if (short > 0L && !eof) {
-        more <- readLines(con, n = short, warn = FALSE)
-        if (length(more) == 0L) eof <<- TRUE else lines <- c(lines, more)
+        lines <- c(lines, pull(short))
         next
       }
       if (length(lines) > 0L) {
@@ -433,17 +551,18 @@ delim_block_feed <- function(path, emit, header, keep, chunk_rows, head_rows,
       # No even-parity line means one record spans the whole block, so the
       # block has to grow before it can be cut.
       if (length(ends) > 0L || eof) break
-      more <- readLines(con, n = chunk_rows, warn = FALSE)
-      if (length(more) == 0L) eof <<- TRUE else lines <- c(lines, more)
+      lines <- c(lines, pull(chunk_rows))
     }
 
     if (length(lines) == 0L) {
-      close(con)
+      reader$close()
+      unlink(block_file)
       done <<- TRUE
       return(NULL)
     }
     if (length(ends) == 0L) {
-      close(con)
+      reader$close()
+      unlink(block_file)
       stop("The file ends inside a quoted field; its quoting is unbalanced.",
            call. = FALSE)
     }
@@ -453,25 +572,38 @@ delim_block_feed <- function(path, emit, header, keep, chunk_rows, head_rows,
     if (last < length(lines)) {
       carry <<- lines[(last + 1L):length(lines)]
     } else if (eof) {
-      close(con)
+      reader$close()
       done <<- TRUE
     }
+
+    out <- file(block_file, "wb")
+    writeLines(block, out, sep = "\n", useBytes = TRUE)
+    close(out)
 
     # colClasses fixes the types instead of letting each block infer its own.
     # Without it a block in which some column happened to be empty throughout
     # would come back logical while the rest came back character, and the
     # staged store would take whichever block was written first.
-    raw <- utils::read.delim(
-      text = paste(block, collapse = "\n"), header = FALSE,
-      col.names = header, sep = sep, quote = quote, na.strings = na_strings,
-      check.names = FALSE, stringsAsFactors = FALSE, colClasses = "character"
+    raw <- data.table::fread(
+      block_file, header = FALSE, sep = sep,
+      quote = quote, na.strings = na_strings, colClasses = "character",
+      select = keep, encoding = "unknown", showProgress = FALSE,
+      data.table = FALSE
     )
+    unlink(block_file)
     if (nrow(raw) != length(ends)) {
       stop(sprintf(
         "Read %d records from a block the quote scan counted %d in; the file does not quote the way `quote` says.",
         nrow(raw), length(ends)), call. = FALSE)
     }
-    emit(raw[, keep, drop = FALSE])
+    if (!is.null(file_encoding)) {
+      for (j in seq_along(raw)) {
+        if (is.character(raw[[j]])) {
+          raw[[j]] <- iconv(raw[[j]], from = file_encoding, to = "UTF-8")
+        }
+      }
+    }
+    emit(unescape_quotes(raw, quote))
   }
 }
 

@@ -42,7 +42,8 @@ no header row, in file order, or \code{NULL} when the first line is a header.}
 \item{file_encoding}{Character or \code{NULL}. The encoding of the file's bytes,
 meaning what \code{fileEncoding} means to \code{\link[utils:read.delim]{utils::read.delim()}}: character
 columns are converted from it once the block is parsed. WFO is the case,
-whose reader decodes as \code{"latin1"}.}
+whose reader decodes as \code{"latin1"}. A file needing this is read block by
+block whether or not it is quoted, since the conversion happens there.}
 
 \item{verbose}{Logical.}
 }
@@ -63,23 +64,32 @@ characters inside the names and breaks every downstream join, while a source
 carrying genuine embedded quotes in informal names needs quoting disabled to
 keep them.
 
-\code{quote} also decides which reader is used, because quoting is the only thing
-that makes the two readers taxifydb's backbones are read with distinguishable.
-With quoting disabled a newline always ends a record and there is no escape
-to interpret, so blocks are taken by row offset and \code{data.table::fread()}
-reads each directly, which is the faster path and the one the unquoted
-sources use.
+\code{quote} also decides how the file is cut. With quoting disabled a newline
+always ends a record, so blocks are taken by row offset and
+\code{data.table::fread()} reads each directly, which is the faster path and the
+one the unquoted sources use.
 
-With quoting enabled both stop holding. A field may contain a newline, and
-then a line offset is not a record offset: WoRMS carries 4,626 newlines
-inside quoted \code{namePublishedIn} fields, and \code{fread()}'s \code{skip} counts lines,
-so by record 200,000 a line-offset read is 445 records adrift and silently
-repeats rows. A field may also contain \code{""}, which
-\code{\link[utils:read.delim]{utils::read.delim()}} collapses to one quote per RFC 4180 and \code{fread()}
-returns doubled (Rdatatable/data.table#1109); WFO has 4,117 such fields, and
-reading them the other way would leave stray quote characters in the
-published values, which is the defect worms-2026.07 was cut to fix. A quoted
-source is therefore parsed with \code{read.delim()} itself, block by block, and
-cut only where the running quote count is even -- the cut cannot be
-delegated, since \code{read.delim()}'s own \code{nrows} counts lines as well.
+With quoting enabled that stops holding: a field may contain a newline, and
+then a line offset is not a record offset. WoRMS carries 4,626 newlines
+inside quoted \code{namePublishedIn} fields, and every reader's row argument
+counts lines -- \code{fread()}'s \code{skip} does, and so does \code{read.delim(nrows=)}
+through \code{scan()}'s \code{nlines} -- so a line-offset read is 445 records adrift by
+record 200,000 and silently repeats rows. A quoted source is therefore cut
+only where the running count of quote characters is even, which is the one
+place a record can end, and the number of records that implies is checked
+against the number the parser returns.
+
+Lines are taken at the byte level, split on \code{LF} alone. R's own line reader
+recognizes a lone \code{CR} as a terminator as well, and WoRMS holds 59 of them
+inside fields: read as text it manufactures 57 lines the file does not have
+and drops 49 quote characters, which flips the parity and is why
+\code{\link[utils:read.delim]{utils::read.delim()}} gives up on that file partway through.
+
+A field may also contain \code{""}, which RFC 4180 defines as one literal quote.
+\code{\link[utils:read.delim]{utils::read.delim()}} collapses it and \code{fread()} returns it doubled
+(Rdatatable/data.table#1109); WFO has 4,117 such fields, and leaving them
+doubled would put stray quote characters in the published values, which is
+the defect worms-2026.07 was cut to fix. Rather than let the choice of reader
+decide that, the blocks are parsed with \code{fread()} and the unescaping is done
+here, so it holds whichever source is being read.
 }

@@ -1,5 +1,27 @@
 # taxifydb 0.1.21
 
+## A release without sidecars no longer deletes the ones on record
+
+* `update_manifest()` cleared the `extras` block whenever no sidecar was
+  passed, by analogy with the stale delta it drops on the line above. The two
+  are not alike: a delta URL names the release being written, so an old one
+  would 404, while a sidecar records the tag it was published under and stays
+  reachable across releases that do not carry one. The manifest is the only
+  record of that URL, so clearing it is how the runtime stops downloading the
+  file. Passing no extras now leaves the block alone; `character(0)` removes
+  it.
+
+* Both build workflows upload whatever sidecar the build wrote beside the
+  backbone, and record it. Neither had, which is why
+  `worms_species_profile.vtr` sat at `worms-2026.05` while its own backbone
+  reached 2026.08 -- and 14,227 rows short, since it is read by the same fixed
+  reader. Republished at 1,562,065 rows, one per taxon.
+
+* The light build, the heavy build and the taxify runtime sync each rebuilt the
+  release's artifact paths in their own embedded R one-liner, which is how they
+  came to disagree about what a release carries. They now share
+  `scripts/update_manifest_entry.R`.
+
 ## WoRMS reads short, and the streaming feed learns why (#43)
 
 * `read_worms()` no longer uses `utils::read.delim()`, which cannot read the
@@ -14,8 +36,8 @@
   `fread()` leaves RFC 4180's doubled quote as it found it
   (Rdatatable/data.table#1109) where `read.delim()` collapses it.
 
-  Not shipped: published `worms-2026.07` has 1,557,860 rows. The next rebuild
-  would have been short an eighth of the marine backbone.
+  Published as `worms-2026.08`: 1,562,065 rows, against 1,557,860 in
+  `worms-2026.07`.
 
 * `assert_worms_taxon_core()` fails the build when a `taxonID` is missing or
   repeated. A reader stopping partway through leaves the rows it did return

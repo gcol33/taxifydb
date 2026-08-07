@@ -87,7 +87,7 @@ R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices 
 
 **WoRMS quote note (#2, fixed in `worms-2026.07`).** ChecklistBank double-quotes its `Taxon.tsv` / `SpeciesProfile.tsv` string fields. `read_worms` (and the SpeciesProfile reader) must use `read.delim(quote = "\"")`, NOT `quote = ""` — with `quote = ""` the field-wrapping quotes are kept as literal characters, so 90.2% of `canonical_name` / `key_ci` / `key_normalized` / `authorship` came out wrapped in `"` (e.g. `"Aglaophamus malmgreni"`) and some quoted-field rows were mis-split (bibliographic text leaking into `taxon_id`). Runtime effect: exact match fails on the quotes, falls to fuzzy, and the quoted `accepted_name` then breaks every marine enrichment join. Using `quote = "\""` parses the double-quotes as quotes and strips them; only `"` is a quote (not `'`), so apostrophes in authorship (`d'Orbigny`, `O'Brien`) stay intact. After the fix: `canonical_name` quotes 1,406,915 -> 11 (the 11 genuine embedded quotes, e.g. `Gyrodactylus barbatuli f. "A"`), rows 1,559,455 -> 1,557,860. This was WoRMS-only: every other backbone and all enrichments have <=0.03% quoted, all genuine embedded quotes in informal/provisional names, so none needs the change. When rebuilding another delimited backbone/enrichment whose source wraps fields, prefer `quote = "\""` over `quote = ""`.
 
-**WoRMS reader note (#43).** Parsing the quotes correctly is necessary but not sufficient: `read.delim` cannot read this file at all. `Taxon.tsv` holds 4,626 newlines and **59 lone carriage returns** inside quoted fields, and R reads a lone `CR` as a line terminator — in text mode it also loses bytes, so the file's 15,419,038 quote characters come back as 15,418,989. Parity breaks, `scan()` reaches a record it cannot close, and it returns **1,363,240 of 1,562,065 rows** (12.7% of the marine backbone missing, the last few hundred filled with fragments of the citation that broke it) reporting only a warning. `read_worms` therefore reads with `data.table::fread` (which reads bytes and returns every record) followed by `unescape_quotes()`, since `fread` leaves RFC 4180's `""` doubled where `read.delim` collapses it (Rdatatable/data.table#1109). `assert_worms_taxon_core()` then fails the build if any `taxonID` is missing or repeated, which is what a reader stopping partway through looks like from the inside. This was never shipped — published `worms-2026.07` has 1,557,860 rows — but the next rebuild would have been short an eighth of the backbone. The same lone-CR hazard is why `delim_lf_reader()` splits blocks on `LF`/`CRLF` and never on a bare `CR`.
+**WoRMS reader note (#43).** Parsing the quotes correctly is necessary but not sufficient: `read.delim` cannot read this file at all. `Taxon.tsv` holds 4,626 newlines and **59 lone carriage returns** inside quoted fields, and R reads a lone `CR` as a line terminator — in text mode it also loses bytes, so the file's 15,419,038 quote characters come back as 15,418,989. Parity breaks, `scan()` reaches a record it cannot close, and it returns **1,363,240 of 1,562,065 rows** (12.7% of the marine backbone missing, the last few hundred filled with fragments of the citation that broke it) reporting only a warning. `read_worms` therefore reads with `data.table::fread` (which reads bytes and returns every record) followed by `unescape_quotes()`, since `fread` leaves RFC 4180's `""` doubled where `read.delim` collapses it (Rdatatable/data.table#1109). `assert_worms_taxon_core()` then fails the build if any `taxonID` is missing or repeated, which is what a reader stopping partway through looks like from the inside. Published as `worms-2026.08`: **1,562,065 rows**, against 1,557,860 in `worms-2026.07`. `worms_species_profile.vtr` is republished under the same tag at the same 1,562,065 rows (one per taxon, up from 1,547,838) — it is read by the same reader. The same lone-CR hazard is why `delim_lf_reader()` splits blocks on `LF`/`CRLF` and never on a bare `CR`.
 
 ## Enrichments
 
@@ -290,6 +290,23 @@ build_enrichment("woodiness", output_dir = "output/enrichment/woodiness")
 update_manifest("manifest/manifest.json", "itis", "2026.05",
                 "output/itis/itis.vtr")
 ```
+
+**Sidecars and the `extras` block.** A backbone may publish a sidecar `.vtr`
+next to it — COL and WoRMS both write a species profile (habitat flags). The
+manifest records it under `extras: [{name, url, size, sha256}]`, and that entry
+is the runtime's only record of where the file lives: `taxify`'s `download.R`
+reads it to fetch the sidecar into the same versioned directory as the
+backbone. So `update_manifest(extras = )` distinguishes three cases —
+`NULL` (the default) leaves whatever the manifest already records, a path
+vector replaces it, and `character(0)` removes the block. This is deliberately
+unlike the delta fields on the line above, which ARE cleared when a release
+carries no patch: a delta URL names the release being written and would 404,
+where a sidecar keeps the tag it was published under and stays reachable
+across releases that do not ship one. CI passes nothing and so preserves; the
+workflows glob `output/<backend>/<backend>_*.vtr` and pass what they find.
+All three call sites (both builds and the taxify runtime sync) go through
+`scripts/update_manifest_entry.R` rather than rebuilding the artifact paths
+themselves.
 
 ## CI
 

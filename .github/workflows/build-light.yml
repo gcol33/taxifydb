@@ -50,7 +50,10 @@ jobs:
       - name: Install package dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::jsonlite, any::curl, any::digest, any::DBI, any::RSQLite, any::rfishbase, any::openxlsx2, local::.
+          # data.table is a Suggests of the package but a requirement of these
+          # builds: the streaming feed parses every block with fread(), and the
+          # WoRMS taxon core cannot be read any other way (#43).
+          extra-packages: any::jsonlite, any::curl, any::digest, any::data.table, any::DBI, any::RSQLite, any::rfishbase, any::openxlsx2, local::.
           cache-version: 1
 
       - name: Install xdelta3

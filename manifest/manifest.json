@@ -74,7 +74,15 @@
       "content_id": "8509d13eb54e48dc4a1552e981d1574f",
       "delta_from": "2026.07",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.08/worms.xdelta",
-      "delta_size": 93486733
+      "delta_size": 93486733,
+      "extras": [
+        {
+          "name": "worms_species_profile.vtr",
+          "url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.08/worms_species_profile.vtr",
+          "size": 81118850,
+          "sha256": "4802b1569c1100497a4b651d32d83419186bfaf7745d515118eef3a500afa25d"
+        }
+      ]
     },
     "euromed": {
       "latest": "2026.07",

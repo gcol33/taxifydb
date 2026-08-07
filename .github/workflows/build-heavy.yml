@@ -94,9 +94,14 @@ jobs:
             --title "$(echo ${{ matrix.backend }} | tr '[:lower:]' '[:upper:]') v${{ steps.version.outputs.version }}" \
             --notes "${{ matrix.backend }} backbone v${{ steps.version.outputs.version }}"
 
+          # The glob picks up any sidecar the build wrote beside the backbone
+          # (COL and WoRMS both publish a species profile). Left out, a sidecar
+          # stays pinned to whichever release last carried it while its
+          # backbone moves on -- WoRMS ran three versions apart that way.
           for f in output/${{ matrix.backend }}/${{ matrix.backend }}.vtr \
                    output/${{ matrix.backend }}/${{ matrix.backend }}.xdelta \
-                   output/${{ matrix.backend }}/${{ matrix.backend }}.meta; do
+                   output/${{ matrix.backend }}/${{ matrix.backend }}.meta \
+                   output/${{ matrix.backend }}/${{ matrix.backend }}_*.vtr; do
             if [ -f "$f" ]; then
               gh release upload "$TAG" "$f" --repo ${{ github.repository }} --clobber
             fi
@@ -114,7 +119,12 @@ jobs:
             # so jobs pinned to the trigger SHA never clobber each other.
             git fetch origin main
             git reset --hard origin/main
-            "${{ steps.rscript.outputs.path }}" -e "p <- file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.xdelta'); d <- '${{ steps.delta.outputs.prev_version }}'; taxifydb::update_manifest('manifest/manifest.json', '${{ matrix.backend }}', '${{ steps.version.outputs.version }}', file.path('output','${{ matrix.backend }}','${{ matrix.backend }}.vtr'), delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
+            "${{ steps.rscript.outputs.path }}" scripts/update_manifest_entry.R \
+              manifest/manifest.json \
+              "${{ matrix.backend }}" \
+              "${{ steps.version.outputs.version }}" \
+              "output/${{ matrix.backend }}" \
+              "${{ steps.delta.outputs.prev_version }}"
             git add manifest/manifest.json
             if git diff --staged --quiet; then
               echo "manifest unchanged"; break

@@ -11,7 +11,7 @@ update_manifest(
   vtr_path,
   delta_path = NULL,
   delta_from = NULL,
-  extras = character(0L),
+  extras = NULL,
   repo = "gcol33/taxifydb",
   source_url = NULL
 )
@@ -29,10 +29,13 @@ update_manifest(
 
 \item{delta_from}{Character or NULL. Previous version the delta is from.}
 
-\item{extras}{Character vector. Paths to sidecar artifacts uploaded with
-the release. Recorded as \verb{extras: [\{name, url, size, sha256\}]} in the
+\item{extras}{Character vector or NULL. Paths to sidecar artifacts uploaded
+with the release. Recorded as \verb{extras: [\{name, url, size, sha256\}]} in the
 manifest entry; the runtime downloader fetches each into the same
-versioned directory as the main \code{.vtr}.}
+versioned directory as the main \code{.vtr}. \code{NULL} (the default) leaves an
+existing \code{extras} block untouched, since a sidecar is published on its own
+release cadence and its recorded URL names the tag it came from, not this
+one. Pass \code{character(0)} to remove the block.}
 
 \item{repo}{Character. GitHub repo for URL construction.}
 

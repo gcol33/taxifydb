@@ -232,10 +232,13 @@ check_source_url <- function(url, what) {
 #' @param vtr_path Character.
 #' @param delta_path Character or NULL.
 #' @param delta_from Character or NULL. Previous version the delta is from.
-#' @param extras Character vector. Paths to sidecar artifacts uploaded with
-#'   the release. Recorded as `extras: [{name, url, size, sha256}]` in the
+#' @param extras Character vector or NULL. Paths to sidecar artifacts uploaded
+#'   with the release. Recorded as `extras: [{name, url, size, sha256}]` in the
 #'   manifest entry; the runtime downloader fetches each into the same
-#'   versioned directory as the main `.vtr`.
+#'   versioned directory as the main `.vtr`. `NULL` (the default) leaves an
+#'   existing `extras` block untouched, since a sidecar is published on its own
+#'   release cadence and its recorded URL names the tag it came from, not this
+#'   one. Pass `character(0)` to remove the block.
 #' @param repo Character. GitHub repo for URL construction.
 #' @param source_url Character or NULL. Original data source URL. When `NULL`
 #'   (the default), it is read from the `url` field of the `.meta` sidecar that
@@ -246,7 +249,7 @@ check_source_url <- function(url, what) {
 update_manifest <- function(manifest_path, backend_name, version,
                             vtr_path, delta_path = NULL,
                             delta_from = NULL,
-                            extras = character(0L),
+                            extras = NULL,
                             repo = "gcol33/taxifydb",
                             source_url = NULL) {
   if (file.exists(manifest_path)) {
@@ -307,23 +310,30 @@ update_manifest <- function(manifest_path, backend_name, version,
     entry$delta_size <- NULL
   }
 
-  if (length(extras) > 0L) {
-    missing <- extras[!file.exists(extras)]
-    if (length(missing) > 0L) {
-      stop("Missing extras files: ", paste(missing, collapse = ", "),
-           call. = FALSE)
+  # A stale delta is dropped above because its URL names this release's tag and
+  # would 404 against it. A sidecar is the other way round: it records the tag
+  # it was published under, so it survives a release that does not carry one.
+  # The manifest is the only record of that URL, and rewriting the entry
+  # without it is how a sidecar stops being downloaded at all.
+  if (!is.null(extras)) {
+    if (length(extras) > 0L) {
+      missing <- extras[!file.exists(extras)]
+      if (length(missing) > 0L) {
+        stop("Missing extras files: ", paste(missing, collapse = ", "),
+             call. = FALSE)
+      }
+      entry$extras <- lapply(extras, function(p) {
+        name <- basename(p)
+        list(
+          name   = name,
+          url    = sprintf("%s/%s", base_url, name),
+          size   = file.size(p),
+          sha256 = sha256(p)
+        )
+      })
+    } else {
+      entry$extras <- NULL
     }
-    entry$extras <- lapply(extras, function(p) {
-      name <- basename(p)
-      list(
-        name   = name,
-        url    = sprintf("%s/%s", base_url, name),
-        size   = file.size(p),
-        sha256 = sha256(p)
-      )
-    })
-  } else {
-    entry$extras <- NULL
   }
 
   manifest$backends[[backend_name]] <- drop_empty_fields(entry)

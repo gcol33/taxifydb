@@ -71,8 +71,11 @@ runs:
           exit 1
         fi
 
-        VTR="$(pwd)/output/$BE/$BE.vtr"
-        DELTA="$(pwd)/output/$BE/$BE.xdelta"
+        # Resolved before the clone below moves the working directory: both
+        # live in the taxifydb checkout, and the manifest being written is in
+        # the runtime clone.
+        OUT="$(pwd)/output/$BE"
+        UPDATER="$(pwd)/scripts/update_manifest_entry.R"
 
         rm -rf taxify_repo
         git clone "https://x-access-token:${TAXIFY_MANIFEST_TOKEN}@github.com/${REPO}.git" taxify_repo
@@ -84,7 +87,8 @@ runs:
         BR="auto/manifest-$BE"
         git checkout -B "$BR" origin/main
 
-        "${{ inputs.rscript }}" -e "p <- '$DELTA'; d <- '${{ inputs.delta_from }}'; taxifydb::update_manifest('inst/manifest.json', '$BE', '$VER', '$VTR', delta_path = if (file.exists(p)) p else NULL, delta_from = if (nzchar(d)) d else NULL)"
+        "${{ inputs.rscript }}" "$UPDATER" \
+          inst/manifest.json "$BE" "$VER" "$OUT" "${{ inputs.delta_from }}"
 
         git add inst/manifest.json
         if git diff --staged --quiet; then

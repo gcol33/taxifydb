@@ -61,12 +61,13 @@ R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices 
 
 ## Backends
 
-15 backends. All built via the same `build_backend(name)` entrypoint.
+19 backends. All built via the same `build_backend(name)` entrypoint.
 
 | Backend | Format | Notes |
 |---------|--------|-------|
 | wfo | Zenodo ZIP / classification.txt | WFO 2024-12 snapshot |
 | col | DwC-A TSV | Catalogue of Life |
+| colxr | flat DwC-A TSV (ChecklistBank) | COL Extended Release, the taxonomy GBIF.org serves by default; canonical `scientificName` with authorship in its own column, classification denormalized on every row, alphanumeric IDs; monthly, so the release is resolved from the ChecklistBank API not a fixed URL |
 | gbif | simple.txt.gz | GBIF backbone, denormalized hierarchy |
 | itis | SQLite | parent_tsn walk, needs RSQLite |
 | ncbi | pipe-delimited .dmp | aggressive noise filter |
@@ -78,6 +79,9 @@ R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices 
 | fishbase | rfishbase `load_taxa()` + `synonyms()` | fishes; shared reader `.read_rfishbase_backbone()`; needs rfishbase |
 | sealifebase | rfishbase (server = sealifebase) | non-fish aquatic; same shared reader |
 | reptiledb | taxa.csv + synonyms.xlsx + checklist.xlsx | reptiles; CC-BY; synonyms from 2023-04 snapshot, order via family->order map; needs openxlsx2 |
+| mdd | MDD.zip of CSVs | Mammal Diversity Database (ASM); accepted species file + `Species_Syn_Current` joined on a normalized binomial (species file uses `_`, synonym file uses a space); synonyms keyed on `MDD_normalized_original_combination` (the historical name), not the current-placement genus/epithet columns |
+| avilist | extended `.xlsx` | AviList global bird checklist (merged the IOC / Clements / BirdLife split); no synonym table, so homotypic synonyms are recovered from `Protonym` (genus reassignment); needs openxlsx2 |
+| lpsn | ColDP (`NameUsage.tsv`) via ChecklistBank | List of Prokaryotic names with Standing in Nomenclature (DSMZ); CC BY-SA; open ChecklistBank mirror (dataset 2015) since the DSMZ download is account-gated; `parentID` walk for classification; taxonomic (`col:status`) and nomenclatural (`col:nameStatus`) status axes kept apart |
 | wcvp | pipe-delimited `wcvp_names.csv` (Kew) | vascular plants; CC BY; `taxon_name` is the rendered canonical (hybrids + infraspecific markers); acceptance derived from `accepted_plant_name_id` (self=accepted, other=synonym, empty=unplaced), not the nine `taxon_status` spellings. Kew does NOT field-wrap, and 0.06% of names carry genuine embedded `"` (e.g. `f. "A"`), so `read_wcvp` reads with `quote = ""` (opposite of WoRMS); optional data.table fread |
 | lcvp | `tab_lcvp.rda` (idiv-biodiversity/LCVP) | vascular plants; MIT; loaded via base `load()` (no LCVP pkg dep); canonical assembled from `Input.Genus`/`Input.Epitheton`/`Rank`/`Input.Subspecies.Epitheton` (`nil` = species; `forma`->`f.`); synonym->accepted via `globalId.of.Output.Taxon`; `unresolved` kept as own accepted concept; no hybrids in input columns |
 

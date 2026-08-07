@@ -20,6 +20,12 @@ on:
           - fishbase
           - sealifebase
           - reptiledb
+          - wfo
+          - wcvp
+          - lcvp
+          - fungorum
+          - algaebase
+          - euromed
 
 permissions:
   contents: write
@@ -35,7 +41,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms", "fishbase", "sealifebase", "reptiledb"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
+        # Which workflow a backbone belongs to is decided by size, measured
+        # against what already builds here: OTT (3.7M rows) and NCBI (2.8M) are
+        # the ceiling this runner is known to clear. WFO, WCVP, LCVP, Fungorum,
+        # AlgaeBase and Euro+Med all sit below both and were only ever in
+        # build-heavy by assumption; Euro+Med is 147k rows, 4% of OTT. GBIF
+        # (6.4M) and COL (5.3M) are the two genuinely above the set, and they
+        # stay in build-heavy along with COL XR.
+        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms", "fishbase", "sealifebase", "reptiledb", "wfo", "wcvp", "lcvp", "fungorum", "algaebase", "euromed"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
 
     steps:
       - name: Checkout

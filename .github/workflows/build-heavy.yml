@@ -1,14 +1,20 @@
 name: Build Heavy Backbones
 
+# This workflow targets `self-hosted`, and no self-hosted runner is registered
+# on the repository. COL, COL XR and GBIF are built locally instead (see
+# scripts/launch_backbone.ps1) and published by hand; every run recorded here
+# has been cancelled or left queued. Registering a runner is what would make it
+# live -- until then a schedule only queues a job nothing can pick up, so both
+# crons are held below rather than firing monthly into an empty pool.
 on:
-  schedule:
-    # 1st of January and July at 04:00 UTC (after light builds)
-    - cron: '0 4 1 1,7 *'
-    # COL XR alone, on the 20th of each month. The Extended Release is
-    # published monthly against the Base Release's annual cycle, so building it
-    # only twice a year would leave it as stale as the sources it exists to
-    # improve on. The 20th clears the mid-month COL release date.
-    - cron: '0 4 20 * *'
+  # schedule:
+  #   # 1st of January and July at 04:00 UTC (after light builds)
+  #   - cron: '0 4 1 1,7 *'
+  #   # COL XR alone, on the 20th of each month. The Extended Release is
+  #   # published monthly against the Base Release's annual cycle, so building it
+  #   # only twice a year would leave it as stale as the sources it exists to
+  #   # improve on. The 20th clears the mid-month COL release date.
+  #   - cron: '0 4 20 * *'
   workflow_dispatch:
     inputs:
       backend:
@@ -18,15 +24,9 @@ on:
         type: choice
         options:
           - all
-          - wfo
           - col
           - colxr
           - gbif
-          - euromed
-          - fungorum
-          - algaebase
-          - wcvp
-          - lcvp
 
 permissions:
   contents: write
@@ -39,11 +39,14 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
+        # Only the two backbones above everything build-light is known to
+        # clear, plus COL XR which is COL-sized. The other six moved to
+        # build-light, where they run on a hosted runner that exists.
         backend: >-
           ${{ github.event.schedule == '0 4 20 * *'
               && fromJSON('["colxr"]')
               || (github.event.inputs.backend == 'all'
-                  && fromJSON('["wfo", "col", "colxr", "gbif", "euromed", "fungorum", "algaebase", "wcvp", "lcvp"]')
+                  && fromJSON('["col", "colxr", "gbif"]')
                   || fromJSON(format('["{0}"]', github.event.inputs.backend || 'col'))) }}
 
     steps:

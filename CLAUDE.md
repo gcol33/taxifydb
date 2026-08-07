@@ -312,12 +312,22 @@ themselves.
 
 Three workflows under `.github/workflows/`:
 
-- `build-light.yml` — Ubuntu, the 4 light backends (ITIS, NCBI, OTT, WoRMS),
-  twice a year + manual dispatch
-- `build-heavy.yml` — Windows self-hosted, the 6 heavy backends (WFO, COL,
-  GBIF, Euro+Med, Fungorum, AlgaeBase), same cadence
+- `build-light.yml` — Ubuntu hosted runner, 13 backbones (ITIS, NCBI, OTT,
+  WoRMS, FishBase, SeaLifeBase, Reptile Database, WFO, WCVP, LCVP, Fungorum,
+  AlgaeBase, Euro+Med), twice a year + manual dispatch
+- `build-heavy.yml` — COL, COL XR and GBIF. **Dormant**: it targets
+  `self-hosted` and no runner is registered, so its crons are commented out
+  and the three are built locally and published by hand
 - `check-enrichment-versions.yml` — weekly cron, opens/updates a GitHub
   issue labeled `enrichment-outdated` when upstream versions advance
+
+Membership is by measured size, not by guess. OTT (3.7M rows) and NCBI (2.8M)
+build on the hosted runner today, so anything under them belongs there: that
+is what moved WFO, WCVP, LCVP, Fungorum, AlgaeBase and Euro+Med (147k rows)
+out of build-heavy, where they had sat since before anything was measured.
+Only GBIF (6.4M) and COL (5.3M) are above the whole hosted set. Streaming
+raised that ceiling once already -- WoRMS went to 7m31s on Ubuntu after #43 --
+so re-measure before assuming COL still needs the big box.
 
 All workflows install `taxifydb` from the repo's source (`devtools::install_local(".")`)
 and call the package API directly.

@@ -65,21 +65,16 @@
       "content_id": "8aa2468bdfc9940c7dc208f3b3904bc0"
     },
     "worms": {
-      "latest": "2026.07",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.07/worms.vtr",
-      "full_size": 346514811,
-      "full_sha256": "986f59375b772e4b47287883ee71a02ffcc79d0a70807fdd31dc7c8d79314e2e",
-      "nrow": 1557860,
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.08/worms.vtr",
+      "full_size": 312361574,
+      "full_sha256": "dee4a79b08805580c6b51f1c04547240e342b14918fc1622b7ede32ef2ee2b32",
+      "nrow": 1562065,
       "source_url": "https://api.checklistbank.org/dataset/2011/archive",
-      "content_id": "abbdb49f70acf3bd519dc1a3a82fd379",
-      "extras": [
-        {
-          "name": "worms_species_profile.vtr",
-          "url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.05/worms_species_profile.vtr",
-          "size": 78609521,
-          "sha256": "ade818f1fdedbb10640d623960ceaf35f44b18d4e191147c635e574deeb03c37"
-        }
-      ]
+      "content_id": "8509d13eb54e48dc4a1552e981d1574f",
+      "delta_from": "2026.07",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.08/worms.xdelta",
+      "delta_size": 93486733
     },
     "euromed": {
       "latest": "2026.07",

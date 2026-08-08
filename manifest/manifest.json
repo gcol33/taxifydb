@@ -65,13 +65,16 @@
       "delta_size": 37544866
     },
     "ott": {
-      "latest": "3.7.3",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/ott-3.7.3/ott.vtr",
-      "full_size": 764829756,
-      "full_sha256": "f59ac806e934fb58047b0aab21fc9aece6f46f5b9818cc72398db0c6024123e3",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/ott-2026.08/ott.vtr",
+      "full_size": 763383420,
+      "full_sha256": "01483e38778270334e1d44ab98f5e8c801a43a6fcb0702e20c6856c7fcf57776",
       "nrow": 3690217,
       "source_url": "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
-      "content_id": "8aa2468bdfc9940c7dc208f3b3904bc0"
+      "content_id": "c3b959908a3e5cb3a33d19158108f2d7",
+      "delta_from": "3.7.3",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/ott-2026.08/ott.xdelta",
+      "delta_size": 173342850
     },
     "worms": {
       "latest": "2026.08",

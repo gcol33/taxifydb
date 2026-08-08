@@ -38,13 +38,16 @@
       "content_id": "3721f67b89de4f9f3156b928ca4c459d"
     },
     "itis": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/itis-2026.06/itis.vtr",
-      "full_size": 204660526,
-      "full_sha256": "b95f0e4f32145e44156c01cc4700a695fbd7299e1f703c289606cabdb4595de1",
-      "nrow": 991868,
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/itis-2026.08/itis.vtr",
+      "full_size": 204917799,
+      "full_sha256": "2bc79a6a2a1cb132e42d11954fd9c50e9c263956fb7eb93fee5f5a7befe6cef1",
+      "nrow": 993346,
       "source_url": "https://www.itis.gov/downloads/itisSqlite.zip",
-      "content_id": "c7585a94a65003546a324aeff18a05b0"
+      "content_id": "e18326dd8d05ec249f295137a128aa1e",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/itis-2026.08/itis.xdelta",
+      "delta_size": 17430202
     },
     "ncbi": {
       "latest": "2026.06",

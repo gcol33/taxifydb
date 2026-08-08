@@ -11,7 +11,8 @@
       "content_id": "85d19c5e2a9f721247ea83edcb7a396a",
       "delta_from": "2026.06",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.08/wfo.xdelta",
-      "delta_size": 152757530
+      "delta_size": 152757530,
+      "source_version": "2024-12"
     },
     "col": {
       "latest": "2026.08",
@@ -38,7 +39,8 @@
       "full_sha256": "701a5a4983f6d62430cb46bc0f7ed8fe4db0841f406cb19cfc8c25c52f752a4d",
       "nrow": 6404001,
       "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz",
-      "content_id": "050b66b0cdf42d3b03a047053844d985"
+      "content_id": "050b66b0cdf42d3b03a047053844d985",
+      "source_version": "current"
     },
     "itis": {
       "latest": "2026.08",
@@ -74,7 +76,8 @@
       "content_id": "c3b959908a3e5cb3a33d19158108f2d7",
       "delta_from": "3.7.3",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/ott-2026.08/ott.xdelta",
-      "delta_size": 173342850
+      "delta_size": 173342850,
+      "source_version": "3.7.3"
     },
     "worms": {
       "latest": "2026.08",
@@ -106,7 +109,8 @@
       "content_id": "066682024bbd866f476d0aeaf3c02e00",
       "delta_from": "2026.07",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.08/euromed.xdelta",
-      "delta_size": 166
+      "delta_size": 166,
+      "source_version": "2026.07"
     },
     "fungorum": {
       "latest": "2026.08",
@@ -118,7 +122,8 @@
       "content_id": "5b5a9a6c85ed78f9a956b8a8c594daeb",
       "delta_from": "2026.06",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.08/fungorum.xdelta",
-      "delta_size": 897
+      "delta_size": 897,
+      "source_version": "2025.04"
     },
     "algaebase": {
       "latest": "2026.08",
@@ -130,7 +135,8 @@
       "content_id": "be8141896359c55a78ecd7ec37d1af7d",
       "delta_from": "2026.06",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.08/algaebase.xdelta",
-      "delta_size": 7911912
+      "delta_size": 7911912,
+      "source_version": "2025.04"
     },
     "fishbase": {
       "latest": "2026.08",
@@ -175,7 +181,8 @@
       "content_id": "047bde3e1e5503dc9204b2c9419d420f",
       "delta_from": "2026.06",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/reptiledb-2026.07/reptiledb.xdelta",
-      "delta_size": 86
+      "delta_size": 86,
+      "source_version": "2026.06"
     },
     "lcvp": {
       "latest": "2026.08",
@@ -199,7 +206,8 @@
       "license": "MIT",
       "delta_from": "3.0.1",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/lcvp-2026.08/lcvp.xdelta",
-      "delta_size": 1225765
+      "delta_size": 1225765,
+      "source_version": "3.0.1"
     },
     "wcvp": {
       "latest": "2026.08",
@@ -223,7 +231,8 @@
       "license": "CC BY 4.0",
       "delta_from": "2026.06",
       "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.08/wcvp.xdelta",
-      "delta_size": 88710405
+      "delta_size": 88710405,
+      "source_version": "2026.06"
     },
     "wgsrpd": {
       "latest": "2026.07",
@@ -291,7 +300,8 @@
       "full_sha256": "fc532bd3c8dff8ffcbcca677544db4b3ebe8aa538605fae7538c6acab2c2f05d",
       "content_id": "dbc709c2f7008c14e341abc37e141082",
       "nrow": 61862,
-      "source_url": "https://github.com/mammaldiversity/mammaldiversity.github.io/raw/refs/heads/master/assets/data/MDD.zip"
+      "source_url": "https://github.com/mammaldiversity/mammaldiversity.github.io/raw/refs/heads/master/assets/data/MDD.zip",
+      "source_version": "2.5"
     },
     "avilist": {
       "latest": "2026.08",
@@ -300,7 +310,8 @@
       "full_sha256": "fd97150acd8bb9e9a85f9c9370ecffddf760e1a052067bd35108cfed29a273f5",
       "content_id": "8f16f7e07aadae4c0174d6279387e8b5",
       "nrow": 40572,
-      "source_url": "https://avilist.org"
+      "source_url": "https://avilist.org",
+      "source_version": "2025b"
     },
     "lpsn": {
       "latest": "2026.08",
@@ -309,7 +320,8 @@
       "full_sha256": "9598b90af1b60f9fb974a2915b6958d3de45124b8884db9d68c042970155ef4c",
       "content_id": "5d1af91a3fe782d61f8366c2f5a4fc52",
       "nrow": 44885,
-      "source_url": "https://lpsn.dsmz.de"
+      "source_url": "https://lpsn.dsmz.de",
+      "source_version": "2026.07"
     },
     "colxr": {
       "latest": "2026.08",
@@ -319,7 +331,7 @@
       "content_id": "ed3c1e7a915c4bcaa9518b67254d9a87",
       "nrow": 7871065,
       "source_url": "https://api.checklistbank.org/dataset/315834/export.zip?format=DwCA",
-      "source_date": "2026-07-17"
+      "source_version": "2026-07-17 XR"
     }
   },
   "enrichments": {

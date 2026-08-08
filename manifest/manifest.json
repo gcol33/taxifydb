@@ -178,12 +178,12 @@
       "delta_size": 86
     },
     "lcvp": {
-      "latest": "3.0.1",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/lcvp-3.0.1/lcvp.vtr",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/lcvp-2026.08/lcvp.vtr",
       "nrow": 1337891,
-      "full_size": 252318025,
-      "full_sha256": "0024621c610d054a12853f9e0540e1a5be4be07f9db6d481bb5159cc283dd851",
-      "content_id": "75e38b7a386640f40a0b4990afccf31e",
+      "full_size": 252372487,
+      "full_sha256": "159b261c56efe40b5a01fa54edb129df44fcd005e18082de9d26689c1d555ecd",
+      "content_id": "a01b7b00e4a0aa683df3ef5ca4f3141b",
       "source_url": "https://raw.githubusercontent.com/idiv-biodiversity/LCVP/master/data/tab_lcvp.rda",
       "citation": {
         "key": "freiberg2020lcvp",
@@ -196,7 +196,10 @@
         "pages": "416",
         "doi": "10.1038/s41597-020-00702-z"
       },
-      "license": "MIT"
+      "license": "MIT",
+      "delta_from": "3.0.1",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/lcvp-2026.08/lcvp.xdelta",
+      "delta_size": 1225765
     },
     "wcvp": {
       "latest": "2026.08",

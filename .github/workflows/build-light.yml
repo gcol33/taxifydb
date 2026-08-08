@@ -26,6 +26,9 @@ on:
           - fungorum
           - algaebase
           - euromed
+          - mdd
+          - avilist
+          - lpsn
 
 permissions:
   contents: write
@@ -47,8 +50,10 @@ jobs:
         # AlgaeBase and Euro+Med all sit below both and were only ever in
         # build-heavy by assumption; Euro+Med is 147k rows, 4% of OTT. GBIF
         # (6.4M) and COL (5.3M) are the two genuinely above the set, and they
-        # stay in build-heavy along with COL XR.
-        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms", "fishbase", "sealifebase", "reptiledb", "wfo", "wcvp", "lcvp", "fungorum", "algaebase", "euromed"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
+        # stay in build-heavy along with COL XR. MDD (62k), AviList (41k) and
+        # LPSN (45k) are the smallest of the set and had a builder but no
+        # workflow, so until now they could only be cut by hand.
+        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms", "fishbase", "sealifebase", "reptiledb", "wfo", "wcvp", "lcvp", "fungorum", "algaebase", "euromed", "mdd", "avilist", "lpsn"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
 
     steps:
       - name: Checkout

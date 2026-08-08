@@ -184,12 +184,12 @@
       "license": "MIT"
     },
     "wcvp": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.06/wcvp.vtr",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.08/wcvp.vtr",
       "nrow": 1448984,
-      "full_size": 333566252,
-      "full_sha256": "a509949cbd9946284a80ff8960665b5af266690f1598b3114a399240481a0f9a",
-      "content_id": "f08825669ec386086db9cd0755ab6115",
+      "full_size": 309175561,
+      "full_sha256": "20da853008377c7ab601a3796a12328cb9500c37c2ae179cfd2327a3432e55cf",
+      "content_id": "1148cb280192de2391f4f2aee591d451",
       "source_url": "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip",
       "citation": {
         "key": "govaerts2021wcvp",
@@ -202,7 +202,10 @@
         "pages": "215",
         "doi": "10.1038/s41597-021-00997-6"
       },
-      "license": "CC BY 4.0"
+      "license": "CC BY 4.0",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.08/wcvp.xdelta",
+      "delta_size": 88710405
     },
     "wgsrpd": {
       "latest": "2026.07",

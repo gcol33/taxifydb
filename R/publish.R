@@ -226,6 +226,12 @@ check_source_url <- function(url, what) {
 
 #' Update manifest.json after a successful backbone build
 #'
+#' The entry records two versions where they differ: `latest` is the release
+#' tag the download URL points at (stamped `YYYY.MM` by the build cycle) and
+#' `source_version` is the version the upstream dataset gives itself, read from
+#' the `.meta` sidecar. Rolling sources carry only `latest`, having no version
+#' of their own.
+#'
 #' @param manifest_path Character. Path to manifest.json.
 #' @param backend_name Character.
 #' @param version Character.
@@ -286,17 +292,32 @@ update_manifest <- function(manifest_path, backend_name, version,
   entry$content_id  <- unname(tools::md5sum(vtr_path))
   entry$nrow        <- count_vtr_rows(vtr_path)
 
-  # Provenance defaults to the download URL that build_vtr() records in the
-  # .meta sidecar next to every .vtr (the backend's single source of truth).
-  # An explicit source_url argument overrides it.
-  if (is.null(source_url)) {
-    meta <- read_meta(paste0(tools::file_path_sans_ext(vtr_path), ".meta"))
-    if (!is.null(meta) && "url" %in% names(meta) && nzchar(meta[["url"]])) {
-      source_url <- meta[["url"]]
-    }
+  # The .meta sidecar build_vtr() writes next to every .vtr is the backend's
+  # single source of truth for provenance: the URL the data was downloaded from
+  # and the version the source calls itself. An explicit source_url argument
+  # overrides the recorded one.
+  meta <- read_meta(paste0(tools::file_path_sans_ext(vtr_path), ".meta"))
+
+  if (is.null(source_url) && !is.null(meta) &&
+      "url" %in% names(meta) && nzchar(meta[["url"]])) {
+    source_url <- meta[["url"]]
   }
   if (!is.null(source_url) && nzchar(source_url)) {
     entry$source_url <- check_source_url(source_url, backend_name)
+  }
+
+  # `latest` is the release tag, stamped YYYY.MM by the build cycle, so it
+  # records when a build ran rather than which upstream release it read. Where
+  # the source names its own version (OTT 3.7.3, LCVP 3.0.1, MDD 2.5) that
+  # identity is otherwise lost the moment the tag is cut, so it is recorded
+  # alongside -- the same split the enrichment manifest makes between `latest`
+  # and `source_version`. A rolling source (ITIS, NCBI, WoRMS) has no version
+  # of its own and stamps the build date, which the tag already carries, so
+  # nothing is recorded for it.
+  entry$source_version <- NULL
+  if (!is.null(meta) && "version" %in% names(meta) &&
+      nzchar(meta[["version"]]) && !identical(meta[["version"]], version)) {
+    entry$source_version <- meta[["version"]]
   }
 
   if (!is.null(delta_path) && file.exists(delta_path)) {

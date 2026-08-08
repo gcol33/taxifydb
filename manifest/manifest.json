@@ -115,13 +115,16 @@
       "delta_size": 897
     },
     "algaebase": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.06/algaebase.vtr",
-      "full_size": 36264066,
-      "full_sha256": "de17ce3538d0b225cebdb2a874cb4f67e334b86304bd68f881d12ccb096a6261",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.08/algaebase.vtr",
+      "full_size": 36030815,
+      "full_sha256": "f9ad43c837ae0f54535aa8f5df8c1f52c4491d9fc3dce19d3d190d909d5321ba",
       "nrow": 172351,
       "source_url": "https://api.checklistbank.org/dataset/304756/nameusage/search",
-      "content_id": "e327b0eb5062bc6bfd1649fd7e1773f6"
+      "content_id": "be8141896359c55a78ecd7ec37d1af7d",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.08/algaebase.xdelta",
+      "delta_size": 7911912
     },
     "fishbase": {
       "latest": "2026.08",

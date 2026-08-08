@@ -115,13 +115,16 @@
       "content_id": "e327b0eb5062bc6bfd1649fd7e1773f6"
     },
     "fishbase": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fishbase-2026.06/fishbase.vtr",
-      "full_size": 19036291,
-      "full_sha256": "099f478fbbc346441237807109d3925a9010b74e98753ed18b5b3d9b0967b0ed",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fishbase-2026.08/fishbase.vtr",
+      "full_size": 18738290,
+      "full_sha256": "a902d8e2771dc1fdb79b5afa1fce3ca8f4574fb0939bf4190130a4a03f26f9c3",
       "nrow": 102703,
       "source_url": "https://fishbase.ropensci.org",
-      "content_id": "458bd9efe742ec9498e902e80e468762"
+      "content_id": "7bfd417eecbf71818ec0e344f80d83b3",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/fishbase-2026.08/fishbase.xdelta",
+      "delta_size": 406092
     },
     "sealifebase": {
       "latest": "2026.06",

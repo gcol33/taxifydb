@@ -53,13 +53,16 @@
       "delta_size": 17430202
     },
     "ncbi": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/ncbi-2026.06/ncbi.vtr",
-      "full_size": 514271185,
-      "full_sha256": "8db142ab21d93240f71f51972c69e15ec484b19cf915ea4bb08c239348a637b3",
-      "nrow": 2759103,
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/ncbi-2026.08/ncbi.vtr",
+      "full_size": 530918335,
+      "full_sha256": "4ee3266d6d61960c91c468bf9e8fa2147c02825d6d56b4aa34f44514bdd769bd",
+      "nrow": 2848102,
       "source_url": "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz",
-      "content_id": "cf68cc9c431162a128e7468ae2ea7216"
+      "content_id": "761f5f92993ca539e0f0427d2421d813",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/ncbi-2026.08/ncbi.xdelta",
+      "delta_size": 37544866
     },
     "ott": {
       "latest": "3.7.3",

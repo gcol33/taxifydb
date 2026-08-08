@@ -43,6 +43,33 @@ download_lcvp <- function(dest = tempdir(), verbose = TRUE) {
 }
 
 
+# The .rda stores authorship as latin-1 bytes with no declared encoding, so
+# every string operation downstream reads them in whatever the session locale
+# is. Under a UTF-8 locale the accented authors ("(J.Calvo & F.Avila) Pruski")
+# are not valid UTF-8 and the first trimws() aborts the build. Only the invalid
+# strings are converted: a column can hold both, and re-encoding one that is
+# already UTF-8 would double-encode it.
+.lcvp_fix_enc <- function(x) {
+  bad <- !is.na(x) & !validUTF8(x)
+  if (any(bad)) x[bad] <- iconv(x[bad], from = "latin1", to = "UTF-8")
+  x
+}
+
+.lcvp_to_utf8 <- function(tab) {
+  tab[] <- lapply(tab, function(col) {
+    # A factor carries the bytes on its levels, and read_lcvp() reaches them
+    # through as.character(), so both storage forms need converting.
+    if (is.factor(col)) {
+      levels(col) <- .lcvp_fix_enc(levels(col))
+      return(col)
+    }
+    if (is.character(col)) return(.lcvp_fix_enc(col))
+    col
+  })
+  tab
+}
+
+
 #' Read and normalize the LCVP reference table
 #'
 #' @param rda_path Character. Path to `tab_lcvp.rda`.
@@ -55,6 +82,7 @@ read_lcvp <- function(rda_path, verbose = TRUE) {
   loaded <- load(rda_path, envir = env)
   tab <- get(loaded[1L], envir = env)
   tab <- as.data.frame(tab, stringsAsFactors = FALSE)
+  tab <- .lcvp_to_utf8(tab)
   if (verbose) message(sprintf("  %s rows", format(nrow(tab), big.mark = ",")))
 
   genus   <- trimws(as.character(tab$Input.Genus))

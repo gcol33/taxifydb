@@ -97,13 +97,16 @@
       "delta_size": 166
     },
     "fungorum": {
-      "latest": "2026.06",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.06/fungorum.vtr",
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.08/fungorum.vtr",
       "full_size": 71353563,
-      "full_sha256": "d33b6e42643f0846578e95d95f6a78c9de22cc7628109ed8063d33a05e25af0f",
+      "full_sha256": "dea9b6625b9311912244fbd3ac01a93faa1c9efc213021366a5f9edf085e9ef3",
       "nrow": 315037,
       "source_url": "https://api.checklistbank.org/dataset/2073/archive",
-      "content_id": "7f6e663b96933c962a9b242aeb14695d"
+      "content_id": "5b5a9a6c85ed78f9a956b8a8c594daeb",
+      "delta_from": "2026.06",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.08/fungorum.xdelta",
+      "delta_size": 897
     },
     "algaebase": {
       "latest": "2026.06",

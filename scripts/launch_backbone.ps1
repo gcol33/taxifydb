@@ -1,5 +1,10 @@
 # Launch a single backbone build, fully detached via Task Scheduler.
 # Usage:  .\scripts\launch_backbone.ps1 -Name <backend>
+#
+# build_all.R's single-backend branch passes its output_dir argument straight
+# through to build_backend(), so it takes the backbone's own directory rather
+# than the parent -- unlike build_enrichments.R, which appends the name itself.
+# That is also where `Rscript build_all.R publish <name>` reads the .vtr from.
 
 param(
   [Parameter(Mandatory = $true)]
@@ -18,7 +23,6 @@ $RunDir = Join-Path $Repo "output\$Name"
 New-Item -ItemType Directory -Force -Path $RunDir | Out-Null
 
 $BuildScript = Join-Path $Repo "build_all.R"
-$OutDir = Join-Path $Repo "output"
 $StdOut = Join-Path $RunDir "build.stdout.log"
 $StdErr = Join-Path $RunDir "build.stderr.log"
 
@@ -28,7 +32,7 @@ $RunCmd = Join-Path $RunDir "_build.cmd"
 $cmdContent = @"
 @echo off
 echo %DATE% %TIME% [scheduled task starting] > "$StdOut"
-"$Py" "$BuildScript" $Name "$OutDir" >> "$StdOut" 2>> "$StdErr"
+"$Py" "$BuildScript" $Name "$RunDir" >> "$StdOut" 2>> "$StdErr"
 echo %DATE% %TIME% [scheduled task exit %ERRORLEVEL%] >> "$StdOut"
 "@
 Set-Content -Path $RunCmd -Value $cmdContent -Encoding ASCII

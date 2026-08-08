@@ -31,14 +31,14 @@
       ]
     },
     "gbif": {
-      "latest": "2026.07",
+      "latest": "2026.08",
       "source_date": "2023-08-28",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.07/gbif.vtr",
-      "full_size": 1865027233,
-      "full_sha256": "15ef1362a3216e04562209173db740b6ca9b27b0d91c3d64bce9377f4c90a1cb",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.08/gbif.vtr",
+      "full_size": 1630899040,
+      "full_sha256": "701a5a4983f6d62430cb46bc0f7ed8fe4db0841f406cb19cfc8c25c52f752a4d",
       "nrow": 6404001,
       "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz",
-      "content_id": "3721f67b89de4f9f3156b928ca4c459d"
+      "content_id": "050b66b0cdf42d3b03a047053844d985"
     },
     "itis": {
       "latest": "2026.08",
@@ -307,6 +307,16 @@
       "content_id": "5d1af91a3fe782d61f8366c2f5a4fc52",
       "nrow": 44885,
       "source_url": "https://lpsn.dsmz.de"
+    },
+    "colxr": {
+      "latest": "2026.08",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.08/colxr.vtr",
+      "full_size": 1562921454,
+      "full_sha256": "e321c2dd967fff881917fe60478ea12acc1d3e798d03fd733ff537f857668b4e",
+      "content_id": "ed3c1e7a915c4bcaa9518b67254d9a87",
+      "nrow": 7871065,
+      "source_url": "https://api.checklistbank.org/dataset/315834/export.zip?format=DwCA",
+      "source_date": "2026-07-17"
     }
   },
   "enrichments": {

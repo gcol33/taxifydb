@@ -1,5 +1,44 @@
 # taxifydb 0.1.21
 
+## The coverage audit reads the backbone set instead of carrying a copy
+
+* `check_manifest_coverage.R` walked a `BACKENDS` vector kept by hand, so a
+  backbone wired into the build but not added there was audited by nothing and
+  reported as clean. COL XR had been in that position since it was wired. The
+  vector is gone: the set is parsed out of `.register_extractors` in
+  `R/register.R`, and the script stops with an explanation rather than auditing a
+  guessed set when it cannot read that file.
+
+* The audit also checks what the published register was built from. Both
+  register artifacts already record the backbones they unioned in their `.meta`
+  sidecar and nothing compared it, so a register going stale as backbones were
+  added had no signal at all -- no version moves and no bytes change in anything
+  that is checked. `register_incomplete` and `register_unreadable` join the drift
+  states the weekly workflow opens an issue for.
+
+* Reading a release asset over the API works with a token present.
+  `curl::handle_setheaders()` replaces the header set rather than adding to it,
+  so setting `Authorization` in a second call dropped the
+  `Accept: application/octet-stream` that asks for the bytes, and the API
+  answered with the asset's JSON description instead. The same defect had been
+  dropping `User-Agent` from every authenticated request. One builder now
+  assembles the whole header set in a single call.
+
+## Reference geometry builds through the same door as a backbone
+
+* `build_backend("wgsrpd")` and `build_backend("meow")` work, and both build in
+  `build-light.yml` alongside the backbones. The boundary geometry behind
+  `region =` and the coordinate lookup had no entry in any builder registry, so
+  it could only be rebuilt by calling the internal function directly.
+
+* They are registered in `.geometry_builders`, not `.backend_builders`, and
+  `list_geometry()` names them. `list_backends()` is what
+  `build_all_name_lookups()` and `resolve_name_map()` iterate to build the
+  per-backbone accepted-name lookups that every enrichment is resolved through;
+  a vertex table carries no taxonomic names, so a geometry asset listed there
+  would yield an empty lookup and quietly cost the enrichments resolved against
+  it their matches.
+
 ## A rebuild that changed nothing no longer cuts a release
 
 * Builds stamp `date +%Y.%m`, which records when a build ran rather than what

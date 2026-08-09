@@ -39,7 +39,7 @@ taxifydb is a build companion distributed from GitHub; it is not on CRAN.
 
 ### Backbones
 
-Fifteen taxonomic backbones, each built through one entry point,
+Nineteen taxonomic backbones, each built through one entry point,
 `build_backend(name)`, and normalized to the same schema (`canonical_name`,
 `taxon_id`, `taxonomic_status`, resolved `family` / `genus`, accepted-name
 links).
@@ -48,6 +48,7 @@ links).
 |---|---|
 | WFO | World Flora Online (plants) |
 | COL | Catalogue of Life (all kingdoms) |
+| COL XR | Catalogue of Life Extended Release (all kingdoms) |
 | GBIF | GBIF backbone (all kingdoms) |
 | ITIS | Integrated Taxonomic Information System |
 | NCBI | NCBI Taxonomy |
@@ -61,6 +62,21 @@ links).
 | Reptile Database | Reptiles |
 | WCVP | World Checklist of Vascular Plants (Kew) |
 | LCVP | Leipzig Catalogue of Vascular Plants |
+| MDD | Mammal Diversity Database |
+| AviList | Birds |
+| LPSN | Prokaryotes (Bacteria/Archaea) |
+
+### Reference geometry
+
+Boundary polygons taxify reads for its `region=` / `coords=` constraint. Built,
+versioned and published like a backbone, but they carry polygon vertices rather
+than names, so they are listed by `list_geometry()` rather than
+`list_backends()` and take no part in enrichment name resolution.
+
+| Artifact | Scope |
+|---|---|
+| WGSRPD | TDWG Level 3 botanical regions |
+| MEOW | Marine Ecoregions of the World |
 
 ### Enrichments
 
@@ -73,7 +89,8 @@ backbone's output. Run `list_enrichments()` for the full, current set.
 ```r
 library(taxifydb)
 
-list_backends()                    # the fifteen backbones
+list_backends()                    # the nineteen backbones
+list_geometry()                    # the reference-geometry artifacts
 list_enrichments()                 # every registered enrichment
 
 # Build a backbone .vtr from source

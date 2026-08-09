@@ -48,5 +48,9 @@ source of truth for provenance.}
 The updated manifest (invisibly).
 }
 \description{
-Update manifest.json after a successful backbone build
+The entry records two versions where they differ: \code{latest} is the release
+tag the download URL points at (stamped \code{YYYY.MM} by the build cycle) and
+\code{source_version} is the version the upstream dataset gives itself, read from
+the \code{.meta} sidecar. Rolling sources carry only \code{latest}, having no version
+of their own.
 }

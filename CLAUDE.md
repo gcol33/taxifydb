@@ -121,7 +121,8 @@ enrichment goes through cross-backbone name resolution before its `.vtr` is
 written:
 
 1. `parse_<name>()` cleans the source to `canonical_name` + trait columns
-2. `resolve_enrichment_names()` expands each name across the 7 backbones
+2. `resolve_enrichment_names()` expands each name across every backbone
+   (`list_backends()`)
 3. `build_enrichment_vtr()` writes the indexed `.vtr` + `meta.json` sidecar
 
 Group-based enrichments (GRIIS, WCVP, common_names, marine_distribution) pass
@@ -310,16 +311,31 @@ themselves.
 
 ## CI
 
-Three workflows under `.github/workflows/`:
+Five workflows under `.github/workflows/`:
 
-- `build-light.yml` — Ubuntu hosted runner, 13 backbones (ITIS, NCBI, OTT,
+- `build-light.yml` — Ubuntu hosted runner, 16 backbones (ITIS, NCBI, OTT,
   WoRMS, FishBase, SeaLifeBase, Reptile Database, WFO, WCVP, LCVP, Fungorum,
-  AlgaeBase, Euro+Med), twice a year + manual dispatch
+  AlgaeBase, Euro+Med, MDD, AviList, LPSN) plus the two reference-geometry
+  artifacts (WGSRPD, MEOW), twice a year + manual dispatch
 - `build-heavy.yml` — COL, COL XR and GBIF. **Dormant**: it targets
   `self-hosted` and no runner is registered, so its crons are commented out
   and the three are built locally and published by hand
 - `check-enrichment-versions.yml` — weekly cron, opens/updates a GitHub
   issue labeled `enrichment-outdated` when upstream versions advance
+- `check-manifest-coverage.yml` — weekly cron, opens/updates an issue labeled
+  `manifest-drift` when a release, an asset's bytes, the runtime manifest or
+  the published register falls out of step
+- `publish-enrichment.yml` — cuts the rolling `enrichment-<version>` release
+
+**The genus register and backend coverage have no workflow.** They union every
+backbone's `.vtr` (~8 GB of input), so they are built locally and published by
+hand, and they therefore go stale silently whenever the backbone set changes:
+the tag, the bytes and both manifests all stay correct while the register
+carries none of the new backbone's genera. That happened to COL XR, which was
+added to `.register_extractors` two days after the 2026.08 pair was cut.
+`check_manifest_coverage.R` now compares the backbone list each register records
+in its `.meta` against `.register_extractors`, so the gap surfaces weekly
+instead of on the next rebuild.
 
 Both builds gate their delta, release, manifest commit and runtime sync behind
 `vtr_changed()` (`scripts/vtr_changed.R`), which compares the built `.vtr`

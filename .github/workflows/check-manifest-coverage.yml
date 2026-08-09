@@ -47,7 +47,9 @@ jobs:
                                          "missing_in_taxifydb",
                                          "stale_in_manifest",
                                          "asset_drift",
-                                         "asset_missing"), ]
+                                         "asset_missing",
+                                         "register_incomplete",
+                                         "register_unreadable"), ]
           lines <- c(
             "## taxify manifest is out of sync with taxifydb releases",
             "",

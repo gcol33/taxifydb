@@ -15,6 +15,12 @@
 # API call already made for the tag scan. `extras` sidecars are checked the same
 # way, since the runtime fetches those from the manifest too.
 #
+# Register: the genus register and backend coverage are unions over the backbone
+# set, so they go stale in a way no version or byte check can see -- a backbone
+# added after the last register build leaves every tag, size and digest correct
+# while the register carries none of its genera. Each records the backbones it
+# unioned in its `.meta`, so that list is compared against the backbone set.
+#
 # Enrichments: all share one rolling `enrichment-<version>` tag, so there is no
 # per-enrichment release tag to compare against. Instead the two committed
 # manifests are compared directly -- taxifydb's build-side
@@ -37,11 +43,35 @@ TAXIFY_MANIFEST <- Sys.getenv(
   "https://raw.githubusercontent.com/gcol33/taxify/main/inst/manifest.json"
 )
 
-# Backbones taxify can match against (must stay in sync with
-# taxify's .backbone_registry()).
-BACKENDS <- c("wfo", "col", "gbif", "itis", "ncbi", "ott", "worms",
-              "fungorum", "algaebase", "euromed", "fishbase", "sealifebase",
-              "reptiledb", "lcvp", "wcvp", "mdd", "avilist", "lpsn")
+# Backbones taxify can match against, read from `.register_extractors` in the
+# checkout rather than restated here. A hand-kept copy is a second source of
+# truth that drifts silently in the one direction that matters: a backbone added
+# to the package but not to the list is simply never audited, so its absence
+# reads as "no drift". colxr went unchecked that way from the day it was added.
+# Parsed from the source AST, not grepped, so a rename or reflow cannot make the
+# list come back subtly wrong.
+register_backbones_from_source <- function(path = "R/register.R") {
+  if (!file.exists(path)) {
+    stop(sprintf(paste0(
+      "Cannot read the backbone set: %s not found. Run this from the taxifydb ",
+      "checkout root -- auditing a guessed set would report a clean bill for ",
+      "backbones it never looked at."), path), call. = FALSE)
+  }
+  for (e in parse(path, keep.source = FALSE)) {
+    if (is.call(e) && length(e) >= 3L &&
+        identical(as.character(e[[1L]]), "<-") &&
+        identical(as.character(e[[2L]]), ".register_extractors")) {
+      nms <- names(as.list(e[[3L]]))[-1L]
+      nms <- nms[nzchar(nms)]
+      if (length(nms)) return(nms)
+    }
+  }
+  stop(sprintf("No `.register_extractors <- list(...)` assignment found in %s.",
+               path), call. = FALSE)
+}
+
+BACKENDS <- register_backbones_from_source(
+  Sys.getenv("TAXIFYDB_REGISTER_R", "R/register.R"))
 
 # Released .vtr entries that are not matchable backbones: the cross-backbone
 # genus index and its coverage table, and the boundary geometry the region
@@ -51,18 +81,38 @@ SUPPORT_ASSETS <- c("genus_register", "backend_coverage", "wgsrpd", "meow")
 
 TAG_CHECKED <- c(BACKENDS, SUPPORT_ASSETS)
 
-gh_json <- function(url, auth = TRUE) {
-  h <- curl::new_handle()
-  curl::handle_setheaders(h, `User-Agent` = "taxifydb-manifest-coverage")
+# One handle builder for both readers. handle_setheaders() REPLACES the header
+# set rather than adding to it, so every header this request needs has to go in
+# a single call -- adding auth in a second call silently drops Accept, and an
+# asset read then comes back as the API's JSON description of the asset instead
+# of its bytes.
+gh_handle <- function(accept = NULL, auth = TRUE) {
+  hdr <- list(`User-Agent` = "taxifydb-manifest-coverage")
+  if (!is.null(accept)) hdr$Accept <- accept
   token <- Sys.getenv("GH_TOKEN", Sys.getenv("GITHUB_TOKEN"))
-  if (auth && nzchar(token)) {
-    curl::handle_setheaders(h, Authorization = paste("Bearer", token),
-                            Accept = "application/vnd.github+json")
-  }
+  if (auth && nzchar(token)) hdr$Authorization <- paste("Bearer", token)
+  h <- curl::new_handle()
+  do.call(curl::handle_setheaders, c(list(h), hdr))
+  h
+}
+
+gh_json <- function(url, auth = TRUE) {
+  h <- gh_handle(if (auth) "application/vnd.github+json" else NULL, auth = auth)
   con <- curl::curl(url, handle = h)
   on.exit(close(con))
   jsonlite::fromJSON(paste(readLines(con, warn = FALSE), collapse = "\n"),
                      simplifyVector = TRUE)
+}
+
+# Body of a release asset, fetched by id through the API rather than by its
+# browser download URL, so the read keeps working if the repo is ever made
+# private (an unauthenticated download URL 404s silently, which reads the same
+# as a missing asset).
+gh_asset_text <- function(id) {
+  con <- curl::curl(sprintf("https://api.github.com/repos/%s/releases/assets/%s",
+                            REPO, id), handle = gh_handle("application/octet-stream"))
+  on.exit(close(con))
+  readLines(con, warn = FALSE)
 }
 
 # Latest release tag per backend (releases come newest-first; one page covers
@@ -94,7 +144,7 @@ asset_index <- local({
     dg <- if ("digest" %in% names(a)) a$digest else rep(NA_character_, nrow(a))
     for (k in seq_len(nrow(a))) {
       assign(paste(rel$tag_name[i], a$name[k], sep = "/"),
-             list(size = a$size[k], digest = dg[k]), envir = idx)
+             list(size = a$size[k], digest = dg[k], id = a$id[k]), envir = idx)
     }
   }
   idx
@@ -175,6 +225,63 @@ res_extras <- do.call(rbind, lapply(TAG_CHECKED, function(be) {
   }))
 }))
 
+# The genus register and backend coverage are unions over the backbone set, and
+# each records the backbones it unioned in its `.meta` sidecar. Nothing above
+# can see a gap there: a backbone added to `.register_extractors` after the last
+# register build leaves the manifest current, the tag current and the bytes
+# intact, while the register simply carries none of that backbone's genera.
+#
+# taxify does not degrade gracefully on that. covered_genera_for() returns an
+# empty character vector rather than NULL for an uncovered backbone, which
+# passes the is.null() guard in prefilter_out_of_scope(), so every genus in the
+# register reads as not-covered and the backbone's abbreviated-genus and fuzzy
+# stages are skipped for all of them. Nothing errors and no version moves, so
+# this comparison is the only thing that surfaces it.
+# Returns the unioned backbone names, or a string explaining why they could not
+# be read. The reason travels into the report: "unreadable" with no cause is the
+# one outcome here that cannot be acted on.
+register_members <- function(name) {
+  ver <- latest_release[[name]]
+  if (is.na(ver)) return("no release tag found")
+  key <- paste(sprintf("%s-%s", name, ver), paste0(name, ".meta"), sep = "/")
+  if (!exists(key, envir = asset_index, inherits = FALSE)) {
+    return(sprintf("release carries no asset %s", key))
+  }
+  txt <- tryCatch(gh_asset_text(get(key, envir = asset_index,
+                                    inherits = FALSE)$id),
+                  error = function(e) conditionMessage(e))
+  line <- grep("^url=derived from:", txt, value = TRUE)
+  if (!length(line)) {
+    return(sprintf("no 'derived from' line in %s (%s)", key,
+                   paste(utils::head(txt, 2L), collapse = " / ")))
+  }
+  m <- trimws(strsplit(sub("^url=derived from:", "", line[1L]), ",")[[1L]])
+  m[nzchar(m)]
+}
+
+res_reg <- do.call(rbind, lapply(c("genus_register", "backend_coverage"),
+                                 function(nm) {
+  members <- register_members(nm)
+  if (length(members) == 1L && !members %in% BACKENDS) {
+    return(data.frame(kind = "register", name = nm,
+                      release = latest_release[[nm]], manifest = NA_character_,
+                      status = "register_unreadable", detail = members,
+                      stringsAsFactors = FALSE))
+  }
+  missing <- setdiff(BACKENDS, members)
+  extra   <- setdiff(members, BACKENDS)
+  detail <- c(if (length(missing)) sprintf("not unioned: %s",
+                                           paste(missing, collapse = ", ")),
+              if (length(extra))   sprintf("unioned but unknown: %s",
+                                           paste(extra, collapse = ", ")))
+  data.frame(kind = "register", name = nm, release = latest_release[[nm]],
+             manifest = sprintf("%d/%d backbones", length(members),
+                                length(BACKENDS)),
+             status = if (length(detail)) "register_incomplete" else "ok",
+             detail = paste(detail, collapse = "; "),
+             stringsAsFactors = FALSE)
+}))
+
 # Enrichments: compare the two committed manifests directly. taxifydb's
 # build-side copy lives in the checkout; taxify's runtime copy is the same one
 # fetched above. content_id (an md5 of the built .vtr) is the strongest signal:
@@ -207,10 +314,11 @@ if (file.exists(DB_MANIFEST)) {
                   DB_MANIFEST))
 }
 
-res <- rbind(res_be, res_extras, res_enr)
+res <- rbind(res_be, res_extras, res_reg, res_enr)
 
 drift_states <- c("missing_in_manifest", "missing_in_taxifydb", "stale_in_manifest",
-                  "asset_drift", "asset_missing")
+                  "asset_drift", "asset_missing", "register_incomplete",
+                  "register_unreadable")
 drift <- res[res$status %in% drift_states, ]
 jsonlite::write_json(res, "coverage_results.json", pretty = TRUE,
                      auto_unbox = TRUE)

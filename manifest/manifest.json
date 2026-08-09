@@ -278,20 +278,20 @@
     "genus_register": {
       "latest": "2026.08",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.08/genus_register.vtr",
-      "full_size": 16170437,
-      "full_sha256": "ecb37c5b1e89cbe317d447936719f036b684c9f0f827367d96b502897a19ccf1",
-      "content_id": "c8f585317aa5da23e8d03d8118f434fc",
-      "nrow": 496281,
-      "source_url": "derived from: wfo, col, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase"
+      "full_size": 16479028,
+      "full_sha256": "75d7ecbc6919cfde15d26c950807eeffcfbe5dc98891abb2bdf7013224e1adbc",
+      "content_id": "f1950ddba060666ac49b220e8bf9f387",
+      "nrow": 503262,
+      "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase"
     },
     "backend_coverage": {
       "latest": "2026.08",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.08/backend_coverage.vtr",
-      "full_size": 13649986,
-      "full_sha256": "2af6711254d9ea36df60044f73b42e0d5da11a84bdb3a90adba2cfe54df95076",
-      "content_id": "10c33598393346100b86e22601bc8039",
-      "nrow": 1451183,
-      "source_url": "derived from: wfo, col, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase"
+      "full_size": 15365481,
+      "full_sha256": "a09c6cb4d77b8dc30df9be91a00dc2a63c269bbb582ca4f495d5fdbca43bc964",
+      "content_id": "e7e77e8608d0380c0de2dbd6d8868615",
+      "nrow": 1871955,
+      "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase"
     },
     "mdd": {
       "latest": "2026.08",

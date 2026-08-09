@@ -8,7 +8,8 @@ build_backend(name, output_dir = NULL, version = NULL, verbose = TRUE)
 }
 \arguments{
 \item{name}{Character. Backend identifier (e.g., "itis"). See
-\code{\link[=list_backends]{list_backends()}} for available names.}
+\code{\link[=list_backends]{list_backends()}} for the taxonomic backbones and \code{\link[=list_geometry]{list_geometry()}} for the
+reference-geometry artifacts; both are buildable here.}
 
 \item{output_dir}{Character. Output directory. Default: \verb{output/<name>}.}
 

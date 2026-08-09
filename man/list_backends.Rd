@@ -10,5 +10,7 @@ list_backends()
 Character vector of backend identifiers.
 }
 \description{
-List available backend builders
+The taxonomic backbones only. This is the set enrichment name resolution
+unions over, so reference geometry (\code{\link[=list_geometry]{list_geometry()}}) is not part of it even
+though \code{\link[=build_backend]{build_backend()}} builds both.
 }

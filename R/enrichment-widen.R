@@ -32,6 +32,27 @@
   y
 }
 
+#' First column present, in candidate order
+#'
+#' Parsers name the column they want as a list of spellings, most specific
+#' first, because sources rename fields between releases. That list is a
+#' preference order and has to be read as one: `intersect(names(df), cands)`
+#' returns its matches in the order of its FIRST argument, so it yields
+#' whichever candidate the source happens to put leftmost, not the preferred
+#' one. A table carrying both its own row id and a foreign key then joins on
+#' the row id, which matches partially, silently, and wrongly.
+#'
+#' @param x A data.frame, or a character vector of available names.
+#' @param candidates Character. Column names in order of preference.
+#' @param fallback Value returned when no candidate is present.
+#' @return The preferred candidate present in `x`, else `fallback`.
+#' @noRd
+.first_col <- function(x, candidates, fallback = NULL) {
+  nms <- if (is.data.frame(x)) names(x) else as.character(x)
+  hit <- candidates[candidates %in% nms]
+  if (length(hit) == 0L) fallback else hit[[1L]]
+}
+
 #' Sanitize a raw column/trait label to a snake_case identifier
 #' @noRd
 .sanitize_col <- function(x) {

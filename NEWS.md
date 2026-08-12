@@ -1,3 +1,63 @@
+# taxifydb 0.1.22
+
+## GloNAF was joined on the wrong key
+
+* Parsers name the column they want as a list of spellings, most specific
+  first, so a source that renames a field between releases still parses. The
+  lookup was `intersect(names(df), candidates)`, and `intersect()` returns its
+  matches in the order of its FIRST argument: the answer was whichever
+  candidate sat leftmost in the file, not the preferred one. `.first_col()`
+  reads the list as the preference order it was written as, and all 34 lookups
+  across the two parser files go through it. Three genuine set intersections
+  (LepTraits' month columns, EltonTraits' diet columns, FloraWeb's labels) are
+  unchanged.
+
+* GloNAF is where that bit. Its flora table carries its own row `id` before
+  `taxon_wcvp_id`, the foreign key into the taxon table, and both are integers
+  over overlapping ranges, so joining on the row id matched part of the range
+  instead of failing: `glonaf.vtr` held 10,238 rows over 84 regions against the
+  256,454 over 1,343 the source holds, and the rows it did hold paired a name
+  with another taxon's family (`Campanula latiloba` filed under Bignoniaceae).
+
+* Reading the candidate lists in order then exposed a second wrong key: the
+  region list put `OBJIDsic`, the region polygon's GIS object id, ahead of
+  `id`. Those ranges overlap too, so it resolved 825 of 1,343 regions.
+  `OBJIDsic` is now last, reached only when the region table names its primary
+  key nothing else.
+
+* `parse_glonaf()` fails the build when either join key does not resolve for
+  every flora row. Both bugs returned a plausible table rather than an error,
+  which is what a partly-matching integer key looks like from the inside.
+
+* Every candidate list converted was checked against the live source header for
+  the other thirteen parsers that use one (EltonTraits, AVONET, PanTHERIA,
+  AmphiBIO, FishMorph, LEDA, Díaz, GRIIS, FUNGuild, LepTraits, AnimalTraits, NW
+  European arthropod traits, AnAge). All pick the same column as before. The
+  built `meta.json` cannot answer this -- `.is_bookkeeping_col()` strips exactly
+  the id and name columns at issue -- so the check reads the sources.
+
+## GloNAF rebuilt from the 2025 release
+
+* The registry was pinned to Zenodo record `13235357` (2024-08-05). The current
+  release is record `17105725` (2025-09-12), GloNAF v2.02: 16,429 taxa over
+  1,343 regions from 336 data sources, matched against WCVP v12. Its files moved
+  from `.xlsx` to `.csv`, so building the enrichment no longer needs openxlsx2.
+
+* Rebuilt and republished to `enrichment-2026.08`: 300,094 rows over all 1,343
+  regions, against 10,238 rows over 84 regions, resolved against all 19
+  backbones. Both manifests record the new record, row count and content id.
+
+## A resumed publish checks what it is about to upload
+
+* `TAXIFYDB_PUBLISH_RESUME=1` reuses whatever `.vtr` sits in an enrichment's
+  output directory rather than rebuilding it, which is what makes an
+  interrupted publish cheap to finish. A `.vtr` left from an earlier source
+  release is indistinguishable from a current one on disk, so the reuse
+  uploaded stale bytes and then wrote a manifest entry naming the record that
+  build never read. `assert_built_matches_registry()` compares the sidecar's
+  `source_url` and `version` against the registry and refuses the reuse when
+  they disagree, or when there is no sidecar to compare.
+
 # taxifydb 0.1.21
 
 ## ThermoFresh reads the peer-reviewed release

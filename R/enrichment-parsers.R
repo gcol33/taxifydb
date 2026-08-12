@@ -170,10 +170,10 @@ parse_elton_traits <- function(birds_path, mammals_path) {
   }
 
   extract_one <- function(df) {
-    name_col <- intersect(
-      names(df), c("Scientific", "Scientific.Name", "ScientificName")
+    name_col <- .first_col(
+      df, c("Scientific", "Scientific.Name", "ScientificName"),
+      fallback = names(df)[1L]
     )
-    if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
 
     cname <- trimws(df[[name_col]])
     out <- data.frame(
@@ -237,12 +237,12 @@ parse_avonet <- function(path) {
     stringsAsFactors = FALSE
   )
 
-  name_col <- intersect(
-    names(df),
+  name_col <- .first_col(
+    df,
     c("Species1", "Species1_BirdLife", "Species", "Scientific",
-      "ScientificName", "species_name")
+      "ScientificName", "species_name"),
+    fallback = names(df)[1L]
   )
-  if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
 
   find_col <- function(patterns) {
     for (p in patterns) {
@@ -323,10 +323,10 @@ parse_pantheria <- function(path) {
   df <- utils::read.delim(path, stringsAsFactors = FALSE,
                           na.strings = c("-999", "-999.00"))
 
-  name_col <- intersect(
-    names(df), c("MSW05_Binomial", "MSW93_Binomial", "Scientific_Name")
+  name_col <- .first_col(
+    df, c("MSW05_Binomial", "MSW93_Binomial", "Scientific_Name"),
+    fallback = names(df)[1L]
   )
-  if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
 
   find_col <- function(patterns) {
     for (p in patterns) {
@@ -390,8 +390,8 @@ parse_pantheria <- function(path) {
 parse_amphibio <- function(path) {
   df <- utils::read.csv(path, stringsAsFactors = FALSE)
 
-  name_col <- intersect(names(df), c("Species", "species", "Scientific"))
-  if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
+  name_col <- .first_col(df, c("Species", "species", "Scientific"),
+                         fallback = names(df)[1L])
 
   find_col <- function(patterns) {
     for (p in patterns) {
@@ -471,11 +471,10 @@ parse_fishmorph <- function(path) {
   df <- utils::read.csv2(path, stringsAsFactors = FALSE,
                          fileEncoding = "latin1", dec = ".")
 
-  name_col <- intersect(
-    names(df), c("Genus.species", "Genus species", "Species",
-                 "scientificNameStd")
+  name_col <- .first_col(
+    df, c("Genus.species", "Genus species", "Species", "scientificNameStd"),
+    fallback = names(df)[1L]
   )
-  if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
 
   find_col <- function(patterns) {
     for (p in patterns) {
@@ -615,8 +614,8 @@ parse_leda <- function(dir_path) {
   find_name_col <- function(df) {
     candidates <- c("SBS_name", "species", "Species", "SBS.name",
                     "species_name", "name", "taxon")
-    col <- intersect(names(df), candidates)
-    if (length(col) > 0L) return(col[1L])
+    col <- .first_col(df, candidates)
+    if (!is.null(col)) return(col)
     col <- grep("species|name|SBS", names(df), ignore.case = TRUE,
                 value = TRUE)
     if (length(col) > 0L) return(col[1L])
@@ -806,12 +805,12 @@ parse_diaz_traits <- function(path) {
     stringsAsFactors = FALSE
   )
 
-  name_col <- intersect(
-    names(df),
+  name_col <- .first_col(
+    df,
     c("Species", "species", "SpecName", "Taxon", "Scientific_name",
       "AccSpeciesName", "Species name standardized against TPL")
   )
-  if (length(name_col) == 0L) {
+  if (is.null(name_col)) {
     cands <- grep("species.*name|standardized|scientific.*name|^name$|taxon.*name",
                   names(df), ignore.case = TRUE, value = TRUE)
     cands <- setdiff(cands, grep("\\bid\\b|_id$|^id_|number|count|\\bn\\.o\\.",
@@ -821,9 +820,8 @@ parse_diaz_traits <- function(path) {
       cands <- setdiff(cands, grep("\\bid\\b|_id$|^id_|number|count|\\bn\\.o\\.|level|status|group",
                                     cands, ignore.case = TRUE, value = TRUE))
     }
-    name_col <- if (length(cands) > 0L) cands else names(df)[1L]
+    name_col <- if (length(cands) > 0L) cands[1L] else names(df)[1L]
   }
-  name_col <- name_col[1L]
 
   find_col <- function(patterns) {
     for (p in patterns) {
@@ -882,17 +880,16 @@ parse_griis <- function(path) {
   if ("species" %in% names(df)) {
     name_col <- "species"
   } else {
-    name_col <- intersect(
-      names(df),
+    name_col <- .first_col(
+      df,
       c("scientificName", "canonicalName", "taxonName", "Scientific.Name",
         "accepted_name")
     )
-    if (length(name_col) == 0L) {
-      name_col <- grep("scien|canon|species|taxon|name", names(df),
-                       ignore.case = TRUE, value = TRUE)
-      if (length(name_col) == 0L) name_col <- names(df)[1L]
+    if (is.null(name_col)) {
+      loose <- grep("scien|canon|species|taxon|name", names(df),
+                    ignore.case = TRUE, value = TRUE)
+      name_col <- if (length(loose) > 0L) loose[1L] else names(df)[1L]
     }
-    name_col <- name_col[1L]
   }
 
   cc_col <- if ("countryCode_alpha2" %in% names(df)) {

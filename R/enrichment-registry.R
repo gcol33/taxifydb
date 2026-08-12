@@ -570,16 +570,16 @@
   ),
 
   glonaf = list(
-    source_url  = "https://zenodo.org/api/records/13235357",
+    source_url  = "https://zenodo.org/api/records/17105725",
     source_doi  = "10.1002/ecy.2542",
-    version     = "2024.1",
+    version     = "2.02",
     license     = "CC BY 4.0",
     attribution = "van Kleunen M et al. (2019) The Global Naturalized Alien Flora (GloNAF) database. Ecology 100:e02542.",
     download_fn = function(url, dest) {
       dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-      base <- "https://zenodo.org/records/13235357/files/"
-      files <- c("glonaf_flora2.xlsx", "glonaf_taxon_wcvp.xlsx",
-                 "glonaf_region.xlsx")
+      base <- "https://zenodo.org/records/17105725/files/"
+      files <- c("glonaf_flora2.csv", "glonaf_taxon_wcvp.csv",
+                 "glonaf_region.csv")
       for (f in files) {
         tryCatch(
           download_curl_file(paste0(base, f, "?download=1"), dest, f),
@@ -593,7 +593,7 @@
     },
     parse_fn    = function(path) parse_glonaf(path),
     group_col   = "region_id",
-    requires    = "openxlsx2"
+    requires    = character(0)
   ),
 
   leptraits = list(

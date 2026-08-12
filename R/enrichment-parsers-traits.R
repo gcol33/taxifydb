@@ -76,12 +76,12 @@ parse_funguild <- function(path) {
 
   # Index Fungorum numeric taxonomic levels:
   # 12=family, 13=genus, 20=species, 25=variety, 26=form, 27=subspecies.
-  level_col <- intersect(names(raw), c("taxonomicLevel", "taxonLevel"))
-  if (length(level_col) == 0L) {
+  level_col <- .first_col(raw, c("taxonomicLevel", "taxonLevel"))
+  if (is.null(level_col)) {
     stop("FUNGuild response missing taxonomicLevel/taxonLevel column.",
          call. = FALSE)
   }
-  level_raw <- trimws(as.character(raw[[level_col[1L]]]))
+  level_raw <- trimws(as.character(raw[[level_col]]))
   level_norm <- ifelse(grepl("^[0-9]+$", level_raw),
     c("13" = "genus", "20" = "species", "25" = "species",
       "26" = "species", "27" = "species")[level_raw],
@@ -159,14 +159,11 @@ parse_funguild <- function(path) {
   # Keep every other FUNGuild field; the curated columns above stay untouched
   # and references/citation-style fields are auto-skipped.
   used_cols <- c(
-    level_col[1L], "taxonLevel", "taxon", "guild",
-    intersect(c("trophicMode", "trophic_mode"), names(df))[1L],
-    intersect(c("growthMorphology", "growthForm", "growth_morphology"),
-              names(df))[1L],
-    intersect(c("confidenceRanking", "confidence_ranking", "confidence"),
-              names(df))[1L]
+    level_col, "taxonLevel", "taxon", "guild",
+    .first_col(df, c("trophicMode", "trophic_mode")),
+    .first_col(df, c("growthMorphology", "growthForm", "growth_morphology")),
+    .first_col(df, c("confidenceRanking", "confidence_ranking", "confidence"))
   )
-  used_cols <- used_cols[!is.na(used_cols)]
   out <- .append_all_cols(out, df, trimws(df$taxon), used = used_cols)
 
   out
@@ -1081,8 +1078,8 @@ parse_repttraits <- function(path) {
 parse_leptraits <- function(path) {
   df <- utils::read.csv(path, stringsAsFactors = FALSE)
 
-  name_col <- intersect(names(df), c("Species", "species", "Scientific"))
-  if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
+  name_col <- .first_col(df, c("Species", "species", "Scientific"),
+                         fallback = names(df)[1L])
 
   safe_num <- function(col_name) {
     if (is.null(col_name) || !col_name %in% names(df)) {
@@ -1156,18 +1153,17 @@ parse_animaltraits <- function(path) {
   df <- utils::read.csv(path, stringsAsFactors = FALSE,
                         fileEncoding = "UTF-8")
 
-  name_col <- intersect(names(df),
-                        c("species", "Species", "scientificName"))
-  if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
+  name_col <- .first_col(df, c("species", "Species", "scientificName"),
+                         fallback = names(df)[1L])
 
-  bm_col <- intersect(names(df), c("body.mass", "body mass", "Body.mass"))
-  if (length(bm_col) == 0L) {
+  bm_col <- .first_col(df, c("body.mass", "body mass", "Body.mass"))
+  if (is.null(bm_col)) {
     bm_col <- grep("^body[._]?mass$", names(df), ignore.case = TRUE,
                    value = TRUE)
   }
-  mr_col <- intersect(names(df), c("metabolic.rate", "metabolic rate",
-                                   "Metabolic.rate"))
-  if (length(mr_col) == 0L) {
+  mr_col <- .first_col(df, c("metabolic.rate", "metabolic rate",
+                             "Metabolic.rate"))
+  if (is.null(mr_col)) {
     mr_col <- grep("^metabolic[._]?rate$", names(df), ignore.case = TRUE,
                    value = TRUE)
   }
@@ -1236,9 +1232,8 @@ parse_arthropod_traits <- function(dir_path) {
 
   taxon <- utils::read.delim(taxon_file, stringsAsFactors = FALSE, quote = "")
 
-  name_col <- intersect(names(taxon), c("scientificName", "canonicalName",
-                                        "species"))
-  if (length(name_col) == 0L) name_col <- names(taxon)[2L] else name_col <- name_col[1L]
+  name_col <- .first_col(taxon, c("scientificName", "canonicalName", "species"),
+                         fallback = names(taxon)[2L])
   raw_names <- taxon[[name_col]]
 
   canonical <- vapply(raw_names, function(n) {
@@ -1246,8 +1241,8 @@ parse_arthropod_traits <- function(dir_path) {
     if (length(parts) >= 2L) paste(parts[1L], parts[2L]) else trimws(n)
   }, character(1L), USE.NAMES = FALSE)
 
-  id_col <- intersect(names(taxon), c("id", "taxonID", "ID"))
-  if (length(id_col) == 0L) id_col <- names(taxon)[1L] else id_col <- id_col[1L]
+  id_col <- .first_col(taxon, c("id", "taxonID", "ID"),
+                       fallback = names(taxon)[1L])
 
   out <- data.frame(
     canonical_name = canonical,
@@ -1260,9 +1255,9 @@ parse_arthropod_traits <- function(dir_path) {
   # reads 29 mm against a 55 mm wingspan). One column cannot say which, and a
   # trait-registry map sees one column at a time, so the order rides along and
   # taxify hangs a per-record caution off it.
-  ord_col <- intersect(names(taxon), c("order", "Order", "dwc:order"))
-  out$taxon_order <- if (length(ord_col)) {
-    o <- trimws(as.character(taxon[[ord_col[1L]]]))
+  ord_col <- .first_col(taxon, c("order", "Order", "dwc:order"))
+  out$taxon_order <- if (!is.null(ord_col)) {
+    o <- trimws(as.character(taxon[[ord_col]]))
     o[!nzchar(o) | o == "NA"] <- NA_character_
     o
   } else {
@@ -1275,12 +1270,12 @@ parse_arthropod_traits <- function(dir_path) {
 
   if (!is.null(mof_file)) {
     mof <- utils::read.delim(mof_file, stringsAsFactors = FALSE, quote = "")
-    mof_id <- intersect(names(mof), c("id", "taxonID", "coreid"))
-    if (length(mof_id) == 0L) mof_id <- names(mof)[1L] else mof_id <- mof_id[1L]
-    type_col <- intersect(names(mof), c("measurementType", "type"))
-    if (length(type_col) == 0L) type_col <- names(mof)[2L] else type_col <- type_col[1L]
-    val_col <- intersect(names(mof), c("measurementValue", "value"))
-    if (length(val_col) == 0L) val_col <- names(mof)[3L] else val_col <- val_col[1L]
+    mof_id <- .first_col(mof, c("id", "taxonID", "coreid"),
+                         fallback = names(mof)[1L])
+    type_col <- .first_col(mof, c("measurementType", "type"),
+                           fallback = names(mof)[2L])
+    val_col <- .first_col(mof, c("measurementValue", "value"),
+                          fallback = names(mof)[3L])
     long_parts[[length(long_parts) + 1L]] <- data.frame(
       name  = out$canonical_name[match(mof[[mof_id]], out$taxon_id)],
       trait = trimws(as.character(mof[[type_col]])),
@@ -1291,12 +1286,12 @@ parse_arthropod_traits <- function(dir_path) {
 
   if (!is.null(desc_file)) {
     desc <- utils::read.delim(desc_file, stringsAsFactors = FALSE, quote = "")
-    desc_id <- intersect(names(desc), c("id", "taxonID", "coreid"))
-    if (length(desc_id) == 0L) desc_id <- names(desc)[1L] else desc_id <- desc_id[1L]
-    desc_col <- intersect(names(desc), c("description", "value"))
-    if (length(desc_col) == 0L) desc_col <- names(desc)[2L] else desc_col <- desc_col[1L]
-    type_col2 <- intersect(names(desc), c("type", "measurementType"))
-    if (length(type_col2) == 0L) type_col2 <- names(desc)[3L] else type_col2 <- type_col2[1L]
+    desc_id <- .first_col(desc, c("id", "taxonID", "coreid"),
+                          fallback = names(desc)[1L])
+    desc_col <- .first_col(desc, c("description", "value"),
+                           fallback = names(desc)[2L])
+    type_col2 <- .first_col(desc, c("type", "measurementType"),
+                            fallback = names(desc)[3L])
     long_parts[[length(long_parts) + 1L]] <- data.frame(
       name  = out$canonical_name[match(desc[[desc_id]], out$taxon_id)],
       trait = trimws(as.character(desc[[type_col2]])),
@@ -1341,19 +1336,19 @@ parse_arthropod_traits <- function(dir_path) {
 parse_anage <- function(path) {
   df <- utils::read.delim(path, stringsAsFactors = FALSE, quote = "")
 
-  genus_col <- intersect(names(df), c("Genus", "genus"))
-  sp_col <- intersect(names(df), c("Species", "species"))
+  genus_col <- .first_col(df, c("Genus", "genus"))
+  sp_col <- .first_col(df, c("Species", "species"))
 
-  if (length(genus_col) > 0L && length(sp_col) > 0L) {
-    canonical <- trimws(paste(df[[genus_col[1L]]], df[[sp_col[1L]]]))
-    name_used <- c(genus_col[1L], sp_col[1L])
+  if (!is.null(genus_col) && !is.null(sp_col)) {
+    canonical <- trimws(paste(df[[genus_col]], df[[sp_col]]))
+    name_used <- c(genus_col, sp_col)
   } else {
-    name_col <- intersect(
-      names(df),
+    name_col <- .first_col(
+      df,
       c("Scientific_name", "ScientificName", "scientific_name",
-        "Common_name", "Binomial")
+        "Common_name", "Binomial"),
+      fallback = names(df)[1L]
     )
-    if (length(name_col) == 0L) name_col <- names(df)[1L] else name_col <- name_col[1L]
     canonical <- trimws(df[[name_col]])
     name_used <- name_col
   }
@@ -1490,79 +1485,99 @@ parse_glonaf <- function(dir_path) {
 
   flora <- read_table(flora_file)
 
+  # GloNAF's tables are keyed on integers, and the flora table carries its own
+  # row id beside both foreign keys. A key picked by the wrong name therefore
+  # still matches part of the id range: the join returns names and regions for
+  # some rows, the wrong ones, and drops the rest, with nothing raised. Every
+  # flora row must resolve, so anything short of that is a wrong key.
+  assert_key_resolves <- function(keys, lookup, side, from_col, to_col) {
+    missed <- sum(!(keys %in% lookup))
+    if (missed > 0L) {
+      stop(sprintf(
+        paste0("GloNAF %s join does not resolve: %d of %d flora rows carry a ",
+               "%s that the %s table's %s does not hold."),
+        side, missed, length(keys), from_col, side, to_col
+      ), call. = FALSE)
+    }
+  }
+
   if (!is.null(taxon_file)) {
     taxon <- read_table(taxon_file)
-    flora_taxon_col <- intersect(
-      names(flora),
-      c("taxon_wcvp_id", "taxon_id", "id", "ID")
+    # The flora table carries its own record id beside the foreign key into the
+    # taxon table, so this is a preference order, not a set of alternatives.
+    flora_taxon_col <- .first_col(
+      flora, c("taxon_wcvp_id", "taxon_id", "id", "ID")
     )
-    taxon_id_col <- intersect(
-      names(taxon),
-      c("id", "taxon_wcvp_id", "taxon_id", "ID")
+    taxon_id_col <- .first_col(
+      taxon, c("id", "taxon_wcvp_id", "taxon_id", "ID")
     )
-    taxon_name_col <- intersect(
-      names(taxon),
+    taxon_name_col <- .first_col(
+      taxon,
       c("taxa_accepted", "taxon_corrected", "species_name",
         "accepted_name", "taxon_name", "name",
         "scientificName", "canonical_name")
     )
 
-    if (length(flora_taxon_col) > 0L && length(taxon_id_col) > 0L &&
-        length(taxon_name_col) > 0L) {
-      taxon_lookup <- taxon[, c(taxon_id_col[1L], taxon_name_col[1L])]
+    if (!is.null(flora_taxon_col) && !is.null(taxon_id_col) &&
+        !is.null(taxon_name_col)) {
+      taxon_lookup <- taxon[, c(taxon_id_col, taxon_name_col)]
       names(taxon_lookup) <- c("join_key", "canonical_name")
       taxon_lookup <- taxon_lookup[!duplicated(taxon_lookup$join_key), ]
-      flora$join_key <- flora[[flora_taxon_col[1L]]]
+      flora$join_key <- flora[[flora_taxon_col]]
+      assert_key_resolves(flora$join_key, taxon_lookup$join_key,
+                          "taxon", flora_taxon_col, taxon_id_col)
       flora <- merge(flora, taxon_lookup, by = "join_key", all.x = TRUE)
     }
   }
 
   if (!"canonical_name" %in% names(flora)) {
-    name_col <- intersect(
-      names(flora),
+    name_col <- .first_col(
+      flora,
       c("species_name", "accepted_name", "taxon_name", "scientificName",
         "canonical_name", "species")
     )
-    if (length(name_col) == 0L) {
+    if (is.null(name_col)) {
       stop("Cannot resolve species names in GloNAF data.", call. = FALSE)
     }
-    flora$canonical_name <- trimws(flora[[name_col[1L]]])
+    flora$canonical_name <- trimws(flora[[name_col]])
   }
 
   if (!is.null(region_file)) {
     region <- read_table(region_file)
-    region_id_col <- intersect(
-      names(region),
-      c("region_id", "OBJIDsic", "id", "ID")
+    # OBJIDsic is the region polygon's GIS object id, not the key the flora
+    # table's region_id points at, and it is last so it is reached only when
+    # the region table names its primary key nothing else.
+    region_id_col <- .first_col(
+      region, c("region_id", "id", "ID", "OBJIDsic")
     )
-    region_code_col <- intersect(
-      names(region),
+    region_code_col <- .first_col(
+      region,
       c("code", "tdwg4_code", "tdwg3_code", "tdwg2_code",
         "iso_equivalent", "country_code", "region_code", "name")
     )
-    flora_region_col <- intersect(
-      names(flora),
-      c("region_id", "OBJIDsic", "region")
+    flora_region_col <- .first_col(
+      flora, c("region_id", "OBJIDsic", "region")
     )
 
-    if (length(region_id_col) > 0L && length(region_code_col) > 0L &&
-        length(flora_region_col) > 0L) {
-      region_lookup <- region[, c(region_id_col[1L], region_code_col[1L])]
+    if (!is.null(region_id_col) && !is.null(region_code_col) &&
+        !is.null(flora_region_col)) {
+      region_lookup <- region[, c(region_id_col, region_code_col)]
       names(region_lookup) <- c("region_join", "region_code_resolved")
       region_lookup <- region_lookup[!duplicated(region_lookup$region_join), ]
-      flora$region_join <- flora[[flora_region_col[1L]]]
+      flora$region_join <- flora[[flora_region_col]]
+      assert_key_resolves(flora$region_join, region_lookup$region_join,
+                          "region", flora_region_col, region_id_col)
       flora <- merge(flora, region_lookup, by = "region_join", all.x = TRUE)
       flora$region_id <- as.character(flora$region_code_resolved)
     }
   }
 
   if (!"region_id" %in% names(flora) || all(is.na(flora$region_id))) {
-    region_col <- intersect(
-      names(flora),
-      c("region_id", "region", "OBJIDsic", "region_id_raw")
+    region_col <- .first_col(
+      flora, c("region_id", "region", "OBJIDsic", "region_id_raw")
     )
-    if (length(region_col) > 0L) {
-      flora$region_id <- as.character(flora[[region_col[1L]]])
+    if (!is.null(region_col)) {
+      flora$region_id <- as.character(flora[[region_col]])
     } else {
       stop("Cannot resolve region identifiers in GloNAF data.", call. = FALSE)
     }

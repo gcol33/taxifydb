@@ -205,3 +205,56 @@ enrichment_emergency_fallback <- function(name, verbose = TRUE) {
 
   df
 }
+
+
+#' Check that an already-built enrichment matches its registry entry
+#'
+#' `TAXIFYDB_PUBLISH_RESUME=1` reuses whatever `.vtr` sits in an enrichment's
+#' output directory instead of rebuilding it, which is what lets an interrupted
+#' publish finish cheaply. It also means a `.vtr` left from an earlier source
+#' release looks exactly like a current one: publishing it uploads stale data
+#' and writes a manifest entry naming a source that build never read. The
+#' `meta.json` sidecar records the URL and version the build actually used, so
+#' that is what the registry is compared against.
+#'
+#' @param name Character. Enrichment name in the build registry.
+#' @param vtr_path Character. Path to the built `.vtr`; its `meta.json` sidecar
+#'   is read from the same directory.
+#' @return `TRUE`, invisibly. Stops when the build and the registry disagree.
+#' @export
+assert_built_matches_registry <- function(name, vtr_path) {
+  reg <- .enrichment_build_registry[[name]]
+  if (is.null(reg)) {
+    stop(sprintf("Unknown enrichment '%s'.", name), call. = FALSE)
+  }
+
+  meta_path <- file.path(dirname(vtr_path), "meta.json")
+  if (!file.exists(meta_path)) {
+    stop(sprintf(
+      paste0("Cannot reuse the built '%s': no meta.json beside %s, so there is ",
+             "nothing recording which source release it was built from."),
+      name, basename(vtr_path)
+    ), call. = FALSE)
+  }
+  meta <- jsonlite::fromJSON(meta_path, simplifyVector = TRUE)
+
+  drift <- character(0)
+  if (!identical(meta$source_url %||% NA_character_, reg$source_url)) {
+    drift <- c(drift, sprintf("source_url built from %s, registry now names %s",
+                              meta$source_url %||% "<none>", reg$source_url))
+  }
+  if (!is.null(reg$version) &&
+      !identical(meta$version %||% NA_character_, reg$version)) {
+    drift <- c(drift, sprintf("version built as %s, registry now names %s",
+                              meta$version %||% "<none>", reg$version))
+  }
+  if (length(drift) > 0L) {
+    stop(sprintf(
+      paste0("Refusing to reuse the built '%s': it predates the current ",
+             "registry entry (%s). Rebuild it, or clear %s, before publishing."),
+      name, paste(drift, collapse = "; "), dirname(vtr_path)
+    ), call. = FALSE)
+  }
+
+  invisible(TRUE)
+}

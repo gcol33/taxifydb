@@ -98,6 +98,10 @@ if (action == "publish") {
     dir.create(enr_out, recursive = TRUE, showWarnings = FALSE)
     existing <- list.files(enr_out, pattern = "\\.vtr$", full.names = TRUE)
     if (resume && length(existing) == 1L) {
+      # A leftover .vtr from an earlier source release is indistinguishable
+      # from a current one on disk, so the reuse is gated on its sidecar
+      # still naming the source the registry names.
+      taxifydb::assert_built_matches_registry(name, existing)
       message(sprintf("RESUME: reusing built %s", basename(existing)))
       built[[name]] <- existing
       next

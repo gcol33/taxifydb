@@ -47,6 +47,16 @@
   regions, against 10,238 rows over 84 regions, resolved against all 19
   backbones. Both manifests record the new record, row count and content id.
 
+## A new deposit of the same work keeps its curated citation
+
+* A runtime `citation` is rewritten from the build when the entry moves to a
+  different `source_url` or `source_doi`, so it cannot go on naming a source
+  nobody read. A versioned deposit moves its URL on every release while the
+  work being cited stays put, and GloNAF's runtime entry -- a structured block
+  carrying authors, journal and DOI -- was flattened to the registry's one-line
+  attribution on the record bump. A stored citation that already names the
+  entry's `source_doi` is now kept.
+
 ## A resumed publish checks what it is about to upload
 
 * `TAXIFYDB_PUBLISH_RESUME=1` reuses whatever `.vtr` sits in an enrichment's

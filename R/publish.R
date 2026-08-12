@@ -390,7 +390,9 @@ update_manifest <- function(manifest_path, backend_name, version,
 #'   already carry so hand-curated values are preserved. The exception is
 #'   `citation` when the build has moved to a different `source_url` or
 #'   `source_doi`: the stored text names the source it was written for, so it is
-#'   rewritten from the build rather than left pointing at the old one. Used when
+#'   rewritten from the build rather than left pointing at the old one. A stored
+#'   citation that already names the entry's `source_doi` is kept, since it
+#'   names the same work the new URL serves. Used when
 #'   writing
 #'   taxify's `inst/manifest.json`; left `FALSE` for this repo's lean build-side
 #'   manifest. A new enrichment's runtime entry is then complete from the build
@@ -448,8 +450,19 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # Curated text survives everything here except a change of source, which is
   # the one case where keeping it means publishing a citation to data nobody
   # read.
-  source_moved <- !identical(entry$source_url %||% NULL, meta$source_url) ||
-    !identical(entry$source_doi %||% NULL, meta$source_doi)
+  # A citation that already names the DOI the entry cites still names the right
+  # work, whatever URL this build read it from. A versioned deposit moves its
+  # URL on every release -- GloNAF's Zenodo concept cut record 17105725 over
+  # 13235357 while the data paper being cited stayed put -- and overwriting
+  # there replaces curated text, often a structured block carrying authors,
+  # journal and DOI, with the registry's one-line attribution.
+  cited_doi <- if (is.list(entry$citation)) entry$citation$doi else NULL
+  cites_same_work <- !is.null(cited_doi) &&
+    identical(cited_doi, meta$source_doi %||% entry$source_doi %||% NULL)
+
+  source_moved <- (!identical(entry$source_url %||% NULL, meta$source_url) ||
+    !identical(entry$source_doi %||% NULL, meta$source_doi)) &&
+    !cites_same_work
 
   if (!is.null(meta$source_url)) {
     entry$source_url <- check_source_url(meta$source_url, name)

@@ -94,3 +94,71 @@ test_that("a delta is dropped when the release has none, unlike a sidecar", {
   expect_null(got$delta_from)
   expect_null(got$delta_size)
 })
+
+
+# A runtime citation is curated text, often a structured block. It is rewritten
+# from the build only when it no longer names the work being served.
+
+write_enrichment_manifest <- function(path, entry) {
+  jsonlite::write_json(
+    list(schema_version = 2L, backends = list(),
+         enrichments = stats::setNames(list(entry), "glonaf")),
+    path, pretty = TRUE, auto_unbox = TRUE)
+  path
+}
+
+enrichment_meta <- function(dir, source_url, source_doi) {
+  jsonlite::write_json(
+    list(name = "glonaf", version = "2.02", nrow = 3L,
+         source_url = source_url, source_doi = source_doi,
+         license = "CC BY 4.0",
+         attribution = "van Kleunen M et al. (2019) ... Ecology 100:e02542."),
+    file.path(dir, "meta.json"), auto_unbox = TRUE)
+}
+
+curated_citation <- list(
+  key = "vankleunen2019glonaf", type = "article",
+  authors = "van Kleunen M, Pysek P, Dawson W", year = "2019",
+  title = "The Global Naturalized Alien Flora (GloNAF) database",
+  journal = "Ecology", doi = "10.1002/ecy.2542"
+)
+
+test_that("a new deposit of the same work keeps the curated citation", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta(dir, "https://zenodo.org/api/records/17105725", "10.1002/ecy.2542")
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07", citation = curated_citation,
+         source_url = "https://zenodo.org/api/records/13235357",
+         source_doi = "10.1002/ecy.2542"))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  # the URL moved to the new record, the cited work did not
+  expect_equal(got$source_url, "https://zenodo.org/api/records/17105725")
+  expect_equal(got$citation$doi, "10.1002/ecy.2542")
+  expect_equal(got$citation$journal, "Ecology")
+  expect_equal(got$citation$key, "vankleunen2019glonaf")
+})
+
+test_that("a move to a different work rewrites the citation from the build", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta(dir, "https://zenodo.org/api/records/17105725", "10.5281/zenodo.17105725")
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07", citation = curated_citation,
+         source_url = "https://zenodo.org/api/records/13235357",
+         source_doi = "10.1002/ecy.2542"))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(got$source_doi, "10.5281/zenodo.17105725")
+  expect_true(is.character(got$citation))
+  expect_match(got$citation, "van Kleunen", fixed = TRUE)
+})

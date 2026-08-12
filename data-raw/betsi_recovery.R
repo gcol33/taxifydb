@@ -1,6 +1,6 @@
 # Freeze the recovered BETSI-derived matrices into inst/extdata/betsi/.
 #
-# The source matrices live under dev_notes/betsi_recovery/ (local-only,
+# The source matrices live under datasets/betsi/compiled/raw/ (local-only,
 # gitignored: extracted from copyrighted papers whose PDFs never enter git).
 # This script validates each one against its descriptor in R/betsi-recovery.R --
 # the same trait-set, modality, fuzzy-coding (sum-to-100) and type checks the
@@ -15,10 +15,10 @@ devtools::load_all(".", quiet = TRUE)
 # recovery-source name -> local source file (fuzzy: species,trait,class,pct;
 # hard: species + one column per trait).
 sources <- list(
-  pelosi2014_earthworm = "dev_notes/betsi_recovery/pelosi2014_appendix1.csv",
-  lu2025_collembola    = "dev_notes/betsi_recovery/lu2025_collembola.csv",
-  # decoded + merged + normalized by dev_notes/betsi_recovery/scripts/build_inrae_long.R
-  inrae_collembola     = "dev_notes/betsi_recovery/inrae_collembola_long.csv"
+  pelosi2014_earthworm = "datasets/betsi/compiled/raw/pelosi2014_appendix1.csv",
+  lu2025_collembola    = "datasets/betsi/compiled/raw/lu2025_collembola.csv",
+  # decoded + merged + normalized by datasets/betsi/scripts/extract/build_inrae_long.R
+  inrae_collembola     = "datasets/betsi/compiled/raw/inrae_collembola_long.csv"
 )
 
 out_dir <- file.path("inst", "extdata", "betsi")
@@ -28,7 +28,7 @@ for (key in names(sources)) {
   src <- sources[[key]]
   if (!file.exists(src)) {
     stop(sprintf(paste0("Recovery source '%s' not found at %s (local-only; ",
-                        "see dev_notes/betsi_handoff.md)."), key, src),
+                        "see datasets/betsi/betsi_handoff.md)."), key, src),
          call. = FALSE)
   }
   spec <- taxifydb:::.betsi_recovery_sources[[key]]

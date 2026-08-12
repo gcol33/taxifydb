@@ -188,7 +188,7 @@ column's tier (`betsi_export` / `betsi_derived` / `literature_reconstruction` /
 `.betsi_recovery_provenance()` (via `build_enrichment_vtr(provenance = )`), never
 flattened onto rows it does not describe. The frozen matrices live in
 `inst/extdata/betsi/` (committed; regenerated from the local
-`dev_notes/betsi_recovery/` sources by `data-raw/betsi_recovery.R`), and each
+`datasets/betsi/compiled/raw/` sources by `data-raw/betsi_recovery.R`), and each
 recovery asset is a normal `.enrichment_build_registry` entry (with a
 `provenance_fn`) built through the shared pipeline. `build_betsi_recovery()` /
 `list_betsi_recovery()` scope the recovery subset; `gen_spe()` builds the

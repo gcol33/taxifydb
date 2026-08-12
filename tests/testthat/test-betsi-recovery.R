@@ -8,7 +8,7 @@
 # is checked per column (a source can mix BETSI-derived and own columns).
 
 test_that("gen_spe builds the 6-letter GEN_SPE code", {
-  # verified against the Bonfanti 2022 legend (dev_notes/betsi.md)
+  # verified against the Bonfanti 2022 legend (datasets/betsi/betsi.md)
   expect_equal(gen_spe("Brachystomella parvula"), "BRA_PAR")
   expect_equal(gen_spe("Allacma gallica"),        "ALL_GAL")
   expect_equal(gen_spe("Arrhopalites caecus"),    "ARR_CAE")

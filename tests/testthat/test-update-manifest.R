@@ -123,6 +123,100 @@ curated_citation <- list(
   journal = "Ecology", doi = "10.1002/ecy.2542"
 )
 
+
+# trait_cols names the columns the .vtr carries, so a source that renames its
+# fields must not leave the runtime advertising the old ones.
+
+enrichment_meta_cols <- function(dir, trait_cols, group_col = NULL) {
+  jsonlite::write_json(
+    c(list(name = "glonaf", version = "2.02", nrow = 3L,
+           source_url = "https://zenodo.org/api/records/17105725",
+           source_doi = "10.5281/zenodo.17105725",
+           license = "CC BY 4.0", attribution = "van Kleunen M et al. (2019).",
+           trait_cols = list(trait_cols)),
+      if (!is.null(group_col)) list(group_col = group_col)),
+    file.path(dir, "meta.json"), auto_unbox = TRUE)
+}
+
+test_that("a trait_cols naming only columns still built is kept, curation and all", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta_cols(dir, c("alpha", "beta", "gamma"))
+  # A curated subset, deliberately narrower and in its own order.
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07", trait_cols = list("gamma", "alpha")))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(unlist(got$trait_cols), c("gamma", "alpha"))
+})
+
+test_that("a trait_cols naming a column no longer built is rewritten", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta_cols(dir, c("alpha", "beta"))
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07", trait_cols = list("alpha", "removed_by_upstream")))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(unlist(got$trait_cols), c("alpha", "beta"))
+})
+
+test_that("the group column keeps its place in a rewritten trait_cols", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta_cols(dir, c("alpha", "beta"), group_col = "region_id")
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07",
+         trait_cols = list("region_id", "removed_by_upstream")))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(unlist(got$trait_cols), c("region_id", "alpha", "beta"))
+})
+
+test_that("an entry that never carried the group column does not gain one", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta_cols(dir, c("alpha", "beta"), group_col = "region_id")
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07", trait_cols = list("removed_by_upstream")))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(unlist(got$trait_cols), c("alpha", "beta"))
+})
+
+test_that("the group column alone does not count as a stale trait_cols", {
+  # region_id is a real column of the built file, just not one meta lists as a
+  # trait, so an entry naming it plus current traits must survive untouched.
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  enrichment_meta_cols(dir, c("alpha", "beta"), group_col = "region_id")
+  mf <- write_enrichment_manifest(
+    file.path(dir, "manifest.json"),
+    list(latest = "2026.07", trait_cols = list("region_id", "beta")))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                             runtime = TRUE)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(unlist(got$trait_cols), c("region_id", "beta"))
+})
+
 test_that("a new deposit of the same work keeps the curated citation", {
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "glonaf")

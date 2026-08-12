@@ -10,7 +10,8 @@ check_dryad_version(source_url)
 \item{source_url}{Character. Dryad download URL containing a DOI.}
 }
 \value{
-Named list with \code{version} and \code{url}.
+Named list with \code{id} and \code{version} (both the newest version number)
+and \code{url}; \code{NULL} if the dataset cannot be read.
 }
 \description{
 Check a Dryad dataset for the latest version

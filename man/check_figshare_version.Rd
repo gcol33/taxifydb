@@ -7,11 +7,13 @@
 check_figshare_version(source_url)
 }
 \arguments{
-\item{source_url}{Character. Figshare download URL.}
+\item{source_url}{Character. Figshare article or download URL.}
 }
 \value{
-Named list with \code{version} and \code{url}.
+Named list with \code{id} and \code{version} (both the newest version number)
+and \code{url}; \code{NULL} if the article cannot be read.
 }
 \description{
-Check a Figshare article for the latest version
+Sources point either at an article or at one file within it; an article URL
+names the article directly, a file URL is resolved to its article first.
 }

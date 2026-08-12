@@ -15,6 +15,10 @@
 #' @param version Character. Version string (e.g., "2026.04").
 #' @param source_url Character. URL the source data was downloaded from.
 #' @param source_doi Character or NULL. DOI of the source dataset.
+#' @param upstream_id Character or NULL. The identity the source host gives the
+#'   version this build read -- a Zenodo record number, a Figshare or Dryad
+#'   version number, a `Last-Modified` stamp. Recorded so the weekly freshness
+#'   check compares upstream against upstream; see [probe_upstream_identity()].
 #' @param license Character. License string (e.g., "CC0", "CC BY 4.0").
 #' @param attribution Character. Human-readable attribution string.
 #' @param group_col Character or NULL. Column to index for group-based
@@ -35,7 +39,8 @@
 #' @return The path to the .vtr file (invisibly).
 #' @export
 build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
-                                 source_doi = NULL, license = "unknown",
+                                 source_doi = NULL, upstream_id = NULL,
+                                 license = "unknown",
                                  attribution = NULL, group_col = NULL,
                                  species_col = NULL, static = TRUE,
                                  source_format = NULL, provenance = NULL,
@@ -88,6 +93,11 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     version          = version,
     source_url       = source_url,
     source_doi       = source_doi,
+    # What the source host called this version on the day it was read. The
+    # version above is this package's own release string, so it answers a
+    # different question than an upstream counter does; recording both is what
+    # lets check_enrichment_source_version() compare like with like.
+    upstream_id      = upstream_id,
     license          = license,
     attribution      = attribution,
     group_col        = group_col,
@@ -108,8 +118,8 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
   )
   meta <- drop_empty_fields(meta)
   meta_path <- file.path(dirname(vtr_path), "meta.json")
-  jsonlite::write_json(meta, meta_path, pretty = TRUE, auto_unbox = TRUE,
-                       null = "null")
+  write_json_lf(meta, meta_path, pretty = TRUE, auto_unbox = TRUE,
+                null = "null")
 
   message(sprintf(
     "[enrichment/%s] Built %s: %s rows, %.1f MB",

@@ -11,6 +11,7 @@ build_enrichment_vtr(
   version,
   source_url,
   source_doi = NULL,
+  upstream_id = NULL,
   license = "unknown",
   attribution = NULL,
   group_col = NULL,
@@ -33,6 +34,11 @@ build_enrichment_vtr(
 \item{source_url}{Character. URL the source data was downloaded from.}
 
 \item{source_doi}{Character or NULL. DOI of the source dataset.}
+
+\item{upstream_id}{Character or NULL. The identity the source host gives the
+version this build read -- a Zenodo record number, a Figshare or Dryad
+version number, a \code{Last-Modified} stamp. Recorded so the weekly freshness
+check compares upstream against upstream; see \code{\link[=probe_upstream_identity]{probe_upstream_identity()}}.}
 
 \item{license}{Character. License string (e.g., "CC0", "CC BY 4.0").}
 

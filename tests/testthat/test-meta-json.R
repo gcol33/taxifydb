@@ -27,6 +27,19 @@ test_that("drop_empty_fields removes null/NA/empty-string/empty-list fields", {
   expect_equal(clean$groups, c("AT", "DE"))
 })
 
+test_that("JSON is written with newline endings on every platform", {
+  # manifest.json is committed and the largest backbones are published by hand
+  # from Windows, where jsonlite's text connection ends every line CRLF: the one
+  # entry that changed then arrives inside a rewrite of all 5,800 lines.
+  tmp <- withr::local_tempfile(fileext = ".json")
+  write_json_lf(list(name = "worms", nrow = 3L), tmp,
+                pretty = TRUE, auto_unbox = TRUE)
+
+  raw <- readBin(tmp, "raw", file.size(tmp))
+  expect_false(any(raw == as.raw(13L)))
+  expect_equal(jsonlite::read_json(tmp, simplifyVector = TRUE)$name, "worms")
+})
+
 test_that("an absent citation doi is omitted, not written as {} or null", {
   meta <- list(
     name     = "baseflor",

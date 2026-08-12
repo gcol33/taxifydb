@@ -10,8 +10,11 @@ check_gbif_version(source_url)
 \item{source_url}{Character. GBIF hosted dataset URL.}
 }
 \value{
-Named list with \code{version} (date string) and \code{url}.
+Named list with \code{id} (the \code{Last-Modified} stamp), \code{version} (that
+stamp as \code{YYYY.MM}), and \code{url}; \code{NULL} if the header is absent.
 }
 \description{
-Check a GBIF hosted dataset for the Last-Modified date
+The header stamp is kept whole as the identity and shortened to \code{YYYY.MM}
+only for display: two files a fortnight apart share a month, and an identity
+that cannot tell them apart reports a moved file as unchanged.
 }

@@ -2,18 +2,32 @@
 % Please edit documentation in R/check_versions.R
 \name{check_enrichment_source_version}
 \alias{check_enrichment_source_version}
-\title{Dispatch version check based on a manifest entry's source format}
+\title{Check one manifest enrichment entry against its upstream source}
 \usage{
-check_enrichment_source_version(entry)
+check_enrichment_source_version(entry, probe = probe_upstream_identity)
 }
 \arguments{
 \item{entry}{List. Manifest enrichment entry with \code{source_url},
-\code{source_format}, \code{source_version}, \code{static}.}
+\code{source_version}, \code{upstream_id}, \code{static}.}
+
+\item{probe}{Function taking a URL and returning an upstream identity.
+Defaults to \code{\link[=probe_upstream_identity]{probe_upstream_identity()}}.}
 }
 \value{
-Named list with \code{source_version}, \code{upstream_version}, \code{outdated},
-\code{check_url}, and optionally \code{note}.
+Named list with \code{source_version}, \code{built_id}, \code{upstream_version},
+\code{outdated}, \code{check_url}, and optionally \code{note}.
 }
 \description{
-Dispatch version check based on a manifest entry's source format
+Freshness is decided by comparing the upstream identity the build read
+against the one upstream carries now. The build's identity comes from
+\code{upstream_id}, written into the entry when the \code{.vtr} was built; for a Zenodo
+source the pinned record number in the URL says the same thing, so those are
+answerable without it.
+}
+\details{
+Where neither is available the answer is \code{NA}, not a guess: the recorded
+\code{source_version} is this package's own release string and the upstream
+version is whatever the host counts in, so comparing the two answers a
+different question than the one asked. An entry built before \code{upstream_id}
+was recorded reports \code{NA} until its next rebuild.
 }

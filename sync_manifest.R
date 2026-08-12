@@ -11,6 +11,12 @@
 #   taxify_manifest_path = ../taxify/inst/manifest.json
 #   output_dir           = output/enrichment
 
+# The manifest writer, read from the package's own helpers rather than called
+# through its namespace: this script needs base R and jsonlite only, and
+# installing taxifydb to sync a manifest would pull in the whole build
+# toolchain. Run from the repository root, as the usage above shows.
+source("R/utils.R")
+
 args <- commandArgs(trailingOnly = TRUE)
 taxify_manifest <- if (length(args) >= 1L) args[1L] else "../taxify/inst/manifest.json"
 output_dir      <- if (length(args) >= 2L) args[2L] else "output/enrichment"
@@ -79,8 +85,7 @@ for (enr_dir in enrichment_dirs) {
 if (length(updated) == 0L) {
   message("Nothing to sync -- all entries are current.")
 } else {
-  jsonlite::write_json(manifest, taxify_manifest, pretty = TRUE,
-                       auto_unbox = TRUE)
+  write_json_lf(manifest, taxify_manifest, pretty = TRUE, auto_unbox = TRUE)
   message(sprintf("Updated %d enrichment(s) in %s:",
                   length(updated), taxify_manifest))
   for (name in updated) {

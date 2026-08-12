@@ -60,6 +60,16 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     message(sprintf("Building enrichment '%s' from source...", name))
   }
 
+  # What the host calls the version being downloaded, asked while the download
+  # is being made rather than reconstructed later. A host with no probe, or one
+  # that cannot be reached, records nothing and the freshness check falls back
+  # to reporting the entry as uncheckable.
+  upstream <- probe_upstream_identity(source_url)
+  upstream_id <- upstream$pinned %||% upstream$id
+  if (verbose && !is.null(upstream_id)) {
+    message(sprintf("  Upstream identity: %s", upstream_id))
+  }
+
   dl_dir <- file.path(tempdir(), "taxifydb_enrichment_build", name)
   if (verbose) message("  Downloading source data...")
   source_path <- reg$download_fn(source_url, dl_dir)
@@ -117,6 +127,7 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
                     (if (!is.null(url)) format(Sys.Date(), "%Y.%m") else reg$version),
     source_url    = source_url,
     source_doi    = if (!is.null(url)) NULL else reg$source_doi,
+    upstream_id   = upstream_id,
     license       = reg$license,
     attribution   = reg$attribution,
     group_col     = reg$group_col,

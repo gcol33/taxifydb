@@ -29,7 +29,11 @@ version from the meta sidecar.}
 \item{runtime}{Logical. When \code{TRUE}, also populate the runtime-only fields the
 taxify door needs (\code{trait_cols}, \code{species_col}, \code{static}, \code{source_format},
 \code{citation}) from the meta sidecar, filling only fields the entry does not
-already carry so hand-curated values are preserved. Used when writing
+already carry so hand-curated values are preserved. The exception is
+\code{citation} when the build has moved to a different \code{source_url} or
+\code{source_doi}: the stored text names the source it was written for, so it is
+rewritten from the build rather than left pointing at the old one. Used when
+writing
 taxify's \code{inst/manifest.json}; left \code{FALSE} for this repo's lean build-side
 manifest. A new enrichment's runtime entry is then complete from the build
 alone, with no manual curation step.}

@@ -1,5 +1,103 @@
 # taxifydb 0.1.21
 
+## ThermoFresh reads the peer-reviewed release
+
+* `thermofresh` was pinned to Zenodo record `14056760`, the version deposited
+  before peer review. The published release is record `16959762` (ThermoFresh
+  v1.0), described in Bayat et al. (2025), Scientific Data 12,
+  doi:10.1038/s41597-025-05832-w. The enrichment carried 5,115 tolerance tests
+  over 828 taxonomy rows against the 6,825 and 931 the published data holds;
+  `parse_thermofresh()` now yields 768 species, up from 673.
+
+* The v1.0 archive keeps the pre-review submission verbatim under
+  `data/initial_submission/` and puts the peer-reviewed tables beside it as
+  `data/*_final.csv`, so bumping the URL alone would have kept reading the old
+  data under a new version number. The parser matches the `_final` names, and
+  its file lookup stops when a pattern matches anything other than exactly one
+  file rather than taking the first of several.
+
+* Rebuilt and republished to `enrichment-2026.08`: 860 rows against the 750 the
+  release carried, resolved against all 19 backbones. Both manifests record the
+  new record, the new row count and the new content id, so a runtime holding the
+  old file refetches on the content id rather than waiting for a version bump.
+
+* The runtime entry went on citing record `14056760` after the build had moved
+  to the published one. `update_enrichment_manifest(runtime = TRUE)` fills a
+  runtime field only when absent, so hand-curated text survives a release --
+  except `citation` when the build's `source_url` or `source_doi` has changed,
+  which is the one case where keeping it means citing data nobody read.
+
+## The enrichment version check can see a new upstream version
+
+* `check_zenodo_version()` queried the pinned record. A Zenodo record is
+  immutable, so it reported the day that record was published no matter how
+  many newer versions its concept had gained, and no Zenodo-sourced enrichment
+  could ever be reported as outdated -- which is how the ThermoFresh release
+  above went unnoticed for a year. It resolves `versions/latest` and compares
+  record IDs. It also reads the legacy `/record/` path, which `animaltraits`
+  uses and the pattern did not match.
+
+* `check_enrichment_source_version()` picked its checker with
+  `switch(entry$source_format, ...)`. That field is absent from 97 of the 108
+  manifest entries, so the call errored and every one of them was reported as
+  "could not determine upstream version" -- an error the weekly workflow
+  records and does not open an issue for. The checker is chosen from the host
+  the source URL names, which every entry carries.
+
+* `check_figshare_version()` read `versions[[1]]` as the newest. Figshare lists
+  versions ascending, so it reported version 1 for every article however many
+  versions had been published. It takes the highest. It also accepts an article
+  URL, not only a file URL.
+
+* Freshness a checker cannot settle is now reported as unknown with a note.
+  The recorded version is this package's own release string and the upstream
+  version is whatever the host counts in, so comparing the two answered a
+  different question than the one asked; on Figshare-sourced entries it read as
+  outdated every week.
+
+## A build records what the source host called the version it read
+
+* `build_enrichment()` asks the source host for its identity for the version
+  being downloaded -- a Zenodo record number, a Figshare or Dryad version
+  counter, a `Last-Modified` stamp -- and `build_enrichment_vtr()` writes it to
+  `meta.json` as `upstream_id`, which `update_enrichment_manifest()` carries
+  into the manifest entry. The weekly check compares that against what the host
+  offers now, so both sides of the comparison are the host's own counting.
+  Zenodo entries were already answerable from the record number in the URL;
+  this is what makes the Figshare, Dryad and GBIF entries answerable too.
+
+* An entry built before `upstream_id` existed records none, and reports unknown
+  rather than a guess until its next rebuild. Filling the field in from what
+  upstream offers today would assert every enrichment is current, which is the
+  claim the check exists to test.
+
+* The probes report identity and nothing else; `check_enrichment_source_version()`
+  decides freshness in one place from what they report. Which probe answers for
+  a source is a table keyed on the host, so covering a new one is a row.
+
+* The first sweep over all 108 entries reports six behind upstream, not one:
+  `thermofresh`, `glonaf`, `alien_first_records`, `gwdd`, `pottier` and
+  `zooplankton`, each pinned to a Zenodo record whose concept has since gained
+  a newer one. Twenty-five report current. The remaining 77 report unknown --
+  12 awaiting a rebuild to record an identity, 15 naming a URL the host cannot
+  answer for, and 50 on hosts no probe covers.
+
+* A host with no probe is now reported apart from a host whose probe came back
+  empty. Reading both as "no version check for source host" is how a source URL
+  that no longer resolves passes for a source nobody checks -- `amphibio` and
+  `elton_traits` name `ndownloader.figshare.com` download ids the Figshare API
+  answers 404 for, and they read as unchecked rather than unreadable.
+
+## A manifest written on Windows keeps its line endings
+
+* `jsonlite::write_json()` writes through a text connection, so publishing from
+  Windows ended every line of `manifest.json` CRLF where CI ends it LF: the one
+  entry a release changed arrived inside a rewrite of all 5,800 lines. The
+  backbones too large for the hosted runner are published by hand from Windows,
+  so that was every COL, COL XR and GBIF release. `write_json_lf()` serializes
+  to a string and writes it through a binary connection; both manifest writers,
+  the `meta.json` sidecar and `sync_manifest.R` go through it.
+
 ## The coverage audit reads the backbone set instead of carrying a copy
 
 * `check_manifest_coverage.R` walked a `BACKENDS` vector kept by hand, so a

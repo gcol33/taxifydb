@@ -2135,18 +2135,23 @@
   ),
 
   thermofresh = list(
-    source_url  = paste0("https://zenodo.org/api/records/14056760/files/",
-                         "hsbayat%2FFreshwater_thermtol_db-data.zip/content"),
-    source_doi  = "10.5281/zenodo.14056760",
-    version     = "2024.1",
+    # The v1.0 release carries the peer-reviewed data as data/*_final.csv and
+    # keeps the pre-review submission verbatim under data/initial_submission/;
+    # parse_thermofresh() reads the former.
+    source_url  = paste0("https://zenodo.org/api/records/16959762/files/",
+                         "hsbayat%2FThermoFresh-v1.0.zip/content"),
+    source_doi  = "10.5281/zenodo.16959762",
+    version     = "2025.1",
     license     = "CC BY 4.0",
     attribution = paste0(
-      "Freshwater thermal-tolerance database (Helena Bayat and contributors). ",
-      "Zenodo (doi:10.5281/zenodo.14056760), CC BY 4.0; source repository ",
-      "hsbayat/Freshwater_thermtol_db. Per-test critical thermal limits ",
-      "(ctmax, ctmin, lt50, ltmax, ltmin, in degrees C) for freshwater fish, ",
-      "invertebrates and amphibians, reduced to species-level medians by ",
-      "taxifydb."
+      "ThermoFresh v1.0 (Helena Bayat and contributors). Zenodo ",
+      "(doi:10.5281/zenodo.16959762), CC BY 4.0; source repository ",
+      "hsbayat/ThermoFresh. Described in Bayat et al. (2025) Global thermal ",
+      "tolerance compilation for freshwater invertebrates and fish, ",
+      "Scientific Data 12 (doi:10.1038/s41597-025-05832-w). Per-test ",
+      "critical thermal limits (ctmax, ctmin, lt50, ltmax, ltmin, in ",
+      "degrees C) for freshwater fish, invertebrates and amphibians, ",
+      "reduced to species-level medians by taxifydb."
     ),
     download_fn = function(url, dest) download_and_unzip(url, dest, pattern = NULL),
     parse_fn    = function(path) parse_thermofresh(path),

@@ -22,3 +22,8 @@ The retained metrics are the critical thermal maximum (\code{ctmax}), minimum
 (\code{ctmin}), the median lethal temperature (\code{lt50}) and the lethal maximum /
 minimum (\code{ltmax}, \code{ltmin}); all values are in degrees Celsius.
 }
+\details{
+The archive ships the peer-reviewed tables as \verb{data/*_final.csv} and keeps
+the pre-review submission beside them under \verb{data/initial_submission/}, so
+the readers below match the \verb{_final} names exactly.
+}

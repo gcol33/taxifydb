@@ -15,6 +15,10 @@
 #' (`ctmin`), the median lethal temperature (`lt50`) and the lethal maximum /
 #' minimum (`ltmax`, `ltmin`); all values are in degrees Celsius.
 #'
+#' The archive ships the peer-reviewed tables as `data/*_final.csv` and keeps
+#' the pre-review submission beside them under `data/initial_submission/`, so
+#' the readers below match the `_final` names exactly.
+#'
 #' @param path Directory holding the extracted archive (with a `data/`
 #'   subdirectory) or a path directly to that `data/` directory.
 #' @return data.frame with canonical_name + freshwater thermal-limit traits.
@@ -22,13 +26,14 @@
 parse_thermofresh <- function(path) {
   find1 <- function(pat) {
     f <- list.files(path, pattern = pat, recursive = TRUE, full.names = TRUE)
-    if (!length(f)) stop(sprintf("ThermoFresh: no file matching '%s'.", pat),
-                         call. = FALSE)
-    f[1L]
+    if (length(f) != 1L)
+      stop(sprintf("ThermoFresh: expected one file matching '%s', found %d.",
+                   pat, length(f)), call. = FALSE)
+    f
   }
-  tests <- utils::read.csv(find1("thermtol_tests_processed\\.csv$"),
+  tests <- utils::read.csv(find1("thermtol_tests_processed_final\\.csv$"),
                            stringsAsFactors = FALSE, check.names = FALSE)
-  tax   <- utils::read.csv(find1("thermtol_taxonomy\\.csv$"),
+  tax   <- utils::read.csv(find1("thermtol_taxonomy_final\\.csv$"),
                            stringsAsFactors = FALSE, check.names = FALSE)
 
   # The `species` column already holds the full binomial; genus- and

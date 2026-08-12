@@ -10,7 +10,9 @@ check_gbif_api_version(source_url)
 \item{source_url}{Character. (Unused; the GBIF backbone dataset ID is fixed.)}
 }
 \value{
-Named list with \code{version} and \code{url}.
+Named list with \code{id} (the dataset's \code{modified} timestamp), \code{version}
+(that timestamp as \code{YYYY.MM}), and \code{url}; \code{NULL} if the dataset cannot be
+read.
 }
 \description{
 Check the GBIF backbone API for the latest update date

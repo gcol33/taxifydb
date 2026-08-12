@@ -65,10 +65,14 @@ jobs:
             "",
             "The following enrichment sources have newer versions available upstream.",
             "",
-            "| Enrichment | Local Version | Upstream Version | Check URL |",
-            "|---|---|---|---|"
+            "| Enrichment | Local Version | Built From | Upstream Now | Check URL |",
+            "|---|---|---|---|---|"
           )
 
+          # `Built From` and `Upstream Now` are both the source host's own
+          # identity for a version -- a Zenodo record, a Figshare version
+          # counter, a Last-Modified stamp -- so the two are comparable. The
+          # local version beside them is this package's release string.
           for (i in seq_len(nrow(outdated))) {
             url <- if (!is.na(outdated$check_url[i])) {
               sprintf("[link](%s)", outdated$check_url[i])
@@ -76,9 +80,10 @@ jobs:
               "-"
             }
             lines <- c(lines, sprintf(
-              "| `%s` | %s | **%s** | %s |",
+              "| `%s` | %s | %s | **%s** | %s |",
               outdated$name[i],
               outdated$source_version[i],
+              outdated$built_id[i],
               outdated$upstream_version[i],
               url
             ))

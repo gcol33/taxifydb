@@ -359,8 +359,7 @@ update_manifest <- function(manifest_path, backend_name, version,
 
   manifest$backends[[backend_name]] <- drop_empty_fields(entry)
 
-  jsonlite::write_json(manifest, manifest_path, pretty = TRUE,
-                       auto_unbox = TRUE)
+  write_json_lf(manifest, manifest_path, pretty = TRUE, auto_unbox = TRUE)
 
   message(sprintf("Manifest updated: %s v%s", backend_name, version))
   invisible(manifest)
@@ -388,7 +387,11 @@ update_manifest <- function(manifest_path, backend_name, version,
 #' @param runtime Logical. When `TRUE`, also populate the runtime-only fields the
 #'   taxify door needs (`trait_cols`, `species_col`, `static`, `source_format`,
 #'   `citation`) from the meta sidecar, filling only fields the entry does not
-#'   already carry so hand-curated values are preserved. Used when writing
+#'   already carry so hand-curated values are preserved. The exception is
+#'   `citation` when the build has moved to a different `source_url` or
+#'   `source_doi`: the stored text names the source it was written for, so it is
+#'   rewritten from the build rather than left pointing at the old one. Used when
+#'   writing
 #'   taxify's `inst/manifest.json`; left `FALSE` for this repo's lean build-side
 #'   manifest. A new enrichment's runtime entry is then complete from the build
 #'   alone, with no manual curation step.
@@ -439,10 +442,23 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # -- the enrichment analogue of what update_manifest() records for backbones.
   if (!is.null(meta$content_id)) entry$content_id <- meta$content_id
 
+  # A citation names the source it was written for, so it cannot outlive a move
+  # to a different one: ThermoFresh's runtime entry went on citing the record
+  # deposited before peer review after the build had moved to the published one.
+  # Curated text survives everything here except a change of source, which is
+  # the one case where keeping it means publishing a citation to data nobody
+  # read.
+  source_moved <- !identical(entry$source_url %||% NULL, meta$source_url) ||
+    !identical(entry$source_doi %||% NULL, meta$source_doi)
+
   if (!is.null(meta$source_url)) {
     entry$source_url <- check_source_url(meta$source_url, name)
   }
   if (!is.null(meta$source_doi)) entry$source_doi <- meta$source_doi
+  # The identity the source host gave the version this build read. The weekly
+  # freshness check compares it against what the host offers now, which is the
+  # only comparison that answers whether the enrichment has gone stale.
+  if (!is.null(meta$upstream_id)) entry$upstream_id <- meta$upstream_id
   if (!is.null(meta$license))    entry$license    <- meta$license
   if (!is.null(meta$group_col))  entry$group_col  <- meta$group_col
 
@@ -470,7 +486,7 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
         !is.na(meta$source_format)) {
       entry$source_format <- meta$source_format
     }
-    if (is.null(entry$citation)) {
+    if (is.null(entry$citation) || source_moved) {
       cit <- if (!is.null(meta$citation)) meta$citation else meta$attribution
       if (!is.null(cit) && !is.na(cit)) entry$citation <- cit
     }
@@ -478,8 +494,7 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
 
   manifest$enrichments[[name]] <- drop_empty_fields(entry)
 
-  jsonlite::write_json(manifest, manifest_path, pretty = TRUE,
-                       auto_unbox = TRUE)
+  write_json_lf(manifest, manifest_path, pretty = TRUE, auto_unbox = TRUE)
 
   message(sprintf("Manifest enrichment updated: %s v%s", name, meta$version))
   invisible(manifest)

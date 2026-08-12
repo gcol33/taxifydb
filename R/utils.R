@@ -55,6 +55,29 @@ drop_empty_fields <- function(x) {
 }
 
 
+#' Write JSON with newline line endings on every platform
+#'
+#' `jsonlite::write_json()` writes through a text connection, so a file written
+#' on Windows ends every line CRLF where the same file written by CI ends LF.
+#' `manifest.json` is committed, and the backbones too large for the hosted
+#' runner are published by hand from Windows, so writing it there rewrote all
+#' 5,800 of its lines and buried the one entry that had changed. Serializing to
+#' a string and writing it through a binary connection leaves the endings alone.
+#'
+#' @param x The value to serialize.
+#' @param path Character. Destination file.
+#' @param ... Passed to [jsonlite::toJSON()].
+#' @return `path`, invisibly.
+#' @noRd
+write_json_lf <- function(x, path, ...) {
+  con <- file(path, open = "wb")
+  on.exit(close(con), add = TRUE)
+  writeLines(enc2utf8(as.character(jsonlite::toJSON(x, ...))), con,
+             useBytes = TRUE)
+  invisible(path)
+}
+
+
 #' Strip a trailing authorship string from a scientific name
 #'
 #' Produces the canonical name by removing `authorship` from the end of

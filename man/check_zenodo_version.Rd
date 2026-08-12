@@ -10,8 +10,13 @@ check_zenodo_version(source_url)
 \item{source_url}{Character. Zenodo download URL.}
 }
 \value{
-Named list with \code{version} (publication date) and \code{url}.
+Named list with \code{id} (the latest record's number), \code{version} (its
+publication date), \code{pinned} (the record number the URL names), and \code{url};
+\code{NULL} if the record cannot be read.
 }
 \description{
-Check a Zenodo record for the latest version
+A Zenodo record is immutable, so querying the pinned record reports the day
+that record was published however many newer versions its concept has since
+gained. The \code{versions/latest} endpoint resolves the pinned record to the
+newest one in the same concept.
 }

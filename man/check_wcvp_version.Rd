@@ -10,7 +10,8 @@ check_wcvp_version(source_url)
 \item{source_url}{Character. WCVP download URL.}
 }
 \value{
-Named list with \code{version} and \code{url}.
+Named list with \code{id}, \code{version}, and \code{url}; \code{NULL} if the header is
+absent.
 }
 \description{
 WCVP has no dedicated API, so we fall back to a HEAD request via

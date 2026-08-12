@@ -247,21 +247,29 @@
   ),
 
   alien_first_records = list(
-    source_url  = "https://zenodo.org/records/10039630/files/GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx",
-    source_doi  = "10.5281/zenodo.10039630",
-    version     = "3.1",
+    source_url  = paste0("https://zenodo.org/api/records/18759840/files/",
+                         "FirstRecords_dataset_public_v4.0.csv/content"),
+    source_doi  = "10.5281/zenodo.18759840",
+    version     = "4.0",
     license     = "CC BY 4.0",
-    attribution = "Seebens H et al. (2017) No saturation in the accumulation of alien species worldwide. Nature Communications 8, 14435. Zenodo release v3.1.",
+    attribution = paste0(
+      "Seebens H, Renard Truong T (2026) FirstRecords: a global dataset of ",
+      "first records of non-native species, version 4.0. Zenodo ",
+      "(doi:10.5281/zenodo.18759840), CC BY 4.0. The year a non-native ",
+      "species was first recorded in a region, reduced to one row per ",
+      "species x country by taxifydb. Built from the public dataset table, ",
+      "whose records the deposit marks free to share; the records their ",
+      "holders did not permit sharing are not in it."
+    ),
     download_fn = function(url, dest) {
-      download_curl_file(
-        url, dest,
-        "GlobalAlienSpeciesFirstRecordDatabase_v3.1_freedata.xlsx",
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/120.0"
-      )
+      download_curl_file(url, dest, "FirstRecords_dataset_public_v4.0.csv",
+                         user_agent = paste0(
+                           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                           "Firefox/120.0"))
     },
     parse_fn    = function(path) parse_alien_first_records(path),
     group_col   = "country_code",
-    requires    = "openxlsx2"
+    requires    = character(0)
   ),
 
   iucn = list(

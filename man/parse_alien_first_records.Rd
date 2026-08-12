@@ -2,18 +2,35 @@
 % Please edit documentation in R/enrichment-parsers-alien.R
 \name{parse_alien_first_records}
 \alias{parse_alien_first_records}
-\title{Parse Seebens et al. Global Alien Species First Record Database}
+\title{Parse the Seebens et al. global first-record database}
 \usage{
 parse_alien_first_records(path)
 }
 \arguments{
-\item{path}{Character. Path to the Seebens XLSX file.}
+\item{path}{Character. Path to the \code{FirstRecords} dataset CSV.}
 }
 \value{
 data.frame with canonical_name + country_code + first-record cols.
 }
 \description{
-Reads the "FirstRecords" sheet from the Seebens Excel file, maps region
-names to ISO 3166-1 alpha-2 codes, and deduplicates per species x country
-(keeping the earliest year).
+Reads the public dataset table, maps location names to ISO 3166-1 alpha-2
+codes, and reduces to one row per species x country.
+}
+\details{
+Every location the source names must map. The map is keyed on wording, so a
+release that renames a place would otherwise drop its records and return a
+smaller table rather than an error: v4.0 alone renamed 24 locations, among
+them "United States" to "United States of America", which is 8,050 records.
+A name the map does not hold is therefore a hard error, and the entries that
+resolve to no single country (a record spanning several, "USACanada") are
+recorded in the map as \code{NA} so they read as known rather than missing.
+
+Where a species has several records for one country the earliest year wins,
+but a record asserting the species is present is preferred to one recording
+it as absent, uncertain or captive whatever the years are, so the retained
+row does not date a country's occurrence from a record denying it. That
+record's own status is published beside its year as
+\code{alien_first_record_status}, since the remaining columns are reduced over
+every record for the pair and a status reduced that way would describe some
+record other than the one the year came from.
 }

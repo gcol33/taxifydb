@@ -231,6 +231,38 @@ union of the others and cannot be dropped — it is the only one carrying SEICAT
 and the negative records with no affected taxon recorded, so a door reading
 gidias without a group must select `affected_taxon == "Any"`.
 
+**Location-keyed sources need a mapping guard (`alien_first_records`, v4.0).**
+Seebens et al. moved from one `freedata` xlsx to a relational Darwin Core-style
+release (dataset + location + taxonomy + sources tables), renaming every column
+and 24 of its locations — "United States" to "United States of America" alone
+is 8,050 records. `parse_alien_first_records()` maps location names to ISO
+alpha-2 through `.seebens_region_map`, and a map keyed on wording turns any
+rename into silently dropped rows, so an unmapped non-empty location is now a
+hard error naming the offenders. The lookup folds accents, case and punctuation
+first (`fold_accents()`, widened to the whole Latin-1 letter block), which
+absorbs the respellings that are only cosmetic ("Reunion", "Curacao",
+"Timor-Leste") and leaves the map holding genuinely distinct wordings; a build
+asserts no two wordings fold together onto different countries. Locations with
+no country (`"Aegean Sea"`, `"USACanada"`) stay `NA` in the map so they read as
+known rather than missing. The two lookup tables are keyed on (id, verbatim
+spelling), not on the id — 557 rows for 268 locations, 56,971 for 28,822 taxa —
+so joining them without deduplicating the id first fans the record table out
+instead of failing.
+
+**Not every delimited file has one encoding.** The v4.0 dataset table is
+semicolon-delimited and UTF-8 except for 679 lines that are latin1, so no single
+`fileEncoding` reads it: UTF-8 errors on those lines, latin1 mojibakes the 2,739
+genuine UTF-8 sequences everywhere else. `.read_delim_utf8()` reads the bytes,
+splits lines, and normalizes each through `.to_utf8()` before parsing, deciding
+the encoding per line. Reach for it rather than `fileEncoding` whenever a source
+turns out to be mixed. One name (`Aster subulatus var parviflorus (Nees) Sünd`)
+is double-encoded in the deposit itself and is left as it arrives.
+
+Darwin Core writes identifiers in camel case, so `taxonID` sanitizes to
+`taxonid` with no separator for `.is_bookkeeping_col()`'s `.*_id` rule to catch;
+the DwC spellings are named there explicitly, listed rather than caught by a
+general `.*id` because trait values end the same way (`hybrid`, `diploid`).
+
 ## Genus Register
 
 `genus_register.vtr` (one row per genus: classification + `kingdom_group` /

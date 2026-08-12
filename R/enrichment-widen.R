@@ -32,6 +32,31 @@
   y
 }
 
+#' Read a delimited file whose lines are not all in one encoding
+#'
+#' `read.csv(fileEncoding = )` applies a single encoding to the whole file, so
+#' a source that is UTF-8 except for a run of latin1 lines cannot be read
+#' correctly by any one setting: UTF-8 fails on the latin1 lines, latin1 turns
+#' every real UTF-8 sequence into mojibake. The bytes are therefore read raw,
+#' split into lines, and normalized per line by [.to_utf8()] before any
+#' parsing, which decides the encoding for each line on its own evidence.
+#'
+#' @param path Character. File to read.
+#' @param ... Passed to [utils::read.csv()] (`sep`, `quote`, ...).
+#' @return data.frame, all character columns.
+#' @noRd
+.read_delim_utf8 <- function(path, ...) {
+  raw <- readBin(path, "raw", file.size(path))
+  if (any(raw == as.raw(0L))) {
+    stop("The file contains a null byte, which no delimited reader carries.",
+         call. = FALSE)
+  }
+  lines <- strsplit(rawToChar(raw), "\n", fixed = TRUE, useBytes = TRUE)[[1L]]
+  lines <- .to_utf8(sub("\r$", "", lines, useBytes = TRUE))
+  utils::read.csv(text = lines, colClasses = "character",
+                  check.names = FALSE, ...)
+}
+
 #' First column present, in candidate order
 #'
 #' Parsers name the column they want as a list of spellings, most specific
@@ -81,10 +106,22 @@
 #' columns are kept. This is the single place to adjust what "no dropping"
 #' means; a parser's curated columns are added before this runs and are never
 #' subject to it.
+#'
+#' Darwin Core writes its identifiers in camel case (`taxonID`, `locationID`),
+#' which sanitizes to a bare `taxonid` with no separator for `.*_id` to match,
+#' so those spellings are named here too. They are listed rather than caught by
+#' a general `.*id` because ordinary trait values end in the same two letters
+#' (`hybrid`, `diploid`, `humid`, `fluid`).
 #' @noRd
 .is_bookkeeping_col <- function(sane) {
+  dwc_entity <- paste0(
+    "taxon|location|event|occurrence|dataset|record|organism|",
+    "collection|institution|catalog|catalogue|resource|material_?sample|",
+    "measurement|identification|gbif|",
+    "(accepted_?|original_?|parent_?)?name_?usage")
   grepl(paste0(
-    "^(id[0-9]*|.*_id[0-9]*|references?|refs?|citations?|source_refs?|",
+    "^(id[0-9]*|.*_id[0-9]*|(", dwc_entity, ")id[0-9]*|",
+    "references?|refs?|citations?|source_refs?|",
     "bibliography|literature|doi|url|weblink|web_link|link|",
     "species|genus|subgenus|scientific_?name|taxon_?name|species_?name|",
     "binomial|canonical_?name|accepted_?name|name|taxon)$"), sane) |

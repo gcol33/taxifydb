@@ -1604,19 +1604,33 @@ parse_glonaf <- function(dir_path) {
 }
 
 
-#' Fold French accented characters to ASCII
+#' Fold accented Latin-1 letters to their ASCII base
 #'
 #' Locale-independent accent removal (chartr, character-for-character) so
 #' value matching does not depend on source encoding or the running locale.
+#' Sources respell the same word with and without its diacritics from one
+#' release to the next ("Reunion"/"Reunion", "Sao Tome"/"Sao Tome"), so both
+#' sides of a name match are folded first.
 #' @param x Character vector.
 #' @return `x` with accented Latin-1 letters mapped to their ASCII base.
 #' @noRd
 fold_accents <- function(x) {
-  # Latin-1 code points for: e-acute e-grave e-circ e-uml a-grave a-circ
-  # a-uml i-uml i-circ o-circ o-uml u-grave u-circ u-uml c-cedilla
-  from <- intToUtf8(c(0xE9, 0xE8, 0xEA, 0xEB, 0xE0, 0xE2, 0xE4, 0xEF,
-                      0xEE, 0xF4, 0xF6, 0xF9, 0xFB, 0xFC, 0xE7))
-  chartr(from, "eeeeaaaiioouuuc", x)
+  # Ligatures and sharp s stand for two ASCII letters, which chartr, being
+  # character-for-character, cannot produce.
+  x <- gsub(intToUtf8(0xC6), "AE", x, fixed = TRUE)
+  x <- gsub(intToUtf8(0xE6), "ae", x, fixed = TRUE)
+  x <- gsub(intToUtf8(0xDF), "ss", x, fixed = TRUE)
+
+  # The letter range of the Latin-1 supplement, in code point order, less the
+  # two ligatures and the two thorn/eth letters that have no ASCII base.
+  from <- intToUtf8(c(0xC0:0xC5, 0xC7, 0xC8:0xCB, 0xCC:0xCF, 0xD1, 0xD2:0xD6,
+                      0xD8, 0xD9:0xDC, 0xDD,
+                      0xE0:0xE5, 0xE7, 0xE8:0xEB, 0xEC:0xEF, 0xF1, 0xF2:0xF6,
+                      0xF8, 0xF9:0xFC, 0xFD, 0xFF))
+  to <- paste0("AAAAAA", "C", "EEEE", "IIII", "N", "OOOOO", "O", "UUUU", "Y",
+               "aaaaaa", "c", "eeee", "iiii", "n", "ooooo", "o", "uuuu", "y",
+               "y")
+  chartr(from, to, x)
 }
 
 

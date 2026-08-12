@@ -98,6 +98,48 @@ test_that(".is_bookkeeping_col flags references/URLs/IDs/names, keeps traits", {
 })
 
 
+test_that(".is_bookkeeping_col flags Darwin Core ids, which carry no separator", {
+  # camelCase sanitizes to a bare "taxonid", which the .*_id rule cannot see.
+  expect_true(all(.is_bookkeeping_col(
+    c("taxonid", "locationid", "eventid", "occurrenceid", "datasetid",
+      "organismid", "recordid", "gbifid", "materialsampleid",
+      "measurementid", "nameusageid", "parentnameusageid",
+      "acceptednameusageid"))))
+  # Trait values ending in the same two letters are not ids.
+  expect_false(any(.is_bookkeeping_col(
+    c("hybrid", "diploid", "polyploid", "humid", "fluid", "lipid",
+      "arachnid", "rapid"))))
+})
+
+
+test_that(".read_delim_utf8 decides encoding per line, not per file", {
+  # A file that is utf-8 except for one latin1 line: read whole under either
+  # encoding one half comes out wrong.
+  hdr <- "name;trait"
+  utf8_line   <- rawToChar(as.raw(c(0x43, 0xc3, 0xb4, 0x74, 0x65, 0x3b, 0x31)))
+  latin1_line <- rawToChar(as.raw(c(0x43, 0xf4, 0x74, 0x65, 0x3b, 0x32)))
+  f <- tempfile(fileext = ".csv")
+  writeBin(charToRaw(paste0(paste(c(hdr, utf8_line, latin1_line),
+                                  collapse = "\n"), "\n")), f)
+
+  d <- .read_delim_utf8(f, sep = ";", quote = "\"")
+  expect_equal(nrow(d), 2L)
+  expect_false(any(is.na(iconv(d$name, "UTF-8", "UTF-8"))))
+  # Both lines spell the same word; only their encodings differed.
+  expect_equal(length(unique(d$name)), 1L)
+})
+
+
+test_that("fold_accents maps the Latin-1 letters, expanding the ligatures", {
+  x <- rawToChar(as.raw(c(0xc3, 0xa9, 0xc3, 0xa3, 0xc3, 0xa7, 0xc3, 0xb1,
+                          0xc3, 0x85, 0xc3, 0xb8)))          # e-a-c-n-A-o
+  expect_equal(fold_accents(x), "eacnAo")
+  expect_equal(fold_accents(rawToChar(as.raw(c(0xc3, 0x9f)))), "ss")
+  expect_equal(fold_accents(rawToChar(as.raw(c(0xc3, 0xa6)))), "ae")
+  expect_equal(fold_accents("plain ascii"), "plain ascii")
+})
+
+
 # ---- within-source numeric spread ------------------------------------------
 #
 # Where a source carries several records per species (population/life-stage

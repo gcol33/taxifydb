@@ -10,8 +10,10 @@
 #' Multi-country entries (e.g., "USACanada") are mapped to NA and dropped.
 #' @noRd
 .seebens_region_map <- c(
+  "Aegean" = "GR",
   "Afghanistan" = "AF",
   "Aland Islands" = "AX",
+  "Åland" = "AX",
   "Åland Islands" = "AX",
   "Alaska" = "US",
   "Albania" = "AL",
@@ -25,6 +27,7 @@
   "Antarctica" = "AQ",
   "Anticosti Island" = "CA",
   "Antigua and Barbuda" = "AG",
+  "Antipodes Island" = "NZ",
   "Argentina" = "AR",
   "Armenia" = "AM",
   "Aruba" = "AW",
@@ -53,6 +56,7 @@
   "Botswana" = "BW",
   "Brazil" = "BR",
   "British Virgin Islands" = "VG",
+  "Brunei" = "BN",
   "Brunei Darussalam" = "BN",
   "Bulgaria" = "BG",
   "Burkina Faso" = "BF",
@@ -73,22 +77,26 @@
   "Christmas Island" = "CX",
   "Clipperton Island" = "FR",
   "Cocos (Keeling) Islands" = "CC",
+  "Cocos Islands" = "CC",
   "Colombia" = "CO",
   "Comoros" = "KM",
   "Congo, Democratic Republic of the" = "CD",
   "Congo, Republic of" = "CG",
   "Cook Islands" = "CK",
   "Corse" = "FR",
+  "Corsica" = "FR",
   "Costa Rica" = "CR",
   "Cote D'Ivoire" = "CI",
   "Crete" = "GR",
   "Croatia" = "HR",
+  "Crozet Islands" = "TF",
   "Crozet Islands Group" = "TF",
   "Cuba" = "CU",
   "Curacao" = "CW",
   "Cyprus" = "CY",
   "Czech Republic" = "CZ",
   "De" = NA_character_,
+  "Democratic Republic of the Congo" = "CD",
   "Denmark" = "DK",
   "Djibouti" = "DJ",
   "Dominica" = "DM",
@@ -130,17 +138,21 @@
   "Guinea-Bissau" = "GW",
   "Guyana" = "GY",
   "Haiti" = "HT",
+  "Hawaii" = "US",
   "Hawaiian Islands" = "US",
   "Heard and Mcdonald Islands" = "HM",
+  "Heard Island and McDonald Island" = "HM",
   "Honduras" = "HN",
   "Hong Kong" = "HK",
   "Hungary" = "HU",
   "Iceland" = "IS",
   "India" = "IN",
   "Indonesia" = "ID",
+  "Iran" = "IR",
   "Iran, Islamic Republic of" = "IR",
   "Iraq" = "IQ",
   "Ireland" = "IE",
+  "Isle of Man" = "IM",
   "Israel" = "IL",
   "Italy" = "IT",
   "Italy and Germany" = NA_character_,
@@ -148,6 +160,7 @@
   "Izu Islands" = "JP",
   "Jamaica" = "JM",
   "Japan" = "JP",
+  "Jersey" = "JE",
   "Jordan" = "JO",
   "Kazakhstan" = "KZ",
   "Kenya" = "KE",
@@ -166,6 +179,7 @@
   "Liechtenstein" = "LI",
   "Lithuania" = "LT",
   "Lord Howe Island" = "AU",
+  "Lord Howe Islands" = "AU",
   "Luxembourg" = "LU",
   "Macao" = "MO",
   "Macedonia" = "MK",
@@ -184,6 +198,7 @@
   "Mauritius" = "MU",
   "Mayotte" = "YT",
   "Mexico" = "MX",
+  "Micronesia" = "FM",
   "Micronesia, Federated States of" = "FM",
   "Moldova" = "MD",
   "Monaco" = "MC",
@@ -205,14 +220,17 @@
   "Niue" = "NU",
   "Norfolk Island" = "NF",
   "North Korea" = "KP",
+  "North Macedonia" = "MK",
   "Northern Mariana Islands" = "MP",
   "Norway" = "NO",
   "Ogasawara Islands" = "JP",
   "Oman" = "OM",
   "Pakistan" = "PK",
   "Palau" = "PW",
+  "Palestine" = "PS",
   "Palestine, State of" = "PS",
   "Panama" = "PA",
+  "Papua New Guinea" = "PG",
   "Paraguay" = "PY",
   "Peru" = "PE",
   "Philippines" = "PH",
@@ -221,6 +239,7 @@
   "Portugal" = "PT",
   "Puerto Rico" = "PR",
   "Qatar" = "QA",
+  "Republic of the Congo" = "CG",
   "Reunion" = "RE",
   "Rodriguez Island" = "MU",
   "Romania" = "RO",
@@ -284,6 +303,7 @@
   "Turkey" = "TR",
   "Turkmenistan" = "TM",
   "Turks and Caicos" = "TC",
+  "Turks and Caicos Islands" = "TC",
   "Tuvalu" = "TV",
   "Uganda" = "UG",
   "Uk and Netherlands" = NA_character_,
@@ -291,6 +311,8 @@
   "United Arab Emirates" = "AE",
   "United Kingdom" = "GB",
   "United States" = "US",
+  "United States Minor Outlying Islands" = "UM",
+  "United States of America" = "US",
   "Uruguay" = "UY",
   "US Minor Outlying Islands" = "UM",
   "USACanada" = NA_character_,
@@ -299,6 +321,8 @@
   "Vanuatu" = "VU",
   "Venezuela" = "VE",
   "Vietnam" = "VN",
+  "Virgin Islands (British)" = "VG",
+  "Virgin Islands (U.S.)" = "VI",
   "Virgin Islands, US" = "VI",
   "Wallis and Futuna" = "WF",
   "Western Sahara" = "EH",
@@ -309,50 +333,154 @@
 )
 
 
-#' Parse Seebens et al. Global Alien Species First Record Database
+#' Look up location names in the Seebens region map
 #'
-#' Reads the "FirstRecords" sheet from the Seebens Excel file, maps region
-#' names to ISO 3166-1 alpha-2 codes, and deduplicates per species x country
-#' (keeping the earliest year).
+#' The map is keyed on the wording a release happens to use, and successive
+#' releases respell the same place: v4.0 hyphenates "Timor-Leste" and
+#' "Saint-Martin" where v3.1 spaced them, and accents Reunion, Curacao and
+#' Sao Tome where v3.1 left them bare. Matching on a folded, punctuation-free
+#' key absorbs that whole class of rewording, leaving the map to carry only
+#' genuinely distinct wordings ("Hawaii" beside "Hawaiian Islands").
 #'
-#' @param path Character. Path to the Seebens XLSX file.
+#' @param x Character vector of location names.
+#' @return ISO 3166-1 alpha-2 codes; `NA` for a name the map does not hold and
+#'   for the multi-country entries it deliberately records as `NA`.
+#' @noRd
+.seebens_country_code <- function(x) {
+  key <- .norm_region_key(.to_utf8(x))
+  lookup <- .seebens_region_lookup()
+  unname(lookup[match(key, names(lookup))])
+}
+
+#' Fold a location name to its lookup key: accent-free, lowercase, unpunctuated
+#' @noRd
+.norm_region_key <- function(x) {
+  trimws(gsub("[^a-z0-9]+", " ", tolower(fold_accents(x))))
+}
+
+#' Region map re-keyed on the normalized lookup key
+#'
+#' Built once per session. Two wordings that fold to the same key must agree
+#' on the country, or the map is ambiguous and the fold is unsafe for it.
+#' @noRd
+.seebens_region_lookup <- local({
+  cached <- NULL
+  function() {
+    if (!is.null(cached)) return(cached)
+    keys <- .norm_region_key(names(.seebens_region_map))
+    split_codes <- split(unname(.seebens_region_map), keys)
+    clash <- vapply(split_codes,
+                    function(v) length(unique(v[!is.na(v)])) > 1L, logical(1))
+    if (any(clash)) {
+      stop("Region names fold to one key but different countries: ",
+           paste(names(split_codes)[clash], collapse = ", "), call. = FALSE)
+    }
+    cached <<- vapply(split_codes, function(v) {
+      hit <- v[!is.na(v)]
+      if (length(hit)) hit[[1L]] else NA_character_
+    }, character(1))
+    cached
+  }
+})
+
+#' Parse the Seebens et al. global first-record database
+#'
+#' Reads the public dataset table, maps location names to ISO 3166-1 alpha-2
+#' codes, and reduces to one row per species x country.
+#'
+#' Every location the source names must map. The map is keyed on wording, so a
+#' release that renames a place would otherwise drop its records and return a
+#' smaller table rather than an error: v4.0 alone renamed 24 locations, among
+#' them "United States" to "United States of America", which is 8,050 records.
+#' A name the map does not hold is therefore a hard error, and the entries that
+#' resolve to no single country (a record spanning several, "USACanada") are
+#' recorded in the map as `NA` so they read as known rather than missing.
+#'
+#' Where a species has several records for one country the earliest year wins,
+#' but a record asserting the species is present is preferred to one recording
+#' it as absent, uncertain or captive whatever the years are, so the retained
+#' row does not date a country's occurrence from a record denying it. That
+#' record's own status is published beside its year as
+#' `alien_first_record_status`, since the remaining columns are reduced over
+#' every record for the pair and a status reduced that way would describe some
+#' record other than the one the year came from.
+#'
+#' @param path Character. Path to the `FirstRecords` dataset CSV.
 #' @return data.frame with canonical_name + country_code + first-record cols.
 #' @export
 parse_alien_first_records <- function(path) {
-  if (!requireNamespace("openxlsx2", quietly = TRUE)) {
-    stop("Package 'openxlsx2' is required to parse the Seebens database.",
+  # Semicolon-delimited, and UTF-8 apart from one run of latin1 lines.
+  df <- .read_delim_utf8(path, sep = ";", quote = "\"")
+
+  name_col <- .first_col(df, c("taxon", "TaxonName", "scientificName"))
+  loc_col  <- .first_col(df, c("location", "Region"))
+  year_col <- .first_col(df, c("firstRecordEvent", "FirstRecord"))
+  if (is.null(name_col) || is.null(loc_col) || is.null(year_col)) {
+    stop("The first-record table has no taxon, location or year column; ",
+         "it holds: ", paste(names(df), collapse = ", "), call. = FALSE)
+  }
+
+  location <- trimws(.to_utf8(df[[loc_col]]))
+  df$country_code <- .seebens_country_code(location)
+
+  # A location the map has never seen, as against one it records as spanning
+  # several countries. Records carrying no location at all are sub- or
+  # supra-national ("Aegean Sea", "European part of Russia") and have no
+  # country to be keyed on, so they are dropped by the filter below.
+  unknown <- unique(location[nzchar(location) &
+                               !.norm_region_key(location) %in%
+                                 names(.seebens_region_lookup())])
+  if (length(unknown)) {
+    stop("The first-record table names locations the region map does not ",
+         "hold, so their records would be dropped silently. Add them to ",
+         ".seebens_region_map: ", paste(sort(unknown), collapse = ", "),
          call. = FALSE)
   }
 
-  df <- openxlsx2::read_xlsx(path, sheet = "FirstRecords")
+  status_col <- .first_col(df, c("occurrenceStatus", "PresentStatus"))
+  status <- if (is.null(status_col)) rep(NA_character_, nrow(df))
+            else tolower(trimws(.to_utf8(df[[status_col]])))
+  # "present (not occurring in the wild)" is a captive or cultivated record.
+  absent_rank <- as.integer(!(status %in% "present"))
 
-  df$country_code <- .seebens_region_map[df$Region]
-
-  ref_col <- if ("Reference" %in% names(df)) df$Reference else rep(NA_character_, nrow(df))
-  src_col <- if ("Source"    %in% names(df)) df$Source    else rep(NA_character_, nrow(df))
+  src_col <- .first_col(df, c("datasetName", "Source"))
+  ref_col <- .first_col(df, c("bibliographicCitation", "Reference"))
 
   out <- data.frame(
-    canonical_name              = trimws(df$TaxonName),
-    country_code                = df$country_code,
-    alien_first_record          = as.integer(df$FirstRecord),
-    alien_first_record_source   = src_col,
-    alien_first_record_reference = ref_col,
+    canonical_name               = trimws(.to_utf8(df[[name_col]])),
+    country_code                 = df$country_code,
+    alien_first_record           = suppressWarnings(
+                                     as.integer(as.numeric(df[[year_col]]))),
+    alien_first_record_status    = status,
+    alien_first_record_source    = if (is.null(src_col)) NA_character_
+                                   else .to_utf8(df[[src_col]]),
+    alien_first_record_reference = if (is.null(ref_col)) NA_character_
+                                   else .to_utf8(df[[ref_col]]),
     stringsAsFactors = FALSE
   )
 
-  out <- out[!is.na(out$canonical_name) & nchar(out$canonical_name) > 0L, ]
-  out <- out[!is.na(out$country_code) & nchar(out$country_code) == 2L, ]
+  keep <- !is.na(out$canonical_name) & nzchar(out$canonical_name) &
+    !is.na(out$country_code) & nchar(out$country_code) == 2L
+  out <- out[keep, , drop = FALSE]
+  df  <- df[keep, , drop = FALSE]
+  absent_rank <- absent_rank[keep]
 
-  out <- out[order(out$canonical_name, out$country_code,
-                   out$alien_first_record, na.last = TRUE), ]
+  ord <- order(out$canonical_name, out$country_code, absent_rank,
+               out$alien_first_record, na.last = TRUE)
+  out <- out[ord, , drop = FALSE]
   out <- out[!duplicated(paste(out$canonical_name, out$country_code)), ]
 
-  # Carry every other Seebens field (raw region string, life form, status, ...)
-  # keyed on (species, country); the mapped Region reappears as its own column.
+  # Carry every other field (raw location string, habitat, establishment
+  # means, degree of establishment, ...) keyed on (species, country). The
+  # verbatim year is the record as written, which for a record given as a span
+  # is "-3000 - -2000"; read as a number that span is lost, and the column
+  # exists to hold exactly what the point estimate above does not.
   out <- .append_all_cols(
-    out, df, trimws(df$TaxonName),
+    out, df, trimws(.to_utf8(df[[name_col]])),
     group = "country_code", group_row = df$country_code,
-    used = c("TaxonName", "country_code", "FirstRecord", "Source", "Reference")
+    cat_cols = .first_col(df, c("verbatimFirstRecordEvent",
+                                "FirstRecord_orig")),
+    used = c(name_col, "country_code", year_col, status_col, src_col, ref_col)
   )
 
   rownames(out) <- NULL

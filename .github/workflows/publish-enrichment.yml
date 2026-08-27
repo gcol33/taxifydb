@@ -12,6 +12,13 @@ name: Publish Enrichment
 # snapshots or scrape-only sources are built and published locally with
 # `Rscript build_enrichments.R publish <name> <version>`, which updates both
 # manifests the same way.
+#
+# Runs on the self-hosted runner because the cross-backbone name expansion needs
+# the backbones. A hosted runner has no taxify data dir and no name lookups, so
+# resolve_enrichment_names() there resolved against nothing and the asset shipped
+# with its source names unexpanded -- behind one warning, and with nothing in the
+# sidecar to say so afterwards (taxifydb#44). strict_names = TRUE now stops the
+# build instead.
 
 on:
   workflow_dispatch:
@@ -31,7 +38,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -41,17 +48,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.5.2'
-          use-public-rspm: true
+      - name: Resolve Rscript
+        id: rscript
+        run: |
+          echo "path=$(ls -d "/c/Program Files/R/R-"*/bin/Rscript.exe | sort -V | tail -1)" >> "$GITHUB_OUTPUT"
+        shell: bash
 
-      - name: Install package dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::jsonlite, any::curl, any::digest, any::DBI, any::RSQLite, any::rfishbase, any::openxlsx2, local::.
-          cache-version: 1
+      - name: Install taxifydb (local)
+        run: |
+          "${{ steps.rscript.outputs.path }}" -e "devtools::install_local('.', upgrade = 'never')"
+        shell: bash
+
+      - name: Refresh name lookups
+        run: |
+          "${{ steps.rscript.outputs.path }}" -e "taxifydb::build_all_name_lookups()"
+        shell: bash
 
       - name: Resolve version
         id: version
@@ -59,23 +70,20 @@ jobs:
           V="${{ github.event.inputs.version }}"
           [ -z "$V" ] && V="$(date +%Y.%m)"
           echo "version=$V" >> "$GITHUB_OUTPUT"
+        shell: bash
 
       - name: Build enrichment
         run: |
-          taxifydb::build_enrichment(
-            "${{ github.event.inputs.enrichment }}",
-            output_dir = file.path("output", "enrichment", "${{ github.event.inputs.enrichment }}")
-          )
-        shell: Rscript {0}
+          ENR="${{ github.event.inputs.enrichment }}"
+          "${{ steps.rscript.outputs.path }}" -e "taxifydb::build_enrichment('$ENR', output_dir = file.path('output', 'enrichment', '$ENR'), strict_names = TRUE)"
+        shell: bash
 
       - name: Upload .vtr to rolling release
         run: |
-          taxifydb::publish_enrichment_release(
-            "${{ steps.version.outputs.version }}",
-            file.path("output", "enrichment", "${{ github.event.inputs.enrichment }}",
-                      "${{ github.event.inputs.enrichment }}.vtr")
-          )
-        shell: Rscript {0}
+          ENR="${{ github.event.inputs.enrichment }}"
+          VER="${{ steps.version.outputs.version }}"
+          "${{ steps.rscript.outputs.path }}" -e "taxifydb::publish_enrichment_release('$VER', file.path('output', 'enrichment', '$ENR', paste0('$ENR', '.vtr')))"
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -90,7 +98,7 @@ jobs:
             # clobbers this entry.
             git fetch origin main
             git reset --hard origin/main
-            Rscript -e "taxifydb::update_enrichment_manifest('manifest/manifest.json', '$ENR', file.path('output','enrichment','$ENR','$ENR.vtr'), release_version = '$VER')"
+            "${{ steps.rscript.outputs.path }}" -e "taxifydb::update_enrichment_manifest('manifest/manifest.json', '$ENR', file.path('output','enrichment','$ENR','$ENR.vtr'), release_version = '$VER')"
             git add manifest/manifest.json
             if git diff --staged --quiet; then
               echo "manifest unchanged"; break

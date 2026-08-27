@@ -32,11 +32,18 @@ list_enrichments <- function() {
 #'   `source_doi` is set to `NULL`.
 #' @param resolve_names Logical. Run [resolve_enrichment_names()] before
 #'   writing. Default `TRUE`.
+#' @param strict_names Logical. Error when a backbone has no
+#'   `name_lookup.vtr`, instead of expanding against a narrower set and
+#'   warning. `FALSE` by default so a user building an enrichment locally
+#'   against whatever they have installed still works; the asset-publishing
+#'   pipeline sets `TRUE`, since a published asset must not be silently
+#'   expanded against a partial backbone set.
 #' @param verbose Logical. Default `TRUE`.
 #' @return Path to the built `.vtr` file (invisibly).
 #' @export
 build_enrichment <- function(name, output_dir = NULL, version = NULL,
                              url = NULL, resolve_names = TRUE,
+                             strict_names = FALSE,
                              verbose = TRUE) {
   reg <- .enrichment_build_registry[[name]]
   if (is.null(reg)) {
@@ -89,6 +96,7 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
   # A registry entry may set resolve_names = FALSE when its parser already
   # resolves to the accepted-name grain (e.g. host-breadth rollups), so the
   # pipeline must not resolve a second time.
+  resolved_backbones <- NULL
   reg_resolves <- if (is.null(reg$resolve_names)) TRUE else isTRUE(reg$resolve_names)
   if (isTRUE(resolve_names) && reg_resolves && "canonical_name" %in% names(df)) {
     if (verbose) message("  Resolving names against backbones...")
@@ -98,7 +106,9 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     # use_lookup = FALSE to take the authorship-aware taxify() resolution path.
     use_lookup <- if (is.null(reg$use_lookup)) TRUE else isTRUE(reg$use_lookup)
     df <- resolve_enrichment_names(df, group_cols = group_cols,
-                                   verbose = verbose, use_lookup = use_lookup)
+                                   verbose = verbose, use_lookup = use_lookup,
+                                   strict = strict_names)
+    resolved_backbones <- attr(df, "resolved_backbones", exact = TRUE)
   }
 
   # A genus-grain source carries genus names in `canonical_name`, but the
@@ -136,7 +146,8 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     species_col   = reg$species_col,
     static        = reg$static %||% TRUE,
     source_format = reg$source_format,
-    provenance    = provenance
+    provenance    = provenance,
+    resolved_backbones = resolved_backbones
   )
 
   if (verbose) {

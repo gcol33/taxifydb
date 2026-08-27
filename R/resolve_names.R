@@ -23,13 +23,19 @@
 #'   backbone ([list_backends()]).
 #' @param verbose Logical.
 #' @param use_lookup Logical. Try the hash-join fast path first. Default `TRUE`.
-#' @return The expanded data.frame.
+#' @param reverse_hop Logical. Add the reverse hop; see [resolve_name_map()].
+#' @param strict Logical. Error, rather than warn, when a requested backbone
+#'   has no `name_lookup.vtr`. Set for production asset builds.
+#' @return The expanded data.frame, carrying a `resolved_backbones` attribute
+#'   naming the backbones the expansion actually reached.
 #' @export
 resolve_enrichment_names <- function(df,
                                      group_cols = NULL,
                                      backends = list_backends(),
                                      verbose = TRUE,
-                                     use_lookup = TRUE) {
+                                     use_lookup = TRUE,
+                                     reverse_hop = TRUE,
+                                     strict = FALSE) {
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
@@ -44,18 +50,25 @@ resolve_enrichment_names <- function(df,
   rest   <- df[!is_agg, , drop = FALSE]
 
   resolved <- if (nrow(rest) > 0L) {
-    .resolve_species_names(rest, group_cols, backends, verbose, use_lookup)
+    .resolve_species_names(rest, group_cols, backends, verbose, use_lookup,
+                           reverse_hop = reverse_hop, strict = strict)
   } else {
     rest
   }
+  reached <- attr(resolved, "resolved_backbones", exact = TRUE)
 
-  if (nrow(agg_df) > 0L) {
+  out <- if (nrow(agg_df) > 0L) {
     agg_df$canonical_name <-
       taxify::normalize_aggregate_name(agg_df$canonical_name)
     combined <- rbind(resolved, agg_df[names(resolved)])
-    return(.dedup_keep_richest(combined, group_cols))
+    .dedup_keep_richest(combined, group_cols)
+  } else {
+    resolved
   }
-  resolved
+  # Re-attached last: merge()/rbind() inside the workers drop attributes, and
+  # an asset built against a partial backbone set has to say so in its sidecar.
+  attr(out, "resolved_backbones") <- reached
+  out
 }
 
 
@@ -69,15 +82,20 @@ resolve_enrichment_names <- function(df,
                                    group_cols = NULL,
                                    backends = list_backends(),
                                    verbose = TRUE,
-                                   use_lookup = TRUE) {
+                                   use_lookup = TRUE,
+                                   reverse_hop = TRUE,
+                                   strict = FALSE) {
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
 
   map <- resolve_name_map(df$canonical_name, backends = backends,
-                          verbose = verbose, use_lookup = use_lookup)
+                          verbose = verbose, use_lookup = use_lookup,
+                          reverse_hop = reverse_hop, strict = strict)
+  reached <- attr(map, "resolved_backbones", exact = TRUE)
   if (nrow(map) == 0L) {
     warning("No names resolved against any backend. Returning original df.")
+    attr(df, "resolved_backbones") <- reached
     return(df)
   }
 
@@ -97,6 +115,7 @@ resolve_enrichment_names <- function(df,
     ))
   }
 
+  attr(expanded, "resolved_backbones") <- reached
   expanded
 }
 
@@ -118,40 +137,62 @@ resolve_enrichment_names <- function(df,
 #'   backbone ([list_backends()]).
 #' @param verbose Logical.
 #' @param use_lookup Logical. Try the hash-join fast path first. Default `TRUE`.
+#' @param reverse_hop Logical. Add the reverse hop that reaches an accepted
+#'   name only one backbone keeps. `FALSE` is the forward image alone, the
+#'   behaviour before this was fixed.
+#' @param strict Logical. Error, rather than warn, when a requested backbone
+#'   has no `name_lookup.vtr`. Set for production asset builds.
 #' @return data.frame with columns `input_name`, `accepted_name`.
 #' @export
 resolve_name_map <- function(names,
                              backends = list_backends(),
-                             verbose = TRUE, use_lookup = TRUE) {
+                             verbose = TRUE, use_lookup = TRUE,
+                             reverse_hop = TRUE,
+                             strict = FALSE) {
   unique_names <- unique(names[!is.na(names) & nzchar(names)])
   empty <- data.frame(input_name = character(), accepted_name = character(),
                       stringsAsFactors = FALSE)
-  if (length(unique_names) == 0L) return(empty)
+  if (length(unique_names) == 0L) {
+    attr(empty, "resolved_backbones") <- character()
+    return(empty)
+  }
 
   map <- NULL
+  reached <- character()
   if (use_lookup) {
     lookup_paths <- .find_lookup_paths(backends)
     missing_lu <- setdiff(backends, names(lookup_paths))
     if (length(missing_lu) > 0L) {
-      warning(sprintf(
+      msg <- sprintf(
         paste0("Resolving against %d backbone(s) but %d lack a name_lookup.vtr ",
                "(%s); the accepted-name union will be narrower than requested. ",
                "Run build_all_name_lookups() for the full set before a ",
                "production enrichment build."),
         length(backends), length(missing_lu),
-        paste(missing_lu, collapse = ", ")),
-        call. = FALSE)
+        paste(missing_lu, collapse = ", "))
+      # An asset built against a partial backbone set is indistinguishable
+      # afterwards from a complete one, so a production build stops here rather
+      # than shipping a silently narrow union.
+      if (isTRUE(strict)) stop(msg, call. = FALSE) else warning(msg, call. = FALSE)
     }
     if (length(lookup_paths) > 0L) {
-      map <- .name_map_via_lookup(unique_names, lookup_paths, verbose)
+      reached <- names(lookup_paths)
+      map <- .name_map_via_lookup(unique_names, lookup_paths, verbose,
+                                  reverse_hop = reverse_hop)
     } else if (verbose) {
       message("  No name_lookup.vtr files found; falling back to ",
               "per-backend taxify(). Run build_all_name_lookups() to enable ",
               "the fast path.")
     }
   }
-  if (is.null(map)) map <- .name_map_via_taxify(unique_names, backends, verbose)
-  if (is.null(map)) return(empty)
+  if (is.null(map)) {
+    reached <- backends
+    map <- .name_map_via_taxify(unique_names, backends, verbose)
+  }
+  if (is.null(map)) {
+    attr(empty, "resolved_backbones") <- reached
+    return(empty)
+  }
 
   resolved_set <- unique(map$input_name)
   unresolved <- setdiff(unique_names, resolved_set)
@@ -170,6 +211,7 @@ resolve_name_map <- function(names,
                     format(n_acc, big.mark = ","),
                     n_acc / max(n_src, 1L)))
   }
+  attr(map, "resolved_backbones") <- reached
   map
 }
 
@@ -322,64 +364,22 @@ resolve_name_map <- function(names,
 
 
 #' Build the accepted-name map via per-backbone lookup .vtr (fast path)
+#'
+#' Delegates to the cross-backbone closure in `name_closure.R`, which adds to
+#' the forward image the accepted names a backbone keeps while other backbones
+#' synonymise them onto that image.
 #' @noRd
-.name_map_via_lookup <- function(unique_names, lookup_paths, verbose) {
-  query_keys <- .to_key_ci(unique_names)
-  query_df <- data.frame(
-    canonical_name = unique_names,
-    key_ci         = query_keys,
-    stringsAsFactors = FALSE
-  )
-
+.name_map_via_lookup <- function(unique_names, lookup_paths, verbose,
+                                 reverse_hop = TRUE) {
   if (verbose) {
     message(sprintf(
-      "  [fast-path] resolving %s names against %d lookup tables",
-      format(length(unique_names), big.mark = ","), length(lookup_paths)
+      "  [fast-path] resolving %s names against %d lookup tables%s",
+      format(length(unique_names), big.mark = ","), length(lookup_paths),
+      if (isTRUE(reverse_hop)) " (+ reverse hop)" else ""
     ))
   }
-
-  all_mappings <- vector("list", length(lookup_paths))
-
-  for (i in seq_along(lookup_paths)) {
-    nm <- names(lookup_paths)[i]
-    p  <- lookup_paths[i]
-    t0 <- proc.time()
-    matched <- tryCatch({
-      have_k <- "kingdom" %in% names(
-        utils::head(vectra::collect(vectra::tbl(p)), 0L))
-      sel <- c("key_ci", "accepted_name", if (have_k) "kingdom")
-      out <- vectra::tbl(p) |>
-        vectra::filter(key_ci %in% query_keys) |>
-        vectra::select(!!!lapply(sel, as.name)) |>
-        vectra::collect()
-      # rep() rather than a scalar: a lookup that matched nothing is a 0-row
-      # frame, and assigning a length-1 value to it errors, which the tryCatch
-      # would turn into a dropped backbone.
-      if (!have_k) out$kingdom <- rep(NA_character_, nrow(out))
-      out
-    }, error = function(e) {
-      warning(sprintf("Lookup [%s] failed: %s", nm, conditionMessage(e)),
-              call. = FALSE)
-      data.frame(key_ci = character(), accepted_name = character(),
-                 kingdom = character(), stringsAsFactors = FALSE)
-    })
-    elapsed <- (proc.time() - t0)["elapsed"]
-    if (verbose) {
-      message(sprintf("    [%d/%d] %-6s %s matches in %.1fs",
-                      i, length(lookup_paths), nm,
-                      format(nrow(matched), big.mark = ","),
-                      elapsed))
-    }
-    all_mappings[[i]] <- matched
-  }
-
-  raw <- do.call(rbind, all_mappings)
-  raw <- raw[!is.na(raw$accepted_name) & nzchar(raw$accepted_name), ]
-  raw <- unique(raw)
-  raw <- .drop_cross_kingdom_names(raw, verbose)
-
-  mapping <- merge(query_df, raw, by = "key_ci")
-  mapping <- mapping[, c("canonical_name", "accepted_name")]
-  names(mapping) <- c("input_name", "accepted_name")
-  unique(mapping)
+  map <- .name_closure_map(unique_names, lookup_paths,
+                           reverse_hop = reverse_hop, verbose = verbose)
+  if (is.null(map) || nrow(map) == 0L) return(NULL)
+  map
 }

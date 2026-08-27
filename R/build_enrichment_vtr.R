@@ -35,6 +35,10 @@
 #'   taxify's refresh gate (content-id for static, version for non-static).
 #' @param source_format Character or NULL. Raw source format (e.g. "csv",
 #'   "xlsx", "zip"), recorded for the runtime manifest.
+#' @param resolved_backbones Character vector or NULL. The backbones the
+#'   cross-backbone name expansion actually reached. Recorded so an asset built
+#'   against a partial backbone set is distinguishable afterwards from a
+#'   complete one, which is what a bare warning at build time did not achieve.
 #' @param batch_size Integer. Row group size for vectra (default 50000).
 #' @return The path to the .vtr file (invisibly).
 #' @export
@@ -44,6 +48,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
                                  attribution = NULL, group_col = NULL,
                                  species_col = NULL, static = TRUE,
                                  source_format = NULL, provenance = NULL,
+                                 resolved_backbones = NULL,
                                  batch_size = 50000L) {
   if (!"canonical_name" %in% names(df)) {
     stop("Enrichment data.frame must have a 'canonical_name' column.")
@@ -106,6 +111,9 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     tsita            = tsita,
     provenance       = provenance,
     species_col      = species_col,
+    resolved_backbones = if (length(resolved_backbones)) {
+      as.list(sort(unique(resolved_backbones)))
+    } else NULL,
     static           = isTRUE(static),
     source_format    = source_format,
     built            = format(Sys.Date(), "%Y-%m-%d"),

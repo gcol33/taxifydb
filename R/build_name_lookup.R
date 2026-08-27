@@ -80,7 +80,11 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
 
   dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
   vectra::write_vtr(bb, out_path, batch_size = 50000L)
+  # key_ci drives the forward direction of the name closure, accepted_name the
+  # reverse one; without the second index the reverse pass is a full scan of
+  # every lookup.
   vectra::create_index(out_path, "key_ci")
+  vectra::create_index(out_path, "accepted_name")
 
   size_mb <- file.size(out_path) / 1048576
   if (verbose) {
@@ -124,6 +128,13 @@ build_all_name_lookups <- function(backends = list_backends(),
     }
 
     if (file.exists(out_vtr) && !overwrite) {
+      # A lookup built before the closure carries only the key_ci index. The
+      # index is a sidecar, so the reverse direction is added in place rather
+      # than by rebuilding a multi-hundred-MB table.
+      if (!vectra::has_index(out_vtr, "accepted_name")) {
+        message(sprintf("[lookup] %s: adding accepted_name index", bb))
+        vectra::create_index(out_vtr, "accepted_name")
+      }
       message(sprintf("[lookup] SKIP %s (lookup exists; use overwrite=TRUE)",
                       bb))
       paths <- c(paths, out_vtr)

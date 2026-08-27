@@ -98,3 +98,35 @@ test_that("a NULL source_doi is omitted from a serialized meta block", {
   expect_false("group_col"  %in% names(rt))
   expect_equal(rt$attribution, "Fitter & Peat (1994)")
 })
+
+test_that("the sidecar records which backbones the name expansion reached", {
+  # An asset expanded against a partial backbone set was indistinguishable
+  # afterwards from a complete one: resolve_name_map() only warned, and nothing
+  # was written down (taxifydb#44).
+  tmp <- withr::local_tempdir()
+  vtr <- file.path(tmp, "demo.vtr")
+  df  <- data.frame(canonical_name = c("Aus bus", "Xus yus"), trait = 1:2,
+                    stringsAsFactors = FALSE)
+
+  build_enrichment_vtr(df, vtr, name = "demo", version = "2026.08",
+                       source_url = "https://example.org",
+                       resolved_backbones = c("wfo", "col", "wfo"))
+  meta <- jsonlite::read_json(file.path(tmp, "meta.json"),
+                              simplifyVector = TRUE)
+  expect_equal(meta$resolved_backbones, c("col", "wfo"))
+})
+
+test_that("a build that resolved against nothing writes no backbone list", {
+  # Omitted rather than written empty: an absent field reads as "not recorded",
+  # which is what an older asset is, and drop_empty_fields() keeps it out.
+  tmp <- withr::local_tempdir()
+  vtr <- file.path(tmp, "demo.vtr")
+  df  <- data.frame(canonical_name = "Aus bus", trait = 1L,
+                    stringsAsFactors = FALSE)
+
+  build_enrichment_vtr(df, vtr, name = "demo", version = "2026.08",
+                       source_url = "https://example.org")
+  meta <- jsonlite::read_json(file.path(tmp, "meta.json"),
+                              simplifyVector = TRUE)
+  expect_false("resolved_backbones" %in% names(meta))
+})

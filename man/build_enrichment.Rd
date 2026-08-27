@@ -10,6 +10,7 @@ build_enrichment(
   version = NULL,
   url = NULL,
   resolve_names = TRUE,
+  strict_names = FALSE,
   verbose = TRUE
 )
 }
@@ -28,6 +29,13 @@ the build version defaults to \code{format(Sys.Date(), "\%Y.\%m")} and
 
 \item{resolve_names}{Logical. Run \code{\link[=resolve_enrichment_names]{resolve_enrichment_names()}} before
 writing. Default \code{TRUE}.}
+
+\item{strict_names}{Logical. Error when a backbone has no
+\code{name_lookup.vtr}, instead of expanding against a narrower set and
+warning. \code{FALSE} by default so a user building an enrichment locally
+against whatever they have installed still works; the asset-publishing
+pipeline sets \code{TRUE}, since a published asset must not be silently
+expanded against a partial backbone set.}
 
 \item{verbose}{Logical. Default \code{TRUE}.}
 }

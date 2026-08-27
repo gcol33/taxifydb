@@ -19,6 +19,7 @@ build_enrichment_vtr(
   static = TRUE,
   source_format = NULL,
   provenance = NULL,
+  resolved_backbones = NULL,
   batch_size = 50000L
 )
 }
@@ -62,6 +63,11 @@ taxify's refresh gate (content-id for static, version for non-static).}
 column to its provenance tier, recorded in \code{meta.json}. Used by assets whose
 columns come from mixed sources (the BETSI-recovery matrices); \code{NULL} (the
 default) writes no provenance block.}
+
+\item{resolved_backbones}{Character vector or NULL. The backbones the
+cross-backbone name expansion actually reached. Recorded so an asset built
+against a partial backbone set is distinguishable afterwards from a
+complete one, which is what a bare warning at build time did not achieve.}
 
 \item{batch_size}{Integer. Row group size for vectra (default 50000).}
 }

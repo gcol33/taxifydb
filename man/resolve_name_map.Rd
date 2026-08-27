@@ -8,7 +8,9 @@ resolve_name_map(
   names,
   backends = list_backends(),
   verbose = TRUE,
-  use_lookup = TRUE
+  use_lookup = TRUE,
+  reverse_hop = TRUE,
+  strict = FALSE
 )
 }
 \arguments{
@@ -20,6 +22,13 @@ backbone (\code{\link[=list_backends]{list_backends()}}).}
 \item{verbose}{Logical.}
 
 \item{use_lookup}{Logical. Try the hash-join fast path first. Default \code{TRUE}.}
+
+\item{reverse_hop}{Logical. Add the reverse hop that reaches an accepted
+name only one backbone keeps. \code{FALSE} is the forward image alone, the
+behaviour before this was fixed.}
+
+\item{strict}{Logical. Error, rather than warn, when a requested backbone
+has no \code{name_lookup.vtr}. Set for production asset builds.}
 }
 \value{
 data.frame with columns \code{input_name}, \code{accepted_name}.

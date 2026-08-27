@@ -1,5 +1,9 @@
 # Enrichment build CLI entry point. Thin wrapper around taxifydb::build_enrichment().
 #
+# Every build here produces a published asset, so name resolution runs strict:
+# a missing name_lookup.vtr stops the build rather than expanding against a
+# narrower backbone set and warning (taxifydb#44).
+#
 # Usage:
 #   Rscript build_enrichments.R [name|all|list] [output_dir] [release_version]
 #   Rscript build_enrichments.R publish <name|all> <version>
@@ -107,7 +111,8 @@ if (action == "publish") {
       next
     }
     vtr <- tryCatch(
-      taxifydb::build_enrichment(name, output_dir = enr_out),
+      taxifydb::build_enrichment(name, output_dir = enr_out,
+                                 strict_names = TRUE),
       error = function(e) {
         message(sprintf("FAILED to build %s: %s", name, conditionMessage(e)))
         NULL
@@ -150,7 +155,8 @@ if (action == "publish") {
     dir.create(enr_out, recursive = TRUE, showWarnings = FALSE)
     tryCatch(
       {
-        results[[name]] <- taxifydb::build_enrichment(name, output_dir = enr_out)
+        results[[name]] <- taxifydb::build_enrichment(name, output_dir = enr_out,
+                                                     strict_names = TRUE)
         manifest_path <- "manifest/manifest.json"
         if (file.exists(manifest_path) && !is.null(results[[name]])) {
           tryCatch(
@@ -179,7 +185,8 @@ if (action == "publish") {
 } else {
   enr_out <- file.path(output_dir, action)
   dir.create(enr_out, recursive = TRUE, showWarnings = FALSE)
-  vtr_path <- taxifydb::build_enrichment(action, output_dir = enr_out)
+  vtr_path <- taxifydb::build_enrichment(action, output_dir = enr_out,
+                                         strict_names = TRUE)
   manifest_path <- "manifest/manifest.json"
   if (file.exists(manifest_path) && !is.null(vtr_path)) {
     taxifydb::update_enrichment_manifest(manifest_path, action, vtr_path,

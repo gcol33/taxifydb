@@ -9,7 +9,9 @@ resolve_enrichment_names(
   group_cols = NULL,
   backends = list_backends(),
   verbose = TRUE,
-  use_lookup = TRUE
+  use_lookup = TRUE,
+  reverse_hop = TRUE,
+  strict = FALSE
 )
 }
 \arguments{
@@ -24,9 +26,15 @@ backbone (\code{\link[=list_backends]{list_backends()}}).}
 \item{verbose}{Logical.}
 
 \item{use_lookup}{Logical. Try the hash-join fast path first. Default \code{TRUE}.}
+
+\item{reverse_hop}{Logical. Add the reverse hop; see \code{\link[=resolve_name_map]{resolve_name_map()}}.}
+
+\item{strict}{Logical. Error, rather than warn, when a requested backbone
+has no \code{name_lookup.vtr}. Set for production asset builds.}
 }
 \value{
-The expanded data.frame.
+The expanded data.frame, carrying a \code{resolved_backbones} attribute
+naming the backbones the expansion actually reached.
 }
 \description{
 Takes an enrichment data.frame with \code{canonical_name} + trait columns and

@@ -446,6 +446,14 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # a same-tag republish and refresh an otherwise version-locked enrichment cache
   # -- the enrichment analogue of what update_manifest() records for backbones.
   if (!is.null(meta$content_id)) entry$content_id <- meta$content_id
+  # Which backbones the cross-backbone name expansion reached. A build fact
+  # like content_id, never curated text, so it is taken from the sidecar as it
+  # stands: an entry that names fewer backbones than the current set is an
+  # asset whose keys are narrower than the runtime can ask for (taxifydb#44).
+  if (!is.null(meta$resolved_backbones)) {
+    entry$resolved_backbones <- as.list(as.character(
+      unlist(meta$resolved_backbones)))
+  }
 
   # A citation names the source it was written for, so it cannot outlive a move
   # to a different one: ThermoFresh's runtime entry went on citing the record

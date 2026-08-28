@@ -134,6 +134,13 @@ normalize_gbif <- function(df, higher, verbose = TRUE) {
     df[[col]] <- trimws(df[[col]])
   }
 
+  # GBIF renders an infraspecific canonical_name without its rank marker
+  # ("Erica tenella tenella"); put it back so the name agrees with every other
+  # backbone (gcol33/taxifydb#45).
+  df$canonical_name <- gbif_render_infraspecific(
+    df$canonical_name, df$scientific_name, df$infra_specific_epithet
+  )
+
   # Filter unmatchable rows: empty canonical, UNRANKED, higher taxonomy
   n_before <- nrow(df)
   df <- df[!is.na(df$canonical_name) & nzchar(df$canonical_name), ]
@@ -243,6 +250,71 @@ gbif_higher_lookup <- function(id, canonical_name) {
 #' @noRd
 gbif_resolve_higher <- function(higher, key_col) {
   unname(higher[as.character(key_col)])
+}
+
+
+#' Reinstate the infraspecific rank marker in a GBIF canonical name
+#'
+#' GBIF's source `canonical_name` renders an infraspecific taxon without its
+#' rank connecting term ("Erica tenella tenella" for "Erica tenella var.
+#' tenella"), a rendering no other backbone and no botanical source produces, so
+#' anything keyed on the name misses (gcol33/taxifydb#45). The full
+#' `scientific_name` does carry the marker, and only under a nomenclatural code
+#' that uses one -- a zoological trinomial ("Panthera leo persica") carries none
+#' -- so the marker is read back from there rather than mapped from `rank`,
+#' which cannot tell a botanical subspecies from a zoological one.
+#'
+#' For each row with an infraspecific epithet the marker is the known connecting
+#' term written immediately before that epithet in `scientific_name` (anchoring
+#' on the epithet keeps a "f." forma marker apart from an "L. f." filius author).
+#' When one is found it is inserted before the trailing epithet in
+#' `canonical_name`. Rows with no infraspecific epithet, a name whose full form
+#' carries no marker, or a canonical that does not end in the epithet are
+#' returned unchanged.
+#'
+#' @param canonical_name Character vector of GBIF canonical names.
+#' @param scientific_name Character vector of full names (with authorship).
+#' @param infra_epithet Character vector of infraspecific epithets.
+#' @return `canonical_name` with the marker reinstated where reconstructable.
+#' @noRd
+gbif_render_infraspecific <- function(canonical_name, scientific_name,
+                                      infra_epithet) {
+  out <- canonical_name
+  infra_epithet <- trimws(infra_epithet)
+  reconstructable <- !is.na(infra_epithet) & nzchar(infra_epithet) &
+    !is.na(canonical_name) & nzchar(canonical_name) &
+    !is.na(scientific_name) & nzchar(scientific_name)
+  idx <- which(reconstructable)
+  if (length(idx) == 0L) return(out)
+
+  markers <- .infraspecific_markers
+  sci_words <- strsplit(scientific_name[idx], "\\s+")
+  can_words <- strsplit(canonical_name[idx], "\\s+")
+
+  for (k in seq_along(idx)) {
+    infra <- infra_epithet[[idx[[k]]]]
+
+    sw <- sci_words[[k]]
+    marker <- NA_character_
+    for (j in which(sw == infra)) {
+      if (j > 1L && sw[[j - 1L]] %in% markers) {
+        marker <- sw[[j - 1L]]
+        break
+      }
+    }
+    if (is.na(marker)) next
+
+    cw <- can_words[[k]]
+    # GBIF renders the epithet as the final word; only splice when it is there
+    # and the marker is not already present.
+    if (length(cw) < 3L) next
+    if (cw[[length(cw)]] != infra) next
+    if (marker %in% cw) next
+
+    cw <- append(cw, marker, after = length(cw) - 1L)
+    out[[idx[[k]]]] <- paste(cw, collapse = " ")
+  }
+  out
 }
 
 

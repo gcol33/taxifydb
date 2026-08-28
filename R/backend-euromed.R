@@ -61,13 +61,9 @@ download_euromed <- function(dest = tempdir(), local_dir = NULL,
 # infraspecific autonyms the species author sits mid-name so the canonical is
 # not a prefix; fall back to whatever follows the last infraspecific marker
 # (empty for a true autonym, which formally has no author).
-.euromed_infra_markers <- c("subsp.", "var.", "f.", "nothosubsp.", "subvar.",
-                            "convar.", "proles", "race", "grex", "subf.",
-                            "nothovar.", "nothof.")
-
 .euromed_authorship <- function(fullname, canonical) {
   marker_re <- paste0("\\b(",
-                      paste(gsub("\\.", "\\\\.", .euromed_infra_markers),
+                      paste(gsub("\\.", "\\\\.", .infraspecific_markers),
                             collapse = "|"),
                       ")\\s+\\S+")
   vapply(seq_along(fullname), function(i) {
@@ -89,7 +85,7 @@ download_euromed <- function(dest = tempdir(), local_dir = NULL,
 # markers, e.g. "Euphorbia helioscopia subsp. helioscopioides").
 .euromed_epithets <- function(canonical) {
   words <- strsplit(canonical, "\\s+")
-  rank_markers <- .euromed_infra_markers
+  rank_markers <- .infraspecific_markers
   specific <- vapply(words, function(w) {
     if (length(w) >= 2L) w[[2L]] else NA_character_
   }, character(1L))

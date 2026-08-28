@@ -10,6 +10,13 @@
 #
 # Precomputed keys and embedded synonym info are added by precompute.R.
 
+# Infraspecific rank connecting terms, as written in a rendered botanical name.
+# Shared by the backbones that parse infraspecific names out of a rendered
+# string (Euro+Med) or reconstruct one that a source dropped (GBIF, #45).
+.infraspecific_markers <- c("subsp.", "var.", "f.", "nothosubsp.", "subvar.",
+                            "convar.", "proles", "race", "grex", "subf.",
+                            "nothovar.", "nothof.")
+
 #' Normalize a raw backbone data.frame to the unified schema
 #'
 #' Renames source-specific columns to canonical names and ensures consistent

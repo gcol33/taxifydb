@@ -1,5 +1,73 @@
 # taxifydb 0.1.22
 
+## Enrichment assets reach the accepted names only one backbone keeps (#44)
+
+* The cross-backbone expansion resolved each source name forward through every
+  backbone and kept the union, which is not the set the runtime joins on. A
+  backbone that keeps a name no other backbone accepts is reachable only by
+  entering the concept through a name the source never lists, and a forward
+  image never visits it. WCVP's asset carried no `Minuartia hybrida` key
+  because its own names are all `Sabulina ...`, so a WFO user's `add_wcvp()`
+  joined on a key that did not exist and got back what a name the source
+  genuinely does not cover gets back.
+
+* The closure adds one reverse hop and keeps two things from it: a name some
+  backbone holds ACCEPTED while others synonymise it onto the forward image,
+  and a re-routing two or more backbones agree on. It does not take the
+  reverse-discovered names' own forward image, which chains concepts through a
+  single bad synonym record -- GBIF alone maps `sabulina hybrida` to
+  *Saponaria officinalis* where six backbones keep the name inside the concept,
+  and following it pulled soapwort into a set of 48 accepted names. Those three
+  refused pairs are what corroboration buys.
+
+* All 108 redistributable enrichments were rebuilt and uploaded to the rolling
+  `enrichment-2026.08` release. Measured on the rebuilt zanne asset, 200
+  sampled names against every installed backbone: unmatched backbone-name pairs
+  fall 41 -> 17 of 1,474, and names missing from at least one backbone 10.5% ->
+  7.5%. Assets grow 1.96x (270 MB -> 529 MB over the 100 with a shipped
+  counterpart); wcvp, the worst affected at a 22.5% gap, goes 69 -> 141 MB.
+
+* Every entry now records `resolved_backbones`, naming the backbones the
+  expansion reached. Its absence is what made a partially expanded asset
+  indistinguishable from a complete one: a missing `name_lookup.vtr` only
+  warned. The publishing paths resolve strictly now and a missing lookup stops
+  the build, while `build_enrichment()` stays lenient so taxify's
+  build-from-source fallback still works against whatever a user has installed.
+  `publish-enrichment.yml` moves to the self-hosted runner, since a hosted one
+  has no taxify data dir and resolved against nothing at all.
+
+* Three `trait_cols` lists moved with the republish, none of them from this
+  change. griis loses `recordid`, which the GBIF-backed source stopped
+  returning between builds and which was a per-record id being median-
+  aggregated across records. avonet loses `avibase_id1` and glonaf
+  `presence_uncertain` + `quest_native`: both `.vtr` schemas are unchanged and
+  those entries had been advertising columns the built file never carried.
+
+* Two defects found while fixing the above. Name lookups gain an
+  `accepted_name` index, added in place on existing files, without which the
+  reverse direction is a full scan. And the schema probe collected each whole
+  lookup to read one column name (`head()` after `collect()`, not before),
+  which had the audit process at 20 GB resident.
+
+## GBIF infraspecific names carry their rank marker (#45)
+
+* GBIF renders an infraspecific canonical without its rank connecting term
+  (`Erica tenella tenella` for `Erica tenella var. tenella`), a rendering no
+  other backbone produces, so anything keyed on the name misses and the dropped
+  marker rides `accepted_name` into every `add_data()` and `reconcile()` join.
+
+* `gbif_render_infraspecific()` reads the marker back from the full
+  `scientific_name`, anchored on the epithet so a `f.` forma marker stays apart
+  from an `L. f.` filius author, and inserts it into the canonical. Reading the
+  marker rather than mapping `rank` leaves zoological trinomials
+  (*Panthera leo persica*, marker-less by code) unchanged. It runs in
+  `normalize_gbif` before `precompute_keys`, so the keys, the embedded
+  `accepted_name` and the genus register all pick up the corrected canonical.
+
+* `gbif-2026.08` is re-cut from a build carrying it: same source snapshot and
+  row count (6,404,001), with sha, size and content id moving, which is what
+  signals a runtime to refetch.
+
 ## GloNAF was joined on the wrong key
 
 * Parsers name the column they want as a list of spellings, most specific
@@ -68,7 +136,45 @@
   `source_url` and `version` against the registry and refuses the reuse when
   they disagree, or when there is no sidecar to compare.
 
-# taxifydb 0.1.21
+## Alien first records rebuilt from the v4.0 release
+
+* Seebens et al. replaced the single freedata xlsx with a relational Darwin
+  Core-style release: a semicolon-delimited dataset table beside location,
+  taxonomy and source tables, every column renamed. The old parser reads an
+  xlsx sheet by its v3.1 headers, so it failed on the new file rather than
+  mis-reading it, and nothing already published was wrong.
+
+* The location mapping is what needed care. Locations are keyed on wording and
+  v4.0 renames 24 of them, so a straight port drops 13,104 records without a
+  word ("United States" to "United States of America" alone is 8,050). The
+  lookup folds accents, case and punctuation before matching, which absorbs the
+  cosmetic respellings (Reunion, Curacao, Timor-Leste); a build asserts no two
+  wordings fold together onto different countries, and a non-empty location the
+  map does not hold is a hard error naming it.
+
+* The file is UTF-8 except for 679 latin1 lines, which no single `fileEncoding`
+  reads -- UTF-8 errors on those, latin1 mojibakes the 2,739 real sequences
+  elsewhere -- so `.read_delim_utf8()` decides per line.
+
+* Where a species has several records for one country the earliest year still
+  wins, but a record asserting presence now outranks one recording absence, so
+  the retained row does not date an occurrence from a record denying it. That
+  record's own status rides beside its year.
+
+* Verified against an independent reimplementation of the parse: 81,747 pairs,
+  identical years, no difference either way. Against v3.1: 72,631 -> 81,731
+  pairs, 242 -> 245 countries, 23,677 -> 27,251 names, with 6,016 pairs
+  dropping out upstream, mostly ants and consistent with taxonomic cleanup.
+  Published as 93,350 rows over 245 countries, byte-identical to the local
+  build.
+
+* Two shared helpers widened for it. Darwin Core writes identifiers in camel
+  case, so `taxonID` sanitizes to `taxonid` with no separator for
+  `.is_bookkeeping_col()`'s `.*_id` rule and the ids were being published as
+  traits with min/max/n spreads; the DwC spellings are named explicitly rather
+  than caught by a general `.*id`, since trait values end the same way (hybrid,
+  diploid). `fold_accents()` goes from French lowercase to the whole Latin-1
+  letter block.
 
 ## ThermoFresh reads the peer-reviewed release
 
@@ -167,6 +273,27 @@
   so that was every COL, COL XR and GBIF release. `write_json_lf()` serializes
   to a string and writes it through a binary connection; both manifest writers,
   the `meta.json` sidecar and `sync_manifest.R` go through it.
+
+## A runtime trait_cols the build no longer produces is dropped
+
+* Runtime-only manifest fields are written only when absent, so hand-curated
+  values survive a republish. `trait_cols` is not merely accompanying text
+  though: it names the columns the `.vtr` carries, and preserving it through a
+  source that renames its fields leaves the runtime advertising columns that
+  are not there. alien_first_records is where that showed -- the republished
+  entry went on naming thirteen columns the built file no longer had while
+  hiding the nine it did.
+
+* A stored list is kept whole while every column it names is still built, so a
+  curated subset or ordering is untouched; once one is gone the list describes
+  a file that does not exist and is taken from the build. Whether the group
+  column belongs in the list is a per-entry choice -- five of the seven
+  group-keyed entries carry it, two do not -- so that choice is preserved
+  across the rewrite rather than settled here. This is the same shape as the
+  citation rule beside it, and for the same reason: both describe the source
+  rather than merely accompany it, so both go stale when it moves.
+
+# taxifydb 0.1.21
 
 ## The coverage audit reads the backbone set instead of carrying a copy
 

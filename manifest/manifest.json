@@ -35,11 +35,11 @@
       "latest": "2026.08",
       "source_date": "2023-08-28",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.08/gbif.vtr",
-      "full_size": 1630899040,
-      "full_sha256": "701a5a4983f6d62430cb46bc0f7ed8fe4db0841f406cb19cfc8c25c52f752a4d",
+      "full_size": 1648730639,
+      "full_sha256": "cd885094b462241d3b50c6de2e81096483d32b0e6b5e5529d6a73114dd11c104",
       "nrow": 6404001,
       "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz",
-      "content_id": "050b66b0cdf42d3b03a047053844d985",
+      "content_id": "4ecece7e2df32dd065f742b72636bcac",
       "source_version": "current"
     },
     "itis": {

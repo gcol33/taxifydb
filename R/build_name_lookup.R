@@ -13,9 +13,11 @@
 # pair would fan one source name onto unrelated neighbours, contaminating any
 # enrichment joined through the lookup. So each key is collapsed to the single
 # best accepted name using the same priority taxify() applies
-# (taxify::score_candidates): ACCEPTED > SYNONYM, SPECIES > higher ranks,
-# nomenclaturally Valid, epithet-preserving accepted target, then lowest
-# taxon_id.
+# (taxify::candidate_order): accepted before a name the backbone keeps but has
+# not reviewed before a synonym, SPECIES > higher ranks, epithet-preserving
+# accepted target, then the nomenclatural-validity and lowest-taxon_id
+# tiebreaks. The order comes from taxify so the lookup cannot drift away from
+# the resolution it is standing in for.
 
 #' Build a name-lookup .vtr from a backbone .vtr
 #'
@@ -44,7 +46,8 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   # reassignment from a homonym collision. Not every backbone carries one
   # (the vascular-plant backbones have no kingdom column), and an absent
   # kingdom must never contradict anything, so it stays NA.
-  sel <- c(required, intersect(c("nomenclaturalStatus", "kingdom"), schema))
+  sel <- c(required,
+           intersect(c("nomenclaturalStatus", "is_synonym", "kingdom"), schema))
 
   bb <- vectra::tbl(bb_path) |>
     vectra::select(!!!lapply(sel, as.name)) |>
@@ -60,10 +63,8 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   bb$taxonomicStatus  <- bb$taxonomic_status
   bb$taxonRank        <- bb$taxon_rank
   bb$matched_name_std <- bb$canonical_name
-  s <- taxify::score_candidates(bb)
-  ord <- order(bb$key_ci, s$status_score, s$rank_score, s$valid_score,
-               s$epithet_score, bb$taxon_id)
-  bb <- bb[ord, , drop = FALSE]
+  bb$taxonID          <- bb$taxon_id
+  bb <- bb[taxify::candidate_order(bb, group_col = "key_ci"), , drop = FALSE]
   keep_cols <- c("key_ci", "accepted_name",
                  if ("kingdom" %in% names(bb)) "kingdom")
   bb <- bb[!duplicated(bb$key_ci), keep_cols, drop = FALSE]

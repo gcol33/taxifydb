@@ -24,7 +24,7 @@ Imports:
     curl,
     digest,
     jsonlite,
-    taxify (>= 0.3.0),
+    taxify (>= 0.4.9),
     utils,
     vectra
 Suggests:

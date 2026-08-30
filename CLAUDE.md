@@ -15,6 +15,20 @@ Two-repo split:
   heavy build deps (curl, openxlsx2, RSQLite, rfishbase, ...). Only required
   when a user wants to build `.vtr` files themselves.
 
+Acquisition and extraction workspaces sit in `datasets/`, which is gitignored
+and carries an `.Rbuildignore` entry: they hold copyrighted sources that never
+enter the repository or a tarball. `datasets/betsi` supplies the frozen
+matrices that `data-raw/betsi_recovery.R` regenerates into `inst/extdata/betsi/`;
+`datasets/collembola-monograph` is the same shape.
+
+OFT, the freshwater trait and ecological-indicator enrichment being
+reconstructed from primary publications, is its own private repository
+(`gcol33/oft`), expected as a sibling of this checkout at `dev/datasets/oft`.
+Its quarantined freshwaterecology.info export may never be redistributed or
+read into a build, which is why `freshwaterecology` is catalogued in
+`.enrichment_build_only` (`R/enrichment-registry.R`) with no manifest entry,
+pinned by `tests/testthat/test-build-only-catalog.R`.
+
 ## Architecture
 
 ```

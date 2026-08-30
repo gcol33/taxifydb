@@ -2,6 +2,7 @@
 ^\.Rproj\.user$
 ^output$
 ^raw$
+^datasets$
 ^scripts$
 ^manifest$
 ^\.github$

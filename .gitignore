@@ -9,6 +9,10 @@ raw/
 *.gz
 *.sqlite
 
+# Local acquisition/extraction workspaces. Never tracked: they hold
+# copyrighted primaries and non-redistributable exports.
+datasets/
+
 # Scratch/dev scripts
 .run-*
 

@@ -155,6 +155,62 @@ test_that("internal join ids are not published as trait columns", {
 })
 
 
+test_that("the 1500 and 1492 convention markers are not served as a year", {
+  f <- tempfile(fileext = ".csv")
+  write_fixture(c(HDR,
+                  rec("Italy", "Aus unus", 1500),
+                  rec("Germany", "Aus duo", 1492)), f)
+
+  out <- parse_alien_first_records(f)
+  expect_equal(nrow(out), 2L)
+  expect_true(all(is.na(out$alien_first_record)))
+  # The raw marker is still kept, verbatim.
+  expect_setequal(out$verbatimfirstrecordevent, c("1500", "1492"))
+})
+
+
+test_that("a real year wins over a convention marker for the same pair", {
+  f <- tempfile(fileext = ".csv")
+  write_fixture(c(HDR,
+                  rec("Italy", "Aus unus", 1500),
+                  rec("Italy", "Aus unus", 1679)), f)
+
+  out <- parse_alien_first_records(f)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$alien_first_record, 1679L)
+})
+
+
+test_that("the concept-grain reducer keeps the earliest present-preferred year", {
+  # Two synonyms collapse onto one accepted name per country; the marker year
+  # (already NA after parsing) must not win, and the earliest real year does.
+  df <- data.frame(
+    canonical_name            = rep("Aus unus", 4L),
+    country_code              = c("SE", "SE", "IT", "IT"),
+    alien_first_record        = c(1838L, 1726L, NA_integer_, 1679L),
+    alien_first_record_status = rep("present", 4L),
+    stringsAsFactors = FALSE)
+
+  out <- .keep_earliest_first_record(df, c("canonical_name", "country_code"))
+  expect_equal(out$alien_first_record[out$country_code == "SE"], 1726L)
+  expect_equal(out$alien_first_record[out$country_code == "IT"], 1679L)
+})
+
+
+test_that("the reducer prefers a present record to an earlier non-present one", {
+  df <- data.frame(
+    canonical_name            = rep("Aus unus", 2L),
+    country_code              = rep("FR", 2L),
+    alien_first_record        = c(1850L, 1900L),
+    alien_first_record_status = c("absent", "present"),
+    stringsAsFactors = FALSE)
+
+  out <- .keep_earliest_first_record(df, c("canonical_name", "country_code"))
+  expect_equal(out$alien_first_record, 1900L)
+  expect_equal(out$alien_first_record_status, "present")
+})
+
+
 test_that("region names folding to one key must agree on the country", {
   # The lookup is only safe while no two wordings fold together and disagree.
   keys <- .norm_region_key(names(.seebens_region_map))

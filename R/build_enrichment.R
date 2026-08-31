@@ -107,7 +107,8 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     use_lookup <- if (is.null(reg$use_lookup)) TRUE else isTRUE(reg$use_lookup)
     df <- resolve_enrichment_names(df, group_cols = group_cols,
                                    verbose = verbose, use_lookup = use_lookup,
-                                   strict = strict_names)
+                                   strict = strict_names,
+                                   reduce_fn = reg$reduce_fn)
     resolved_backbones <- attr(df, "resolved_backbones", exact = TRUE)
   }
 

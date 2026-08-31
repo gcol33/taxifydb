@@ -11,7 +11,8 @@ resolve_enrichment_names(
   verbose = TRUE,
   use_lookup = TRUE,
   reverse_hop = TRUE,
-  strict = FALSE
+  strict = FALSE,
+  reduce_fn = NULL
 )
 }
 \arguments{
@@ -31,6 +32,12 @@ backbone (\code{\link[=list_backends]{list_backends()}}).}
 
 \item{strict}{Logical. Error, rather than warn, when a requested backbone
 has no \code{name_lookup.vtr}. Set for production asset builds.}
+
+\item{reduce_fn}{Function \verb{(df, group_cols)} collapsing the expanded table to
+one row per accepted name (plus \code{group_cols}). Defaults to keeping the
+trait-richest row (\code{\link[=.dedup_keep_richest]{.dedup_keep_richest()}}); an enrichment whose value is a
+reduction over records (e.g. an earliest first-record year) supplies its
+own so synonyms collapse by that rule, not by row richness.}
 }
 \value{
 The expanded data.frame, carrying a \code{resolved_backbones} attribute

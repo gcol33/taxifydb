@@ -269,6 +269,12 @@
     },
     parse_fn    = function(path) parse_alien_first_records(path),
     group_col   = "country_code",
+    # A first-record year is a minimum over records: collapse synonyms onto one
+    # accepted concept by the earliest present-preferred year, not the generic
+    # trait-richest row, which would serve an arbitrary synonym's later year.
+    reduce_fn   = function(df, group_cols) {
+      .keep_earliest_first_record(df, c("canonical_name", group_cols))
+    },
     requires    = character(0)
   ),
 

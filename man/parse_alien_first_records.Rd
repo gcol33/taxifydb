@@ -32,5 +32,10 @@ row does not date a country's occurrence from a record denying it. That
 record's own status is published beside its year as
 \code{alien_first_record_status}, since the remaining columns are reduced over
 every record for the pair and a status reduced that way would describe some
-record other than the one the year came from.
+record other than the one the year came from. The same earliest-wins
+reduction (\code{\link[=.keep_earliest_first_record]{.keep_earliest_first_record()}}) runs again after cross-backbone
+name resolution, at the accepted-species grain, so synonyms collapsing onto
+one concept take its earliest observed year rather than an arbitrary one.
+The two convention markers (\link{.alien_first_record_sentinels}) are dropped to
+\code{NA} here so neither can win that reduction or be served as a year.
 }

@@ -383,6 +383,45 @@
   }
 })
 
+#' First-record years the release uses as convention markers, not observations
+#'
+#' 1492 (the Columbian-era zero) and 1500 (a "recorded before ~1500" rounding)
+#' are conventions, not dated occurrences: in v4.0 they carry 473 and 5,076
+#' records against low single digits for every neighbouring year. Read as a
+#' number either would win an earliest-year reduction and date a species'
+#' arrival from a marker, so they are dropped to `NA` at parse time and never
+#' served as a year; the verbatim column keeps the raw value.
+#' @noRd
+.alien_first_record_sentinels <- c(1492L, 1500L)
+
+#' Collapse to one row per key, keeping the earliest present-preferred record
+#'
+#' Among the records sharing a key, keep the one dating the earliest occurrence,
+#' preferring a record asserting presence to one recording absence, uncertainty
+#' or captivity whatever the years, and treating a sentinel year (already `NA`
+#' by this point) as no year. The retained row's own status, source and
+#' reference travel with its year, so no published field describes a record
+#' other than the one the year came from.
+#'
+#' Used both by the parser (per verbatim species x country) and, after
+#' cross-backbone name resolution, per accepted species x country: a first
+#' record is a minimum over records, so synonyms collapsing onto one concept
+#' must take the earliest observed year, not the arbitrary trait-richest row a
+#' generic dedup would keep.
+#' @noRd
+.keep_earliest_first_record <- function(df, key_cols,
+                                        year_col = "alien_first_record",
+                                        status_col = "alien_first_record_status") {
+  status <- if (status_col %in% names(df)) df[[status_col]] else NA_character_
+  absent_rank <- as.integer(!(tolower(trimws(as.character(status))) %in% "present"))
+  key <- do.call(paste, c(df[key_cols], list(sep = "\x1f")))
+  ord <- order(key, absent_rank, df[[year_col]], na.last = TRUE)
+  df <- df[ord, , drop = FALSE]
+  df <- df[!duplicated(key[ord]), , drop = FALSE]
+  rownames(df) <- NULL
+  df
+}
+
 #' Parse the Seebens et al. global first-record database
 #'
 #' Reads the public dataset table, maps location names to ISO 3166-1 alpha-2
@@ -403,7 +442,12 @@
 #' record's own status is published beside its year as
 #' `alien_first_record_status`, since the remaining columns are reduced over
 #' every record for the pair and a status reduced that way would describe some
-#' record other than the one the year came from.
+#' record other than the one the year came from. The same earliest-wins
+#' reduction ([.keep_earliest_first_record()]) runs again after cross-backbone
+#' name resolution, at the accepted-species grain, so synonyms collapsing onto
+#' one concept take its earliest observed year rather than an arbitrary one.
+#' The two convention markers ([.alien_first_record_sentinels]) are dropped to
+#' `NA` here so neither can win that reduction or be served as a year.
 #'
 #' @param path Character. Path to the `FirstRecords` dataset CSV.
 #' @return data.frame with canonical_name + country_code + first-record cols.
@@ -438,19 +482,20 @@ parse_alien_first_records <- function(path) {
   }
 
   status_col <- .first_col(df, c("occurrenceStatus", "PresentStatus"))
+  # "present (not occurring in the wild)" is a captive or cultivated record.
   status <- if (is.null(status_col)) rep(NA_character_, nrow(df))
             else tolower(trimws(.to_utf8(df[[status_col]])))
-  # "present (not occurring in the wild)" is a captive or cultivated record.
-  absent_rank <- as.integer(!(status %in% "present"))
 
   src_col <- .first_col(df, c("datasetName", "Source"))
   ref_col <- .first_col(df, c("bibliographicCitation", "Reference"))
 
+  year <- suppressWarnings(as.integer(as.numeric(df[[year_col]])))
+  year[year %in% .alien_first_record_sentinels] <- NA_integer_
+
   out <- data.frame(
     canonical_name               = trimws(.to_utf8(df[[name_col]])),
     country_code                 = df$country_code,
-    alien_first_record           = suppressWarnings(
-                                     as.integer(as.numeric(df[[year_col]]))),
+    alien_first_record           = year,
     alien_first_record_status    = status,
     alien_first_record_source    = if (is.null(src_col)) NA_character_
                                    else .to_utf8(df[[src_col]]),
@@ -463,12 +508,8 @@ parse_alien_first_records <- function(path) {
     !is.na(out$country_code) & nchar(out$country_code) == 2L
   out <- out[keep, , drop = FALSE]
   df  <- df[keep, , drop = FALSE]
-  absent_rank <- absent_rank[keep]
 
-  ord <- order(out$canonical_name, out$country_code, absent_rank,
-               out$alien_first_record, na.last = TRUE)
-  out <- out[ord, , drop = FALSE]
-  out <- out[!duplicated(paste(out$canonical_name, out$country_code)), ]
+  out <- .keep_earliest_first_record(out, c("canonical_name", "country_code"))
 
   # Carry every other field (raw location string, habitat, establishment
   # means, degree of establishment, ...) keyed on (species, country). The

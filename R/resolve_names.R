@@ -26,6 +26,11 @@
 #' @param reverse_hop Logical. Add the reverse hop; see [resolve_name_map()].
 #' @param strict Logical. Error, rather than warn, when a requested backbone
 #'   has no `name_lookup.vtr`. Set for production asset builds.
+#' @param reduce_fn Function `(df, group_cols)` collapsing the expanded table to
+#'   one row per accepted name (plus `group_cols`). Defaults to keeping the
+#'   trait-richest row ([.dedup_keep_richest()]); an enrichment whose value is a
+#'   reduction over records (e.g. an earliest first-record year) supplies its
+#'   own so synonyms collapse by that rule, not by row richness.
 #' @return The expanded data.frame, carrying a `resolved_backbones` attribute
 #'   naming the backbones the expansion actually reached.
 #' @export
@@ -35,10 +40,12 @@ resolve_enrichment_names <- function(df,
                                      verbose = TRUE,
                                      use_lookup = TRUE,
                                      reverse_hop = TRUE,
-                                     strict = FALSE) {
+                                     strict = FALSE,
+                                     reduce_fn = NULL) {
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
+  reducer <- reduce_fn %||% .dedup_keep_richest
 
   # Aggregate source rows are kept out of cross-backbone expansion: a backbone
   # without the aggregate taxon would resolve them to the bare binomial, leaking
@@ -51,7 +58,8 @@ resolve_enrichment_names <- function(df,
 
   resolved <- if (nrow(rest) > 0L) {
     .resolve_species_names(rest, group_cols, backends, verbose, use_lookup,
-                           reverse_hop = reverse_hop, strict = strict)
+                           reverse_hop = reverse_hop, strict = strict,
+                           reduce_fn = reducer)
   } else {
     rest
   }
@@ -61,7 +69,7 @@ resolve_enrichment_names <- function(df,
     agg_df$canonical_name <-
       taxify::normalize_aggregate_name(agg_df$canonical_name)
     combined <- rbind(resolved, agg_df[names(resolved)])
-    .dedup_keep_richest(combined, group_cols)
+    reducer(combined, group_cols)
   } else {
     resolved
   }
@@ -84,7 +92,8 @@ resolve_enrichment_names <- function(df,
                                    verbose = TRUE,
                                    use_lookup = TRUE,
                                    reverse_hop = TRUE,
-                                   strict = FALSE) {
+                                   strict = FALSE,
+                                   reduce_fn = .dedup_keep_richest) {
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
@@ -105,7 +114,7 @@ resolve_enrichment_names <- function(df,
   expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
   expanded$accepted_name <- NULL
 
-  expanded <- .dedup_keep_richest(expanded, group_cols)
+  expanded <- reduce_fn(expanded, group_cols)
 
   if (verbose) {
     message(sprintf(

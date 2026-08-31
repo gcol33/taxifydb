@@ -78,6 +78,24 @@ test_that("an empty extras vector is how a sidecar block is removed", {
   expect_null(got$extras)
 })
 
+test_that("a content-addressed url is recorded for the built bytes", {
+  # full_url is a moving pointer a re-cut overwrites in place; content_url names
+  # the immutable copy keyed on content_id, so a recorded content_id resolves
+  # back to bytes after the tag has moved on (taxifydb#47).
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "worms")
+  mf <- write_manifest(file.path(dir, "manifest.json"), list(latest = "2026.07"))
+
+  update_manifest(mf, "worms", "2026.08", vtr, source_url = "https://example.org/x")
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
+
+  cid <- unname(tools::md5sum(vtr))
+  expect_equal(got$content_id, cid)
+  expect_equal(got$content_url, sprintf(
+    "https://github.com/gcol33/taxifydb/releases/download/worms-2026.08/worms-%s.vtr",
+    cid))
+})
+
 test_that("a delta is dropped when the release has none, unlike a sidecar", {
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "worms")
@@ -215,6 +233,28 @@ test_that("the group column alone does not count as a stale trait_cols", {
   got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
 
   expect_equal(unlist(got$trait_cols), c("region_id", "beta"))
+})
+
+test_that("a content-addressed url is recorded from the build's content_id", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "glonaf")
+  jsonlite::write_json(
+    list(name = "glonaf", version = "2.02", nrow = 3L,
+         content_id = "3e0017815cf679f4e7e28309f57700e5",
+         source_url = "https://zenodo.org/api/records/17105725",
+         source_doi = "10.5281/zenodo.17105725", license = "CC BY 4.0",
+         attribution = "van Kleunen M et al. (2019)."),
+    file.path(dir, "meta.json"), auto_unbox = TRUE)
+  mf <- write_enrichment_manifest(file.path(dir, "manifest.json"),
+                                  list(latest = "2026.07"))
+
+  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08")
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+
+  expect_equal(got$content_id, "3e0017815cf679f4e7e28309f57700e5")
+  expect_equal(got$content_url, paste0(
+    "https://github.com/gcol33/taxifydb/releases/download/",
+    "enrichment-2026.08/glonaf-3e0017815cf679f4e7e28309f57700e5.vtr"))
 })
 
 test_that("a new deposit of the same work keeps the curated citation", {

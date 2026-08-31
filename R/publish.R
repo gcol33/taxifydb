@@ -1,5 +1,81 @@
 # Publish backbone releases to GitHub and update the manifest.
 
+
+#' Names of the assets already attached to a release
+#'
+#' Empty when the release does not exist or carries no assets, so a caller can
+#' treat "not yet published" and "published without this asset" alike.
+#' @noRd
+.release_asset_names <- function(tag, repo) {
+  out <- suppressWarnings(system2(
+    "gh", c("release", "view", tag, "--repo", repo,
+            "--json", "assets", "--jq", ".assets[].name"),
+    stdout = TRUE, stderr = FALSE
+  ))
+  st <- attr(out, "status")
+  if (!is.null(st) && st != 0L) return(character(0L))
+  out[nzchar(out)]
+}
+
+
+#' Upload an immutable content-addressed copy of each built `.vtr`
+#'
+#' The rolling `<name>.vtr` an entry's `full_url` points at is a moving pointer:
+#' a re-cut build overwrites it in place (`--clobber`), and GitHub keeps no
+#' history of the bytes it replaced, so a release, lock or README that recorded
+#' the old asset's `content_id` can no longer resolve it to bytes -- the whole
+#' of taxifydb#47. Beside the rolling copy, each build's bytes are therefore also
+#' uploaded once under `<name>-<content_id>.vtr`, a name that is the bytes and so
+#' is never overwritten: a re-cut adds a new content-addressed asset rather than
+#' destroying the one a prior build was pinned to, and every `content_id` ever
+#' recorded stays fetchable from `<tag>/<name>-<content_id>.vtr`.
+#'
+#' `content_id` is `tools::md5sum()` of the `.vtr`, the same value
+#' [build_enrichment_vtr()] and [update_manifest()] record, so a copy whose name
+#' is already on the release carries identical bytes and is skipped. gh names an
+#' asset by the file's basename, so each copy is staged under its
+#' content-addressed name in a temp dir before upload.
+#' @noRd
+.upload_content_addressed <- function(tag, vtr_paths, repo) {
+  existing <- .release_asset_names(tag, repo)
+  staged <- file.path(tempdir(), "taxifydb_content_addressed", tag)
+  dir.create(staged, showWarnings = FALSE, recursive = TRUE)
+
+  copies <- character(0L)
+  for (p in vtr_paths) {
+    if (!file.exists(p)) next
+    nm  <- tools::file_path_sans_ext(basename(p))
+    cid <- unname(tools::md5sum(p))
+    ca  <- sprintf("%s-%s.vtr", nm, cid)
+    if (ca %in% existing) next
+    dest <- file.path(staged, ca)
+    if (!file.copy(p, dest, overwrite = TRUE)) {
+      stop(sprintf("Could not stage content-addressed copy of %s", p),
+           call. = FALSE)
+    }
+    copies <- c(copies, dest)
+  }
+  if (length(copies) == 0L) return(invisible(character(0L)))
+
+  quoted <- shQuote(
+    copies,
+    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
+  )
+  # No --clobber: a content-addressed name maps to fixed bytes, and any copy
+  # already on the release was skipped above, so there is nothing to overwrite.
+  out <- system2("gh", c("release", "upload", tag, quoted, "--repo", repo),
+                 stdout = TRUE, stderr = TRUE)
+  st <- attr(out, "status")
+  if (length(out) > 0L) message(paste(out, collapse = "\n"))
+  if (!is.null(st) && st != 0L) {
+    stop(sprintf(
+      "gh release upload (content-addressed) failed for %s (exit %d)",
+      tag, st), call. = FALSE)
+  }
+  invisible(basename(copies))
+}
+
+
 #' Create a GitHub release and upload backbone artifacts
 #'
 #' Uses the `gh` CLI. Assumes `gh` is authenticated and on PATH.
@@ -95,6 +171,10 @@ publish_release <- function(backend_name, version, vtr_path,
                  tag, upload_status), call. = FALSE)
   }
 
+  # Preserve this build's bytes under a content-addressed name so a later re-cut
+  # of the same tag cannot make them unrecoverable (taxifydb#47).
+  .upload_content_addressed(tag, vtr_path, repo)
+
   message(sprintf("Published release: %s (%d artifacts)",
                   tag, length(artifacts)))
   invisible(tag)
@@ -174,6 +254,11 @@ publish_enrichment_release <- function(version, vtr_paths,
     stop(sprintf("gh release upload failed for %s (exit %d)",
                  tag, upload_status), call. = FALSE)
   }
+
+  # Preserve each build's bytes under a content-addressed name so re-cutting one
+  # enrichment under the shared rolling tag cannot make a prior build's bytes
+  # unrecoverable (taxifydb#47).
+  .upload_content_addressed(tag, vtr_paths, repo)
 
   message(sprintf("Published enrichment release: %s (%d asset%s)",
                   tag, length(vtr_paths),
@@ -290,6 +375,12 @@ update_manifest <- function(manifest_path, backend_name, version,
   # md5 of the .vtr; taxify's runtime uses this (base-R tools::md5sum) as the
   # content id for its same-tag-republish refresh gate on backbones.
   entry$content_id  <- unname(tools::md5sum(vtr_path))
+  # The immutable copy publish_release() uploads beside the rolling .vtr, keyed
+  # on that content_id. full_url is a moving pointer a re-cut overwrites in
+  # place; this URL names the exact bytes, so a lock recording content_id can
+  # resolve them back after the tag has moved on (taxifydb#47).
+  entry$content_url <- sprintf("%s/%s-%s.vtr", base_url, backend_name,
+                               entry$content_id)
   entry$nrow        <- count_vtr_rows(vtr_path)
 
   # The .meta sidecar build_vtr() writes next to every .vtr is the backend's
@@ -445,7 +536,16 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # md5 of the .vtr (from the build sidecar); taxify's runtime uses it to detect
   # a same-tag republish and refresh an otherwise version-locked enrichment cache
   # -- the enrichment analogue of what update_manifest() records for backbones.
-  if (!is.null(meta$content_id)) entry$content_id <- meta$content_id
+  # content_url names the immutable copy publish_enrichment_release() uploads
+  # beside the rolling .vtr under that content_id: full_url is a moving pointer a
+  # re-cut overwrites in place, so a lock that recorded content_id resolves the
+  # exact bytes through content_url even after the rolling asset has moved on
+  # (taxifydb#47).
+  if (!is.null(meta$content_id)) {
+    entry$content_id  <- meta$content_id
+    entry$content_url <- sprintf("%s/%s-%s.vtr", base_url, name,
+                                 meta$content_id)
+  }
   # Which backbones the cross-backbone name expansion reached. A build fact
   # like content_id, never curated text, so it is taken from the sidecar as it
   # stands: an entry that names fewer backbones than the current set is an

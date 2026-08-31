@@ -265,6 +265,21 @@ spelling), not on the id — 557 rows for 268 locations, 56,971 for 28,822 taxa 
 so joining them without deduplicating the id first fans the record table out
 instead of failing.
 
+**A first record is a minimum over records (`alien_first_records`, #46).** The
+served year for a species x country is the earliest present-preferred year, and
+that reduction (`.keep_earliest_first_record()`) runs twice: once in the parser
+per verbatim name x country, and again after cross-backbone name resolution at
+the accepted-species grain, wired through `resolve_enrichment_names(reduce_fn=)`
+from the registry entry. Without the second pass the generic
+`.dedup_keep_richest` collapse kept whichever synonym row had the most populated
+columns, so a concept could be served a later year than the source states or a
+synonym's convention marker. The two markers the release uses instead of a date
+— 1492 (the Columbian-era zero) and 1500 (a "before ~1500" rounding; 473 and
+5,076 records in v4.0 against single digits for every neighbouring year,
+`.alien_first_record_sentinels`) — are dropped to `NA` at parse time so neither
+can win the reduction or be served as a year; the verbatim column keeps the raw
+value.
+
 **Not every delimited file has one encoding.** The v4.0 dataset table is
 semicolon-delimited and UTF-8 except for 679 lines that are latin1, so no single
 `fileEncoding` reads it: UTF-8 errors on those lines, latin1 mojibakes the 2,739
@@ -356,6 +371,21 @@ workflows glob `output/<backend>/<backend>_*.vtr` and pass what they find.
 All three call sites (both builds and the taxify runtime sync) go through
 `scripts/update_manifest_entry.R` rather than rebuilding the artifact paths
 themselves.
+
+**Content-addressed copies keep re-cut bytes recoverable (#47).** A release
+asset is a moving pointer: `<name>.vtr` is uploaded with `--clobber`, and a
+re-cut under the same tag (a rolling `enrichment-<version>`, or a backbone tag
+republished like `gbif-2026.08`) overwrites it in place with no GitHub history,
+so a lock or README that recorded the old `content_id` could no longer resolve
+it to bytes. So beside the rolling copy, `publish_release()` and
+`publish_enrichment_release()` also upload each build's bytes once under
+`<name>-<content_id>.vtr` (`.upload_content_addressed()`) — a name that is the
+bytes, never clobbered, skipped when already on the release. The manifest
+records its URL as `content_url` beside `content_id`; a re-cut adds a new
+content-addressed asset rather than destroying the prior one, so every
+`content_id` published since stays fetchable. The retrieval and local-store
+halves (`taxify_download_enrichment(content_id=)`, a version-keyed enrichment
+cache) live in the `taxify` runtime repo and are tracked there.
 
 ## CI
 

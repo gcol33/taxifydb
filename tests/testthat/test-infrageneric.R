@@ -12,6 +12,17 @@ test_that("the subgenus is dropped from a species-group name (#50)", {
 })
 
 
+test_that("every infrageneric group before the epithet is dropped (#50)", {
+  nm <- c("Thoracostoma (Pseudocella) (Corythostoma) filipjevi",
+          "Thoracostoma (Pseudocella) (Corythostoma)")
+  g <- c("Thoracostoma", "Thoracostoma")
+  expect_equal(taxifydb:::drop_infrageneric(nm, g),
+               c("Thoracostoma filipjevi", "Thoracostoma (Corythostoma)"))
+  p <- split_scientific_name(nm[1], g[1])
+  expect_equal(p$specific, "filipjevi")
+})
+
+
 test_that("a subgenus keeps its own name (#50)", {
   nm <- c("Aaleniella (Danocythere)", "Aaleniella (Aaleniella)")
   expect_equal(taxifydb:::drop_infrageneric(nm, c("Aaleniella", "Aaleniella")),

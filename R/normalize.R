@@ -139,16 +139,21 @@ infrageneric_group <- function(name, genus = NULL) {
 #' for the binomial a user writes, and a synonym pointing at it carries the
 #' parenthesis into `accepted_name`, where every species-grain enrichment join
 #' misses it. The group is dropped only when an epithet follows it, so a
-#' subgenus keeps its own name.
+#' subgenus keeps its own name. A name can carry more than one group (WoRMS
+#' writes `Thoracostoma (Pseudocella) (Corythostoma) filipjevi`), so groups are
+#' removed until none is left before the epithet.
 #'
 #' @param name Character vector of names.
 #' @param genus Character vector of known genus names, or `NULL`.
-#' @return `name` with the infrageneric group removed from species-group names.
+#' @return `name` with the infrageneric groups removed from species-group names.
 #' @noRd
 drop_infrageneric <- function(name, genus = NULL) {
-  grp <- infrageneric_group(name, genus)
-  drop <- which(!is.na(grp$after) & nzchar(grp$after))
-  name[drop] <- paste(grp$anchor[drop], grp$after[drop])
+  repeat {
+    grp <- infrageneric_group(name, genus)
+    drop <- which(!is.na(grp$after) & nzchar(grp$after))
+    if (length(drop) == 0L) break
+    name[drop] <- paste(grp$anchor[drop], grp$after[drop])
+  }
   name
 }
 
@@ -251,6 +256,7 @@ split_scientific_name <- function(name, genus = NULL) {
   n <- gsub("\\s+", " ", trimws(name))
   n[!is.na(n) & !nzchar(n)] <- NA_character_
 
+  n <- drop_infrageneric(n, genus)
   grp <- infrageneric_group(n, genus)
   g <- grp$anchor
 

@@ -23,8 +23,8 @@ matrices that `data-raw/betsi_recovery.R` regenerates into `inst/extdata/betsi/`
 
 OFT, the freshwater trait and ecological-indicator enrichment being
 reconstructed from primary publications, is its own private repository
-(`gcol33/oft`). It is not held in this checkout's `datasets/`; it sits in the
-separate `datasets/` workspace tree beside this one, and the single oft-side
+(`gcol33/oft`). It is not held in this checkout's `datasets/`; it sits in a
+separate `datasets/` workspace tree outside this checkout, and the single oft-side
 script that reuses a helper from here finds this checkout through
 `TAXIFYDB_ROOT`.
 Its quarantined freshwaterecology.info export may never be redistributed or

@@ -32,7 +32,7 @@ The infraspecific epithet is the last word following the specific epithet,
 so a name carrying a rank marker (\verb{Poa annua subsp. exilis}) and a bare
 trinomial (\verb{Larus fuscus graellsii}) both resolve to the epithet itself. A
 free-standing hybrid multiplication sign is dropped rather than read as an
-epithet.
+epithet, and so is a subgenus in parentheses after the genus.
 
 The caller decides which rows to apply this to: a name above genus rank
 still returns its first word as \code{genus}, so a source that stores family and

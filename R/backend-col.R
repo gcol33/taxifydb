@@ -131,13 +131,10 @@ read_col <- function(col_dir, verbose = TRUE) {
     df$taxonRank <- toupper(df$taxonRank)
   }
 
-  # Build canonical name (strip authorship from scientificName)
-  if (all(c("scientificName", "scientificNameAuthorship") %in% names(df))) {
-    df$canonicalName <- strip_authorship(df$scientificName,
-                                         df$scientificNameAuthorship)
-  } else {
-    df$canonicalName <- df$scientificName
-  }
+  df$canonicalName <- col_canonical_name(df$scientificName,
+                                         df$scientificNameAuthorship,
+                                         df$specificEpithet,
+                                         df$infraspecificEpithet)
 
   if (verbose) message("Denormalizing higher classification (kingdom..family)...")
   cls <- col_resolve_classification(df)
@@ -180,6 +177,80 @@ read_col <- function(col_dir, verbose = TRUE) {
   }
 
   normalize_backbone(df, col_map, extra_cols)
+}
+
+
+#' Canonical name of a COL usage
+#'
+#' COL's `scientificName` carries the authorship, which is subtracted. Where it
+#' also carries a nomenclatural note after the authorship (`Abax depressus
+#' (Olivier, 1795) junior homonym`, `Corbula lavaleana [sic]`, `Anadara diluvii
+#' (Lamarck, 1805) sensu auct.`), or an authorship the
+#' `scientificNameAuthorship` column leaves out (`Hieracium murorum subsp.
+#' albovittiforme (Notø) Zahn`), the subtraction leaves it in place. A
+#' species-group name is therefore cut after its last parsed epithet, which COL
+#' supplies in `specificEpithet` and `infraspecificEpithet`. Rank markers and
+#' hybrid signs sit before that epithet and are kept.
+#'
+#' A name whose epithets cannot be found as words of the name (an epithet
+#' written with a ligature the name spells out) keeps the subtraction result.
+#'
+#' @param sci_name Character vector of `scientificName`.
+#' @param authorship Character vector of `scientificNameAuthorship`, or `NULL`.
+#' @param specific,infraspecific Character vectors of the parsed epithets, or
+#'   `NULL`.
+#' @return Character vector of canonical names.
+#' @noRd
+col_canonical_name <- function(sci_name, authorship, specific, infraspecific) {
+  n <- length(sci_name)
+  if (is.null(authorship)) authorship <- rep(NA_character_, n)
+  if (is.null(specific)) specific <- rep(NA_character_, n)
+  if (is.null(infraspecific)) infraspecific <- rep(NA_character_, n)
+
+  name <- strip_authorship(sci_name, authorship)
+  terminal <- ifelse(is.na(infraspecific), specific, infraspecific)
+  open <- which(!is.na(name) & !is.na(terminal) &
+                  !endsWith(name, paste0(" ", terminal)))
+  if (length(open) > 0L) {
+    name[open] <- mapply(name_through_epithets, name[open], specific[open],
+                         infraspecific[open], USE.NAMES = FALSE)
+  }
+  name
+}
+
+
+#' Cut a name after its last epithet
+#'
+#' @param name A single name.
+#' @param specific,infraspecific The parsed epithets, each possibly several
+#'   words (`femur rubrum`, `var. rumicicola`); `infraspecific` may be `NA`.
+#' @return The words of `name` through the last epithet, or `name` unchanged
+#'   when an epithet is not found.
+#' @noRd
+name_through_epithets <- function(name, specific, infraspecific) {
+  words <- strsplit(name, " ", fixed = TRUE)[[1L]]
+  words <- words[nzchar(words)]
+
+  # Returns the index of the last word of `epithet` found at or after `from`.
+  find_epithet <- function(epithet, from) {
+    ep <- strsplit(epithet, " ", fixed = TRUE)[[1L]]
+    k <- length(ep)
+    last <- length(words) - k + 1L
+    if (from > last) return(NA_integer_)
+    for (i in from:last) {
+      w <- words[i:(i + k - 1L)]
+      w[1L] <- sub("^\u00d7", "", w[1L])
+      if (identical(w, ep)) return(i + k - 1L)
+    }
+    NA_integer_
+  }
+
+  end <- find_epithet(specific, 2L)
+  if (!is.na(end) && !is.na(infraspecific)) {
+    end <- find_epithet(infraspecific, end + 1L)
+  }
+  if (is.na(end)) return(name)
+  paste(words[seq_len(end)], collapse = " ")
 }
 
 

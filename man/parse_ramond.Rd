@@ -17,7 +17,7 @@ Morphological, behavioural and ecological traits of marine protists,
 keyed on the finest determined name (\code{Last}), which is genus-level or higher.
 The three source tables share the same taxa with overlapping trait columns;
 they are stacked and reduced to one row per genus (numeric traits -- cell
-size, in micrometres -- by median, categorical traits by mode). Higher-rank
-and undetermined entries do not match a backbone genus and drop out at name
-resolution.
+size, in micrometres -- by median, categorical traits by mode). Undetermined
+entries and keys that are not a taxon name are dropped; a higher-rank name is
+kept but never matches the genus of a taxify result.
 }

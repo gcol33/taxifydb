@@ -71,7 +71,85 @@ normalize_backbone <- function(df, col_map, extra_cols = NULL) {
     }
   }
 
+  out$canonical_name <- drop_infrageneric(out$canonical_name, out$genus)
+
   out
+}
+
+
+#' The genus a scientific name is anchored on
+#'
+#' A supplied genus is the anchor only when the name actually starts with it;
+#' otherwise the first word of the name is.
+#'
+#' @param name Character vector of whitespace-normalized names.
+#' @param genus Character vector of known genus names, or `NULL`.
+#' @return Character vector the length of `name`.
+#' @noRd
+genus_anchor <- function(name, genus = NULL) {
+  first <- ifelse(is.na(name), NA_character_, sub(" .*$", "", name))
+  if (is.null(genus)) return(first)
+  g <- trimws(genus)
+  g[!is.na(g) & !nzchar(g)] <- NA_character_
+  usable <- !is.na(g) & !is.na(name) &
+    (name == g | startsWith(name, paste0(g, " ")))
+  ifelse(usable, g, first)
+}
+
+
+#' Locate the infrageneric group of a scientific name
+#'
+#' The zoological code writes a subgenus in parentheses between the genus and
+#' the specific epithet (`Camponotus (Camponotus) herculeanus`), and a subgenus
+#' name itself as the genus followed by that group (`Aaleniella
+#' (Danocythere)`). The group is one word, possibly abbreviated (`(L.)`), so a
+#' parenthesis holding a space, a comma or a digit is an authorship
+#' (`Valencia (Quatrefages, 1846)`) and is not taken for one.
+#'
+#' @param name Character vector of whitespace-normalized names.
+#' @param genus Character vector of known genus names, or `NULL`.
+#' @return A list of `anchor` (the genus the name opens with) and `after` (the
+#'   text following the group, `""` when the group ends the name, `NA` when the
+#'   name carries no group).
+#' @noRd
+infrageneric_group <- function(name, genus = NULL) {
+  # A block read with every value missing arrives as logical.
+  name <- as.character(name)
+  if (!is.null(genus)) genus <- as.character(genus)
+  anchor <- genus_anchor(name, genus)
+  after <- rep(NA_character_, length(name))
+  lead <- paste0(anchor, " (")
+  hit <- which(!is.na(anchor) & !is.na(name) & startsWith(name, lead))
+  if (length(hit) > 0L) {
+    rest  <- substring(name[hit], nchar(lead[hit]) + 1L)
+    close <- regexpr(")", rest, fixed = TRUE)
+    inner <- substring(rest, 1L, close - 1L)
+    tail  <- substring(rest, close + 1L)
+    ok <- close > 1L & !grepl("[ ,0-9(]", inner) &
+      (!nzchar(tail) | startsWith(tail, " "))
+    after[hit[ok]] <- trimws(tail[ok])
+  }
+  list(anchor = anchor, after = after)
+}
+
+
+#' Remove the subgenus from a species-group name
+#'
+#' A species keyed as `Camponotus (Camponotus) herculeanus` has no exact match
+#' for the binomial a user writes, and a synonym pointing at it carries the
+#' parenthesis into `accepted_name`, where every species-grain enrichment join
+#' misses it. The group is dropped only when an epithet follows it, so a
+#' subgenus keeps its own name.
+#'
+#' @param name Character vector of names.
+#' @param genus Character vector of known genus names, or `NULL`.
+#' @return `name` with the infrageneric group removed from species-group names.
+#' @noRd
+drop_infrageneric <- function(name, genus = NULL) {
+  grp <- infrageneric_group(name, genus)
+  drop <- which(!is.na(grp$after) & nzchar(grp$after))
+  name[drop] <- paste(grp$anchor[drop], grp$after[drop])
+  name
 }
 
 
@@ -153,7 +231,7 @@ resolve_hierarchy <- function(df, target_ranks = c("family", "genus"),
 #' so a name carrying a rank marker (`Poa annua subsp. exilis`) and a bare
 #' trinomial (`Larus fuscus graellsii`) both resolve to the epithet itself. A
 #' free-standing hybrid multiplication sign is dropped rather than read as an
-#' epithet.
+#' epithet, and so is a subgenus in parentheses after the genus.
 #'
 #' The caller decides which rows to apply this to: a name above genus rank
 #' still returns its first word as `genus`, so a source that stores family and
@@ -173,21 +251,12 @@ split_scientific_name <- function(name, genus = NULL) {
   n <- gsub("\\s+", " ", trimws(name))
   n[!is.na(n) & !nzchar(n)] <- NA_character_
 
-  first <- ifelse(is.na(n), NA_character_, sub(" .*$", "", n))
-
-  if (is.null(genus)) {
-    g <- first
-  } else {
-    g <- trimws(genus)
-    g[!is.na(g) & !nzchar(g)] <- NA_character_
-    # A supplied genus is only usable as the anchor when the name actually
-    # starts with it; otherwise the name leads and the first word wins.
-    usable <- !is.na(g) & !is.na(n) & (n == g | startsWith(n, paste0(g, " ")))
-    g <- ifelse(usable, g, first)
-  }
+  grp <- infrageneric_group(n, genus)
+  g <- grp$anchor
 
   rest <- ifelse(is.na(g) | is.na(n) | n == g, NA_character_,
                  substring(n, nchar(g) + 2L))
+  rest <- ifelse(is.na(grp$after), rest, grp$after)
 
   rest <- gsub("(^| )\u00d7(?= )", "", rest, perl = TRUE)
   rest <- trimws(gsub("\\s+", " ", rest))

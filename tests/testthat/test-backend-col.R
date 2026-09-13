@@ -21,6 +21,56 @@ test_that("strip_authorship handles NA values", {
   expect_equal(result, c("Quercus robur", NA, "Pinus sylvestris"))
 })
 
+test_that("col_canonical_name cuts a nomenclatural note after the name (#50)", {
+  sci <- c("Abax depressus (Olivier, 1795) junior homonym",
+           "Corbula lavaleana [sic]",
+           "Hieracium murorum subsp. albovittiforme (Not\u00f8) Zahn",
+           "Pholadomya arata A. E. Verrill & S. Smith, 1881 sensu Locard, 1898",
+           "Camponotus (Camponotus) herculeanus (Linnaeus, 1758)")
+  auth <- c("(Olivier, 1795)", NA, NA, "A. E. Verrill & S. Smith, 1881",
+            "(Linnaeus, 1758)")
+  sp   <- c("depressus", "lavaleana", "murorum", "arata", "herculeanus")
+  isp  <- c(NA, NA, "albovittiforme", NA, NA)
+  expect_equal(
+    taxifydb:::col_canonical_name(sci, auth, sp, isp),
+    c("Abax depressus", "Corbula lavaleana",
+      "Hieracium murorum subsp. albovittiforme", "Pholadomya arata",
+      "Camponotus (Camponotus) herculeanus")
+  )
+})
+
+
+test_that("col_canonical_name keeps autonyms, hybrids and several-word epithets (#50)", {
+  sci <- c("Abies alba subsp. alba",
+           "Mentha \u00d7 piperita L.",
+           "Mentha \u00d7piperita nothosubsp. citrata (Ehrh.) Briq.",
+           "Acridium femur rubrum (De Geer, 1773) sensu auct.",
+           "Aphalara polygoni var. rumicicola Loginova, 1961 non Walker",
+           "Quercus robur L.",
+           "Quercus")
+  auth <- c(NA, "L.", "(Ehrh.) Briq.", "(De Geer, 1773)", "Loginova, 1961",
+            "L.", NA)
+  sp   <- c("alba", "piperita", "piperita", "femur rubrum", "polygoni",
+            "robur", NA)
+  isp  <- c("alba", NA, "citrata", NA, "var. rumicicola", NA, NA)
+  expect_equal(
+    taxifydb:::col_canonical_name(sci, auth, sp, isp),
+    c("Abies alba subsp. alba", "Mentha \u00d7 piperita",
+      "Mentha \u00d7piperita nothosubsp. citrata", "Acridium femur rubrum",
+      "Aphalara polygoni var. rumicicola", "Quercus robur", "Quercus")
+  )
+})
+
+
+test_that("col_canonical_name keeps the subtraction when an epithet is not a word of the name (#50)", {
+  expect_equal(
+    taxifydb:::col_canonical_name("Actinia chamaeleon Grube, 1840",
+                                  "Grube, 1840", "cham\u00e6leon", NA),
+    "Actinia chamaeleon"
+  )
+})
+
+
 test_that("col_resolve_classification denormalizes the full lineage (#24)", {
   # Animalia > Chordata > Mammalia > Carnivora > Canidae > Vulpes > V. vulpes,
   # plus a species that links straight to the family (no genus row).

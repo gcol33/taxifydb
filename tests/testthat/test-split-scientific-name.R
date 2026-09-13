@@ -75,6 +75,18 @@ test_that("the split is vectorized and length-preserving", {
 })
 
 
+test_that("a subgenus is not read as an epithet (#50)", {
+  p <- split_scientific_name(
+    c("Aaleniella (Danocythere) gracilis", "Aaleniella (Danocythere)",
+      "Potamon (Potamonautes) aloysii sabaudiae"),
+    genus = c("Aaleniella", "Aaleniella", "Potamon")
+  )
+  expect_equal(p$genus, c("Aaleniella", "Aaleniella", "Potamon"))
+  expect_equal(p$specific, c("gracilis", NA, "aloysii"))
+  expect_equal(p$infraspecific, c(NA, NA, "sabaudiae"))
+})
+
+
 test_that("a one-word name never reports itself as its own epithet", {
   # The pre-refactor fishbase synonym split returned the genus as the
   # specific epithet here, which would key a genus row as a species.

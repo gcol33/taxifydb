@@ -282,11 +282,13 @@ precompute_backbone_rowwise <- function(df) {
 #' @param na_strings Character vector read as `NA`.
 #' @param col_names Character vector naming the columns of a file that carries
 #'   no header row, in file order, or `NULL` when the first line is a header.
-#' @param file_encoding Character or `NULL`. The encoding of the file's bytes,
-#'   meaning what `fileEncoding` means to [utils::read.delim()]: character
-#'   columns are converted from it once the block is parsed. WFO is the case,
-#'   whose reader decodes as `"latin1"`. A file needing this is read block by
-#'   block whether or not it is quoted, since the conversion happens there.
+#' @param file_encoding Character or `NULL`. The encoding of the file's bytes:
+#'   character columns are decoded from it to UTF-8 once the block is parsed,
+#'   and a byte that does not form a character in it is dropped. WFO declares
+#'   `"UTF-8"`, and its `taxonRemarks` is cut at a fixed byte width that leaves
+#'   the lead byte of a split character at the end of 8 fields. A file needing
+#'   this is read block by block whether or not it is quoted, since the decoding
+#'   happens there.
 #' @param verbose Logical.
 #' @return A function of no arguments suitable as the `feed` of
 #'   [build_vtr_streamed()].
@@ -497,9 +499,8 @@ unescape_quotes <- function(df, quote = "\"") {
 #' @param chunk_rows,head_rows Integer.
 #' @param sep,quote Character. Field separator and quoting character.
 #' @param na_strings Character vector read as `NA`.
-#' @param file_encoding Character or `NULL`. Encoding of the file's bytes,
-#'   applied to the parsed block exactly as `read.delim()` applies
-#'   `fileEncoding` to what it read.
+#' @param file_encoding Character or `NULL`. Encoding of the file's bytes, as
+#'   in [delim_chunk_feed()].
 #' @return A feed function.
 #' @noRd
 delim_block_feed <- function(path, emit, keep, chunk_rows, head_rows,
@@ -517,8 +518,8 @@ delim_block_feed <- function(path, emit, keep, chunk_rows, head_rows,
   eof <- FALSE
   done <- FALSE
 
-  # Counted over bytes, not characters. WFO holds thousands of lines that are
-  # invalid in the session's encoding, and a character-wise match reports
+  # Counted over bytes, not characters. WFO holds 8 lines that are not valid
+  # UTF-8, and a character-wise match reports
   # nothing for those rather than failing, which would leave the parity -- and
   # so the record boundary -- quietly wrong. The quoting character is ASCII and
   # every encoding read here is ASCII-transparent, so bytes are exact.
@@ -599,7 +600,8 @@ delim_block_feed <- function(path, emit, keep, chunk_rows, head_rows,
     if (!is.null(file_encoding)) {
       for (j in seq_along(raw)) {
         if (is.character(raw[[j]])) {
-          raw[[j]] <- iconv(raw[[j]], from = file_encoding, to = "UTF-8")
+          raw[[j]] <- iconv(raw[[j]], from = file_encoding, to = "UTF-8",
+                            sub = "")
         }
       }
     }

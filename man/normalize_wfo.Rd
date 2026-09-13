@@ -7,7 +7,8 @@
 normalize_wfo(df, verbose = TRUE)
 }
 \arguments{
-\item{df}{A data.frame of raw WFO rows, with the file's own column names.}
+\item{df}{A data.frame of raw WFO rows, with the file's own column names,
+decoded from UTF-8.}
 
 \item{verbose}{Logical.}
 }
@@ -17,11 +18,4 @@ A normalized data.frame.
 \description{
 Split out of \code{\link[=read_wfo]{read_wfo()}} so the streaming build can apply it to a chunk at a
 time. Nothing here depends on rows outside the block.
-}
-\details{
-The block must already be decoded the way \code{\link[=read_wfo]{read_wfo()}} decodes it. WFO ships
-UTF-8 bytes that the reader takes as latin1, which turns the multiplication
-sign of a hybrid name into two characters; the repair below expects exactly
-that pair, so a block decoded some other way would arrive with nothing to
-repair and the hybrid marker left wrong.
 }

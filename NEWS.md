@@ -1,5 +1,27 @@
 # taxifydb 0.1.23
 
+## WFO text is decoded from UTF-8 once (#51)
+
+* `read_wfo()` and `build_wfo()` decoded WFO's classification file as latin1
+  and converted the result to UTF-8, but the file is UTF-8 (`Bañares` is
+  stored as `42 61 c3 b1 61 72 65 73`), so every non-ASCII character was
+  encoded twice: `(H.Y.Liu) Bañares` came out as `(H.Y.Liu) BaÃ±ares`. In the
+  2024-12 source that is 111,368 rows of `authorship`, 131,330 of
+  `namePublishedIn` and 109,424 of `taxonRemarks`. The multiplication sign of
+  the 6,274 hybrid names was repaired by a substitution after the read, which
+  is gone with the wrong decode.
+
+* Both readers now go through one internal feed, which declares the file
+  UTF-8, so the whole-file read and the streamed build cannot decode it
+  differently. `delim_chunk_feed(file_encoding = )` drops a byte that does not
+  form a character: WFO cuts `taxonRemarks` at a fixed byte width, which
+  leaves the lead byte of a split character at the end of 8 fields.
+
+* Three authorships are double-encoded in the WFO source itself
+  (`(Sagorski) JalÃ¡s`, `(KovÃ¡cs ex Neilr.) Asch. & Graebn.`, `MartÃ­nez`)
+  and are left as they arrive. The published `wfo` table carries the fault
+  until it is rebuilt.
+
 ## Genus-grain enrichments are keyed on genus names inside their kingdom (#48)
 
 * Cross-backbone expansion of a genus-grain source now keeps only accepted

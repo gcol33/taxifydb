@@ -39,11 +39,13 @@ file's own column names) and returning it in the normalized schema.}
 \item{col_names}{Character vector naming the columns of a file that carries
 no header row, in file order, or \code{NULL} when the first line is a header.}
 
-\item{file_encoding}{Character or \code{NULL}. The encoding of the file's bytes,
-meaning what \code{fileEncoding} means to \code{\link[utils:read.delim]{utils::read.delim()}}: character
-columns are converted from it once the block is parsed. WFO is the case,
-whose reader decodes as \code{"latin1"}. A file needing this is read block by
-block whether or not it is quoted, since the conversion happens there.}
+\item{file_encoding}{Character or \code{NULL}. The encoding of the file's bytes:
+character columns are decoded from it to UTF-8 once the block is parsed,
+and a byte that does not form a character in it is dropped. WFO declares
+\code{"UTF-8"}, and its \code{taxonRemarks} is cut at a fixed byte width that leaves
+the lead byte of a split character at the end of 8 fields. A file needing
+this is read block by block whether or not it is quoted, since the decoding
+happens there.}
 
 \item{verbose}{Logical.}
 }

@@ -345,12 +345,10 @@ test_that("file_encoding decodes the bytes the way read.delim does", {
   dir <- withr::local_tempdir()
   path <- file.path(dir, "latin.tsv")
 
-  # UTF-8 bytes for the multiplication sign, which WFO's reader decodes as
-  # latin1 on purpose and then repairs.
+  # A latin1 n-tilde, one byte that is not valid UTF-8 on its own.
   con <- file(path, "wb")
-  writeBin(charToRaw("taxonID\tscientificName\n"), con)
-  writeBin(c(charToRaw("1\tQuercus "), as.raw(c(0xC3, 0x97)),
-             charToRaw(" rosacea\n")), con)
+  writeBin(charToRaw("taxonID\tscientificNameAuthorship\n"), con)
+  writeBin(c(charToRaw("1\tBa"), as.raw(0xF1), charToRaw("ares\n")), con)
   close(con)
 
   seen <- NULL
@@ -361,9 +359,9 @@ test_that("file_encoding decodes the bytes the way read.delim does", {
 
   direct <- utils::read.delim(path, fileEncoding = "latin1",
                               stringsAsFactors = FALSE, na.strings = "")
-  expect_equal(seen$scientificName, direct$scientificName)
-  expect_equal(charToRaw(seen$scientificName),
-               charToRaw(direct$scientificName))
+  expect_equal(seen$scientificNameAuthorship, direct$scientificNameAuthorship)
+  expect_equal(charToRaw(seen$scientificNameAuthorship),
+               as.raw(c(0x42, 0x61, 0xC3, 0xB1, 0x61, 0x72, 0x65, 0x73)))
 })
 
 

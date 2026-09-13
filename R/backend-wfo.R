@@ -6,8 +6,8 @@
 # is already authorship-free (WFO stores authorship separately), so no
 # canonical-name extraction is needed.
 #
-# WFO quirks: latin1-encoded TSV, mojibake on the multiplication sign
-# (UTF-8 "×" read as "Ã—"), uppercase status/rank normalization.
+# WFO quirks: UTF-8 TSV with double-quoted fields, taxonRemarks cut at a fixed
+# byte width that can split a character, uppercase status/rank normalization.
 
 .wfo_url <- "https://zenodo.org/records/14538251/files/_DwC_backbone_R.zip"
 .wfo_version_default <- "2024-12"
@@ -70,6 +70,28 @@ download_wfo <- function(dest = tempdir(), verbose = TRUE) {
 }
 
 
+#' Feed the WFO classification file a block of raw rows at a time
+#'
+#' The one definition of how the file is parsed, used by both [read_wfo()] and
+#' [build_wfo()]: tab separated, double-quoted fields, an empty field is `NA`,
+#' and the bytes are UTF-8. The file is UTF-8 throughout (`Bañares` is stored as
+#' `42 61 c3 b1 61 72 65 73`), so decoding it as anything else turns every
+#' non-ASCII character into two.
+#'
+#' @param txt_path Character. Path to the WFO classification file.
+#' @param normalize Function applied to each raw block.
+#' @param chunk_rows Integer. Rows per block.
+#' @param verbose Logical.
+#' @return A feed function, as from [delim_chunk_feed()].
+#' @noRd
+wfo_feed <- function(txt_path, normalize, chunk_rows = 500000L,
+                     verbose = TRUE) {
+  delim_chunk_feed(txt_path, normalize = normalize, chunk_rows = chunk_rows,
+                   quote = "\"", na_strings = "", file_encoding = "UTF-8",
+                   verbose = verbose)
+}
+
+
 #' Read and normalize the WFO classification file
 #'
 #' @param txt_path Character. Path to the WFO classification.txt file.
@@ -78,17 +100,14 @@ download_wfo <- function(dest = tempdir(), verbose = TRUE) {
 #' @export
 read_wfo <- function(txt_path, verbose = TRUE) {
   if (verbose) message("Reading classification file...")
-  # Every column this backbone keeps is a name, identifier, rank or status, so
-  # the types are fixed rather than inferred. That also keeps this read and the
-  # block read of build_wfo() agreeing on them without either having to observe
-  # what the other did.
-  df <- utils::read.delim(
-    txt_path,
-    fileEncoding = "latin1",
-    stringsAsFactors = FALSE,
-    na.strings = "",
-    colClasses = "character"
-  )
+  feed <- wfo_feed(txt_path, normalize = identity, verbose = FALSE)
+  blocks <- list()
+  repeat {
+    block <- feed()
+    if (is.null(block)) break
+    blocks[[length(blocks) + 1L]] <- block
+  }
+  df <- do.call(rbind, blocks)
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
   normalize_wfo(df, verbose = verbose)
 }
@@ -99,13 +118,8 @@ read_wfo <- function(txt_path, verbose = TRUE) {
 #' Split out of [read_wfo()] so the streaming build can apply it to a chunk at a
 #' time. Nothing here depends on rows outside the block.
 #'
-#' The block must already be decoded the way [read_wfo()] decodes it. WFO ships
-#' UTF-8 bytes that the reader takes as latin1, which turns the multiplication
-#' sign of a hybrid name into two characters; the repair below expects exactly
-#' that pair, so a block decoded some other way would arrive with nothing to
-#' repair and the hybrid marker left wrong.
-#'
-#' @param df A data.frame of raw WFO rows, with the file's own column names.
+#' @param df A data.frame of raw WFO rows, with the file's own column names,
+#'   decoded from UTF-8.
 #' @param verbose Logical.
 #' @return A normalized data.frame.
 #' @export
@@ -120,7 +134,6 @@ normalize_wfo <- function(df, verbose = TRUE) {
     df$taxonRank <- toupper(df$taxonRank)
   }
 
-  # Fix mojibake: UTF-8 × misread as latin1
   text_cols <- intersect(
     c("scientificName", "family", "genus", "specificEpithet",
       "scientificNameAuthorship"),
@@ -128,7 +141,6 @@ normalize_wfo <- function(df, verbose = TRUE) {
   )
   for (col in text_cols) {
     df[[col]] <- trimws(df[[col]])
-    df[[col]] <- gsub("Ã", "×", df[[col]], fixed = TRUE)
   }
 
   # WFO-specific: extra normalized name column kept alongside canonical
@@ -175,17 +187,12 @@ build_wfo <- function(output_dir = "output/wfo", version = NULL,
   txt_path <- download_wfo(dest = tmp, verbose = verbose)
 
   # classification.csv inflates to roughly 900 MB, so it is staged a block at a
-  # time rather than assembled in memory. The parsing arguments are the ones
-  # read_wfo() hands read.delim(): tab separated, double-quoted fields, an
-  # empty field is NA, and the bytes are decoded as latin1.
+  # time rather than assembled in memory, parsed exactly as read_wfo() parses it.
   vtr_path <- file.path(output_dir, "wfo.vtr")
   build_vtr_streamed(
-    delim_chunk_feed(txt_path,
-                     normalize = function(chunk) {
-                       normalize_wfo(chunk, verbose = FALSE)
-                     },
-                     quote = "\"", na_strings = "", file_encoding = "latin1",
-                     verbose = verbose),
+    wfo_feed(txt_path,
+             normalize = function(chunk) normalize_wfo(chunk, verbose = FALSE),
+             verbose = verbose),
     vtr_path, "wfo", version, .wfo_url, verbose = verbose
   )
 

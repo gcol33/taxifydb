@@ -2,16 +2,17 @@
   "schema_version": 2,
   "backends": {
     "wfo": {
-      "latest": "2026.08",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.08/wfo.vtr",
-      "full_size": 761284303,
-      "full_sha256": "e621c7a23490840a89fdfac05087272945befff06c8ef5a2f9be98bac9dde51f",
+      "latest": "2026.09",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.09/wfo.vtr",
+      "full_size": 760569556,
+      "full_sha256": "244fb839e69c52b88f1ac5272baa84f2029627a7f76cf7a9111ab6fe2683d805",
       "nrow": 1638552,
       "source_url": "https://zenodo.org/records/14538251/files/_DwC_backbone_R.zip",
-      "content_id": "85d19c5e2a9f721247ea83edcb7a396a",
-      "delta_from": "2026.06",
-      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.08/wfo.xdelta",
-      "delta_size": 152757530,
+      "content_id": "3a54aea326e5319e8a8bee3d3e853bc8",
+      "delta_from": "2026.08",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.09/wfo.xdelta",
+      "delta_size": 5133740,
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.09/wfo-3a54aea326e5319e8a8bee3d3e853bc8.vtr",
       "source_version": "2024-12"
     },
     "col": {

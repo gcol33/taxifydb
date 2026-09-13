@@ -15,21 +15,22 @@
       "source_version": "2024-12"
     },
     "col": {
-      "latest": "2026.08",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.08/col.vtr",
-      "full_size": 1965572587,
-      "full_sha256": "e14644db7d3e1cf29975a167855c8f39458a2bf11d208df969a2f496ea082e81",
-      "nrow": 5302873,
-      "source_url": "https://download.checklistbank.org/col/annual/2025_dwca.zip",
-      "content_id": "3267b33eb5fdc650c212ce6cc027311d",
+      "latest": "2026.09",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col.vtr",
+      "full_size": 2083524920,
+      "full_sha256": "4c8cedacfabccddd6130cf25e64f5d973b228ca8d9fa702236064f45b840f141",
+      "nrow": 5432444,
+      "source_url": "https://download.checklistbank.org/col/monthly/2026-09-11_dwca.zip",
+      "content_id": "1ee4746cf45748609c4173b978279226",
       "extras": [
         {
           "name": "col_species_profile.vtr",
-          "url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.08/col_species_profile.vtr",
-          "size": 23971740,
-          "sha256": "824573b5ff844791f0f1ba116cfef798fde93207b58ff6e450850d7ae4c730c5"
+          "url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col_species_profile.vtr",
+          "size": 24718472,
+          "sha256": "8a0cc867b19e4927640d5699fb378003c0a6b3ffaa74be09388b9bb07f3f02ea"
         }
-      ]
+      ],
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col-1ee4746cf45748609c4173b978279226.vtr"
     },
     "gbif": {
       "latest": "2026.08",

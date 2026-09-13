@@ -1,16 +1,25 @@
 # COL (Catalogue of Life): Taxon.tsv -> normalized data.frame -> .vtr
 #
-# COL publishes annual Darwin Core Archives on ChecklistBank. The Taxon.tsv
-# uses dwc:/col: namespace prefixes on column names (stripped on read),
-# scientificName includes authorship (canonical computed by subtraction),
-# and the column for genus is `genericName` (not `genus`).
+# COL publishes a Darwin Core Archive for every monthly release on ChecklistBank,
+# under the date the release was issued. The Taxon.tsv uses dwc:/col: namespace
+# prefixes on column names (stripped on read), scientificName includes
+# authorship (canonical computed by subtraction), and the column for genus is
+# `genericName` (not `genus`).
+#
+# The version names the COL release the table is built from, never the date the
+# table was built. COL gives some usages new identifiers between releases, so a
+# consumer stamping this version has to be able to resolve every identifier in
+# that release: the 2025 annual archive carried BMYGL for Aeonium arboreum subsp.
+# holochrysum, which every 2026 release serves as 5FF7R.
 #
 # COL uses MISAPPLIED as a third status in addition to ACCEPTED/SYNONYM —
 # we treat it as a synonym for matching purposes by passing the appropriate
 # synonym_pattern to precompute_backbone().
 
-.col_url <- "https://download.checklistbank.org/col/annual/2025_dwca.zip"
-.col_version_default <- "2025"
+.col_release <- "2026-09-11"
+.col_url <- sprintf("https://download.checklistbank.org/col/monthly/%s_dwca.zip",
+                    .col_release)
+.col_version_default <- sub("^([0-9]{4})-([0-9]{2}).*$", "\\1.\\2", .col_release)
 
 # Columns needed for matching (after stripping namespace prefixes)
 .col_match_cols <- c(

@@ -12,7 +12,9 @@ resolve_enrichment_names(
   use_lookup = TRUE,
   reverse_hop = TRUE,
   strict = FALSE,
-  reduce_fn = NULL
+  reduce_fn = NULL,
+  grain = c("species", "genus"),
+  kingdom = NULL
 )
 }
 \arguments{
@@ -38,6 +40,11 @@ one row per accepted name (plus \code{group_cols}). Defaults to keeping the
 trait-richest row (\code{\link[=.dedup_keep_richest]{.dedup_keep_richest()}}); an enrichment whose value is a
 reduction over records (e.g. an earliest first-record year) supplies its
 own so synonyms collapse by that rule, not by row richness.}
+
+\item{grain}{\code{"species"} (default) or \code{"genus"}; see \code{\link[=resolve_name_map]{resolve_name_map()}}.}
+
+\item{kingdom}{Character vector or \code{NULL}; the kingdoms the source covers.
+See \code{\link[=resolve_name_map]{resolve_name_map()}}.}
 }
 \value{
 The expanded data.frame, carrying a \code{resolved_backbones} attribute

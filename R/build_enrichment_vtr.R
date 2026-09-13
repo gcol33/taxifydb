@@ -3,6 +3,24 @@
 # Simpler than backbone build: no hierarchy walk, no precompute keys.
 # Just canonical_name sort, write .vtr, create indexes, write meta.json.
 
+#' Trait columns of an enrichment
+#'
+#' The columns taxify's runtime exposes from an enrichment `.vtr`: every column
+#' except the join keys (`canonical_name`, `accepted_name`, `genus`) and the
+#' group column, which is surfaced through `available_groups` and the door's
+#' group argument rather than as a trait. This is what a manifest entry's
+#' `trait_cols` records.
+#'
+#' @param columns Character vector of `.vtr` column names.
+#' @param group_col Character or `NULL`. The enrichment's group column.
+#' @return Character vector of trait column names, in `.vtr` order.
+#' @export
+enrichment_trait_cols <- function(columns, group_col = NULL) {
+  setdiff(as.character(columns),
+          c("canonical_name", "accepted_name", "genus", group_col))
+}
+
+
 #' Write an enrichment .vtr file
 #'
 #' Sorts by `canonical_name`, writes the .vtr, creates hash indexes on
@@ -80,12 +98,9 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     ))
   }
 
-  # trait_cols are every column the runtime exposes: all non-key columns. The
-  # group column is excluded -- it is surfaced through available_groups and the
-  # door's group argument, not as a trait. Recorded here so a new enrichment's
-  # runtime manifest entry is complete straight from the build, with no manual
-  # curation step.
-  trait_cols <- setdiff(names(df), c("canonical_name", group_col))
+  # Recorded here so a runtime manifest entry is complete straight from the
+  # build, with no manual curation step.
+  trait_cols <- enrichment_trait_cols(names(df), group_col)
 
   # Canonical T-SITA vocabulary for the trait columns and their values, so the
   # sidecar names each trait the way BETSI and the wider soil-fauna community do.

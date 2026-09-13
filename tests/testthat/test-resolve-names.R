@@ -67,3 +67,17 @@ test_that("rows with no kingdom information at all pass through untouched", {
   expect_equal(nrow(out), 2L)
   expect_false("kingdom" %in% names(out))
 })
+
+test_that("every genus-grain enrichment declares the kingdoms it covers", {
+  # Without a declared scope expansion falls back to the consensus vote, which
+  # cannot see the vascular-plant backbones' side of a genus homonym.
+  reg <- taxifydb:::.enrichment_build_registry
+  genus <- names(reg)[vapply(reg, function(e) identical(e$name_col, "genus"),
+                             logical(1L))]
+  expect_gt(length(genus), 0L)
+  for (n in genus) {
+    k <- reg[[n]]$kingdom
+    expect_gt(length(k), 0L, label = n)
+    expect_false(anyNA(taxify::normalize_kingdom_group(k)), label = n)
+  }
+})

@@ -1,3 +1,49 @@
+# taxifydb 0.1.23
+
+## Genus-grain enrichments are keyed on genus names inside their kingdom (#48)
+
+* Cross-backbone expansion of a genus-grain source now keeps only accepted
+  names that are themselves a genus name. A backbone that files a source genus
+  as a subgenus gave keys like `Camponotus (Forelophilus)`, and one that
+  resolved it onto a species gave `Achelia hispida`; no genus of a taxify
+  result can match either. None of them came from the sources: all 372 such
+  keys across `cefas_btrait`, `ramond`, `disperse`, `freshwater_insects_conus`
+  and `blanchard` were written by the expansion. A build now stops when a
+  genus-grain key is not a genus name.
+
+* A genus-grain registry entry declares the kingdoms its source covers
+  (`kingdom =`), and expansion drops a mapping that some backbone places and
+  none places inside that set (`resolve_name_map(kingdom =)`). The consensus
+  vote could not protect these sources: genus names are homonyms across the
+  zoological and botanical codes far more often than binomials, and the
+  vascular-plant backbones carry no kingdom column, so their side of a
+  collision was never counted. They now count as their fixed kingdom
+  (`taxify::backbone_fixed_kingdom()`). Measured against the genus register,
+  plant genera among the expansion keys of the benthic-invertebrate
+  `cefas_btrait` went from 275 to 2, and genera the register files in
+  Animalia and no plant backbone accepts, among `fungalroot`'s, from 1,363 to
+  114.
+
+* `fungalroot`, `fungal_traits` and `noddb` key their `genus` column on the
+  resolved name. Their parsers wrote the source genus there, so every expanded
+  name sat only in `canonical_name` and the runtime's genus join never reached
+  it: reachable keys go from 3,788 to 8,782, 10,592 to 12,071 and 790 to 1,144.
+
+* `parse_disperse()` keys a row naming two genera (`Dero / Aulophorus`,
+  `Pristina/Pristinella`) under each, and `parse_ramond()` drops `Last` values
+  that are clade labels or strain notes rather than a taxon name (`lineage`,
+  `T/Pf`).
+
+## Manifest trait_cols follow the build (taxify#76)
+
+* `update_enrichment_manifest(runtime = TRUE)` takes `trait_cols` from the
+  build every time. A stored list was kept while every column it named was
+  still built, so columns a rebuild added never reached it: 40 runtime entries
+  had fallen behind, most missing the `_min` / `_max` / `_n` spread columns.
+  New `enrichment_trait_cols()` is the one definition, excluding the join keys
+  (`canonical_name`, `accepted_name`, `genus`) and the group column, which is
+  what taxify's runtime exposes.
+
 # taxifydb 0.1.22
 
 ## Enrichment assets reach the accepted names only one backbone keeps (#44)

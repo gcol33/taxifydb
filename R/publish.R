@@ -479,14 +479,13 @@ update_manifest <- function(manifest_path, backend_name, version,
 #'   taxify door needs (`trait_cols`, `species_col`, `static`, `source_format`,
 #'   `citation`) from the meta sidecar, filling only fields the entry does not
 #'   already carry so hand-curated values are preserved. Two fields are
-#'   exceptions, both because the stored value describes the source rather than
-#'   merely accompanying it. `citation` is rewritten when the build has moved to
+#'   exceptions, both because the stored value describes the build or the
+#'   source rather than merely accompanying it. `citation` is rewritten when the build has moved to
 #'   a different `source_url` or `source_doi`, since the stored text names the
 #'   source it was written for; a stored citation that already names the entry's
 #'   `source_doi` is kept, as it names the same work the new URL serves.
-#'   `trait_cols` is rewritten when it names a column the build no longer
-#'   produces, since it then describes a file that does not exist; one naming
-#'   only columns still built is kept, curation and all. Used when
+#'   `trait_cols` is always taken from the build ([enrichment_trait_cols()]),
+#'   since the runtime exposes whatever the `.vtr` carries. Used when
 #'   writing
 #'   taxify's `inst/manifest.json`; left `FALSE` for this repo's lean build-side
 #'   manifest. A new enrichment's runtime entry is then complete from the build
@@ -596,26 +595,14 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # built .vtr columns, citation from the registry attribution, and static
   # defaults to a frozen snapshot.
   if (isTRUE(runtime)) {
-    # A stored trait_cols is a promise about which columns the .vtr carries.
-    # Curation may narrow or reorder that list, so it is kept whole while every
-    # column it names is still built; once the build stops producing one the
-    # list describes a file that no longer exists and is taken from the build
-    # instead. Whether the group column belongs in the list is a per-entry
-    # choice (some carry it, some do not) and is preserved across the rewrite.
-    # Without this a source that renames its columns leaves the runtime
-    # advertising the old ones: v4.0 of the first-record database restructured
-    # every field, and the entry went on naming thirteen columns the built
-    # .vtr no longer had while hiding the nine it did.
+    # trait_cols describe the columns the runtime exposes, which it reads from
+    # the .vtr schema, so the list is taken from the build every time. A list
+    # carried forward drifts both ways: v4.0 of the first-record database
+    # renamed every field and the entry went on naming thirteen columns the
+    # .vtr no longer had, and FishBase gained seven length-weight columns the
+    # entry never listed.
     if (!is.null(meta$trait_cols)) {
-      built  <- as.character(unlist(meta$trait_cols))
-      stored <- as.character(unlist(entry$trait_cols))
-      valid  <- c(built, as.character(meta$group_col))
-      if (is.null(entry$trait_cols) || !all(stored %in% valid)) {
-        keep_group <- length(stored) > 0L && !is.null(meta$group_col) &&
-          as.character(meta$group_col) %in% stored
-        entry$trait_cols <- as.list(
-          c(if (keep_group) as.character(meta$group_col), built))
-      }
+      entry$trait_cols <- as.list(as.character(unlist(meta$trait_cols)))
     }
     if (is.null(entry$species_col) && !is.null(meta$species_col) &&
         !is.na(meta$species_col)) {

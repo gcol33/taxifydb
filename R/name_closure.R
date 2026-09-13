@@ -137,11 +137,13 @@
 #' @param reverse_hop Logical. Add the reverse hop. `FALSE` is the forward
 #'   image alone.
 #' @param verbose Logical.
+#' @param kingdom Character vector or `NULL`. The source's declared kingdoms;
+#'   when given, `.drop_out_of_scope_names()` replaces the consensus vote.
 #' @return data.frame with `input_name`, `accepted_name`, or `NULL` when
 #'   nothing resolved.
 #' @noRd
 .name_closure_map <- function(unique_names, lookup_paths, reverse_hop = TRUE,
-                              verbose = TRUE) {
+                              verbose = TRUE, kingdom = NULL) {
   query_keys <- .to_key_ci(unique_names)
   fwd <- .closure_pass(lookup_paths, "key_ci", unique(query_keys), verbose,
                        "[forward]")
@@ -158,11 +160,16 @@
     }
   }
 
-  # One kingdom vote over all the evidence, on deduplicated triples so a pair
-  # seen in two passes does not count its backbone twice.
-  all_edges <- unique(rbind(fwd, rev, f2)[, c("key_ci", "accepted_name",
-                                              "kingdom"), drop = FALSE])
-  survived <- .pair_key(.drop_cross_kingdom_names(all_edges, verbose))
+  # One kingdom gate over all the evidence. Without a declared scope it is a
+  # vote, on deduplicated triples so a pair seen in two passes does not count
+  # its backbone twice; with one, each pair is checked against the scope.
+  survived <- if (is.null(kingdom)) {
+    all_edges <- unique(rbind(fwd, rev, f2)[, c("key_ci", "accepted_name",
+                                                "kingdom"), drop = FALSE])
+    .pair_key(.drop_cross_kingdom_names(all_edges, verbose))
+  } else {
+    .pair_key(.drop_out_of_scope_names(rbind(fwd, rev, f2), kingdom, verbose))
+  }
   keep <- function(d, cols = c("key_ci", "accepted_name")) {
     unique(d[.pair_key(d) %in% survived, cols, drop = FALSE])
   }

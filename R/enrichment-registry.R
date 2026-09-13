@@ -502,6 +502,7 @@
     parse_fn    = function(path) parse_fungal_traits(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = c("fungi", "chromista", "protozoa"),
     requires    = "openxlsx2"
   ),
 
@@ -524,6 +525,7 @@
     parse_fn    = function(path) parse_fungalroot(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = "plantae",
     requires    = character(0)
   ),
 
@@ -1860,6 +1862,7 @@
     parse_fn    = function(path) parse_disperse(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = "animalia",
     requires    = "openxlsx2"
   ),
 
@@ -1994,6 +1997,7 @@
     parse_fn    = function(path) parse_blanchard(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = "animalia",
     requires    = "openxlsx2"
   ),
 
@@ -2198,6 +2202,7 @@
     parse_fn    = function(path) parse_ramond(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = c("chromista", "protozoa", "plantae", "fungi"),
     requires    = character(0)
   ),
 
@@ -2220,6 +2225,7 @@
     parse_fn    = function(path) parse_fw_insects_conus(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = "animalia",
     requires    = character(0)
   ),
 
@@ -2320,6 +2326,7 @@
     parse_fn    = function(path) parse_cefas_btrait(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = "animalia",
     requires    = character(0)
   ),
 
@@ -2719,6 +2726,7 @@
     parse_fn    = function(path) parse_noddb(path),
     group_col   = NULL,
     name_col    = "genus",
+    kingdom     = "plantae",
     requires    = "openxlsx2"
   ),
 

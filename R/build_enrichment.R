@@ -97,6 +97,7 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
   # resolves to the accepted-name grain (e.g. host-breadth rollups), so the
   # pipeline must not resolve a second time.
   resolved_backbones <- NULL
+  genus_grain <- identical(reg$name_col, "genus")
   reg_resolves <- if (is.null(reg$resolve_names)) TRUE else isTRUE(reg$resolve_names)
   if (isTRUE(resolve_names) && reg_resolves && "canonical_name" %in% names(df)) {
     if (verbose) message("  Resolving names against backbones...")
@@ -108,17 +109,16 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     df <- resolve_enrichment_names(df, group_cols = group_cols,
                                    verbose = verbose, use_lookup = use_lookup,
                                    strict = strict_names,
-                                   reduce_fn = reg$reduce_fn)
+                                   reduce_fn = reg$reduce_fn,
+                                   grain = if (genus_grain) "genus" else "species",
+                                   kingdom = reg$kingdom)
     resolved_backbones <- attr(df, "resolved_backbones", exact = TRUE)
   }
 
   # A genus-grain source carries genus names in `canonical_name`, but the
   # runtime joins such an enrichment on the `genus` column of a taxify result.
-  # Materialize that key from the resolved name so the asset is joinable at the
-  # grain the registry declares.
-  if (identical(reg$name_col, "genus") && !"genus" %in% names(df) &&
-      "canonical_name" %in% names(df)) {
-    df$genus <- df$canonical_name
+  if (genus_grain && "canonical_name" %in% names(df)) {
+    df <- .genus_grain_key(df, name)
   }
 
   if (is.null(output_dir)) {
@@ -207,6 +207,9 @@ enrichment_emergency_fallback <- function(name, verbose = TRUE) {
 
   if (verbose) message("Parsing...")
   df <- reg$parse_fn(source_path)
+  if (identical(reg$name_col, "genus") && "canonical_name" %in% names(df)) {
+    df <- .genus_grain_key(df, name)
+  }
 
   if (verbose) {
     message(sprintf(

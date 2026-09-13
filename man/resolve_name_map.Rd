@@ -10,7 +10,9 @@ resolve_name_map(
   verbose = TRUE,
   use_lookup = TRUE,
   reverse_hop = TRUE,
-  strict = FALSE
+  strict = FALSE,
+  grain = c("species", "genus"),
+  kingdom = NULL
 )
 }
 \arguments{
@@ -29,6 +31,24 @@ behaviour before this was fixed.}
 
 \item{strict}{Logical. Error, rather than warn, when a requested backbone
 has no \code{name_lookup.vtr}. Set for production asset builds.}
+
+\item{grain}{\code{"species"} (default) or \code{"genus"}. A genus-grain source is
+joined on the genus of a taxify result, so only accepted names that are
+themselves a genus name are kept: a backbone that files a source genus as
+a subgenus (\code{Camponotus (Forelophilus)}) or resolves it onto a species
+gives a key no genus can match, and one that would carry genus-level
+traits onto a single species. A source name left with no genus-shaped
+accepted name maps to itself, as an unresolved name does.}
+
+\item{kingdom}{Character vector or \code{NULL}. The kingdoms the source covers
+(any spelling \code{\link[taxify:normalize_kingdom_group]{taxify::normalize_kingdom_group()}} folds). When given, a
+mapping is kept only if some backbone that supplies it places the
+accepted name inside that set or records no kingdom for it; the
+single-kingdom backbones that carry no \code{kingdom} column count as their
+fixed kingdom (\code{\link[taxify:backbone_fixed_kingdom]{taxify::backbone_fixed_kingdom()}}). This replaces the
+consensus vote, which cannot protect a genus-grain source: genus names
+are homonyms across the zoological and botanical codes far more often
+than binomials are. Applies to the lookup fast path only.}
 }
 \value{
 data.frame with columns \code{input_name}, \code{accepted_name}.

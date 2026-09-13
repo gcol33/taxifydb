@@ -68,3 +68,23 @@ test_that(".disperse_bin_mid is monotonic across a full binned column", {
   expect_false(is.unsorted(mids))
   expect_length(unique(mids), length(body))
 })
+
+test_that("parse_disperse keys a lumped two-genus row under each genus", {
+  skip_if_not_installed("openxlsx2")
+  raw <- data.frame(
+    a = c("title", "Genus", "Genus", "Dero / Aulophorus", "Nais", "Aulophorus"),
+    b = c("", "<= .25", "s1", "3", "0", "1"),
+    c = c("", "> .25-.5", "s2", "0", "2", "0"),
+    stringsAsFactors = FALSE)
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  wb <- openxlsx2::wb_workbook()
+  wb <- openxlsx2::wb_add_worksheet(wb, "Data")
+  wb <- openxlsx2::wb_add_data(wb, "Data", raw, col_names = FALSE)
+  openxlsx2::wb_save(wb, f)
+
+  out <- parse_disperse(f)
+  expect_setequal(out$canonical_name, c("Dero", "Nais", "Aulophorus"))
+  # Aulophorus has its own row, which the lumped one does not overwrite.
+  expect_equal(nrow(out), 3L)
+  expect_equal(out$disperse_body_size_cm[out$canonical_name == "Dero"], "<= .25")
+})

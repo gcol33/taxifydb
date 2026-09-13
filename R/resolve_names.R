@@ -31,6 +31,9 @@
 #'   trait-richest row ([.dedup_keep_richest()]); an enrichment whose value is a
 #'   reduction over records (e.g. an earliest first-record year) supplies its
 #'   own so synonyms collapse by that rule, not by row richness.
+#' @param grain `"species"` (default) or `"genus"`; see [resolve_name_map()].
+#' @param kingdom Character vector or `NULL`; the kingdoms the source covers.
+#'   See [resolve_name_map()].
 #' @return The expanded data.frame, carrying a `resolved_backbones` attribute
 #'   naming the backbones the expansion actually reached.
 #' @export
@@ -41,7 +44,10 @@ resolve_enrichment_names <- function(df,
                                      use_lookup = TRUE,
                                      reverse_hop = TRUE,
                                      strict = FALSE,
-                                     reduce_fn = NULL) {
+                                     reduce_fn = NULL,
+                                     grain = c("species", "genus"),
+                                     kingdom = NULL) {
+  grain <- match.arg(grain)
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
@@ -59,7 +65,8 @@ resolve_enrichment_names <- function(df,
   resolved <- if (nrow(rest) > 0L) {
     .resolve_species_names(rest, group_cols, backends, verbose, use_lookup,
                            reverse_hop = reverse_hop, strict = strict,
-                           reduce_fn = reducer)
+                           reduce_fn = reducer, grain = grain,
+                           kingdom = kingdom)
   } else {
     rest
   }
@@ -93,14 +100,17 @@ resolve_enrichment_names <- function(df,
                                    use_lookup = TRUE,
                                    reverse_hop = TRUE,
                                    strict = FALSE,
-                                   reduce_fn = .dedup_keep_richest) {
+                                   reduce_fn = .dedup_keep_richest,
+                                   grain = "species",
+                                   kingdom = NULL) {
   if (!"canonical_name" %in% names(df)) {
     stop("df must have a 'canonical_name' column")
   }
 
   map <- resolve_name_map(df$canonical_name, backends = backends,
                           verbose = verbose, use_lookup = use_lookup,
-                          reverse_hop = reverse_hop, strict = strict)
+                          reverse_hop = reverse_hop, strict = strict,
+                          grain = grain, kingdom = kingdom)
   reached <- attr(map, "resolved_backbones", exact = TRUE)
   if (nrow(map) == 0L) {
     warning("No names resolved against any backend. Returning original df.")
@@ -151,13 +161,32 @@ resolve_enrichment_names <- function(df,
 #'   behaviour before this was fixed.
 #' @param strict Logical. Error, rather than warn, when a requested backbone
 #'   has no `name_lookup.vtr`. Set for production asset builds.
+#' @param grain `"species"` (default) or `"genus"`. A genus-grain source is
+#'   joined on the genus of a taxify result, so only accepted names that are
+#'   themselves a genus name are kept: a backbone that files a source genus as
+#'   a subgenus (`Camponotus (Forelophilus)`) or resolves it onto a species
+#'   gives a key no genus can match, and one that would carry genus-level
+#'   traits onto a single species. A source name left with no genus-shaped
+#'   accepted name maps to itself, as an unresolved name does.
+#' @param kingdom Character vector or `NULL`. The kingdoms the source covers
+#'   (any spelling [taxify::normalize_kingdom_group()] folds). When given, a
+#'   mapping is kept only if some backbone that supplies it places the
+#'   accepted name inside that set or records no kingdom for it; the
+#'   single-kingdom backbones that carry no `kingdom` column count as their
+#'   fixed kingdom ([taxify::backbone_fixed_kingdom()]). This replaces the
+#'   consensus vote, which cannot protect a genus-grain source: genus names
+#'   are homonyms across the zoological and botanical codes far more often
+#'   than binomials are. Applies to the lookup fast path only.
 #' @return data.frame with columns `input_name`, `accepted_name`.
 #' @export
 resolve_name_map <- function(names,
                              backends = list_backends(),
                              verbose = TRUE, use_lookup = TRUE,
                              reverse_hop = TRUE,
-                             strict = FALSE) {
+                             strict = FALSE,
+                             grain = c("species", "genus"),
+                             kingdom = NULL) {
+  grain <- match.arg(grain)
   unique_names <- unique(names[!is.na(names) & nzchar(names)])
   empty <- data.frame(input_name = character(), accepted_name = character(),
                       stringsAsFactors = FALSE)
@@ -187,7 +216,7 @@ resolve_name_map <- function(names,
     if (length(lookup_paths) > 0L) {
       reached <- names(lookup_paths)
       map <- .name_map_via_lookup(unique_names, lookup_paths, verbose,
-                                  reverse_hop = reverse_hop)
+                                  reverse_hop = reverse_hop, kingdom = kingdom)
     } else if (verbose) {
       message("  No name_lookup.vtr files found; falling back to ",
               "per-backend taxify(). Run build_all_name_lookups() to enable ",
@@ -197,6 +226,9 @@ resolve_name_map <- function(names,
   if (is.null(map)) {
     reached <- backends
     map <- .name_map_via_taxify(unique_names, backends, verbose)
+  }
+  if (!is.null(map) && identical(grain, "genus")) {
+    map <- map[.is_genus_name(map$accepted_name), , drop = FALSE]
   }
   if (is.null(map)) {
     attr(empty, "resolved_backbones") <- reached
@@ -267,6 +299,55 @@ resolve_name_map <- function(names,
       format(sum(drop), big.mark = ",")))
   }
   raw[!drop, setdiff(names(raw), "kingdom"), drop = FALSE]
+}
+
+
+#' Drop mappings no backbone places inside the source's declared kingdoms
+#'
+#' A genus name is a homonym across the zoological and botanical codes far more
+#' often than a binomial is, and the vascular-plant backbones carry no kingdom
+#' column, so the consensus vote in `.drop_cross_kingdom_names()` never sees
+#' their side of the collision: a benthic-invertebrate genus picked up plant
+#' synonyms that way, and a protist genus flowering-plant ones. A source that
+#' declares its kingdoms is checked against them instead.
+#'
+#' Each edge's kingdom is the lookup's own, else the backbone's fixed kingdom.
+#' A pair survives when at least one edge supplying it places it in scope, or
+#' when no edge places it anywhere. The same spelling can reach one backbone as
+#' the source's organism and another as its homonym, and the in-scope edge is
+#' the evidence that counts. An edge with no kingdom is no evidence either way,
+#' so it cannot rescue a pair the others place outside the scope: the reverse
+#' hop reaches the fish genus *Ammodytes* from a plant source through WFO's
+#' synonym of *Astragalus*, and four backbones file it in Animalia while NCBI
+#' and OTT record no kingdom for it.
+#'
+#' @param edges Edge frame with `key_ci`, `accepted_name`, `kingdom`,
+#'   `backbone`.
+#' @param kingdom Character vector of declared kingdoms.
+#' @param verbose Logical.
+#' @return The surviving `key_ci`, `accepted_name` pairs.
+#' @noRd
+.drop_out_of_scope_names <- function(edges, kingdom, verbose = TRUE) {
+  cols <- c("key_ci", "accepted_name")
+  if (!nrow(edges)) return(edges[, cols, drop = FALSE])
+  scope <- unique(taxify::normalize_kingdom_group(kingdom))
+  scope <- scope[!is.na(scope)]
+  if (!length(scope)) {
+    stop(sprintf("kingdom: none of %s is a recognised kingdom.",
+                 paste(kingdom, collapse = ", ")), call. = FALSE)
+  }
+  k <- taxify::normalize_kingdom_group(edges$kingdom)
+  unknown <- is.na(k)
+  k[unknown] <- taxify::backbone_fixed_kingdom(edges$backbone[unknown])
+  pk <- .pair_key(edges)
+  keep <- pk %in% pk[!is.na(k) & k %in% scope] | !pk %in% pk[!is.na(k)]
+  if (any(!keep) && isTRUE(verbose)) {
+    message(sprintf(
+      "    [kingdom scope] dropped %s mapping(s) outside %s",
+      format(length(unique(pk[!keep])), big.mark = ","),
+      paste(scope, collapse = "/")))
+  }
+  unique(edges[keep, cols, drop = FALSE])
 }
 
 
@@ -379,7 +460,7 @@ resolve_name_map <- function(names,
 #' synonymise them onto that image.
 #' @noRd
 .name_map_via_lookup <- function(unique_names, lookup_paths, verbose,
-                                 reverse_hop = TRUE) {
+                                 reverse_hop = TRUE, kingdom = NULL) {
   if (verbose) {
     message(sprintf(
       "  [fast-path] resolving %s names against %d lookup tables%s",
@@ -388,7 +469,50 @@ resolve_name_map <- function(names,
     ))
   }
   map <- .name_closure_map(unique_names, lookup_paths,
-                           reverse_hop = reverse_hop, verbose = verbose)
+                           reverse_hop = reverse_hop, verbose = verbose,
+                           kingdom = kingdom)
   if (is.null(map) || nrow(map) == 0L) return(NULL)
   map
+}
+
+
+#' Is a name a genus name?
+#'
+#' One capitalised token, optionally carrying the nothogenus sign. A subgenus
+#' rendering (`Aedes (Ochlerotatus)`), a binomial, a lumped `Dero / Aulophorus`
+#' or a quoted informal name is not, so none of them can match the genus of a
+#' taxify result.
+#'
+#' @param x Character vector.
+#' @return Logical vector, `FALSE` for `NA`.
+#' @noRd
+.is_genus_name <- function(x) {
+  x <- as.character(x)
+  !is.na(x) & grepl("^(\u00d7 ?)?[A-Z][^[:space:]()/,'\"]*$", x)
+}
+
+
+#' Key a genus-grain enrichment on its resolved genus names
+#'
+#' The runtime joins a genus-grain asset on its `genus` column, so that column
+#' has to carry the names the cross-backbone expansion produced. A parser's own
+#' `genus` column holds the source spelling and would leave every expansion
+#' unreachable, so it is replaced rather than kept. Stops when a key is not a
+#' genus name, since such a row can never be joined.
+#'
+#' @param df Resolved enrichment data.frame with `canonical_name`.
+#' @param name Enrichment identifier, for the error message.
+#' @return `df` with `genus` set from `canonical_name`.
+#' @noRd
+.genus_grain_key <- function(df, name) {
+  bad <- unique(df$canonical_name[!.is_genus_name(df$canonical_name)])
+  if (length(bad)) {
+    stop(sprintf(paste0(
+      "Enrichment '%s' is genus-grain, but %d key(s) are not a genus name and ",
+      "could never be joined: %s"),
+      name, length(bad), paste(utils::head(bad, 10L), collapse = ", ")),
+      call. = FALSE)
+  }
+  df$genus <- df$canonical_name
+  df
 }

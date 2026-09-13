@@ -140,3 +140,111 @@ test_that("a re-routing only one backbone makes is not", {
                                     verbose = FALSE)
   expect_false("Cus dus" %in% m$accepted_name)
 })
+
+test_that("a declared kingdom drops a synonym only a plant backbone supplies", {
+  # wfo carries no kingdom column, so the consensus vote never sees its side
+  # of a genus homonym. Its fixed kingdom does: an animal source's genus must
+  # not pick up the plant genus wfo synonymises the same spelling onto.
+  paths <- fake_lookups(list(
+    col  = lk("elodes", "Elodes", "Animalia"),
+    gbif = lk("elodes", "Elodes", "Animalia"),
+    wfo  = lk("elodes", "Hypericum")
+  ))
+  voted <- taxifydb:::.name_closure_map("Elodes", paths, reverse_hop = FALSE,
+                                        verbose = FALSE)
+  expect_true("Hypericum" %in% voted$accepted_name)
+
+  scoped <- taxifydb:::.name_closure_map("Elodes", paths, reverse_hop = FALSE,
+                                         verbose = FALSE, kingdom = "animalia")
+  expect_equal(unique(scoped$accepted_name), "Elodes")
+})
+
+test_that("a pair one in-scope backbone supplies survives an out-of-scope one", {
+  # The same spelling reaches gbif as a moth genus and fungorum as a fungus.
+  # For a fungal source the fungorum edge is the evidence that counts.
+  paths <- fake_lookups(list(
+    gbif     = lk("calyptra", "Calyptra", "Animalia"),
+    col      = lk("calyptra", "Calyptra", "Animalia"),
+    fungorum = lk("calyptra", "Calyptra")
+  ))
+  m <- taxifydb:::.name_closure_map("Calyptra", paths, reverse_hop = FALSE,
+                                    verbose = FALSE, kingdom = "fungi")
+  expect_equal(unique(m$accepted_name), "Calyptra")
+})
+
+test_that("a declared kingdom keeps a mapping no backbone places anywhere", {
+  paths <- fake_lookups(list(
+    ott = lk("aus", "Bus"),
+    col = lk("aus", "Aus", "Plantae")
+  ))
+  m <- taxifydb:::.name_closure_map("Aus", paths, reverse_hop = FALSE,
+                                    verbose = FALSE, kingdom = "animalia")
+  expect_equal(unique(m$accepted_name), "Bus")
+})
+
+test_that("an unrecognised declared kingdom is an error, not an empty scope", {
+  paths <- fake_lookups(list(col = lk("aus", "Aus", "Animalia")))
+  expect_error(
+    taxifydb:::.name_closure_map("Aus", paths, reverse_hop = FALSE,
+                                 verbose = FALSE, kingdom = "Animalz"),
+    "recognised kingdom")
+})
+
+test_that("genus grain keeps only genus-shaped accepted names", {
+  # A backbone that files the source genus as a subgenus, or resolves it onto
+  # a species, gives a key no taxify genus can match.
+  paths <- fake_lookups(list(
+    col  = lk("forelophilus", "Camponotus (Forelophilus)", "Animalia"),
+    gbif = lk("forelophilus", "Forelophilus", "Animalia"),
+    ott  = lk("achelia", "Achelia hispida", "Animalia")
+  ))
+  local_mocked_bindings(.find_lookup_paths = function(backends) paths)
+  m <- resolve_name_map(c("Forelophilus", "Achelia"),
+                        backends = names(paths), verbose = FALSE,
+                        reverse_hop = FALSE, grain = "genus")
+  expect_equal(m$accepted_name[m$input_name == "Forelophilus"], "Forelophilus")
+  # Achelia's only mapping was a species, so it keeps its own name.
+  expect_equal(m$accepted_name[m$input_name == "Achelia"], "Achelia")
+
+  sp <- resolve_name_map(c("Forelophilus", "Achelia"),
+                         backends = names(paths), verbose = FALSE,
+                         reverse_hop = FALSE)
+  expect_true("Camponotus (Forelophilus)" %in% sp$accepted_name)
+})
+
+test_that(".is_genus_name accepts one capitalised token only", {
+  expect_equal(
+    taxifydb:::.is_genus_name(c("Berosus", "× Cosmopsis", "Berosus (Berosus)",
+                                "Achelia hispida", "Dero / Aulophorus",
+                                "'Lithophila'", "berosus", NA)),
+    c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE))
+})
+
+test_that("a genus-grain key is taken from the resolved name", {
+  df <- data.frame(canonical_name = c("Abies", "Pinus"),
+                   genus = c("Abies", "Pinaster"), trait = 1:2,
+                   stringsAsFactors = FALSE)
+  out <- taxifydb:::.genus_grain_key(df, "fake")
+  expect_equal(out$genus, c("Abies", "Pinus"))
+
+  df$canonical_name[2] <- "Aedes (Ochlerotatus)"
+  expect_error(taxifydb:::.genus_grain_key(df, "fake"),
+               "Aedes (Ochlerotatus)", fixed = TRUE)
+})
+
+test_that("a backbone with no kingdom cannot rescue a pair others place outside", {
+  # The reverse hop from a plant genus reaches the fish genus Ammodytes: wfo
+  # files `ammodytes` as a synonym of Astragalus, and the re-forward pass sends
+  # it to Ammodytes, which col places in Animalia and ncbi places nowhere.
+  paths <- fake_lookups(list(
+    wfo  = lk(c("astragalus", "ammodytes"), c("Astragalus", "Astragalus")),
+    col  = lk(c("astragalus", "ammodytes"), c("Astragalus", "Ammodytes"),
+              c("Plantae", "Animalia")),
+    ncbi = lk("ammodytes", "Ammodytes"),
+    gbif = lk("ammodytes", "Ammodytes", "Animalia")
+  ))
+  m <- taxifydb:::.name_closure_map("Astragalus", paths, reverse_hop = TRUE,
+                                    verbose = FALSE, kingdom = "plantae")
+  expect_false("Ammodytes" %in% m$accepted_name)
+  expect_true("Astragalus" %in% m$accepted_name)
+})

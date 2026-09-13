@@ -156,11 +156,12 @@ enrichment_meta_cols <- function(dir, trait_cols, group_col = NULL) {
     file.path(dir, "meta.json"), auto_unbox = TRUE)
 }
 
-test_that("a trait_cols naming only columns still built is kept, curation and all", {
+test_that("trait_cols gains a column the build added", {
+  # The drift that went unnoticed: FishBase grew seven length-weight columns
+  # and the entry, naming only columns still built, was never rewritten.
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "glonaf")
   enrichment_meta_cols(dir, c("alpha", "beta", "gamma"))
-  # A curated subset, deliberately narrower and in its own order.
   mf <- write_enrichment_manifest(
     file.path(dir, "manifest.json"),
     list(latest = "2026.07", trait_cols = list("gamma", "alpha")))
@@ -169,10 +170,10 @@ test_that("a trait_cols naming only columns still built is kept, curation and al
                              runtime = TRUE)
   got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
 
-  expect_equal(unlist(got$trait_cols), c("gamma", "alpha"))
+  expect_equal(unlist(got$trait_cols), c("alpha", "beta", "gamma"))
 })
 
-test_that("a trait_cols naming a column no longer built is rewritten", {
+test_that("trait_cols loses a column the build no longer produces", {
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "glonaf")
   enrichment_meta_cols(dir, c("alpha", "beta"))
@@ -187,40 +188,7 @@ test_that("a trait_cols naming a column no longer built is rewritten", {
   expect_equal(unlist(got$trait_cols), c("alpha", "beta"))
 })
 
-test_that("the group column keeps its place in a rewritten trait_cols", {
-  dir <- withr::local_tempdir()
-  vtr <- fake_vtr(dir, "glonaf")
-  enrichment_meta_cols(dir, c("alpha", "beta"), group_col = "region_id")
-  mf <- write_enrichment_manifest(
-    file.path(dir, "manifest.json"),
-    list(latest = "2026.07",
-         trait_cols = list("region_id", "removed_by_upstream")))
-
-  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
-                             runtime = TRUE)
-  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
-
-  expect_equal(unlist(got$trait_cols), c("region_id", "alpha", "beta"))
-})
-
-test_that("an entry that never carried the group column does not gain one", {
-  dir <- withr::local_tempdir()
-  vtr <- fake_vtr(dir, "glonaf")
-  enrichment_meta_cols(dir, c("alpha", "beta"), group_col = "region_id")
-  mf <- write_enrichment_manifest(
-    file.path(dir, "manifest.json"),
-    list(latest = "2026.07", trait_cols = list("removed_by_upstream")))
-
-  update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
-                             runtime = TRUE)
-  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
-
-  expect_equal(unlist(got$trait_cols), c("alpha", "beta"))
-})
-
-test_that("the group column alone does not count as a stale trait_cols", {
-  # region_id is a real column of the built file, just not one meta lists as a
-  # trait, so an entry naming it plus current traits must survive untouched.
+test_that("the group column is not listed as a trait", {
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "glonaf")
   enrichment_meta_cols(dir, c("alpha", "beta"), group_col = "region_id")
@@ -232,7 +200,16 @@ test_that("the group column alone does not count as a stale trait_cols", {
                              runtime = TRUE)
   got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
 
-  expect_equal(unlist(got$trait_cols), c("region_id", "beta"))
+  expect_equal(unlist(got$trait_cols), c("alpha", "beta"))
+})
+
+test_that("enrichment_trait_cols drops the join keys and the group column", {
+  expect_equal(
+    enrichment_trait_cols(c("canonical_name", "genus", "accepted_name",
+                            "region_id", "alpha", "beta"),
+                          group_col = "region_id"),
+    c("alpha", "beta"))
+  expect_equal(enrichment_trait_cols(c("canonical_name", "alpha")), "alpha")
 })
 
 test_that("a content-addressed url is recorded from the build's content_id", {

@@ -791,6 +791,19 @@ parse_disperse <- function(path) {
     }, character(1L))
   }
   out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name), , drop = FALSE]
+  # A row naming two genera ("Dero / Aulophorus") scores both, so it is keyed
+  # under each genus the data does not already give a row of its own.
+  lumped <- grepl("/", out$canonical_name, fixed = TRUE)
+  if (any(lumped)) {
+    parts <- strsplit(out$canonical_name[lumped], "\\s*/\\s*")
+    split <- out[rep(which(lumped), lengths(parts)), , drop = FALSE]
+    split$canonical_name <- trimws(unlist(parts))
+    split <- split[nzchar(split$canonical_name) &
+                     !split$canonical_name %in% out$canonical_name[!lumped], ,
+                   drop = FALSE]
+    out <- rbind(out[!lumped, , drop = FALSE], split)
+    rownames(out) <- NULL
+  }
   label_cols <- setdiff(names(out), "canonical_name")
   for (cc in label_cols) out[[cc]] <- .ascii_bin_label(out[[cc]])
   for (cc in c("disperse_body_size_cm", "disperse_female_wing_mm",

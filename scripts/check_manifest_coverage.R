@@ -29,6 +29,13 @@
 # enrichment publish path skipped the taxifydb copy) surfaces here rather than
 # lying dormant as a stale second source of truth.
 #
+# Content URLs: every backbone and enrichment entry records `content_url`, the
+# immutable `<name>-<content_id>.vtr` copy a lock resolves its recorded
+# content_id through once the rolling asset has been re-cut. A release uploaded
+# without that copy leaves every tag, size and digest above correct while the
+# URL 404s, so each distinct content_url either manifest records is requested
+# with HEAD.
+#
 # Uses only base R + jsonlite + curl.
 #
 #   Rscript scripts/check_manifest_coverage.R
@@ -289,9 +296,13 @@ res_reg <- do.call(rbind, lapply(c("genus_register", "backend_coverage"),
 # difference in latest or content_id means one manifest was published without the
 # other. The comparison is symmetric -- it fires whichever side was skipped.
 DB_MANIFEST <- Sys.getenv("TAXIFYDB_MANIFEST", "manifest/manifest.json")
+db <- if (file.exists(DB_MANIFEST)) {
+  jsonlite::read_json(DB_MANIFEST, simplifyVector = FALSE)
+} else {
+  NULL
+}
 res_enr <- NULL
-if (file.exists(DB_MANIFEST)) {
-  db <- jsonlite::read_json(DB_MANIFEST, simplifyVector = FALSE)
+if (!is.null(db)) {
   db_enr <- db$enrichments %||% list()
   tm_enr <- man$enrichments
   enr_names <- sort(union(names(db_enr), names(tm_enr)))
@@ -314,11 +325,56 @@ if (file.exists(DB_MANIFEST)) {
                   DB_MANIFEST))
 }
 
-res <- rbind(res_be, res_extras, res_reg, res_enr)
+# content_url of every backbone and enrichment entry, from one manifest.
+content_urls <- function(m, source) {
+  rows <- list()
+  for (block in c("backends", "enrichments")) {
+    entries <- m[[block]]
+    for (nm in names(entries)) {
+      u <- entries[[nm]]$content_url
+      if (is.character(u) && length(u) == 1L && nzchar(u)) {
+        rows[[length(rows) + 1L]] <- data.frame(
+          name = nm, url = u, source = source, stringsAsFactors = FALSE)
+      }
+    }
+  }
+  do.call(rbind, rows)
+}
+
+# HTTP status of a HEAD request, following the redirect GitHub answers a release
+# download with, or the transport error when there is no response at all. No
+# body is transferred.
+head_status <- function(url) {
+  h <- gh_handle(auth = FALSE)
+  curl::handle_setopt(h, nobody = TRUE, followlocation = TRUE)
+  tryCatch(as.character(curl::curl_fetch_memory(url, handle = h)$status_code),
+           error = function(e) conditionMessage(e))
+}
+
+# Both manifests record the same URL for an entry they agree on, so each
+# distinct URL is requested once and reported with every manifest naming it.
+cu <- rbind(content_urls(man, "taxify"),
+            if (!is.null(db)) content_urls(db, "taxifydb"))
+res_content <- if (!is.null(cu) && nrow(cu)) {
+  do.call(rbind, lapply(split(cu, cu$url), function(g) {
+    url  <- g$url[1L]
+    code <- head_status(url)
+    ok   <- identical(code, "200")
+    data.frame(kind = "content_url",
+               name = paste(unique(g$name), collapse = ", "),
+               release = sub("/.*$", "", asset_key(url)),
+               manifest = paste(sort(unique(g$source)), collapse = ", "),
+               status = if (ok) "ok" else "content_missing",
+               detail = if (ok) "" else sprintf("HTTP %s: %s", code, url),
+               stringsAsFactors = FALSE)
+  }))
+}
+
+res <- rbind(res_be, res_extras, res_reg, res_enr, res_content)
 
 drift_states <- c("missing_in_manifest", "missing_in_taxifydb", "stale_in_manifest",
                   "asset_drift", "asset_missing", "register_incomplete",
-                  "register_unreadable")
+                  "register_unreadable", "content_missing")
 drift <- res[res$status %in% drift_states, ]
 jsonlite::write_json(res, "coverage_results.json", pretty = TRUE,
                      auto_unbox = TRUE)

@@ -49,7 +49,8 @@ jobs:
                                          "asset_drift",
                                          "asset_missing",
                                          "register_incomplete",
-                                         "register_unreadable"), ]
+                                         "register_unreadable",
+                                         "content_missing"), ]
           lines <- c(
             "## taxify manifest is out of sync with taxifydb releases",
             "",
@@ -87,6 +88,10 @@ jobs:
             "which refreshes `full_size`, `full_sha256` and `content_id` together.",
             "`asset_missing`: the manifest points at an asset the release does not",
             "carry, so the download URL 404s for every user.",
+            "`content_missing`: the entry's `content_url` does not resolve, so a",
+            "lock that recorded its `content_id` cannot fetch those bytes. Upload",
+            "the build's `.vtr` under `<name>-<content_id>.vtr` to the release it",
+            "names; only the original bytes carry that name.",
             "",
             sprintf("*Last checked: %s UTC*", format(Sys.time(), "%Y-%m-%d %H:%M")))
           writeLines(paste(lines, collapse = "\n"), "issue_body.md")

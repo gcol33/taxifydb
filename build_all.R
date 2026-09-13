@@ -33,24 +33,19 @@ if (action == "all") {
 } else if (action == "publish") {
   be_name <- args[2L]
   version <- args[3L]
-  be_out <- file.path("output", be_name)
-  vtr_path <- file.path(be_out, paste0(be_name, ".vtr"))
-  delta_path <- file.path(be_out, paste0(be_name, ".xdelta"))
-  meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
-
-  if (!file.exists(vtr_path)) {
-    stop(sprintf("No .vtr found at %s. Build first.", vtr_path))
-  }
+  a <- taxifydb:::.backbone_artifacts(file.path("output", be_name), be_name)
 
   taxifydb::publish_release(
-    be_name, version, vtr_path,
-    delta_path = if (file.exists(delta_path)) delta_path else NULL,
-    meta_path = if (file.exists(meta_path)) meta_path else NULL
+    be_name, version, a$vtr,
+    delta_path = a$delta,
+    meta_path  = a$meta,
+    extras     = a$extras
   )
 
   taxifydb::update_manifest(
-    "manifest/manifest.json", be_name, version, vtr_path,
-    delta_path = if (file.exists(delta_path)) delta_path else NULL
+    "manifest/manifest.json", be_name, version, a$vtr,
+    delta_path = a$delta,
+    extras     = if (length(a$extras) > 0L) a$extras else NULL
   )
 } else {
   output_dir <- if (length(args) >= 2L) args[2L] else file.path("output", action)

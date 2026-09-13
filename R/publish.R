@@ -1,15 +1,120 @@
 # Publish backbone releases to GitHub and update the manifest.
 
 
+#' Run the gh CLI
+#'
+#' Every release operation reaches `gh` through here, with [system2()]'s
+#' `stdout`/`stderr` contract: `TRUE` captures the stream and carries a non-zero
+#' exit status on the `"status"` attribute, `FALSE` discards it and returns the
+#' exit status, `""` passes it through to the console.
+#' @noRd
+.gh <- function(args, stdout = "", stderr = "") {
+  system2("gh", args, stdout = stdout, stderr = stderr)
+}
+
+
+#' Upload files to an existing release
+#'
+#' Each path is quoted because an asset path may contain spaces (a Windows user
+#' directory does) and system2() does not quote its args: cmd-style quoting on
+#' Windows (double quotes, understood by CreateProcess), sh-style elsewhere. gh
+#' names each asset by the file's basename.
+#' @noRd
+.upload_assets <- function(tag, paths, repo, clobber,
+                           label = "gh release upload") {
+  quoted <- shQuote(
+    paths,
+    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
+  )
+  out <- .gh(c("release", "upload", tag, quoted, "--repo", repo,
+               if (clobber) "--clobber"),
+             stdout = TRUE, stderr = TRUE)
+  st <- attr(out, "status")
+  if (length(out) > 0L) message(paste(out, collapse = "\n"))
+  if (!is.null(st) && st != 0L) {
+    stop(sprintf("%s failed for %s (exit %d)", label, tag, st), call. = FALSE)
+  }
+  invisible(paths)
+}
+
+
+#' Create a release unless it already exists
+#'
+#' A release is never deleted to be re-cut: deleting it drops every asset it
+#' carries, including the content-addressed copies an earlier cut under the same
+#' tag uploaded, which are the only remaining bytes behind the `content_id` that
+#' cut recorded. An existing release is therefore reused and its assets are
+#' replaced in place, which also lets a run that failed after creating an empty
+#' release be re-run without manual cleanup.
+#' @return `TRUE` when the release was created, `FALSE` when it already existed
+#'   (invisibly).
+#' @noRd
+.ensure_release <- function(tag, title, notes, repo) {
+  view_status <- suppressWarnings(.gh(
+    c("release", "view", tag, "--repo", repo),
+    stdout = FALSE, stderr = FALSE
+  ))
+  if (view_status == 0L) {
+    message(sprintf("Release %s already exists -- uploading assets only.", tag))
+    return(invisible(FALSE))
+  }
+  create_status <- .gh(c(
+    "release", "create", tag,
+    "--repo", repo,
+    "--title", shQuote(title),
+    "--notes", shQuote(notes)
+  ))
+  if (create_status != 0L) {
+    stop(sprintf("gh release create failed for %s (exit %d)",
+                 tag, create_status), call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+
+#' The artifacts one backbone build wrote into its output directory
+#'
+#' A backbone build writes everything it publishes into one directory under
+#' names derived from the backbone: `<backend>.vtr`, an optional
+#' `<backend>.xdelta` patch against the previous release, the `<backend>.meta`
+#' provenance sidecar, and any `<backend>_<what>.vtr` sidecar asset (COL and
+#' WoRMS both publish a species profile). The release upload and the manifest
+#' update both read the set from here, so a release and the manifest entry
+#' describing it name the same files.
+#'
+#' @param output_dir Character. The build's output directory.
+#' @param backend Character. Backend identifier.
+#' @return A list with `vtr` (path), `delta` and `meta` (path, or `NULL` when the
+#'   build wrote none) and `extras` (character vector of sidecar paths, possibly
+#'   empty).
+#' @noRd
+.backbone_artifacts <- function(output_dir, backend) {
+  vtr <- file.path(output_dir, paste0(backend, ".vtr"))
+  if (!file.exists(vtr)) {
+    stop(sprintf("No .vtr found at %s. Build first.", vtr), call. = FALSE)
+  }
+  delta <- file.path(output_dir, paste0(backend, ".xdelta"))
+  meta  <- file.path(output_dir, paste0(backend, ".meta"))
+  vtrs  <- list.files(output_dir, pattern = "\\.vtr$")
+  extras <- sort(vtrs[startsWith(vtrs, paste0(backend, "_"))])
+  list(
+    vtr    = vtr,
+    delta  = if (file.exists(delta)) delta else NULL,
+    meta   = if (file.exists(meta)) meta else NULL,
+    extras = file.path(output_dir, extras)
+  )
+}
+
+
 #' Names of the assets already attached to a release
 #'
 #' Empty when the release does not exist or carries no assets, so a caller can
 #' treat "not yet published" and "published without this asset" alike.
 #' @noRd
 .release_asset_names <- function(tag, repo) {
-  out <- suppressWarnings(system2(
-    "gh", c("release", "view", tag, "--repo", repo,
-            "--json", "assets", "--jq", ".assets[].name"),
+  out <- suppressWarnings(.gh(
+    c("release", "view", tag, "--repo", repo,
+      "--json", "assets", "--jq", ".assets[].name"),
     stdout = TRUE, stderr = FALSE
   ))
   st <- attr(out, "status")
@@ -57,21 +162,10 @@
   }
   if (length(copies) == 0L) return(invisible(character(0L)))
 
-  quoted <- shQuote(
-    copies,
-    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
-  )
   # No --clobber: a content-addressed name maps to fixed bytes, and any copy
   # already on the release was skipped above, so there is nothing to overwrite.
-  out <- system2("gh", c("release", "upload", tag, quoted, "--repo", repo),
-                 stdout = TRUE, stderr = TRUE)
-  st <- attr(out, "status")
-  if (length(out) > 0L) message(paste(out, collapse = "\n"))
-  if (!is.null(st) && st != 0L) {
-    stop(sprintf(
-      "gh release upload (content-addressed) failed for %s (exit %d)",
-      tag, st), call. = FALSE)
-  }
+  .upload_assets(tag, copies, repo, clobber = FALSE,
+                 label = "gh release upload (content-addressed)")
   invisible(basename(copies))
 }
 
@@ -79,6 +173,11 @@
 #' Create a GitHub release and upload backbone artifacts
 #'
 #' Uses the `gh` CLI. Assumes `gh` is authenticated and on PATH.
+#'
+#' The release is created when missing and never deleted. Publishing again under
+#' an existing tag replaces the rolling assets in place (`--clobber`) and adds
+#' the new build's content-addressed copy beside those of earlier cuts, so every
+#' `content_url` a manifest has recorded for the tag keeps resolving.
 #'
 #' @param backend_name Character. Backend identifier.
 #' @param version Character. Version string.
@@ -109,28 +208,8 @@ publish_release <- function(backend_name, version, vtr_path,
     )
   }
 
-  # Create the release only if it doesn't already exist (idempotent: a
-  # previous failed run can leave an empty release behind, and we still
-  # want to be able to re-upload assets without manual cleanup).
-  view_status <- suppressWarnings(system2(
-    "gh", c("release", "view", tag, "--repo", repo),
-    stdout = FALSE, stderr = FALSE
-  ))
-  if (view_status != 0L) {
-    create_status <- system2("gh", c(
-      "release", "create", tag,
-      "--repo", repo,
-      "--title", shQuote(sprintf("%s v%s", toupper(backend_name), version)),
-      "--notes", shQuote(notes)
-    ))
-    if (create_status != 0L) {
-      stop(sprintf("gh release create failed for %s (exit %d)",
-                   tag, create_status), call. = FALSE)
-    }
-  } else {
-    message(sprintf("Release %s already exists — uploading assets only.",
-                    tag))
-  }
+  .ensure_release(tag, sprintf("%s v%s", toupper(backend_name), version),
+                  notes, repo)
 
   artifacts <- vtr_path
   if (!is.null(delta_path) && file.exists(delta_path)) {
@@ -148,28 +227,7 @@ publish_release <- function(backend_name, version, vtr_path,
     artifacts <- c(artifacts, extras)
   }
 
-  # Quote each path: an artifact path may contain spaces (a Windows user
-  # directory does, and the backbone .vtr is read from the data dir), and
-  # system2() does not quote its args. Use cmd-style quoting on Windows
-  # (double quotes, understood by CreateProcess) and sh-style elsewhere.
-  quoted_artifacts <- shQuote(
-    artifacts,
-    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
-  )
-  upload_out <- system2("gh", c(
-    "release", "upload", tag,
-    quoted_artifacts,
-    "--repo", repo,
-    "--clobber"
-  ), stdout = TRUE, stderr = TRUE)
-  upload_status <- attr(upload_out, "status")
-  if (length(upload_out) > 0L) {
-    message(paste(upload_out, collapse = "\n"))
-  }
-  if (!is.null(upload_status) && upload_status != 0L) {
-    stop(sprintf("gh release upload failed for %s (exit %d)",
-                 tag, upload_status), call. = FALSE)
-  }
+  .upload_assets(tag, artifacts, repo, clobber = TRUE)
 
   # Preserve this build's bytes under a content-addressed name so a later re-cut
   # of the same tag cannot make them unrecoverable (taxifydb#47).
@@ -214,46 +272,10 @@ publish_enrichment_release <- function(version, vtr_paths,
     notes <- sprintf("Enrichment .vtr assets (rolling release %s)", version)
   }
 
-  # Create the shared release only if absent. It is never deleted -- doing so
-  # would drop every other enrichment's asset from the tag.
-  view_status <- suppressWarnings(system2(
-    "gh", c("release", "view", tag, "--repo", repo),
-    stdout = FALSE, stderr = FALSE
-  ))
-  if (view_status != 0L) {
-    create_status <- system2("gh", c(
-      "release", "create", tag,
-      "--repo", repo,
-      "--title", shQuote(sprintf("Enrichments %s", version)),
-      "--notes", shQuote(notes)
-    ))
-    if (create_status != 0L) {
-      stop(sprintf("gh release create failed for %s (exit %d)",
-                   tag, create_status), call. = FALSE)
-    }
-  }
-
-  # Quote each path: an asset path may contain spaces (e.g. a Windows user
-  # directory), and system2() does not quote its args. Use cmd-style quoting on
-  # Windows (double quotes, understood by CreateProcess) and sh-style elsewhere.
-  quoted_paths <- shQuote(
-    vtr_paths,
-    type = if (.Platform$OS.type == "windows") "cmd" else "sh"
-  )
-  upload_out <- system2("gh", c(
-    "release", "upload", tag,
-    quoted_paths,
-    "--repo", repo,
-    "--clobber"
-  ), stdout = TRUE, stderr = TRUE)
-  upload_status <- attr(upload_out, "status")
-  if (length(upload_out) > 0L) {
-    message(paste(upload_out, collapse = "\n"))
-  }
-  if (!is.null(upload_status) && upload_status != 0L) {
-    stop(sprintf("gh release upload failed for %s (exit %d)",
-                 tag, upload_status), call. = FALSE)
-  }
+  # The shared release is never deleted -- doing so would drop every other
+  # enrichment's asset from the tag.
+  .ensure_release(tag, sprintf("Enrichments %s", version), notes, repo)
+  .upload_assets(tag, vtr_paths, repo, clobber = TRUE)
 
   # Preserve each build's bytes under a content-addressed name so re-cutting one
   # enrichment under the shared rolling tag cannot make a prior build's bytes

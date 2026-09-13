@@ -41,3 +41,9 @@ The release tag (invisibly).
 \description{
 Uses the \code{gh} CLI. Assumes \code{gh} is authenticated and on PATH.
 }
+\details{
+The release is created when missing and never deleted. Publishing again under
+an existing tag replaces the rolling assets in place (\code{--clobber}) and adds
+the new build's content-addressed copy beside those of earlier cuts, so every
+\code{content_url} a manifest has recorded for the tag keeps resolving.
+}

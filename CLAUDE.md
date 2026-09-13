@@ -369,11 +369,14 @@ vector replaces it, and `character(0)` removes the block. This is deliberately
 unlike the delta fields on the line above, which ARE cleared when a release
 carries no patch: a delta URL names the release being written and would 404,
 where a sidecar keeps the tag it was published under and stays reachable
-across releases that do not ship one. CI passes nothing and so preserves; the
-workflows glob `output/<backend>/<backend>_*.vtr` and pass what they find.
-All three call sites (both builds and the taxify runtime sync) go through
-`scripts/update_manifest_entry.R` rather than rebuilding the artifact paths
-themselves.
+across releases that do not ship one. A build that wrote no sidecar passes
+nothing and so preserves; one that did passes every
+`output/<backend>/<backend>_*.vtr` it wrote. The artifact set of a build
+directory is derived in one place, `.backbone_artifacts()` (`R/publish.R`), and
+read from there by both the release upload (`scripts/publish_backbone_release.R`)
+and the manifest update (`scripts/update_manifest_entry.R`, used by both builds
+and the taxify runtime sync), so a release and its manifest entry name the same
+files.
 
 **Content-addressed copies keep re-cut bytes recoverable (#47).** A release
 asset is a moving pointer: `<name>.vtr` is uploaded with `--clobber`, and a
@@ -386,7 +389,14 @@ it to bytes. So beside the rolling copy, `publish_release()` and
 bytes, never clobbered, skipped when already on the release. The manifest
 records its URL as `content_url` beside `content_id`; a re-cut adds a new
 content-addressed asset rather than destroying the prior one, so every
-`content_id` published since stays fetchable. The retrieval and local-store
+`content_id` published since stays fetchable. Every release path goes through
+those two functions, so none can publish without the copy: `build-light.yml`
+and `build-heavy.yml` call `scripts/publish_backbone_release.R`,
+`publish-enrichment.yml` calls `publish_enrichment_release()`. A release is
+created when missing and never deleted, since deleting a re-cut tag would take
+the earlier cut's content-addressed copy with it. `check_manifest_coverage.R`
+requests every `content_url` either manifest records with HEAD and reports
+`content_missing` for one that does not resolve. The retrieval and local-store
 halves (`taxify_download_enrichment(content_id=)`, a version-keyed enrichment
 cache) live in the `taxify` runtime repo and are tracked there.
 

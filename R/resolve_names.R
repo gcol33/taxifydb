@@ -443,13 +443,15 @@ resolve_name_map <- function(names,
 }
 
 
-#' Lowercase + collapse internal whitespace
+#' Match key of a name: subgenus dropped, whitespace collapsed, lowercased
+#'
+#' Backbone keys carry no subgenus (#50), so a source writing
+#' `Carabus (Tachypus) cancellatus` has to be keyed on the binomial or it
+#' resolves against nothing and ships unexpanded.
 #' @noRd
 .to_key_ci <- function(x) {
-  x <- as.character(x)
-  x <- tolower(x)
-  x <- gsub("\\s+", " ", x)
-  trimws(x)
+  x <- trimws(gsub("\\s+", " ", as.character(x)))
+  tolower(drop_infrageneric(x))
 }
 
 

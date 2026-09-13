@@ -66,6 +66,20 @@ test_that("the hop does not chain through a third concept", {
   expect_false("Saponaria officinalis" %in% m$accepted_name)
 })
 
+test_that("a source name written with its subgenus resolves on the binomial (#50)", {
+  paths <- fake_lookups(list(
+    a = lk(c("carabus cancellatus", "carabus granulatus"),
+           c("Carabus cancellatus", "Carabus granulatus"))
+  ))
+  m <- taxifydb:::.name_closure_map(
+    c("Carabus (Tachypus) cancellatus", "Carabus  (Carabus) granulatus"),
+    paths, reverse_hop = FALSE, verbose = FALSE)
+  expect_setequal(m$accepted_name, c("Carabus cancellatus", "Carabus granulatus"))
+  expect_setequal(m$input_name, c("Carabus (Tachypus) cancellatus",
+                                  "Carabus  (Carabus) granulatus"))
+})
+
+
 test_that("a synonym no backbone accepts is not added", {
   paths <- fake_lookups(list(
     a = lk(c("aus bus", "old name"), c("Aus bus", "Aus bus")),

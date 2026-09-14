@@ -12,7 +12,9 @@ normalize_backbone(df, col_map, extra_cols = NULL)
 \item{col_map}{A named list mapping canonical names to source column names:
 \code{taxon_id}, \code{canonical_name}, \code{taxon_rank}, \code{taxonomic_status},
 \code{accepted_name_usage_id}, \code{family}, \code{genus}, \code{specific_epithet},
-\code{authorship}, \code{infraspecific_epithet}.}
+\code{authorship}, \code{infraspecific_epithet}, and, for a source that links a
+combination to its basionym, \code{original_name_usage_id} (the basionym's
+\code{taxon_id}, read by taxify to place an unplaced combination).}
 
 \item{extra_cols}{Optional named list of additional columns to keep
 (\code{canonical_name = source_name}).}

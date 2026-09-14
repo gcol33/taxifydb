@@ -70,6 +70,58 @@ test_that("a taxon written with authorship or a sensu-lato note is keyed on the 
 })
 
 
+test_that("a record not naming one definite species is never keyed on a species", {
+  # A pair, an open-nomenclature name, a cut-off hybrid name and a species
+  # group each parse to a leading binomial or genus that is not the taxon the
+  # source recorded. Keyed on it, their years would date that species.
+  f <- tempfile(fileext = ".csv")
+  write_fixture(c(HDR,
+                  rec("Denmark", "Cakile edentula - Cakile maritima", 1850),
+                  rec("Denmark", "Cakile edentula", 1950),
+                  rec("Denmark", "Lepidium didymum/squamatum spp agg", 1840),
+                  rec("Denmark", "Cardamine flexuosa sensu Fl Vic Vol 3", 1830),
+                  rec("Denmark", "Cardamine flexuosa", 1960),
+                  rec("Denmark", "Clavularia viridis cf viridis", 1820),
+                  rec("Denmark", "Cardamine sp Jandakot (PLuff sn 4/7/1969)", 1810),
+                  rec("Denmark", "Amaranthus x ralletii Contre (A bouchonii x", 1800),
+                  rec("Denmark", "Taraxacum officinale group", 1790),
+                  rec("Denmark", "Taraxacum officinale", 1970),
+                  rec("Denmark", "Amaranthus sp", 1780),
+                  rec("Denmark", "Amaranthus hybridus bouchonii", 1770),
+                  rec("Denmark", "Amaranthus hybridus", 1900)), f)
+
+  out <- parse_alien_first_records(f)
+  year <- stats::setNames(out$alien_first_record, out$canonical_name)
+  expect_equal(year[["Cakile edentula"]], 1950L)
+  expect_equal(year[["Cardamine flexuosa"]], 1960L)
+  expect_equal(year[["Taraxacum officinale"]], 1970L)
+  expect_equal(year[["Amaranthus hybridus"]], 1900L)
+  expect_false("Clavularia viridis" %in% names(year))
+  expect_false("Cardamine jandakot" %in% names(year))
+  expect_equal(year[["Taraxacum officinale agg."]], 1790L)
+  expect_equal(year[["Amaranthus"]], 1780L)
+  expect_equal(year[["Amaranthus hybridus bouchonii"]], 1770L)
+  expect_equal(year[["Cakile edentula - Cakile maritima"]], 1850L)
+  expect_equal(year[["Amaranthus x ralletii Contre (A bouchonii x"]], 1800L)
+})
+
+
+test_that("a sentinel year is never served and never beats a dated record", {
+  f <- tempfile(fileext = ".csv")
+  write_fixture(c(HDR,
+                  rec("Sweden", "Petasites hybridus", "<1492"),
+                  rec("Sweden", "Aus unus", 1492),
+                  rec("Sweden", "Aus unus", 1880),
+                  rec("Sweden", "Aus duo", 1500)), f)
+
+  out <- parse_alien_first_records(f)
+  year <- stats::setNames(out$alien_first_record, out$canonical_name)
+  expect_true(is.na(year[["Petasites hybridus"]]))
+  expect_equal(year[["Aus unus"]], 1880L)
+  expect_true(is.na(year[["Aus duo"]]))
+})
+
+
 test_that("an accented respelling maps without its own map entry", {
   # "Reunion" is what the map holds; the release writes it with the acute.
   reunion <- rawToChar(as.raw(c(0x52, 0xc3, 0xa9, 0x75, 0x6e, 0x69,

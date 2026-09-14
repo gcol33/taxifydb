@@ -501,10 +501,27 @@ resolve_name_map <- function(names,
 #' makes a source row reach exactly the taxon the runtime matches the string
 #' to, and lets two spellings of one taxon meet before a per-taxon reduction.
 #'
-#' Aggregates keep the aggregate route [resolve_enrichment_names()] folds to
-#' `<binomial> aggr.`, on the parsed binomial so an author in the aggregate
-#' name does not split the key. A name with no single-taxon parse (a hybrid
-#' formula) keeps its verbatim spelling.
+#' A key names one definite taxon or none. The parse keeps the leading name of
+#' anything it cannot read whole, and that name is a different taxon from the
+#' one the source recorded:
+#'
+#' * aggregates and species groups (`Xanthium orientale agg`,
+#'   `Taraxacum officinale group`) take the aggregate route
+#'   [resolve_enrichment_names()] folds to `<binomial> agg.`, on the parsed
+#'   binomial so an author in the name does not split the key;
+#' * a record naming two taxa (`Cakile edentula - Cakile maritima`,
+#'   `Lepidium didymum/squamatum`) would credit the pair to its first member;
+#' * an open-nomenclature name (`cf.`, `aff.`, `sect.`, `sensu`, `auct.`, a
+#'   phrase name such as `Cardamine sp Jandakot`) does not assert the binomial
+#'   it parses to;
+#' * a name whose epithet the parse loses (`Amaranthus x ralletii Contre (A
+#'   bouchonii x`, cut off in the source) would be keyed on its genus.
+#'
+#' These keep their verbatim spelling, which no backbone key matches. A name
+#' open at species rank only (`Amaranthus sp`, `Amsinckia group`) is a
+#' genus-level record and is keyed on the genus. An infraspecific name written
+#' without its rank connector (`Amaranthus hybridus bouchonii`) keeps all three
+#' words: it is never keyed on its binomial, whose species it may not belong to.
 #'
 #' @param x Character vector of source names.
 #' @return data.frame with `canonical_name` (the key) and `qualifier` (the
@@ -515,13 +532,23 @@ resolve_name_map <- function(names,
   x <- trimws(.to_utf8(x))
   p <- taxify::parse_name(ifelse(is.na(x), "", x))
   key <- p$canonical
+  qual <- p$qualifier
+  genus_rank <- p$rank %in% "genus"
+
   agg <- taxify::is_aggregate_name(x)
-  agg <- !is.na(agg) & agg
+  agg <- (!is.na(agg) & agg) | qual %in% "group"
   species_agg <- agg & p$rank %in% "species"
   key[species_agg] <- paste(p$canonical[species_agg], "agg.")
-  keep_verbatim <- (agg & !species_agg) | is.na(key) | !nzchar(key)
+
+  genus_record <- genus_rank & qual %in% c("sp.", "group") & !grepl("/", x)
+  several <- grepl("\\s-\\s|/", x)
+  open <- !is.na(qual) & !qual %in% c("agg.", "group") & !genus_record
+  truncated <- genus_rank & !genus_record
+
+  keep_verbatim <- (agg & !species_agg & !genus_record) | several | open |
+    truncated | is.na(key) | !nzchar(key)
   key[keep_verbatim] <- x[keep_verbatim]
-  data.frame(canonical_name = key, qualifier = p$qualifier,
+  data.frame(canonical_name = key, qualifier = qual,
              stringsAsFactors = FALSE)
 }
 

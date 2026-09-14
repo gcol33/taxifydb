@@ -259,6 +259,87 @@ test_that("the hop does not reach a species the backbones keep apart (#56)", {
   expect_equal(year[["Brassica rapa"]], 1985L)
 })
 
+test_that("one backbone's synonymy does not key a species the others keep apart (#56)", {
+  # lcvp alone files Amelanchier humilis under A. spicata; col, wcvp and itis
+  # hold both as species. The spicata key must not carry humilis's year, while
+  # humilis keeps its own.
+  paths <- fake_lookups(list(
+    lcvp = lk(c("amelanchier humilis", "amelanchier spicata"),
+              c("Amelanchier spicata", "Amelanchier spicata")),
+    col  = lk(c("amelanchier humilis", "amelanchier spicata"),
+              c("Amelanchier humilis", "Amelanchier spicata")),
+    wcvp = lk(c("amelanchier humilis", "amelanchier spicata"),
+              c("Amelanchier humilis", "Amelanchier spicata")),
+    itis = lk(c("amelanchier humilis", "amelanchier spicata"),
+              c("Amelanchier humilis", "Amelanchier spicata"))
+  ))
+  m <- taxifydb:::.name_closure_map("Amelanchier humilis", paths,
+                                    reverse_hop = TRUE, verbose = FALSE)
+  expect_equal(unique(m$accepted_name), "Amelanchier humilis")
+
+  # A resolution no backbone contradicts is kept: the old name of a moved
+  # species reaches its current genus.
+  moved <- fake_lookups(list(
+    col  = lk(c("negundo aceroides", "acer negundo"), c("Acer negundo", "Acer negundo")),
+    wfo  = lk(c("negundo aceroides", "acer negundo"), c("Acer negundo", "Acer negundo")),
+    gbif = lk("acer negundo", "Acer negundo")
+  ))
+  m2 <- taxifydb:::.name_closure_map("Negundo aceroides", moved,
+                                     reverse_hop = FALSE, verbose = FALSE)
+  expect_equal(unique(m2$accepted_name), "Acer negundo")
+})
+
+test_that("a backbone carrying a respelling as its own species does not outvote the rest", {
+  # gbif and ncbi accept both spellings of Cephaloziella massalongoi; wfo
+  # resolves the source's `massalongi` onto the current spelling. The respelling
+  # is one species, so the current spelling keeps the source's row.
+  paths <- fake_lookups(list(
+    wfo  = lk(c("cephaloziella massalongi", "cephaloziella massalongoi"),
+              c("Cephaloziella massalongoi", "Cephaloziella massalongoi")),
+    gbif = lk(c("cephaloziella massalongi", "cephaloziella massalongoi"),
+              c("Cephaloziella massalongi", "Cephaloziella massalongoi")),
+    ncbi = lk(c("cephaloziella massalongi", "cephaloziella massalongoi"),
+              c("Cephaloziella massalongi", "Cephaloziella massalongoi"))
+  ))
+  m <- taxifydb:::.name_closure_map("Cephaloziella massalongi", paths,
+                                    reverse_hop = FALSE, verbose = FALSE)
+  expect_true("Cephaloziella massalongoi" %in% m$accepted_name)
+
+  expect_equal(
+    taxifydb:::.species_agreement(
+      c("carex flava", "acer saccharum", "didymodon maschalogenus",
+        "citrus aurantium", "fissidens arnoldi", "acer negundo"),
+      c("carex flacca", "acer saccharinum", "didymodon maschalogena",
+        "citrus × aurantium", "fissidens arnoldii", "acer rubrum")),
+    c(FALSE, FALSE, NA, NA, NA, FALSE))
+})
+
+test_that("a hop onto a name no backbone places in one species is refused (#56)", {
+  # `matricaria suaveolens` is L.'s name and Buchenau's in every backbone; the
+  # forma autonym some backbones file under Tripleurospermum inodorum must not
+  # key it with that species' rows.
+  paths <- fake_lookups(list(
+    gbif  = lk(c("tripleurospermum inodorum", "matricaria suaveolens f. suaveolens"),
+               c("Tripleurospermum inodorum", "Tripleurospermum inodorum")),
+    colxr = lk(c("tripleurospermum inodorum", "matricaria suaveolens f. suaveolens"),
+               c("Tripleurospermum inodorum", "Tripleurospermum inodorum")),
+    wfo   = lk(c("matricaria suaveolens f. suaveolens", "matricaria suaveolens"),
+               c("Matricaria suaveolens", "Matricaria suaveolens"),
+               n_species = c(1L, 2L)),
+    lcvp  = lk(c("matricaria suaveolens f. suaveolens", "matricaria suaveolens"),
+               c("Matricaria suaveolens", "Matricaria suaveolens"),
+               n_species = c(1L, 3L))
+  ))
+  m <- taxifydb:::.name_closure_map("Tripleurospermum inodorum", paths,
+                                    reverse_hop = TRUE, verbose = FALSE)
+  expect_false("Matricaria suaveolens" %in% m$accepted_name)
+
+  # The same name as a source's own resolution is kept.
+  own <- taxifydb:::.name_closure_map("Matricaria suaveolens", paths,
+                                      reverse_hop = FALSE, verbose = FALSE)
+  expect_true("Matricaria suaveolens" %in% own$accepted_name)
+})
+
 test_that("a hop onto a name most backbones synonymise onto the input is kept", {
   # The Minuartia hybrida shape with its real vote: three backbones file the
   # reached name inside the input's species, one keeps the two apart.

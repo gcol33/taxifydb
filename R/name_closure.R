@@ -38,7 +38,10 @@
 # species than in the input's own, and only when no more backbones resolve the
 # input and the reached name to two species than to one: a key disputed
 # between two species every backbone keeps apart (`brassica macrorhiza`,
-# swede or rape) says nothing about whether they are one.
+# swede or rape) says nothing about whether they are one. The forward image is
+# held to the same vote: one backbone synonymising the source name onto a
+# species the others keep apart (LCVP's Amelanchier humilis -> A. spicata) does
+# not key that species.
 
 #' Read a name lookup filtered on one column
 #'
@@ -170,6 +173,60 @@
 }
 
 
+#' Do two species parts name one species?
+#'
+#' `TRUE` when the species parts ([.species_of()]) are equal, `FALSE` when they
+#' name two species, and `NA` when they are two spellings of one epithet in one
+#' genus ([.epithet_stem()]): a gender ending (`maschalogenus` /
+#' `maschalogena`), a Latin orthographic variant (`massalongi` / `massalongoi`,
+#' `arnoldi` / `arnoldii`, `haldanianum` / `haldaneanum`) or a hybrid sign
+#' (`aurantium` / `× aurantium`). Backbones carry such respellings as separate
+#' accepted names, and counted as two species they outvote the backbones that
+#' resolve the source onto its current spelling. Only these rule-based
+#' respellings count: an edit distance would also pair congeners such as
+#' `saccharum` / `saccharinum`.
+#'
+#' @param a,b Parallel character vectors of species parts.
+#' @return Logical vector, `NA` for a respelling.
+#' @noRd
+.species_agreement <- function(a, b) {
+  out <- a == b
+  cand <- which(!out & sub(" .*$", "", a) == sub(" .*$", "", b))
+  if (length(cand)) {
+    near <- .epithet_stem(sub("^[^ ]+ ?", "", a[cand])) ==
+      .epithet_stem(sub("^[^ ]+ ?", "", b[cand]))
+    out[cand[near %in% TRUE]] <- NA
+  }
+  out
+}
+
+
+#' An epithet with its spelling variation folded away
+#'
+#' Drops a hybrid sign, folds the orthographic alternations taxify's matcher
+#' folds (`ae`/`oe` and `y` to `i`, `ph`, `rh`, `th`) plus a doubled `i` and
+#' the patronymic `-oi` / `-eanus` forms, then strips the gender termination
+#' (`-us`/`-a`/`-um`, `-is`/`-e`, `-er`/`-ra`/`-rum`, `-os`/`-on`). An empty
+#' epithet stays empty.
+#'
+#' @param x Character vector of epithets, lowercased.
+#' @return Character vector of stems.
+#' @noRd
+.epithet_stem <- function(x) {
+  x <- trimws(gsub("×", "", x, fixed = TRUE))
+  x <- gsub("ae|oe", "i", x)
+  x <- chartr("y", "i", x)
+  x <- gsub("ph", "f", x, fixed = TRUE)
+  x <- gsub("rh", "r", x, fixed = TRUE)
+  x <- gsub("th", "t", x, fixed = TRUE)
+  x <- gsub("i+", "i", x)
+  x <- sub("oi$", "i", x)
+  x <- gsub("ean", "ian", x, fixed = TRUE)
+  x <- sub("(er|ra|rum)$", "r", x)
+  sub("(us|um|a|is|e|os|on)$", "", x)
+}
+
+
 #' Refuse a hop whose entry most backbones place in another species
 #'
 #' A hop enters the input's concept through a key some backbone files under a
@@ -180,9 +237,10 @@
 #' `acer negundo f. crispum -> Acer pseudoplatanus`, and *Pinus strobus* reached
 #' *Tsuga canadensis* through its `tsuga canadensis f. fastigiata`.
 #'
-#' Placements are compared on the species part ([.species_of()]), so a backbone
-#' filing the key under the autonym of the input's species votes with it, and
-#' each backbone counts once per side. An even split is not a contradiction: one
+#' Placements are compared on the species part ([.species_agreement()]), so a
+#' backbone filing the key under the autonym of the input's species votes with
+#' it, one filing it under a respelling of that species abstains, and each
+#' backbone counts once per side. An even split is not a contradiction: one
 #' backbone synonymising the key onto the concept while one keeps it accepted is
 #' exactly the name the hop exists to reach.
 #'
@@ -198,12 +256,26 @@
   pairs <- unique(bridged[, c("input_name", "key_ci"), drop = FALSE])
   votes <- merge(pairs, f2[, c("key_ci", "accepted_name", "backbone"),
                            drop = FALSE], by = "key_ci")
-  own <- paste(direct$input_name, .species_of(direct$accepted_name),
-               sep = "\x1f")
-  votes$inside <- paste(votes$input_name, .species_of(votes$accepted_name),
-                        sep = "\x1f") %in% own
-  votes <- unique(votes[, c("input_name", "key_ci", "backbone", "inside"),
-                        drop = FALSE])
+  votes$sp <- .species_of(votes$accepted_name)
+  own <- unique(data.frame(input_name = direct$input_name,
+                           sp_own = .species_of(direct$accepted_name),
+                           stringsAsFactors = FALSE))
+  placed <- merge(unique(votes[, c("input_name", "key_ci", "backbone", "sp")]),
+                  own, by = "input_name")
+  placed$agree <- .species_agreement(placed$sp, placed$sp_own)
+  id <- paste(placed$input_name, placed$key_ci, placed$backbone, placed$sp,
+              sep = "\x1f")
+  any_true <- tapply(placed$agree %in% TRUE, id, any)
+  any_near <- tapply(is.na(placed$agree), id, any)
+  side <- ifelse(any_true, TRUE, ifelse(any_near, NA, FALSE))
+  first <- !duplicated(id)
+  votes <- unique(data.frame(input_name = placed$input_name[first],
+                             key_ci = placed$key_ci[first],
+                             backbone = placed$backbone[first],
+                             inside = unname(side[id[first]]),
+                             stringsAsFactors = FALSE))
+  votes <- votes[!is.na(votes$inside), , drop = FALSE]
+  if (!nrow(votes)) return(bridged)
   pk <- paste(votes$input_name, votes$key_ci, sep = "\x1f")
   count <- function(side) {
     n <- table(factor(pk[votes$inside == side], levels = unique(pk)))
@@ -223,10 +295,14 @@
 }
 
 
-#' Refuse a hop onto a species the backbones keep apart from the input
+#' Refuse a mapping onto a species the backbones keep apart from the input
 #'
-#' The hop reaches a name through a key the backbones disagree about, and a
-#' disagreement over a third name is not evidence that the input and the
+#' A mapping from a source name to an accepted name can rest on one backbone's
+#' treatment that the others contradict, and then it keys one species with
+#' another's rows. Two routes produce such a mapping.
+#'
+#' The reverse hop reaches a name through a key the backbones disagree about,
+#' and a disagreement over a third name is not evidence that the input and the
 #' reached name are one species. `brassica macrorhiza` is filed under *Brassica
 #' napus* by four backbones and under *Brassica rapa* by WFO and LCVP, so the
 #' hop keyed rape with swede's rows, though every backbone holding both names
@@ -234,30 +310,58 @@
 #' opposite: COL, WCVP and Euro+Med synonymise the reached name itself onto
 #' *Sabulina tenuifolia*, and only WFO keeps the two apart.
 #'
-#' So each backbone that resolves both the input's key and the reached name's
-#' key casts one vote: for the hop when the two land in one species (compared
-#' on [.species_of()]), against it when they land in two. A backbone holding
-#' only one of the names, or recording a key under two species, casts none. The
-#' hop is refused when the votes against outnumber the votes for.
+#' The forward image takes every backbone's resolution of the source name, so
+#' one backbone's synonymy is enough to key its accepted name: LCVP alone files
+#' *Amelanchier humilis* under *Amelanchier spicata*, which COL, WCVP, ITIS,
+#' NCBI and OTT keep apart, and the spicata key carried humilis's rows.
 #'
-#' @param bridged data.frame of `input_name`, `kept_name`.
+#' So each backbone that resolves both the input's key and the target's key
+#' casts one vote: for the mapping when the two land in one species, against it
+#' when they land in two ([.species_agreement()]). A backbone holding only one
+#' of the names, recording a key under two species, or landing them on two
+#' spellings of one epithet, casts none. The
+#' mapping is refused when the votes against outnumber the votes for. A source
+#' name always keeps its own resolutions where no backbone contradicts them,
+#' and a user of the outvoted backbone is still served at join time, through
+#' the runtime's cross-backbone recovery.
+#'
+#' A reached name, unlike a resolution of the source name itself, needs a key
+#' that says which species it is: a hop onto a name every backbone records
+#' under two or more species is refused. *Matricaria suaveolens* is L.'s name
+#' (*M. chamomilla*) and Buchenau's (*M. discoidea*) in every backbone holding
+#' it, and a hop through `matricaria suaveolens f. suaveolens` keyed it with
+#' *Tripleurospermum inodorum*'s rows.
+#'
+#' @param pairs data.frame with `input_name` and the column named by `target`.
+#' @param target Name of the column holding the mapped accepted name.
 #' @param input_edges Forward edges of the input keys: `input_name`,
 #'   `accepted_name`, `backbone`, inside the source's kingdom.
 #' @param lookup_paths Named character vector of lookup `.vtr` paths.
 #' @param kingdom Character vector or `NULL`; see [.in_kingdom_edges()].
+#' @param reached Logical. The targets were reached by the hop rather than by
+#'   resolving the source name, so a target no backbone places in a single
+#'   species is refused.
 #' @param verbose Logical.
-#' @return `bridged` without the rows reaching a species kept apart.
+#' @return `pairs` without the rows mapping onto a species kept apart.
 #' @noRd
-.drop_split_targets <- function(bridged, input_edges, lookup_paths,
-                                kingdom = NULL, verbose = TRUE) {
-  if (!nrow(bridged)) return(bridged)
-  cand <- unique(bridged[, c("input_name", "kept_name"), drop = FALSE])
-  cand$key_ci <- .to_key_ci(cand$kept_name)
+.drop_split_targets <- function(pairs, target, input_edges, lookup_paths,
+                                kingdom = NULL, reached = TRUE,
+                                verbose = TRUE) {
+  if (!nrow(pairs)) return(pairs)
+  pair_id <- function(d) paste(d$input_name, d[[target]], sep = "\x1f")
+  cand <- unique(data.frame(input_name = pairs$input_name,
+                            target = pairs[[target]], stringsAsFactors = FALSE))
+  cand$key_ci <- .to_key_ci(cand$target)
 
   tgt <- .closure_pass(lookup_paths, "key_ci", unique(cand$key_ci), FALSE,
                        "[target]")
-  tgt <- tgt[is.na(tgt$n_species) | tgt$n_species <= 1L, , drop = FALSE]
   tgt <- .in_kingdom_edges(tgt, kingdom)
+  placed <- unique(tgt$key_ci[is.na(tgt$n_species) | tgt$n_species <= 1L])
+  unplaced <- if (isTRUE(reached)) {
+    paste(cand$input_name, cand$target, sep = "\x1f")[
+      cand$key_ci %in% tgt$key_ci & !cand$key_ci %in% placed]
+  } else character()
+  tgt <- tgt[is.na(tgt$n_species) | tgt$n_species <= 1L, , drop = FALSE]
   tgt <- unique(data.frame(key_ci = tgt$key_ci, backbone = tgt$backbone,
                            sp_tgt = .species_of(tgt$accepted_name),
                            stringsAsFactors = FALSE))
@@ -268,22 +372,30 @@
 
   votes <- merge(merge(cand, tgt, by = "key_ci"), src,
                  by = c("input_name", "backbone"))
-  if (!nrow(votes)) return(bridged)
-  votes$pair <- paste(votes$input_name, votes$kept_name, sep = "\x1f")
-  same <- tapply(votes$sp_in == votes$sp_tgt,
-                 paste(votes$pair, votes$backbone, sep = "\x1f"), any)
-  pair_of <- sub("\x1f[^\x1f]*$", "", names(same))
-  n_for     <- tapply(same, pair_of, sum)
-  n_against <- tapply(!same, pair_of, sum)
-  split <- names(n_against)[n_against > n_for]
+  votes$agree <- .species_agreement(votes$sp_in, votes$sp_tgt)
+  votes <- votes[!is.na(votes$agree), , drop = FALSE]
+  split <- character()
+  if (nrow(votes)) {
+    votes$pair <- paste(votes$input_name, votes$target, sep = "\x1f")
+    same <- tapply(votes$agree,
+                   paste(votes$pair, votes$backbone, sep = "\x1f"), any)
+    pair_of <- sub("\x1f[^\x1f]*$", "", names(same))
+    n_for     <- tapply(same, pair_of, sum)
+    n_against <- tapply(!same, pair_of, sum)
+    split <- names(n_against)[n_against > n_for]
+  }
 
-  drop <- paste(bridged$input_name, bridged$kept_name, sep = "\x1f") %in% split
+  drop <- pair_id(pairs) %in% c(split, unplaced)
   if (any(drop) && isTRUE(verbose)) {
     message(sprintf(
-      "    [species vote] %s hop(s) onto a species the backbones keep apart from the input",
-      format(length(split), big.mark = ",")))
+      "    [species vote] %s %s onto a species the backbones keep apart from the input%s",
+      format(length(split), big.mark = ","),
+      if (isTRUE(reached)) "hop(s)" else "resolution(s)",
+      if (length(unplaced)) sprintf("; %s hop(s) onto a name no backbone places in one species",
+                                    format(length(unplaced), big.mark = ","))
+      else ""))
   }
-  bridged[!drop, , drop = FALSE]
+  pairs[!drop, , drop = FALSE]
 }
 
 
@@ -346,6 +458,9 @@
 
   direct <- merge(inp, fwd, by = "key_ci")[, c("input_name", "accepted_name"),
                                            drop = FALSE]
+  direct <- .drop_split_targets(direct, "accepted_name", input_edges,
+                                lookup_paths, kingdom, reached = FALSE,
+                                verbose = verbose)
 
   extra <- NULL
   if (nrow(f2)) {
@@ -365,8 +480,9 @@
                                            "kept_name"), drop = FALSE]),
                          by = "accepted_name")
         bridged <- .drop_outvoted_entries(bridged, placements, direct, verbose)
-        bridged <- .drop_split_targets(bridged, input_edges, lookup_paths,
-                                       kingdom, verbose)
+        bridged <- .drop_split_targets(bridged, "kept_name", input_edges,
+                                       lookup_paths, kingdom, reached = TRUE,
+                                       verbose = verbose)
         extra <- data.frame(input_name = bridged$input_name,
                             accepted_name = bridged$kept_name,
                             stringsAsFactors = FALSE)

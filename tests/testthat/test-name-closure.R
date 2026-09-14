@@ -12,6 +12,7 @@ fake_lookups <- function(spec) {
     p <- file.path(dir, sprintf("%s_name_lookup.vtr", nm))
     d <- spec[[nm]]
     if (!"kingdom" %in% names(d)) d$kingdom <- rep(NA_character_, nrow(d))
+    if (!"n_species" %in% names(d)) d$n_species <- rep(1L, nrow(d))
     vectra::write_vtr(d, p)
     vectra::create_index(p, "key_ci")
     vectra::create_index(p, "accepted_name")
@@ -20,9 +21,10 @@ fake_lookups <- function(spec) {
   paths
 }
 
-lk <- function(key_ci, accepted_name, kingdom = NA_character_) {
+lk <- function(key_ci, accepted_name, kingdom = NA_character_, n_species = 1L) {
   data.frame(key_ci = key_ci, accepted_name = accepted_name,
-             kingdom = kingdom, stringsAsFactors = FALSE)
+             kingdom = kingdom, n_species = as.integer(n_species),
+             stringsAsFactors = FALSE)
 }
 
 # wcvp and col synonymise Minuartia hybrida onto the Sabulina concept; wfo
@@ -153,6 +155,80 @@ test_that("a re-routing only one backbone makes is not", {
   m <- taxifydb:::.name_closure_map("Aus bus", paths, reverse_hop = TRUE,
                                     verbose = FALSE)
   expect_false("Cus dus" %in% m$accepted_name)
+})
+
+test_that("the hop does not cross a key one backbone gives to two species", {
+  # `acacia acicularis` is two names: R.Br.'s, a synonym of Acacia brownii, and
+  # Humb. & Bonpl.'s, of Vachellia farnesiana. col records both and collapses
+  # the key onto farnesiana; lcvp and wcvp collapse it onto brownii. Two
+  # backbones agreeing on brownii is not corroboration of one concept here.
+  acicularis <- function(col_n) fake_lookups(list(
+    col  = lk(c("vachellia farnesiana", "acacia acicularis"),
+              c("Vachellia farnesiana", "Vachellia farnesiana"),
+              n_species = c(1L, col_n)),
+    wfo  = lk(c("vachellia farnesiana", "acacia brownii"),
+              c("Vachellia farnesiana", "Acacia brownii")),
+    lcvp = lk("acacia acicularis", "Acacia brownii"),
+    wcvp = lk("acacia acicularis", "Acacia brownii")
+  ))
+  m <- taxifydb:::.name_closure_map("Vachellia farnesiana", acicularis(2L),
+                                    reverse_hop = TRUE, verbose = FALSE)
+  expect_equal(unique(m$accepted_name), "Vachellia farnesiana")
+
+  # The same edges without the homonym are a re-routing two backbones agree on.
+  m1 <- taxifydb:::.name_closure_map("Vachellia farnesiana", acicularis(1L),
+                                     reverse_hop = TRUE, verbose = FALSE)
+  expect_true("Acacia brownii" %in% m1$accepted_name)
+})
+
+test_that("a lookup without n_species is refused, not read as homonym-free", {
+  p <- tempfile(fileext = ".vtr")
+  vectra::write_vtr(data.frame(key_ci = "aus bus", accepted_name = "Aus bus",
+                               stringsAsFactors = FALSE), p)
+  expect_error(taxifydb:::.lookup_filter(p, "key_ci", "aus bus"), "n_species")
+})
+
+test_that("a lookup counts the species a key's rows point to", {
+  bb <- data.frame(
+    key_ci = c("acacia acicularis", "acacia acicularis", "acacia acicularis",
+               "vachellia farnesiana", "vachellia farnesiana"),
+    accepted_name = c("Acacia brownii", "Vachellia farnesiana",
+                      "Vachellia farnesiana var. farnesiana",
+                      "Vachellia farnesiana", "Vachellia farnesiana var. farnesiana"),
+    taxonomic_status = c("SYNONYM", "SYNONYM", "SYNONYM", "ACCEPTED", "SYNONYM"),
+    taxon_rank = "SPECIES", taxon_id = as.character(1:5),
+    canonical_name = c("Acacia acicularis", "Acacia acicularis",
+                       "Acacia acicularis", "Vachellia farnesiana",
+                       "Vachellia farnesiana"),
+    stringsAsFactors = FALSE)
+  bb_path <- tempfile(fileext = ".vtr")
+  vectra::write_vtr(bb, bb_path)
+  out <- tempfile(fileext = ".vtr")
+  taxifydb::build_name_lookup(bb_path, out, verbose = FALSE)
+  l <- vectra::collect(vectra::tbl(out))
+  n <- stats::setNames(l$n_species, l$key_ci)
+  expect_equal(n[["acacia acicularis"]], 2L)
+  # An autonym is the same species, not a second one.
+  expect_equal(n[["vachellia farnesiana"]], 1L)
+})
+
+test_that("the species part keeps the hybrid sign and drops infraspecific ranks", {
+  expect_equal(
+    taxifydb:::.species_of(c("Quercus × pongtungensis", "× Agroelymus piettei",
+                             "Abies lasiocarpa var. lasiocarpa", "Abies", NA)),
+    c("quercus × pongtungensis", "× agroelymus piettei",
+      "abies lasiocarpa", "abies", NA))
+})
+
+test_that("a lookup older than its backbone is stale", {
+  bb <- tempfile(fileext = ".vtr")
+  l  <- tempfile(fileext = ".vtr")
+  vectra::write_vtr(data.frame(key_ci = "a", accepted_name = "A", n_species = 1L), l)
+  vectra::write_vtr(data.frame(x = 1), bb)
+  Sys.setFileTime(l, Sys.time() - 3600)
+  expect_true(taxifydb:::.lookup_is_stale(l, bb))
+  Sys.setFileTime(l, Sys.time() + 3600)
+  expect_false(taxifydb:::.lookup_is_stale(l, bb))
 })
 
 test_that("a declared kingdom drops a synonym only a plant backbone supplies", {

@@ -58,6 +58,10 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   bb <- bb[!is.na(bb$key_ci) & nzchar(bb$key_ci) &
            !is.na(bb$accepted_name) & nzchar(bb$accepted_name), ]
 
+  # Counted before the collapse, which keeps one target per key and so hides
+  # that the spelling belonged to several species.
+  n_species <- .key_species_count(bb$key_ci, bb$accepted_name)
+
   # Collapse each key to taxify()'s single best accepted name, reusing the
   # runtime scoring so the lookup is identical to taxify()'s own resolution.
   bb$taxonomicStatus  <- bb$taxonomic_status
@@ -69,6 +73,7 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
                  if ("kingdom" %in% names(bb)) "kingdom")
   bb <- bb[!duplicated(bb$key_ci), keep_cols, drop = FALSE]
   if (!"kingdom" %in% names(bb)) bb$kingdom <- NA_character_
+  bb$n_species <- n_species[match(bb$key_ci, names(n_species))]
   rownames(bb) <- NULL
 
   if (verbose) {
@@ -93,6 +98,53 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   }
 
   invisible(out_path)
+}
+
+
+#' Does a lookup have to be rebuilt before it can be used?
+#'
+#' A lookup written before its backbone was replaced resolves names the way
+#' the old backbone did, and one without `n_species` cannot tell the closure
+#' which keys are homonyms.
+#'
+#' @param lookup_path,bb_path Paths to the lookup and its backbone `.vtr`.
+#' @return Logical.
+#' @noRd
+.lookup_is_stale <- function(lookup_path, bb_path) {
+  file.mtime(bb_path) > file.mtime(lookup_path) ||
+    !"n_species" %in% names(vectra::collect(utils::head(vectra::tbl(lookup_path), 1L)))
+}
+
+
+#' The species part of a name
+#'
+#' Genus and specific epithet, with a nothogenus or nothospecies sign kept in
+#' place. Infraspecific ranks of one species share it, so a key synonymised
+#' onto both `Vachellia farnesiana` and its autonym counts as one species.
+#'
+#' @param x Character vector of names.
+#' @return Character vector, lowercased.
+#' @noRd
+.species_of <- function(x) {
+  tolower(sub("^((× ?)?[^ ]+( ×)?( [^ ]+)?).*$", "\\1", trimws(x)))
+}
+
+
+#' Number of distinct species each key's backbone rows point to
+#'
+#' A key with rows pointing to two species is a homonym: the same spelling
+#' published for two taxa (`Acacia acicularis` R.Br. is a synonym of
+#' *Acacia brownii*, the Humb. & Bonpl. name of *Vachellia farnesiana*).
+#'
+#' @param key_ci,accepted_name Parallel character vectors, one per backbone row.
+#' @return Named integer vector, one entry per distinct key.
+#' @noRd
+.key_species_count <- function(key_ci, accepted_name) {
+  sp <- .species_of(accepted_name)
+  first <- !duplicated(paste(key_ci, sp, sep = "\x1f"))
+  keys <- unique(key_ci)
+  stats::setNames(tabulate(match(key_ci[first], keys), nbins = length(keys)),
+                  keys)
 }
 
 
@@ -128,7 +180,13 @@ build_all_name_lookups <- function(backends = list_backends(),
       next
     }
 
-    if (file.exists(out_vtr) && !overwrite) {
+    stale <- file.exists(out_vtr) && .lookup_is_stale(out_vtr, bb_vtr)
+    if (stale) {
+      message(sprintf(
+        "[lookup] %s: rebuilding (older than its backbone, or no n_species column)",
+        bb))
+    }
+    if (file.exists(out_vtr) && !overwrite && !stale) {
       # A lookup built before the closure carries only the key_ci index. The
       # index is a sidecar, so the reverse direction is added in place rather
       # than by rebuilding a multi-hundred-MB table.

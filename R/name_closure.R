@@ -34,14 +34,19 @@
 #' @param p Path to a `{backend}_name_lookup.vtr`.
 #' @param column Either `"key_ci"` (forward) or `"accepted_name"` (reverse).
 #' @param values Character vector to filter on.
-#' @return data.frame with `key_ci`, `accepted_name`, `kingdom`.
+#' @return data.frame with `key_ci`, `accepted_name`, `n_species`, `kingdom`.
 #' @noRd
 .lookup_filter <- function(p, column, values) {
   # head() before collect(): collecting first materializes the whole lookup --
   # hundreds of MB per backbone, on every pass -- to read a column name.
-  have_k <- "kingdom" %in% names(
-    vectra::collect(utils::head(vectra::tbl(p), 1L)))
-  sel <- c("key_ci", "accepted_name", if (have_k) "kingdom")
+  schema <- names(vectra::collect(utils::head(vectra::tbl(p), 1L)))
+  if (!"n_species" %in% schema) {
+    stop(sprintf(paste0(
+      "%s has no n_species column, so homonym keys cannot be told apart. ",
+      "Rebuild it with build_all_name_lookups()."), basename(p)), call. = FALSE)
+  }
+  have_k <- "kingdom" %in% schema
+  sel <- c("key_ci", "accepted_name", "n_species", if (have_k) "kingdom")
   out <- if (identical(column, "key_ci")) {
     vectra::tbl(p) |>
       vectra::filter(key_ci %in% values) |>
@@ -64,8 +69,8 @@
 #' @noRd
 .empty_edges <- function() {
   data.frame(key_ci = character(), accepted_name = character(),
-             kingdom = character(), backbone = character(),
-             stringsAsFactors = FALSE)
+             n_species = integer(), kingdom = character(),
+             backbone = character(), stringsAsFactors = FALSE)
 }
 
 
@@ -126,6 +131,34 @@
 }
 
 
+#' Refuse to hop through a key some backbone gives to two species
+#'
+#' A lookup keeps one accepted name per key, so for a homonym it keeps one of
+#' the species that spelling was published for, by tiebreak. The source's
+#' concept can reach such a key through one of those species and leave it
+#' through the other: `Vachellia farnesiana` reaches `acacia acicularis`
+#' (Humb. & Bonpl.), which LCVP collapses onto *Acacia brownii* (R.Br.), and
+#' *A. brownii* would be keyed with the farnesiana row's traits. Which species
+#' the collapse picks moves with the tiebreak, so a build keyed through
+#' homonyms also changes from one lookup rebuild to the next.
+#'
+#' One backbone recording the key under two species is enough: the backbones
+#' that record a single target for it have merely dropped the other name.
+#'
+#' @param f2 Re-forward edges carrying `n_species`.
+#' @param verbose Logical.
+#' @return `f2` without the edges of homonym keys.
+#' @noRd
+.drop_homonym_bridges <- function(f2, verbose = TRUE) {
+  homonym <- unique(f2$key_ci[!is.na(f2$n_species) & f2$n_species > 1L])
+  if (length(homonym) && isTRUE(verbose)) {
+    message(sprintf("    [homonym] %s key(s) not followed by the reverse hop",
+                    format(length(homonym), big.mark = ",")))
+  }
+  f2[!f2$key_ci %in% homonym, , drop = FALSE]
+}
+
+
 #' Map source names to the accepted names every backbone can return for them
 #'
 #' One forward pass (the pre-existing behaviour) plus, when `reverse_hop` is
@@ -157,6 +190,7 @@
     revk <- setdiff(unique(rev$key_ci), query_keys)
     if (length(revk)) {
       f2 <- .closure_pass(lookup_paths, "key_ci", revk, verbose, "[re-forward]")
+      f2 <- .drop_homonym_bridges(f2, verbose)
     }
   }
 

@@ -1,5 +1,29 @@
 # taxifydb 0.1.23
 
+## The reverse hop no longer crosses a homonym (#52)
+
+* A name lookup keeps one accepted name per spelling, so a homonym such as
+  `Acacia acicularis` (R.Br., a synonym of *Acacia brownii*; Humb. & Bonpl.,
+  of *Vachellia farnesiana*) is collapsed onto one of its species by
+  tiebreak. The reverse hop could enter such a key through one species and
+  leave through the other, keying the second with the first's traits: the
+  `useful_plants` row for *Acacia brownii* was *V. farnesiana*'s, and
+  *Acacia leptospermoides* carried *Acacia longifolia*'s through
+  `Acacia spathulata`. Because the tiebreak decides which species comes out,
+  the contamination also moved between lookup rebuilds, which is how the #50
+  re-cut appeared to lose keys the August build had.
+
+* Lookups now carry `n_species`, the number of species a spelling's rows point
+  to (infraspecific ranks of one species count once), and the hop refuses any
+  key a backbone gives to two or more. Against the current lookups this
+  removes 22,856 of `useful_plants`' 134,954 keys and 608 of `anage`'s 13,428.
+  A sample of 25 refused keys were all homonyms with distinct authors
+  (`Carum aromaticum` Salisb. is caraway, Druce's is ajwain).
+
+* `build_all_name_lookups()` rebuilds a lookup that predates its backbone or
+  has no `n_species` column even without `overwrite = TRUE`, and the closure
+  refuses to read one without the column.
+
 ## WFO text is decoded from UTF-8 once (#51)
 
 * `read_wfo()` and `build_wfo()` decoded WFO's classification file as latin1

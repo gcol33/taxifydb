@@ -148,6 +148,14 @@ test_that("the writer refuses a provenance id missing from the table", {
     "D9")
 })
 
+test_that("attach_references folds a reference listed once per scope", {
+  df <- attach_references(data.frame(), data.frame(
+    ref_id = c("10193", "10193", "272"),
+    citation = c("WCSP (2014)", "WCSP (2014)", "Linhart (1980)"),
+    doi = NA_character_, stringsAsFactors = FALSE))
+  expect_equal(attr(df, "references")$ref_id, c("10193", "272"))
+})
+
 test_that("attach_references rejects duplicate ids and the delimiter", {
   expect_error(attach_references(data.frame(),
                                  data.frame(ref_id = c("a", "a"),

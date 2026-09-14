@@ -113,6 +113,10 @@ attach_references <- function(df, references) {
   if (anyNA(references$ref_id) || any(!nzchar(references$ref_id))) {
     stop("references$ref_id has missing or empty ids.", call. = FALSE)
   }
+  # A source may list one reference once per scope it covers (GIFT repeats a
+  # checklist for every family it spans); rows agreeing in every kept column are
+  # one reference.
+  references <- unique(references)
   if (anyDuplicated(references$ref_id)) {
     d <- unique(references$ref_id[duplicated(references$ref_id)])
     stop(sprintf("references$ref_id is not unique: %s.",

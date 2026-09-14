@@ -332,8 +332,8 @@
       "latest": "2026.08",
       "source_version": "2026.09",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/iucn.vtr",
-      "nrow": 286365,
-      "content_id": "9d78edb86ed2f47f79d3dfc025b2b6bb",
+      "nrow": 286340,
+      "content_id": "83574683d5f6496969ab71ccab8b8e0b",
       "source_url": "https://hosted-datasets.gbif.org/datasets/iucn/iucn-latest.zip",
       "license": "CC BY 4.0",
       "resolved_backbones": [
@@ -358,14 +358,14 @@
         "worms"
       ],
       "upstream_id": "Tue, 28 Jul 2026 14:46:22 GMT",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/iucn-9d78edb86ed2f47f79d3dfc025b2b6bb.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/iucn-83574683d5f6496969ab71ccab8b8e0b.vtr"
     },
     "griis": {
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/griis.vtr",
-      "nrow": 769968,
-      "content_id": "14ddac605e72a8fca05d446ab55ca0bb",
+      "nrow": 769846,
+      "content_id": "7c92cf6ced3bedca44ba4e01b60c3595",
       "source_url": "https://zenodo.org/records/6348164/files/GRIIS%20-%20Country%20Compendium%20V1_0.csv?download=1",
       "source_doi": "10.15468/6jcu0q",
       "license": "CC BY 4.0",
@@ -589,7 +589,7 @@
         "worms"
       ],
       "upstream_id": "6348164",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/griis-14ddac605e72a8fca05d446ab55ca0bb.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/griis-7c92cf6ced3bedca44ba4e01b60c3595.vtr"
     },
     "wcvp": {
       "latest": "2026.08",
@@ -1031,8 +1031,8 @@
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/elton_traits.vtr",
-      "nrow": 30510,
-      "content_id": "22d2be75356271b6d78b304af2404359",
+      "nrow": 30504,
+      "content_id": "210c192826fa45168c0b73a0de90c29c",
       "source_url": "https://ndownloader.figshare.com/files/5631081",
       "source_doi": "10.6084/m9.figshare.c.3306933.v1",
       "license": "CC0",
@@ -1057,7 +1057,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/elton_traits-22d2be75356271b6d78b304af2404359.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/elton_traits-210c192826fa45168c0b73a0de90c29c.vtr"
     },
     "avonet": {
       "latest": "2026.08",
@@ -1094,8 +1094,8 @@
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/pantheria.vtr",
-      "nrow": 14997,
-      "content_id": "5445a7ff07640350a13a86babf76cb46",
+      "nrow": 14991,
+      "content_id": "be0c577fd1928a90f6ae773a9ffd4a8b",
       "source_url": "https://esapubs.org/archive/ecol/E090/184/PanTHERIA_1-0_WR05_Aug2008.txt",
       "source_doi": "10.1890/08-1494.1",
       "license": "CC0",
@@ -1120,7 +1120,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/pantheria-5445a7ff07640350a13a86babf76cb46.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/pantheria-be0c577fd1928a90f6ae773a9ffd4a8b.vtr"
     },
     "amphibio": {
       "latest": "2026.08",
@@ -1157,168 +1157,12 @@
       "latest": "2026.08",
       "source_version": "2026.09",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/common_names.vtr",
-      "nrow": 1566392,
-      "content_id": "56d123a481698cd976559209d4e836e5",
+      "nrow": 1566026,
+      "content_id": "42e6d6193096deb269f5e8c009df814c",
       "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip ; https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz ; https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
       "license": "CC0 (GBIF, OTT) / public domain (NCBI)",
       "group_col": "lang",
-      "available_groups": [
-        "aa",
-        "ab",
-        "af",
-        "ak",
-        "am",
-        "an",
-        "ar",
-        "as",
-        "ay",
-        "az",
-        "ba",
-        "be",
-        "bg",
-        "bh",
-        "bi",
-        "bm",
-        "bn",
-        "bo",
-        "br",
-        "bs",
-        "ca",
-        "ch",
-        "co",
-        "cr",
-        "cs",
-        "cy",
-        "da",
-        "de",
-        "dv",
-        "dz",
-        "ee",
-        "el",
-        "en",
-        "eo",
-        "es",
-        "et",
-        "eu",
-        "fa",
-        "ff",
-        "fi",
-        "fj",
-        "fo",
-        "fr",
-        "ga",
-        "gd",
-        "gl",
-        "gn",
-        "gu",
-        "gv",
-        "ha",
-        "he",
-        "hi",
-        "ho",
-        "hr",
-        "ht",
-        "hu",
-        "hy",
-        "id",
-        "ig",
-        "ik",
-        "io",
-        "is",
-        "it",
-        "iu",
-        "ja",
-        "jv",
-        "ka",
-        "kg",
-        "ki",
-        "kk",
-        "kl",
-        "km",
-        "kn",
-        "ko",
-        "kr",
-        "ks",
-        "ku",
-        "ky",
-        "la",
-        "lb",
-        "lg",
-        "ln",
-        "lo",
-        "lt",
-        "lu",
-        "lv",
-        "mg",
-        "mh",
-        "mi",
-        "mk",
-        "ml",
-        "mn",
-        "mo",
-        "mr",
-        "ms",
-        "mt",
-        "my",
-        "nb",
-        "ne",
-        "nl",
-        "nn",
-        "no",
-        "ny",
-        "oc",
-        "om",
-        "or",
-        "pa",
-        "pl",
-        "pt",
-        "qu",
-        "rn",
-        "ro",
-        "ru",
-        "rw",
-        "sa",
-        "sc",
-        "sd",
-        "se",
-        "sg",
-        "si",
-        "sk",
-        "sl",
-        "sm",
-        "sn",
-        "so",
-        "sq",
-        "sr",
-        "ss",
-        "st",
-        "su",
-        "sv",
-        "sw",
-        "ta",
-        "te",
-        "tg",
-        "th",
-        "ti",
-        "tk",
-        "tl",
-        "tn",
-        "to",
-        "tr",
-        "ts",
-        "tw",
-        "ty",
-        "uk",
-        "ur",
-        "uz",
-        "ve",
-        "vi",
-        "wo",
-        "xh",
-        "yo",
-        "zh",
-        "zu"
-      ],
+      "available_groups": ["aa", "ab", "af", "ak", "am", "an", "ar", "as", "ay", "az", "ba", "be", "bg", "bh", "bi", "bm", "bn", "bo", "br", "bs", "ca", "ch", "co", "cr", "cs", "cy", "da", "de", "dv", "dz", "ee", "el", "en", "eo", "es", "et", "eu", "fa", "ff", "fi", "fj", "fo", "fr", "ga", "gd", "gl", "gn", "gu", "gv", "ha", "he", "hi", "ho", "hr", "ht", "hu", "hy", "id", "ig", "ik", "io", "is", "it", "iu", "ja", "jv", "ka", "kg", "ki", "kk", "kl", "km", "kn", "ko", "kr", "ks", "ku", "ky", "la", "lb", "lg", "ln", "lo", "lt", "lu", "lv", "mg", "mh", "mi", "mk", "ml", "mn", "mo", "mr", "ms", "mt", "my", "nb", "ne", "nl", "nn", "no", "ny", "oc", "om", "or", "pa", "pl", "pt", "qu", "rn", "ro", "ru", "rw", "sa", "sc", "sd", "se", "sg", "si", "sk", "sl", "sm", "sn", "so", "sq", "sr", "ss", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "ti", "tk", "tl", "tn", "to", "tr", "ts", "tw", "ty", "uk", "ur", "uz", "ve", "vi", "wo", "xh", "yo", "zh", "zu"],
       "resolved_backbones": [
         "algaebase",
         "avilist",
@@ -1340,14 +1184,14 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/common_names-56d123a481698cd976559209d4e836e5.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/common_names-42e6d6193096deb269f5e8c009df814c.vtr"
     },
     "anage": {
       "latest": "2026.08",
       "source_version": "15.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/anage.vtr",
-      "nrow": 13430,
-      "content_id": "493447918bc8ce8266192f49ec919d71",
+      "nrow": 13428,
+      "content_id": "b4965d95716664ce62eddab963660674",
       "source_url": "https://genomics.senescence.info/species/dataset.zip",
       "source_doi": "10.1111/j.1420-9101.2009.01783.x",
       "license": "CC BY",
@@ -1372,7 +1216,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/anage-493447918bc8ce8266192f49ec919d71.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/anage-b4965d95716664ce62eddab963660674.vtr"
     },
     "funguild": {
       "latest": "2026.08",
@@ -2942,8 +2786,8 @@
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leptraits.vtr",
-      "nrow": 16431,
-      "content_id": "65a3ab768b10a6975007be85cd6f330c",
+      "nrow": 16427,
+      "content_id": "13246bba00286365d3b35ea4ea766f58",
       "source_url": "https://raw.githubusercontent.com/RiesLabGU/LepTraits/main/consensus/consensus.csv",
       "source_doi": "10.1038/s41597-022-01473-5",
       "license": "CC0",
@@ -2968,14 +2812,14 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leptraits-65a3ab768b10a6975007be85cd6f330c.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leptraits-13246bba00286365d3b35ea4ea766f58.vtr"
     },
     "animaltraits": {
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/animaltraits.vtr",
-      "nrow": 5794,
-      "content_id": "60f9168b787045c15fed4a041a8c68ac",
+      "nrow": 5793,
+      "content_id": "940c2af65459d761cbb9c2b4133a77af",
       "source_url": "https://zenodo.org/record/6468938/files/observations.csv?download=1",
       "source_doi": "10.1038/s41597-022-01364-9",
       "license": "CC0",
@@ -3001,14 +2845,14 @@
         "worms"
       ],
       "upstream_id": "6468938",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/animaltraits-60f9168b787045c15fed4a041a8c68ac.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/animaltraits-940c2af65459d761cbb9c2b4133a77af.vtr"
     },
     "arthropod_traits": {
       "latest": "2026.08",
       "source_version": "1.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/arthropod_traits.vtr",
-      "nrow": 8434,
-      "content_id": "6cc0d3221c8684b384b1117d796654bc",
+      "nrow": 8382,
+      "content_id": "2b322ed31fa9c957766a497d3cad3ef6",
       "source_url": "https://ipt.biodiversity.be/archive.do?r=arthropod-trait-dataset&v=1.1",
       "source_doi": "10.3897/BDJ.13.e146785",
       "license": "CC BY-NC",
@@ -3033,7 +2877,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/arthropod_traits-6cc0d3221c8684b384b1117d796654bc.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/arthropod_traits-2b322ed31fa9c957766a497d3cad3ef6.vtr"
     },
     "diaz_traits": {
       "latest": "2026.08",
@@ -3071,8 +2915,8 @@
       "latest": "2026.08",
       "source_version": "4.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alien_first_records.vtr",
-      "nrow": 549687,
-      "content_id": "5faa26c9b5dd1d1ece5e6d65547b7dc6",
+      "nrow": 549543,
+      "content_id": "f1e9b40afa297dce9ec3c9674234c6fd",
       "source_url": "https://zenodo.org/api/records/18759840/files/FirstRecords_dataset_public_v4.0.csv/content",
       "source_doi": "10.5281/zenodo.18759840",
       "license": "CC BY 4.0",
@@ -3346,7 +3190,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alien_first_records-5faa26c9b5dd1d1ece5e6d65547b7dc6.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alien_first_records-f1e9b40afa297dce9ec3c9674234c6fd.vtr"
     },
     "fungal_traits": {
       "latest": "2026.08",
@@ -3538,8 +3382,8 @@
       "latest": "2026.08",
       "source_version": "2026.09",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/sealifebase.vtr",
-      "nrow": 137229,
-      "content_id": "7d8a13f1b74d8baa8e368472daf617cc",
+      "nrow": 137211,
+      "content_id": "53b0f149c5dd450eb1a5e8cc765b3673",
       "source_url": "https://sealifebase.ropensci.org",
       "license": "CC BY-NC 4.0",
       "resolved_backbones": [
@@ -3563,14 +3407,14 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/sealifebase-7d8a13f1b74d8baa8e368472daf617cc.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/sealifebase-53b0f149c5dd450eb1a5e8cc765b3673.vtr"
     },
     "globtherm": {
       "latest": "2026.08",
       "source_version": "2018.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/globtherm.vtr",
-      "nrow": 6200,
-      "content_id": "e715c09047653090815ff2f1d0bd9077",
+      "nrow": 6198,
+      "content_id": "f996e7a7652748baaa3bb2267ad127a4",
       "source_url": "10.5061/dryad.1cv08",
       "source_doi": "10.1038/sdata.2018.22",
       "license": "CC0",
@@ -3595,7 +3439,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/globtherm-e715c09047653090815ff2f1d0bd9077.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/globtherm-f996e7a7652748baaa3bb2267ad127a4.vtr"
     },
     "madin": {
       "latest": "2026.08",
@@ -3664,8 +3508,8 @@
       "latest": "2026.08",
       "source_version": "2015.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/amniote.vtr",
-      "nrow": 38630,
-      "content_id": "68d932af5c09c34cee4d62e414c5f8ab",
+      "nrow": 38625,
+      "content_id": "30f7853963825e0e98eee988a17f0afb",
       "source_url": "https://ndownloader.figshare.com/files/8067269",
       "source_doi": "10.1890/15-0846R.1",
       "license": "CC0",
@@ -3690,14 +3534,14 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/amniote-68d932af5c09c34cee4d62e414c5f8ab.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/amniote-30f7853963825e0e98eee988a17f0afb.vtr"
     },
     "combine": {
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine.vtr",
-      "nrow": 16262,
-      "content_id": "5aa978e2cc95fdc194da86bdc7ea6f63",
+      "nrow": 16252,
+      "content_id": "cbd9d6ee333702cba15fc94efd69746c",
       "source_url": "https://ndownloader.figshare.com/files/27703263",
       "source_doi": "10.1002/ecy.3344",
       "license": "CC0",
@@ -3722,14 +3566,14 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine-5aa978e2cc95fdc194da86bdc7ea6f63.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine-cbd9d6ee333702cba15fc94efd69746c.vtr"
     },
     "combine_imputed": {
       "latest": "2026.08",
       "source_version": "1.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine_imputed.vtr",
-      "nrow": 16262,
-      "content_id": "7e3228393849daa57a6224a52823d043",
+      "nrow": 16252,
+      "content_id": "9ad709b112fe261bc6f95e38e610adcc",
       "source_url": "https://ndownloader.figshare.com/files/27703266",
       "source_doi": "10.1002/ecy.3344",
       "license": "CC0",
@@ -3754,7 +3598,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine_imputed-7e3228393849daa57a6224a52823d043.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine_imputed-9ad709b112fe261bc6f95e38e610adcc.vtr"
     },
     "austraits": {
       "latest": "2026.08",
@@ -3855,8 +3699,8 @@
       "latest": "2026.08",
       "source_version": "1.2",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/phylacine.vtr",
-      "nrow": 15731,
-      "content_id": "bc21f4c6daae29e4d1fda6c8a1dc0665",
+      "nrow": 15721,
+      "content_id": "b378632bfa53cb733c12557dd316ccc7",
       "source_url": "https://raw.githubusercontent.com/MegaPast2Future/PHYLACINE_1.2/master/Data/Traits/Trait_data.csv",
       "source_doi": "10.1002/ecy.2443",
       "license": "CC0",
@@ -3881,7 +3725,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/phylacine-bc21f4c6daae29e4d1fda6c8a1dc0665.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/phylacine-b378632bfa53cb733c12557dd316ccc7.vtr"
     },
     "chelonians": {
       "latest": "2026.08",
@@ -3981,8 +3825,8 @@
       "latest": "2026.08",
       "source_version": "2014.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/tree_of_sex.vtr",
-      "nrow": 63535,
-      "content_id": "880e4db6c982a4b1040c616a7c0216a8",
+      "nrow": 63404,
+      "content_id": "4c2a95a063c83a30d8fa839dc675df09",
       "source_url": "10.5061/dryad.v1908",
       "source_doi": "10.1038/sdata.2014.15",
       "license": "CC0",
@@ -4007,7 +3851,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/tree_of_sex-880e4db6c982a4b1040c616a7c0216a8.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/tree_of_sex-4c2a95a063c83a30d8fa839dc675df09.vtr"
     },
     "repttraits": {
       "latest": "2026.08",
@@ -4140,8 +3984,8 @@
       "latest": "2026.08",
       "source_version": "2.2",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/octocoral.vtr",
-      "nrow": 4566,
-      "content_id": "e1ff61ce3e983e2c85a9c67327df50c1",
+      "nrow": 4568,
+      "content_id": "db6acec529cd14b00a1e59d0365eb8e4",
       "source_url": "https://zenodo.org/records/14228404/files/OctocoralTraits_v2_2.zip?download=1",
       "source_doi": "10.5281/zenodo.14228404",
       "license": "CC BY 4.0",
@@ -4167,7 +4011,7 @@
         "worms"
       ],
       "upstream_id": "14228404",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/octocoral-e1ff61ce3e983e2c85a9c67327df50c1.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/octocoral-db6acec529cd14b00a1e59d0365eb8e4.vtr"
     },
     "rimet_phyto": {
       "latest": "2026.08",
@@ -4333,8 +4177,8 @@
       "latest": "2026.08",
       "source_version": "2021.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/saproxylic.vtr",
-      "nrow": 1580,
-      "content_id": "0536daf0b0e4db245b59b8d00265bf8a",
+      "nrow": 1578,
+      "content_id": "4a3c32e9d170ba6aff187e4508e64c2b",
       "source_url": "10.5061/dryad.2fqz612p3",
       "source_doi": "10.5061/dryad.2fqz612p3",
       "license": "CC0",
@@ -4359,7 +4203,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/saproxylic-0536daf0b0e4db245b59b8d00265bf8a.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/saproxylic-4a3c32e9d170ba6aff187e4508e64c2b.vtr"
     },
     "pelagic": {
       "latest": "2026.08",
@@ -4396,8 +4240,8 @@
       "latest": "2026.08",
       "source_version": "1.220.5",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/frugivoria.vtr",
-      "nrow": 3185,
-      "content_id": "ab2c61d18955c9362c8049a956a78ce7",
+      "nrow": 3180,
+      "content_id": "0ddbdf5f9f1e4c32c0267898100598a7",
       "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/5/",
       "source_doi": "10.6073/pasta/frugivoria",
       "license": "CC BY 4.0",
@@ -4422,7 +4266,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/frugivoria-ab2c61d18955c9362c8049a956a78ce7.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/frugivoria-0ddbdf5f9f1e4c32c0267898100598a7.vtr"
     },
     "parravicini": {
       "latest": "2026.08",
@@ -4552,8 +4396,8 @@
       "latest": "2026.08",
       "source_version": "1.3.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/zooplankton.vtr",
-      "nrow": 5803,
-      "content_id": "c88363a5e893a9c13cc68252931b51de",
+      "nrow": 5810,
+      "content_id": "591b448a96b2ed3f56e64c53396ba923",
       "source_url": "https://zenodo.org/api/records/8102913",
       "source_doi": "10.5281/zenodo.8102913",
       "license": "CC BY-SA 4.0",
@@ -4579,7 +4423,7 @@
         "worms"
       ],
       "upstream_id": "8102913",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/zooplankton-c88363a5e893a9c13cc68252931b51de.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/zooplankton-591b448a96b2ed3f56e64c53396ba923.vtr"
     },
     "eupolltrait": {
       "latest": "2026.08",
@@ -4618,8 +4462,8 @@
       "latest": "2026.08",
       "source_version": "2023.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/homerange.vtr",
-      "nrow": 5426,
-      "content_id": "dc04c717cd6600df264d9c2c574a9c9d",
+      "nrow": 5424,
+      "content_id": "b7d17ed08abbe04f423bf37c22b7d052",
       "source_url": "10.5061/dryad.d2547d85x",
       "source_doi": "10.5061/dryad.d2547d85x",
       "license": "CC0",
@@ -4644,7 +4488,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/homerange-dc04c717cd6600df264d9c2c574a9c9d.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/homerange-b7d17ed08abbe04f423bf37c22b7d052.vtr"
     },
     "tetradensity": {
       "latest": "2026.08",
@@ -4909,12 +4753,12 @@
       "latest": "2026.08",
       "source_version": "2010.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/hosts.vtr",
-      "nrow": 24240,
-      "content_id": "be839bd4ba55448c18a92b4adc525411",
+      "nrow": 24241,
+      "content_id": "5c15f4ebeee21f51764609c236b403a4",
       "source_url": "https://data.nhm.ac.uk/dataset/hosts-a-database-of-the-world-s-lepidopteran-hostplants",
       "source_doi": "10.5519/havt50xw",
       "license": "CC0",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/hosts-be839bd4ba55448c18a92b4adc525411.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/hosts-5c15f4ebeee21f51764609c236b403a4.vtr"
     },
     "usda_fungus_host": {
       "latest": "2026.08",
@@ -5065,8 +4909,8 @@
       "latest": "2026.08",
       "source_version": "2025.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/thermofresh.vtr",
-      "nrow": 1575,
-      "content_id": "dcef4b23cea1e11fdf52d2e1ddd1c571",
+      "nrow": 1580,
+      "content_id": "f69c1d8e59ada7d2cfdc14d7676c9109",
       "source_url": "https://zenodo.org/api/records/16959762/files/hsbayat%2FThermoFresh-v1.0.zip/content",
       "source_doi": "10.5281/zenodo.16959762",
       "license": "CC BY 4.0",
@@ -5092,7 +4936,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/thermofresh-dcef4b23cea1e11fdf52d2e1ddd1c571.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/thermofresh-f69c1d8e59ada7d2cfdc14d7676c9109.vtr"
     },
     "ramond": {
       "latest": "2026.08",
@@ -5223,8 +5067,8 @@
     "kew_cvalues": {
       "latest": "2026.08",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/kew_cvalues.vtr",
-      "nrow": 55284,
-      "content_id": "d3af495a6b100bc05ee6420fcbd327b0",
+      "nrow": 55289,
+      "content_id": "8adbe88d9cbbf13200c0b512e2e012b0",
       "source_url": "https://cvalues.science.kew.org/search",
       "license": "CC BY",
       "resolved_backbones": [
@@ -5248,7 +5092,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/kew_cvalues-d3af495a6b100bc05ee6420fcbd327b0.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/kew_cvalues-8adbe88d9cbbf13200c0b512e2e012b0.vtr"
     },
     "copepod_traits": {
       "latest": "2026.08",
@@ -5377,9 +5221,9 @@
     },
     "marine_distribution": {
       "latest": "2026.08",
-      "content_id": "222888e487bbd1c57483b25ba3cb3f43",
+      "content_id": "d007efcbb43bb53d72ba550787b3c22f",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/marine_distribution.vtr",
-      "nrow": 3099927,
+      "nrow": 3103303,
       "source_url": "https://github.com/gcol33/taxifydb/releases/download/marine-snapshots-2026.07/worms_distributions.jsonl ; https://github.com/gcol33/taxifydb/releases/download/marine-snapshots-2026.07/mrgid_meow.tsv",
       "source_format": "jsonl",
       "source_version": "2026.07",
@@ -5658,7 +5502,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/marine_distribution-222888e487bbd1c57483b25ba3cb3f43.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/marine_distribution-d007efcbb43bb53d72ba550787b3c22f.vtr"
     },
     "chowdhury": {
       "latest": "2026.08",
@@ -6081,9 +5925,9 @@
     },
     "virion": {
       "latest": "2026.08",
-      "content_id": "fb9fb70f4271ac5ba5f70d55c3678b57",
+      "content_id": "9fe995d736039973c76f6fb2b0d97a18",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/virion.vtr",
-      "nrow": 12327,
+      "nrow": 12323,
       "source_url": "https://zenodo.org/api/records/21636520",
       "source_format": "csv_gz",
       "source_version": "2.0",
@@ -6130,7 +5974,7 @@
         "worms"
       ],
       "upstream_id": "21636520",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/virion-fb9fb70f4271ac5ba5f70d55c3678b57.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/virion-9fe995d736039973c76f6fb2b0d97a18.vtr"
     },
     "sworm": {
       "latest": "2026.08",
@@ -6280,8 +6124,8 @@
       "latest": "2026.08",
       "source_version": "2018.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/betsi_collembola_body_length.vtr",
-      "nrow": 1682,
-      "content_id": "4c86dceed6585b024cf89f2f1fa4dadb",
+      "nrow": 1681,
+      "content_id": "3964b7ed1caed1bb64f9fd0abbb47aaf",
       "source_url": "https://zenodo.org/api/records/1292461/files/BETSI_Trait%20data%20request_Collembola_Body%20length_01062017.xlsx/content",
       "source_doi": "10.5281/zenodo.1292461",
       "license": "CC BY-NC 4.0",
@@ -6307,7 +6151,7 @@
         "worms"
       ],
       "upstream_id": "1292461",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/betsi_collembola_body_length-4c86dceed6585b024cf89f2f1fa4dadb.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/betsi_collembola_body_length-3964b7ed1caed1bb64f9fd0abbb47aaf.vtr"
     },
     "plazi_collembola_body_length": {
       "latest": "2026.08",
@@ -6345,8 +6189,8 @@
       "latest": "2026.08",
       "source_version": "2026.08",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/monograph_collembola_body_length.vtr",
-      "nrow": 772,
-      "content_id": "1edb8bf6c830dd7395a3939a476ea308",
+      "nrow": 771,
+      "content_id": "c4584ae18d15b3d9d2f80006761e6549",
       "source_url": "https://github.com/gcol33/taxifydb/releases/download/monograph-snapshots-2026.08/collembola_monograph_bodylength_2026-08-05.csv",
       "license": "Extracted measurements (facts); source monographs copyright their publishers, served for non-commercial scientific reuse (informed-risk, #42)",
       "resolved_backbones": [
@@ -6370,14 +6214,14 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/monograph_collembola_body_length-1edb8bf6c830dd7395a3939a476ea308.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/monograph_collembola_body_length-c4584ae18d15b3d9d2f80006761e6549.vtr"
     },
     "ellers_collembola": {
       "latest": "2026.08",
       "source_version": "2019.04",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ellers_collembola.vtr",
-      "nrow": 537,
-      "content_id": "75b1a5a7b99c16c5362a92ef3a113f60",
+      "nrow": 536,
+      "content_id": "7d61442f8cfb6ed6d6d5b85c3a501927",
       "source_url": "https://zenodo.org/api/records/4934993/files/Collembola_trait_data.csv/content",
       "source_doi": "10.5061/dryad.m6dn0g8",
       "license": "CC0 1.0",
@@ -6403,7 +6247,7 @@
         "worms"
       ],
       "upstream_id": "4934993",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ellers_collembola-75b1a5a7b99c16c5362a92ef3a113f60.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ellers_collembola-7d61442f8cfb6ed6d6d5b85c3a501927.vtr"
     },
     "ecomorphosis": {
       "latest": "2026.08",

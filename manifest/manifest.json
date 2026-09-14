@@ -3840,7 +3840,7 @@
       "source_version": "2023.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/bet.vtr",
       "nrow": 4220,
-      "content_id": "48adff0329ac451e5c4aadfef2c2b5aa",
+      "content_id": "4dbd61b4dd815063382263bdde631733",
       "source_url": "https://www.envidat.ch/dataset/4865a082-169d-40d1-920b-fc20ad0acad2/resource/d2d2f958-051c-4638-a808-88547cc64d92/download/betdata.txt",
       "source_doi": "10.16904/envidat.348",
       "license": "CC BY-SA 4.0",
@@ -3865,7 +3865,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/bet-48adff0329ac451e5c4aadfef2c2b5aa.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/bet-4dbd61b4dd815063382263bdde631733.vtr"
     },
     "phylacine": {
       "latest": "2026.08",

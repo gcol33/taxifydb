@@ -48,7 +48,10 @@ create_delta <- function(old_path, new_path, delta_path) {
 
   dir.create(dirname(delta_path), recursive = TRUE, showWarnings = FALSE)
 
-  status <- system2("xdelta3", c("-e", "-s", old_path, new_path, delta_path))
+  # system2() joins `args` into one command line, so every path is quoted to
+  # survive a directory containing a space.
+  status <- system2("xdelta3", c("-e", "-s", shQuote(old_path),
+                                 shQuote(new_path), shQuote(delta_path)))
 
   if (status != 0L) {
     warning("xdelta3 failed with exit code ", status)
@@ -101,7 +104,8 @@ apply_delta <- function(old_path, delta_path, new_path) {
     return(invisible(NULL))
   }
 
-  status <- system2("xdelta3", c("-d", "-s", old_path, delta_path, new_path))
+  status <- system2("xdelta3", c("-d", "-s", shQuote(old_path),
+                                 shQuote(delta_path), shQuote(new_path)))
 
   if (status != 0L) {
     warning("xdelta3 patch failed with exit code ", status)

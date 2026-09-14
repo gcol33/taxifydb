@@ -167,6 +167,23 @@ test_that("create_delta records the content id of its base beside the patch", {
   expect_equal(taxifydb:::read_delta_base(delta), unname(tools::md5sum(old)))
 })
 
+test_that("create_delta and apply_delta handle paths containing a space", {
+  skip_if_not(taxifydb::has_xdelta3())
+  dir <- file.path(withr::local_tempdir(), "with space")
+  dir.create(dir)
+  old <- file.path(dir, "old build.vtr")
+  new <- file.path(dir, "new build.vtr")
+  writeBin(as.raw(rep(1:200, 5)), old)
+  writeBin(as.raw(c(rep(1:100, 5), rep(50:149, 5))), new)
+  delta <- file.path(dir, "worms patch.xdelta")
+  patched <- file.path(dir, "patched build.vtr")
+
+  suppressMessages(taxifydb::create_delta(old, new, delta))
+  expect_true(file.exists(delta))
+  suppressMessages(taxifydb::apply_delta(old, delta, patched))
+  expect_equal(unname(tools::md5sum(patched)), unname(tools::md5sum(new)))
+})
+
 
 # A runtime citation is curated text, often a structured block. It is rewritten
 # from the build only when it no longer names the work being served.

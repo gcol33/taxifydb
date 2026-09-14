@@ -43,6 +43,33 @@ test_that("locations are mapped through accent folding and renamed spellings", {
 })
 
 
+test_that("a taxon written with authorship or a sensu-lato note is keyed on the parsed name", {
+  # v4.0 writes some taxa with their authors and qualifiers, which no backbone
+  # key matches verbatim. Three spellings of one species meet on its name, and
+  # the earliest year among them wins; the verbatim spelling is kept.
+  f <- tempfile(fileext = ".csv")
+  write_fixture(c(HDR,
+                  rec("France", "Atriplex nuttallii S Watson", 1905),
+                  rec("France", "Atriplex nuttallii", 1930),
+                  rec("France", "Achillea millefolium L sl", 1880),
+                  rec("Spain", "Agrostemma githago var githago", 1850),
+                  rec("Spain", "Rubus fruticosus L. agg.", 1860)), f)
+
+  out <- parse_alien_first_records(f)
+  year <- stats::setNames(out$alien_first_record,
+                          paste(out$canonical_name, out$country_code))
+  expect_equal(year[["Atriplex nuttallii FR"]], 1905L)
+  expect_equal(year[["Achillea millefolium FR"]], 1880L)
+  expect_equal(year[["Agrostemma githago var. githago ES"]], 1850L)
+  expect_equal(year[["Rubus fruticosus agg. ES"]], 1860L)
+  expect_equal(nrow(out), 4L)
+  expect_equal(out$verbatim_taxon[out$canonical_name == "Achillea millefolium"],
+               "Achillea millefolium L sl")
+  expect_equal(out$taxon_qualifier[out$canonical_name == "Rubus fruticosus agg."],
+               "agg.")
+})
+
+
 test_that("an accented respelling maps without its own map entry", {
   # "Reunion" is what the map holds; the release writes it with the acute.
   reunion <- rawToChar(as.raw(c(0x52, 0xc3, 0xa9, 0x75, 0x6e, 0x69,

@@ -492,8 +492,16 @@ parse_alien_first_records <- function(path) {
   year <- suppressWarnings(as.integer(as.numeric(df[[year_col]])))
   year[year %in% .alien_first_record_sentinels] <- NA_integer_
 
+  # The taxon column carries authorship and sensu-lato notes; rows are keyed on
+  # the parsed name so they reach the taxon taxify resolves the string to, and
+  # the verbatim spelling and any qualifier ride along as their own columns.
+  taxon <- .source_name_key(df[[name_col]])
+  df$canonical_key   <- taxon$canonical_name
+  df$verbatim_taxon  <- trimws(.to_utf8(df[[name_col]]))
+  df$taxon_qualifier <- taxon$qualifier
+
   out <- data.frame(
-    canonical_name               = trimws(.to_utf8(df[[name_col]])),
+    canonical_name               = taxon$canonical_name,
     country_code                 = df$country_code,
     alien_first_record           = year,
     alien_first_record_status    = status,
@@ -517,11 +525,13 @@ parse_alien_first_records <- function(path) {
   # is "-3000 - -2000"; read as a number that span is lost, and the column
   # exists to hold exactly what the point estimate above does not.
   out <- .append_all_cols(
-    out, df, trimws(.to_utf8(df[[name_col]])),
+    out, df, df$canonical_key,
     group = "country_code", group_row = df$country_code,
-    cat_cols = .first_col(df, c("verbatimFirstRecordEvent",
-                                "FirstRecord_orig")),
-    used = c(name_col, "country_code", year_col, status_col, src_col, ref_col)
+    cat_cols = c(.first_col(df, c("verbatimFirstRecordEvent",
+                                  "FirstRecord_orig")),
+                 "verbatim_taxon", "taxon_qualifier"),
+    used = c(name_col, "canonical_key", "country_code", year_col, status_col,
+             src_col, ref_col)
   )
 
   rownames(out) <- NULL

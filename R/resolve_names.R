@@ -491,6 +491,41 @@ resolve_name_map <- function(names,
 }
 
 
+#' The name a source row is keyed on, parsed the way taxify parses a query
+#'
+#' A source that writes authorship, sensu-lato notes or an unpunctuated rank
+#' marker into its name column (`Atriplex nuttallii S Watson`,
+#' `Achillea millefolium L sl`, `Agrostemma githago var githago`) matches no
+#' backbone key verbatim, so its rows reach nothing, although [taxify::taxify()]
+#' resolves the same string. Keying on [taxify::parse_name()]'s `canonical`
+#' makes a source row reach exactly the taxon the runtime matches the string
+#' to, and lets two spellings of one taxon meet before a per-taxon reduction.
+#'
+#' Aggregates keep the aggregate route [resolve_enrichment_names()] folds to
+#' `<binomial> aggr.`, on the parsed binomial so an author in the aggregate
+#' name does not split the key. A name with no single-taxon parse (a hybrid
+#' formula) keeps its verbatim spelling.
+#'
+#' @param x Character vector of source names.
+#' @return data.frame with `canonical_name` (the key) and `qualifier` (the
+#'   open-nomenclature qualifier `parse_name()` reports, else `NA`), one row
+#'   per element of `x`.
+#' @noRd
+.source_name_key <- function(x) {
+  x <- trimws(.to_utf8(x))
+  p <- taxify::parse_name(ifelse(is.na(x), "", x))
+  key <- p$canonical
+  agg <- taxify::is_aggregate_name(x)
+  agg <- !is.na(agg) & agg
+  species_agg <- agg & p$rank %in% "species"
+  key[species_agg] <- paste(p$canonical[species_agg], "agg.")
+  keep_verbatim <- (agg & !species_agg) | is.na(key) | !nzchar(key)
+  key[keep_verbatim] <- x[keep_verbatim]
+  data.frame(canonical_name = key, qualifier = p$qualifier,
+             stringsAsFactors = FALSE)
+}
+
+
 #' Build the accepted-name map via per-backbone lookup .vtr (fast path)
 #'
 #' Delegates to the cross-backbone closure in `name_closure.R`, which adds to

@@ -28,14 +28,14 @@
   "genus",
   "specificEpithet",
   "scientificNameAuthorship",
-  "infraspecificEpithet"
+  "infraspecificEpithet",
+  "originalNameUsageID"
 )
 
 # Extra columns preserved for add_wfo_info() at runtime
 .wfo_extra_cols <- c(
   "scientificNameID",
   "parentNameUsageID",
-  "originalNameUsageID",
   "namePublishedIn",
   "nomenclaturalStatus",
   "taxonRemarks",
@@ -205,7 +205,8 @@ normalize_wfo <- function(df, verbose = TRUE) {
     genus                   = "genus",
     specific_epithet        = "specificEpithet",
     authorship              = "scientificNameAuthorship",
-    infraspecific_epithet   = "infraspecificEpithet"
+    infraspecific_epithet   = "infraspecificEpithet",
+    original_name_usage_id  = "originalNameUsageID"
   )
 
   extra_cols <- list()

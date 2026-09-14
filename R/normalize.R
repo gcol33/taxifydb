@@ -26,7 +26,9 @@
 #' @param col_map A named list mapping canonical names to source column names:
 #'   `taxon_id`, `canonical_name`, `taxon_rank`, `taxonomic_status`,
 #'   `accepted_name_usage_id`, `family`, `genus`, `specific_epithet`,
-#'   `authorship`, `infraspecific_epithet`.
+#'   `authorship`, `infraspecific_epithet`, and, for a source that links a
+#'   combination to its basionym, `original_name_usage_id` (the basionym's
+#'   `taxon_id`, read by taxify to place an unplaced combination).
 #' @param extra_cols Optional named list of additional columns to keep
 #'   (`canonical_name = source_name`).
 #' @return A data.frame with standardized column names and formatting.

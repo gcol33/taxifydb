@@ -166,3 +166,37 @@ test_that("read_gbif emits unified-schema column names", {
   # needs it for the genus-to-kingdom walk.
   expect_true("parent_key" %in% names(df))
 })
+
+
+test_that("WFO and COL keep the basionym link as original_name_usage_id", {
+  # taxify places an unplaced combination through this link (gcol33/taxify#81).
+  # Rows are WFO 2024-12's Sabulina tenuifolia (UNCHECKED) and its basionym.
+  wfo <- data.frame(
+    taxonID = c("wfo-0000438413", "wfo-0000546761"),
+    scientificName = c("Sabulina tenuifolia", "Arenaria tenuifolia"),
+    taxonRank = c("species", "species"),
+    taxonomicStatus = c("Unchecked", "Synonym"),
+    acceptedNameUsageID = c(NA, "wfo-0000374756"),
+    originalNameUsageID = c("wfo-0000546761", NA),
+    family = c("Caryophyllaceae", "Caryophyllaceae"),
+    genus = c("Sabulina", "Arenaria"),
+    specificEpithet = c("tenuifolia", "tenuifolia"),
+    scientificNameAuthorship = c("(L.) Rchb.", "L."),
+    infraspecificEpithet = c(NA, NA),
+    stringsAsFactors = FALSE
+  )
+  out <- normalize_wfo(wfo, verbose = FALSE)
+  expect_equal(out$original_name_usage_id, c("wfo-0000546761", NA))
+  expect_false("originalNameUsageID" %in% names(out))
+
+  col_dir <- tempfile("col_")
+  on.exit(unlink(col_dir, recursive = TRUE), add = TRUE)
+  write_col_fixture(col_dir)
+  tsv <- file.path(col_dir, "Taxon.tsv")
+  raw <- utils::read.delim(tsv, check.names = FALSE, stringsAsFactors = FALSE)
+  raw$`dwc:originalNameUsageID` <- c(NA, "col-9")
+  utils::write.table(raw, tsv, sep = "\t", quote = FALSE, row.names = FALSE,
+                     na = "", fileEncoding = "UTF-8")
+  df <- read_col(col_dir, verbose = FALSE)
+  expect_equal(df$original_name_usage_id, c(NA, "col-9"))
+})

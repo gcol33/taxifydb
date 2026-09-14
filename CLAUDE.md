@@ -85,8 +85,8 @@ R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices 
 
 | Backend | Format | Notes |
 |---------|--------|-------|
-| wfo | Zenodo ZIP / classification.csv | WFO Plant List, newest edition resolved through Zenodo concept record 7460141 (`wfo_latest_edition()`), so URL and version come from one record; keeps `originalNameUsageID` (basionym link) |
-| col | DwC-A TSV | Catalogue of Life |
+| wfo | Zenodo ZIP / classification.csv | WFO Plant List, newest edition resolved through Zenodo concept record 7460141 (`wfo_latest_edition()`), so URL and version come from one record; maps `originalNameUsageID` (basionym link) to the unified `original_name_usage_id`, which taxify reads to place an unplaced (`UNCHECKED`) combination (gcol33/taxify#81) |
+| col | DwC-A TSV | Catalogue of Life; maps `dwc:originalNameUsageID` to `original_name_usage_id` (gcol33/taxify#81) |
 | colxr | flat DwC-A TSV (ChecklistBank) | COL Extended Release, the taxonomy GBIF.org serves by default; canonical `scientificName` with authorship in its own column, classification denormalized on every row, alphanumeric IDs; monthly, so the release is resolved from the ChecklistBank API not a fixed URL |
 | gbif | simple.txt.gz | GBIF backbone, denormalized hierarchy; `normalize_gbif` reinstates the infraspecific rank marker its `canonical_name` drops (see GBIF marker note below) |
 | itis | SQLite | parent_tsn walk, needs RSQLite |

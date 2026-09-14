@@ -32,7 +32,8 @@
   "specificEpithet",
   "scientificNameAuthorship",
   "infraspecificEpithet",
-  "parentNameUsageID"
+  "parentNameUsageID",
+  "originalNameUsageID"
 )
 
 # Extra columns preserved for add_col_info() at runtime.
@@ -167,7 +168,8 @@ read_col <- function(col_dir, verbose = TRUE) {
     genus                   = "genericName",
     specific_epithet        = "specificEpithet",
     authorship              = "scientificNameAuthorship",
-    infraspecific_epithet   = "infraspecificEpithet"
+    infraspecific_epithet   = "infraspecificEpithet",
+    original_name_usage_id  = "originalNameUsageID"
   )
 
   extra_cols <- list()

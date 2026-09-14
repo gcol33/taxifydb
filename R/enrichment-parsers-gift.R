@@ -32,11 +32,15 @@
 #' reference ids (`ref_ID`) GIFT lists for the aggregated value (the
 #' `references` field [GIFT::GIFT_traits()] returns beside it). For a
 #' categorical trait these are the references that state the reported value;
-#' for a numeric trait the references entering the mean. GIFT writes a
-#' reference it treats as potentially biased (a resource covering one growth
-#' form only) with a negative id; the sign is dropped from the cell and kept as
-#' `bias_ref` in the reference table, which comes from
-#' [GIFT::GIFT_references()] and is attached with [attach_references()].
+#' for a numeric trait the references entering the mean. GIFT prefixes some ids
+#' with `-` or `+`, a marking its documentation does not define. The sign is
+#' dropped from the cell and kept per reference in the table as
+#' `listed_negative` / `listed_positive`. A negatively listed reference never
+#' appears among the records `GIFT_traits_raw(bias_ref = FALSE)` returns (the
+#' tree-only GlobalTreeSearch is one), which fits GIFT's `bias_ref` flag. The
+#' reference table comes from [GIFT::GIFT_references()]; an id GIFT lists but
+#' does not serve there has `NA` citation and a `note` saying so. It is attached
+#' with [attach_references()].
 #'
 #' @param path Ignored; the GIFT package fetches data directly. Present so the
 #'   interface matches the file-based parsers.
@@ -84,7 +88,8 @@ parse_gift <- function(path = NULL, agreement = 0.66, batch_size = 12L,
     canonical_name = trimws(as.character(acc$work_species)),
     stringsAsFactors = FALSE
   )
-  biased <- character(0)
+  neg <- character(0)
+  pos <- character(0)
   for (id in ids) {
     src <- paste0("trait_value_", id)
     if (!src %in% names(acc)) next
@@ -99,7 +104,8 @@ parse_gift <- function(path = NULL, agreement = 0.66, batch_size = 12L,
     refs <- .gift_ref_cells(acc[[paste0("references_", id)]])
     refs$cell[is.na(out[[oc]])] <- NA_character_
     out[[.source_colname(oc, colname)]] <- refs$cell
-    biased <- union(biased, refs$negative)
+    neg <- union(neg, refs$negative)
+    pos <- union(pos, refs$positive)
   }
 
   out <- out[!is.na(out$canonical_name) & nzchar(out$canonical_name), ,
@@ -111,14 +117,27 @@ parse_gift <- function(path = NULL, agreement = 0.66, batch_size = 12L,
   rownames(out) <- NULL
 
   gr <- GIFT::GIFT_references()
-  references <- data.frame(
-    ref_id    = as.character(gr$ref_ID),
-    citation  = as.character(gr$ref_long),
-    doi       = .extract_doi(gr$ref_long),
-    ref_type  = as.character(gr$type),
-    bias_ref  = as.character(gr$ref_ID) %in% biased,
+  references <- unique(data.frame(
+    ref_id   = as.character(gr$ref_ID),
+    citation = as.character(gr$ref_long),
+    doi      = .extract_doi(gr$ref_long),
+    ref_type = as.character(gr$type),
+    note     = NA_character_,
     stringsAsFactors = FALSE
-  )
+  ))
+  prov  <- .reference_cols(names(out))
+  cells <- unlist(lapply(prov, function(p) out[[p]]), use.names = FALSE)
+  used  <- unique(unlist(strsplit(cells[!is.na(cells)], "|", fixed = TRUE)))
+  unserved <- setdiff(used, references$ref_id)
+  if (length(unserved)) {
+    references <- rbind(references, data.frame(
+      ref_id = unserved, citation = NA_character_, doi = NA_character_,
+      ref_type = NA_character_,
+      note = "Listed by GIFT in a trait aggregate; not served by GIFT_references().",
+      stringsAsFactors = FALSE))
+  }
+  references$listed_negative <- references$ref_id %in% neg
+  references$listed_positive <- references$ref_id %in% pos
   attach_references(out, references)
 }
 
@@ -126,22 +145,25 @@ parse_gift <- function(path = NULL, agreement = 0.66, batch_size = 12L,
 #' Turn GIFT `references_<trait>` strings into provenance cells
 #'
 #' GIFT lists the reference ids behind an aggregated value comma-separated,
-#' writing a reference it flags as potentially biased with a negative id. The
-#' cells come out as `.ref_join()` would build them row by row, from one
-#' C-locale sort over every token of the column.
-#' @return list with `cell` (the `|`-joined unsigned ids per row) and
-#'   `negative` (the distinct ids that carried a minus sign).
+#' some prefixed with `-` or `+`. The cells come out as `.ref_join()` would
+#' build them row by row, from one C-locale sort over every token of the column.
+#' @return list with `cell` (the `|`-joined unsigned ids per row), `negative`
+#'   and `positive` (the distinct ids that carried each sign).
 #' @noRd
 .gift_ref_cells <- function(x) {
   x <- as.character(x)
   n <- length(x)
-  if (!n) return(list(cell = character(0), negative = character(0)))
+  if (!n) {
+    return(list(cell = character(0), negative = character(0),
+                positive = character(0)))
+  }
   has   <- which(!is.na(x))
   parts <- strsplit(x[has], ",", fixed = TRUE)
   row   <- rep(has, lengths(parts))
   tok   <- trimws(unlist(parts, use.names = FALSE))
-  neg   <- unique(sub("^-", "", tok[startsWith(tok, "-")]))
-  id    <- sub("^-", "", tok)
+  neg   <- unique(substring(tok[startsWith(tok, "-")], 2L))
+  pos   <- unique(substring(tok[startsWith(tok, "+")], 2L))
+  id    <- sub("^[-+]", "", tok)
   keep  <- nzchar(id)
   row   <- row[keep]
   id    <- id[keep]
@@ -157,5 +179,5 @@ parse_gift <- function(path = NULL, agreement = 0.66, batch_size = 12L,
     cell[as.integer(names(grp))] <- vapply(grp, paste, character(1L),
                                            collapse = "|")
   }
-  list(cell = cell, negative = neg)
+  list(cell = cell, negative = neg, positive = pos)
 }

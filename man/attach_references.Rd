@@ -9,9 +9,9 @@ attach_references(df, references)
 \arguments{
 \item{df}{The parser's data.frame, keyed on \code{canonical_name}.}
 
-\item{references}{data.frame with a unique character \code{ref_id}, a non-empty
-\code{citation} and a \code{doi} (\code{NA} where the reference has none). Further columns
-are kept.}
+\item{references}{data.frame with a unique character \code{ref_id}, a \code{citation}
+(\code{NA} for an id the source names but gives no citation for) and a \code{doi}
+(\code{NA} where the reference has none). Further columns are kept.}
 }
 \value{
 \code{df}, with the table in its \code{references} attribute.

@@ -85,9 +85,9 @@
 #' the table through name resolution and [build_enrichment_vtr()] publishes it.
 #'
 #' @param df The parser's data.frame, keyed on `canonical_name`.
-#' @param references data.frame with a unique character `ref_id`, a non-empty
-#'   `citation` and a `doi` (`NA` where the reference has none). Further columns
-#'   are kept.
+#' @param references data.frame with a unique character `ref_id`, a `citation`
+#'   (`NA` for an id the source names but gives no citation for) and a `doi`
+#'   (`NA` where the reference has none). Further columns are kept.
 #' @return `df`, with the table in its `references` attribute.
 #' @export
 attach_references <- function(df, references) {
@@ -126,8 +126,9 @@ attach_references <- function(df, references) {
     stop("references$ref_id may not contain '|', the provenance delimiter.",
          call. = FALSE)
   }
-  if (anyNA(references$citation) || any(!nzchar(references$citation))) {
-    stop("references$citation has missing or empty citations.", call. = FALSE)
+  if (any(!is.na(references$citation) & !nzchar(references$citation))) {
+    stop("references$citation has empty citations; use NA for an id the ",
+         "source names but does not cite.", call. = FALSE)
   }
   rownames(references) <- NULL
   references

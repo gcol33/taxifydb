@@ -73,24 +73,36 @@ test_that(".reducer_ignoring picks the rows the plain reducer picks", {
   expect_equal(wrapped$b_source, c("r3", "r4"))
 })
 
-test_that(".gift_ref_cells drops the bias sign and reports the flagged ids", {
-  got <- .gift_ref_cells(c("10280,-10321,10598", NA, "272"))
-  expect_equal(got$cell, c("10280|10321|10598", NA, "272"))
+test_that(".gift_ref_cells drops GIFT's id signs and reports the signed ids", {
+  got <- .gift_ref_cells(c("10280,-10321,10598", NA, "272,+10192"))
+  expect_equal(got$cell, c("10280|10321|10598", NA, "10192|272"))
   expect_equal(got$negative, "10321")
+  expect_equal(got$positive, "10192")
 })
 
 test_that(".gift_ref_cells builds each cell as .ref_join would row by row", {
   set.seed(84)
-  ids <- c("272", "10255", "-10321", "10598", " 7", "", "-")
+  ids <- c("272", "10255", "-10321", "+10192", "10598", " 7", "", "-")
   x <- vapply(1:500, function(i) {
     if (i %% 7 == 0) return(NA_character_)
     paste(sample(ids, sample(1:4, 1), replace = TRUE), collapse = ",")
   }, character(1L))
   rowwise <- vapply(strsplit(ifelse(is.na(x), "", x), ",", fixed = TRUE),
-                    function(p) .ref_join(sub("^-", "", trimws(p))),
+                    function(p) .ref_join(sub("^[-+]", "", trimws(p))),
                     character(1L))
-  expect_identical(.gift_ref_cells(x)$cell, rowwise)
-  expect_setequal(.gift_ref_cells(x)$negative, c("10321", ""))
+  got <- .gift_ref_cells(x)
+  expect_identical(got$cell, rowwise)
+  expect_setequal(got$negative, c("10321", ""))
+  expect_equal(got$positive, "10192")
+})
+
+test_that("a reference the source names without a citation keeps an NA citation", {
+  df <- attach_references(data.frame(), data.frame(
+    ref_id = c("102", "272"), citation = c(NA, "Linhart (1980)"),
+    doi = NA_character_, stringsAsFactors = FALSE))
+  expect_true(is.na(attr(df, "references")$citation[1]))
+  expect_error(attach_references(data.frame(), data.frame(
+    ref_id = "1", citation = "", doi = NA)), "empty citations")
 })
 
 test_that(".extract_doi finds a DOI in citation text", {
@@ -292,4 +304,35 @@ test_that("build_enrichment carries the parser's reference table to the writer",
   expect_true(file.exists(file.path(dir, "demo_references.vtr")))
   meta <- jsonlite::read_json(file.path(dir, "meta.json"), simplifyVector = TRUE)
   expect_equal(meta$references$nrow, 1L)
+})
+
+test_that("parse_gift keeps GIFT's references, signs and unserved ids", {
+  skip_if_not_installed("GIFT")
+  local_mocked_bindings(
+    GIFT_traits_meta = function(...) data.frame(
+      Lvl3 = c("3.3.1", "1.6.2"), Trait2 = c("Dispersal_syndrome_1", "Plant_height_max"),
+      type = c("categorical", "numeric"), stringsAsFactors = FALSE),
+    GIFT_traits = function(trait_IDs, ...) data.frame(
+      work_ID = c(1, 2), work_species = c("Abies alba", "Acer campestre"),
+      trait_value_3.3.1 = c("anemochorous", NA),
+      trait_value_1.6.2 = c("50", "20"),
+      references_3.3.1 = c("10255,-10321", "272"),
+      references_1.6.2 = c("+10192,102", "272"),
+      stringsAsFactors = FALSE),
+    GIFT_references = function(...) data.frame(
+      ref_ID = c(10255, 10321, 10192, 272, 272),
+      ref_long = c("Kew (2016) SID.", "BGCI (2017) GlobalTreeSearch.",
+                   "Hawkins (2013).", "Linhart (1980).", "Linhart (1980)."),
+      type = c("Species Database", "Species Database", "Checklist", "Flora", "Flora"),
+      stringsAsFactors = FALSE),
+    .package = "GIFT")
+  out <- parse_gift(verbose = FALSE)
+  expect_equal(out$gift_dispersal_syndrome_1_source, c("10255|10321", NA))
+  expect_equal(out$gift_plant_height_max_source, c("10192|102", "272"))
+  refs <- attr(out, "references")
+  expect_setequal(refs$ref_id, c("10255", "10321", "10192", "272", "102"))
+  expect_true(refs$listed_negative[refs$ref_id == "10321"])
+  expect_true(refs$listed_positive[refs$ref_id == "10192"])
+  expect_true(is.na(refs$citation[refs$ref_id == "102"]))
+  expect_match(refs$note[refs$ref_id == "102"], "not served")
 })

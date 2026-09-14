@@ -34,9 +34,13 @@ Every trait column \verb{<col>} has a \verb{<col>_source} column holding the GIF
 reference ids (\code{ref_ID}) GIFT lists for the aggregated value (the
 \code{references} field \code{\link[GIFT:GIFT_traits]{GIFT::GIFT_traits()}} returns beside it). For a
 categorical trait these are the references that state the reported value;
-for a numeric trait the references entering the mean. GIFT writes a
-reference it treats as potentially biased (a resource covering one growth
-form only) with a negative id; the sign is dropped from the cell and kept as
-\code{bias_ref} in the reference table, which comes from
-\code{\link[GIFT:GIFT_references]{GIFT::GIFT_references()}} and is attached with \code{\link[=attach_references]{attach_references()}}.
+for a numeric trait the references entering the mean. GIFT prefixes some ids
+with \code{-} or \code{+}, a marking its documentation does not define. The sign is
+dropped from the cell and kept per reference in the table as
+\code{listed_negative} / \code{listed_positive}. A negatively listed reference never
+appears among the records \code{GIFT_traits_raw(bias_ref = FALSE)} returns (the
+tree-only GlobalTreeSearch is one), which fits GIFT's \code{bias_ref} flag. The
+reference table comes from \code{\link[GIFT:GIFT_references]{GIFT::GIFT_references()}}; an id GIFT lists but
+does not serve there has \code{NA} citation and a \code{note} saying so. It is attached
+with \code{\link[=attach_references]{attach_references()}}.
 }

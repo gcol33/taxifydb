@@ -14,9 +14,10 @@
 #' @export
 build_sealifebase <- function(output_dir = "output/sealifebase", version = NULL,
                               verbose = TRUE) {
-  if (is.null(version)) version <- format(Sys.Date(), "%Y.%m")
+  rel <- rfishbase_release("sealifebase")
+  if (is.null(version)) version <- rel$version
 
-  df <- .read_rfishbase_backbone("sealifebase", verbose = verbose)
+  df <- .read_rfishbase_backbone("sealifebase", rel$release, verbose = verbose)
   df <- normalize_backbone(df, .rfishbase_col_map, .rfishbase_extra_cols)
 
   if (verbose) message("Precomputing keys and embedding synonyms...")

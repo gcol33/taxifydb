@@ -14,10 +14,10 @@
 # Euro+Med 2020 v1.2 and could not refresh (issue #7).
 
 .euromed_url <- "https://europlusmed.org"          # provenance URL for build_vtr()
-.euromed_version_default <- "2026.07"
 
 # Snapshot assets (produced by crawl_euromed.py, hosted as release assets).
-.euromed_snapshot_release <- "euromed-snapshot-2026.07"
+.euromed_snapshot_version <- "2026.07"
+.euromed_snapshot_release <- paste0("euromed-snapshot-", .euromed_snapshot_version)
 .euromed_snapshot_assets <- c("euromed.jsonl", "nodes.tsv")
 
 
@@ -236,7 +236,7 @@ read_euromed <- function(jsonl_path, nodes_path, verbose = TRUE) {
 #' @export
 build_euromed <- function(output_dir = "output/euromed", version = NULL,
                           local_dir = NULL, verbose = TRUE) {
-  if (is.null(version)) version <- .euromed_version_default
+  if (is.null(version)) version <- .euromed_snapshot_version
 
   tmp <- tempfile("euromed_")
   dir.create(tmp, recursive = TRUE)

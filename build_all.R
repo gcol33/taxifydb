@@ -1,12 +1,15 @@
 # Backbone build CLI entry point. Thin wrapper around taxifydb::build_backend().
 #
 # Usage:
-#   Rscript build_all.R [backend|all|publish] [output_dir|backend] [version]
+#   Rscript build_all.R [backend|all|publish] [output_dir|backend]
 #
 # Examples:
 #   Rscript build_all.R itis output/itis
 #   Rscript build_all.R all  output
-#   Rscript build_all.R publish itis 2026.05
+#   Rscript build_all.R publish itis
+#
+# A publish releases the build under the source version it recorded in
+# output/<backend>/<backend>.meta.
 
 args <- commandArgs(trailingOnly = TRUE)
 action <- if (length(args) >= 1L) args[1L] else "all"
@@ -32,8 +35,9 @@ if (action == "all") {
   }
 } else if (action == "publish") {
   be_name <- args[2L]
-  version <- args[3L]
   a <- taxifydb:::.backbone_artifacts(file.path("output", be_name), be_name)
+  version <- taxifydb:::.backbone_release_version(file.path("output", be_name),
+                                                  be_name)
 
   taxifydb::publish_release(
     be_name, version, a$vtr,

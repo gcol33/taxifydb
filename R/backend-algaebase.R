@@ -18,10 +18,12 @@
 # License note: AlgaeBase is CC BY-NC. The derived .vtr may only be used for
 # non-commercial purposes (academic/research is fine).
 
-.algaebase_search_url <-
-  "https://api.checklistbank.org/dataset/304756/nameusage/search"
+.algaebase_dataset_key <- "304756"
+.algaebase_search_url <- sprintf(
+  "https://api.checklistbank.org/dataset/%s/nameusage/search",
+  .algaebase_dataset_key
+)
 .algaebase_url <- .algaebase_search_url       # provenance URL for build_vtr()
-.algaebase_version_default <- "2025.04"
 .algaebase_page_size <- 1000L
 .algaebase_offset_cap <- 100000L
 
@@ -85,7 +87,9 @@ read_algaebase <- function(records, verbose = TRUE) {
 #' @export
 build_algaebase <- function(output_dir = "output/algaebase", version = NULL,
                             verbose = TRUE) {
-  if (is.null(version)) version <- .algaebase_version_default
+  if (is.null(version)) {
+    version <- checklistbank_release(.algaebase_dataset_key)$version
+  }
 
   records <- download_algaebase(verbose = verbose)
   df <- read_algaebase(records, verbose = verbose)

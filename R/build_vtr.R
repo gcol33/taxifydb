@@ -58,6 +58,7 @@ index_backbone_vtr <- function(vtr_path, genus_col = "genus") {
 #' @noRd
 write_backbone_meta <- function(vtr_path, backend_name, version, source_url,
                                 n_rows) {
+  check_release_version(version, backend_name)
   meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
   writeLines(c(
     paste0("backend=", backend_name),

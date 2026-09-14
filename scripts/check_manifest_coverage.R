@@ -128,17 +128,28 @@ rel  <- gh_json(sprintf("https://api.github.com/repos/%s/releases?per_page=100",
                         REPO))
 tags <- rel$tag_name %||% character(0L)
 
-# A backbone release tag is "<backend>-<numeric version>" and nothing else.
-# The prefix alone is not enough: companion data releases share it
+# A backbone release tag is "<backend>-<version>", the version starting with a
+# digit. The prefix alone is not enough: companion data releases share it
 # (euromed-snapshot-2026.07 holds the raw CDM harvest that euromed-2026.07 is
 # built from, not a .vtr), and reading one as a version reports a backbone
-# release that has no .vtr behind it. Order with numeric_version rather than
-# lexicographically so 3.10.1 sorts above 3.7.3.
+# release that has no .vtr behind it.
+#
+# The version names the source release, so it does not order publishes: a
+# re-cut of an older source release reuses that tag, OTT 3.7.3 would sort
+# below a tag cut under the earlier build-month scheme, and AviList's 2025b is
+# not a numeric version at all. The release published to last is the one whose
+# rolling <backend>.vtr was uploaded most recently.
 latest_release <- vapply(TAG_CHECKED, function(be) {
-  hit <- grep(sprintf("^%s-[0-9][0-9.]*$", be), tags, value = TRUE)
-  if (!length(hit)) return(NA_character_)
-  v <- sub(sprintf("^%s-", be), "", hit)
-  v[order(numeric_version(v), decreasing = TRUE)][1L]
+  hit <- which(grepl(sprintf("^%s-[0-9][0-9A-Za-z.]*$", be), tags))
+  uploaded <- vapply(hit, function(i) {
+    a <- rel$assets[[i]]
+    if (!is.data.frame(a) || !nrow(a)) return(NA_character_)
+    k <- match(paste0(be, ".vtr"), a$name)
+    if (is.na(k)) NA_character_ else as.character(a$updated_at[k])
+  }, character(1L))
+  if (!length(hit) || all(is.na(uploaded))) return(NA_character_)
+  at <- as.POSIXct(uploaded, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  sub(sprintf("^%s-", be), "", tags[hit[which.max(at)]])
 }, character(1L))
 
 # Every released asset, keyed "<tag>/<asset name>", with the size and sha256

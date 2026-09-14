@@ -84,10 +84,6 @@ jobs:
       - name: Install xdelta3
         run: sudo apt-get install -y xdelta3
 
-      - name: Compute version
-        id: version
-        run: echo "version=$(date +%Y.%m)" >> $GITHUB_OUTPUT
-
       - name: Build backbone
         run: |
           taxifydb::build_backend(
@@ -95,6 +91,16 @@ jobs:
             output_dir = file.path("output", "${{ matrix.backend }}")
           )
         shell: Rscript {0}
+
+      # The release is named for the source release the build read, which the
+      # build recorded in its .meta, never for the month the job ran: this
+      # value is the tag, the manifest's `latest` and what taxify_lock() stamps.
+      - name: Read version
+        id: version
+        run: |
+          echo "version=$(Rscript scripts/backbone_version.R \
+            "${{ matrix.backend }}" "output/${{ matrix.backend }}")" >> "$GITHUB_OUTPUT"
+        shell: bash
 
       - name: Did the data change?
         id: changed
@@ -121,14 +127,13 @@ jobs:
       # species profile; left out, a sidecar stays pinned to whichever release
       # last carried it while its backbone moves on), plus the content-addressed
       # <backend>-<content_id>.vtr copy the manifest records as content_url. A
-      # tag already cut this month is reused, never deleted: deleting it would
-      # take the earlier cut's content-addressed copy with it.
+      # tag already cut for this source release is reused, never deleted:
+      # deleting it would take the earlier cut's content-addressed copy with it.
       - name: Publish release
         if: steps.changed.outputs.value == 'true'
         run: |
           Rscript scripts/publish_backbone_release.R \
             "${{ matrix.backend }}" \
-            "${{ steps.version.outputs.version }}" \
             "output/${{ matrix.backend }}" \
             "${{ github.repository }}"
         shell: bash
@@ -148,7 +153,6 @@ jobs:
             Rscript scripts/update_manifest_entry.R \
               manifest/manifest.json \
               "${{ matrix.backend }}" \
-              "${{ steps.version.outputs.version }}" \
               "output/${{ matrix.backend }}" \
               "${{ steps.delta.outputs.prev_version }}"
             git add manifest/manifest.json

@@ -20,7 +20,6 @@
 
 .wcvp_url <- "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip"
 .wcvp_source_doi <- "10.1038/s41597-021-00997-6"
-.wcvp_version_default <- "2026.06"
 
 # Source columns read from wcvp_names.csv (a subset of the 31 available).
 .wcvp_read_cols <- c(
@@ -152,7 +151,9 @@ normalize_wcvp <- function(df, verbose = TRUE) {
 #' @export
 build_wcvp <- function(output_dir = "output/wcvp", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) version <- .wcvp_version_default
+  if (is.null(version)) {
+    version <- release_version_from_date(source_last_modified(.wcvp_url))
+  }
 
   tmp <- tempfile("wcvp_")
   dir.create(tmp, recursive = TRUE)

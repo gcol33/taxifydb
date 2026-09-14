@@ -9,7 +9,9 @@
 # scientificName includes authorship (strip to get canonical);
 # classification columns (kingdom, family, genus) are denormalized.
 
-.worms_url <- "https://api.checklistbank.org/dataset/2011/archive"
+.worms_dataset_key <- "2011"
+.worms_url <- sprintf("https://api.checklistbank.org/dataset/%s/archive",
+                      .worms_dataset_key)
 
 
 #' Download and extract WoRMS DwC-A
@@ -245,7 +247,9 @@ normalize_worms <- function(df, verbose = TRUE) {
 #' @export
 build_worms <- function(output_dir = "output/worms", version = NULL,
                         verbose = TRUE) {
-  if (is.null(version)) version <- format(Sys.Date(), "%Y.%m")
+  if (is.null(version)) {
+    version <- checklistbank_release(.worms_dataset_key)$version
+  }
 
   tmp <- tempfile("worms_")
   dir.create(tmp, recursive = TRUE)

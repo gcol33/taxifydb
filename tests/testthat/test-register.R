@@ -491,7 +491,7 @@ test_that("build_genus_register() and build_backend_coverage() build from explic
   with_isolated_wd({
     reg_dir <- file.path(out_dir, "register")
     reg_path <- build_genus_register(
-      backbone_paths = bp, output_dir = reg_dir, version = "test.1",
+      backbone_paths = bp, output_dir = reg_dir, version = "2026.09",
       manifest_path = no_manifest, verbose = FALSE
     )
     expect_true(file.exists(reg_path))
@@ -510,7 +510,7 @@ test_that("build_genus_register() and build_backend_coverage() build from explic
 
     cov_dir <- file.path(out_dir, "coverage")
     cov_path <- build_backend_coverage(
-      backbone_paths = bp, output_dir = cov_dir, version = "test.1",
+      backbone_paths = bp, output_dir = cov_dir, version = "2026.09",
       manifest_path = no_manifest, verbose = FALSE
     )
     expect_true(file.exists(cov_path))
@@ -570,7 +570,7 @@ test_that("build_register() builds both artifacts from the same backbone_paths",
 
   with_isolated_wd({
     res <- build_register(
-      backbone_paths = list(wfo = wfo_vtr), version = "test.1",
+      backbone_paths = list(wfo = wfo_vtr), version = "2026.09",
       manifest_path = tempfile(fileext = ".json"), verbose = FALSE
     )
     expect_true(file.exists(res$register))

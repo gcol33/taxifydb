@@ -47,6 +47,9 @@ R/build_name_lookup.R      — build_name_lookup(),
 R/check_versions.R         — upstream version check helpers
 R/publish.R                — publish_release(), update_manifest(),
                               update_enrichment_manifest()
+R/source-version.R         — backbone release identity: release_version_from_date(),
+                              check_release_version(), checklistbank_release(),
+                              source_last_modified() (#53, #54)
 
 R/backend-<name>.R         — per-backend download / read / build_<name>()
 R/build_backend.R          — build_backend(name, ...) dispatcher,
@@ -82,7 +85,7 @@ R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices 
 
 | Backend | Format | Notes |
 |---------|--------|-------|
-| wfo | Zenodo ZIP / classification.txt | WFO 2024-12 snapshot |
+| wfo | Zenodo ZIP / classification.csv | WFO Plant List, newest edition resolved through Zenodo concept record 7460141 (`wfo_latest_edition()`), so URL and version come from one record; keeps `originalNameUsageID` (basionym link) |
 | col | DwC-A TSV | Catalogue of Life |
 | colxr | flat DwC-A TSV (ChecklistBank) | COL Extended Release, the taxonomy GBIF.org serves by default; canonical `scientificName` with authorship in its own column, classification denormalized on every row, alphanumeric IDs; monthly, so the release is resolved from the ChecklistBank API not a fixed URL |
 | gbif | simple.txt.gz | GBIF backbone, denormalized hierarchy; `normalize_gbif` reinstates the infraspecific rank marker its `canonical_name` drops (see GBIF marker note below) |
@@ -344,8 +347,8 @@ Rscript build_enrichments.R woodiness
 # Build all enrichments
 Rscript build_enrichments.R all
 
-# Publish (after build)
-Rscript build_all.R publish itis 2026.05
+# Publish (after build; the version is read from output/itis/itis.meta)
+Rscript build_all.R publish itis
 ```
 
 Direct package API (equivalent):
@@ -428,13 +431,45 @@ added to `.register_extractors` two days after the 2026.08 pair was cut.
 in its `.meta` against `.register_extractors`, so the gap surfaces weekly
 instead of on the next rebuild.
 
+**A backbone release is named for the source release, never the build month
+(#53, #54).** The version is the tag, the manifest's `latest` and what
+`taxify_lock()` stamps downstream, so a build month in its place records a
+taxonomy date that is not the taxonomy's: `col-2026.08` was the COL 2025 Annual
+Checklist, `wfo-2026.08`/`wfo-2026.09` were WFO Plant List 2024-12, GBIF wrote
+`version=current`. Each builder resolves its version from the place it downloads
+from, through `R/source-version.R`: a pinned release constant that also builds
+the URL (COL, GBIF, LCVP tag, AviList, Reptile DB checklist, the Euro+Med and
+MEOW snapshots, the WGSRPD commit), the record the download is chosen from (WFO
+Zenodo concept record, COL XR), `checklistbank_release()`'s `issued` date for a
+ChecklistBank `/archive` (WoRMS, LPSN, Fungorum, AlgaeBase), the download's
+`Last-Modified` for a file republished in place (WCVP, ITIS, NCBI), the newest
+rfishbase snapshot passed to every table read (FishBase, SeaLifeBase), or the
+version the archive names (MDD). `write_backbone_meta()` refuses a version that
+cannot name a release (`check_release_version()`), and every publish path reads
+it back from the `.meta` through `.backbone_release_version()`
+(`scripts/backbone_version.R` for the workflows); `publish_release()` and
+`update_manifest()` stop when handed a different one. Measured when this landed:
+Fungorum's ChecklistBank dataset was issued 2024-04 and AlgaeBase's 2021, both
+served under `2025.04`/`2026.0x`.
+
+Two cuts of the same source release share a tag and are told apart by
+`content_id`. Tags cut under the old scheme share the `YYYY.MM` namespace
+(`wfo-2026.06` was a June build of WFO 2024-12, and is also the name of the WFO
+June 2026 edition), and releases from before #47 carry no content-addressed
+copy, so `publish_release()` fetches a rolling `.vtr` that has none and uploads
+it under `<name>-<content_id>.vtr` before clobbering it. For the same reason
+`check_manifest_coverage.R` takes a backbone's latest release as the tag whose
+`<backend>.vtr` was uploaded most recently, and the delta action patches from the
+version the manifest records rather than from the newest other tag.
+
 Both builds gate their delta, release, manifest commit and runtime sync behind
-`vtr_changed()` (`scripts/vtr_changed.R`), which compares the built `.vtr`
-against the `full_sha256` the manifest records. A build stamps `date +%Y.%m`,
-so without the gate a backbone reading a pinned source re-releases identical
-bytes under a new version and every taxify user refetches a file they hold. The
-gate fails open: no manifest, no entry, no recorded hash and a first-ever build
-all count as changed.
+`vtr_changed()` (`scripts/vtr_changed.R`). A build is a change when its `.vtr`
+differs from the `full_sha256` the manifest records, or when the manifest's
+`latest` differs from the source release the build recorded. The first keeps a
+backbone reading a pinned source from re-releasing identical bytes that every
+taxify user would refetch; the second re-releases a frozen source once under the
+tag that says what it is. The gate fails open: no manifest, no entry, no
+recorded hash and a first-ever build all count as changed.
 
 Membership is by measured size, not by guess. OTT (3.7M rows) and NCBI (2.8M)
 build on the hosted runner today, so anything under them belongs there: that

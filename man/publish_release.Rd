@@ -18,7 +18,8 @@ publish_release(
 \arguments{
 \item{backend_name}{Character. Backend identifier.}
 
-\item{version}{Character. Version string.}
+\item{version}{Character. The source release the build recorded in its
+\code{.meta}; a different value is an error.}
 
 \item{vtr_path}{Character. Path to the main \code{.vtr} file.}
 
@@ -45,5 +46,7 @@ Uses the \code{gh} CLI. Assumes \code{gh} is authenticated and on PATH.
 The release is created when missing and never deleted. Publishing again under
 an existing tag replaces the rolling assets in place (\code{--clobber}) and adds
 the new build's content-addressed copy beside those of earlier cuts, so every
-\code{content_url} a manifest has recorded for the tag keeps resolving.
+\code{content_url} a manifest has recorded for the tag keeps resolving. A rolling
+\code{.vtr} published before those copies existed is preserved under its own
+content-addressed name before it is replaced.
 }

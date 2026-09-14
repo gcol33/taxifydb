@@ -10,9 +10,16 @@
 # - Status values include HOMOTYPIC_SYNONYM, HETEROTYPIC_SYNONYM,
 #   PROXY_SYNONYM, MISAPPLIED, ... — collapsed to ACCEPTED/SYNONYM.
 # - canonical_name (no authorship) is already separate from scientific_name.
+#
+# Each backbone release sits in a directory named for its release date, and
+# `current/` is an alias for the newest one. The release is named here, so the
+# download URL and the version are read from one date.
 
-.gbif_url <- "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz"
-.gbif_version_default <- "current"
+.gbif_release <- "2023-08-28"
+.gbif_url <- sprintf(
+  "https://hosted-datasets.gbif.org/datasets/backbone/%s/simple.txt.gz",
+  .gbif_release
+)
 
 # Positional column names for simple.txt (30 columns, no header)
 .gbif_col_names <- c(
@@ -189,7 +196,7 @@ normalize_gbif <- function(df, higher, verbose = TRUE) {
 #' @export
 build_gbif <- function(output_dir = "output/gbif", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) version <- .gbif_version_default
+  if (is.null(version)) version <- release_version_from_date(.gbif_release)
 
   tmp <- tempfile("gbif_")
   dir.create(tmp, recursive = TRUE)

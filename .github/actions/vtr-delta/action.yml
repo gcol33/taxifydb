@@ -41,21 +41,17 @@ runs:
           echo "::warning::xdelta3 is not on PATH; ${{ inputs.backend }} ships a full .vtr only."
           exit 0
         fi
-        # Read the tag out of --json: `gh release list` prints the title in
-        # column 1 ("NCBI v2026.06"), so matching a bare `^ncbi-` against the
-        # table never hits. Match <backend>-<numeric version> so a companion
-        # data release sharing the prefix (euromed-snapshot-2026.07 carries a
-        # raw harvest, no .vtr) cannot be picked, and skip the version being
-        # built so a re-run deltas against the previous release, not itself.
-        PREV_TAG=$(gh release list --repo "${{ inputs.repository }}" --limit 100 \
-          --json tagName \
-          -q '[.[].tagName
-               | select(test("^${{ inputs.backend }}-[0-9]"))
-               | select(. != "${{ inputs.backend }}-${{ inputs.version }}")][0]')
-        if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "null" ]; then
-          echo "No previous ${{ inputs.backend }} release; skipping delta."
+        # The patch has to apply to the file users hold, which is the release
+        # the manifest currently points at. Tags name source releases, so a
+        # re-cut can reuse an older tag, and neither tag order nor release
+        # creation date identifies that file. A build under the version the
+        # manifest already records has no other release to patch from.
+        PREV_VERSION=$("${{ inputs.rscript }}" -e 'e <- jsonlite::read_json("manifest/manifest.json")$backends[["${{ inputs.backend }}"]]; cat(if (is.null(e$latest)) "" else e$latest)')
+        if [ -z "$PREV_VERSION" ] || [ "$PREV_VERSION" = "${{ inputs.version }}" ]; then
+          echo "No previous ${{ inputs.backend }} release under another version; skipping delta."
           exit 0
         fi
+        PREV_TAG="${{ inputs.backend }}-$PREV_VERSION"
         echo "Previous release: $PREV_TAG"
         mkdir -p "output/${{ inputs.backend }}_prev"
         if ! gh release download "$PREV_TAG" \

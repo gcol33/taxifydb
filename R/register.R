@@ -1182,15 +1182,9 @@ build_genus_register <- function(backbone_paths = NULL, output_dir = NULL,
   vectra::write_vtr(resolved, vtr_path)
   vectra::create_index(vtr_path, "genus")
 
-  meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
-  writeLines(c(
-    "backend=genus_register",
-    paste0("version=", version),
-    paste0("download_date=", format(Sys.time(), "%Y-%m-%d")),
-    paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-    paste0("url=derived from: ", paste(names(paths), collapse = ", ")),
-    paste0("nrow=", nrow(resolved))
-  ), meta_path)
+  write_backbone_meta(vtr_path, "genus_register", version,
+                      paste0("derived from: ", paste(names(paths), collapse = ", ")),
+                      nrow(resolved))
 
   if (verbose) {
     message(sprintf("Genus register written: %s (%d genera)", vtr_path,
@@ -1271,15 +1265,9 @@ build_backend_coverage <- function(backbone_paths = NULL, output_dir = NULL,
   vectra::write_vtr(coverage, vtr_path)
   vectra::create_index(vtr_path, "genus")
 
-  meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
-  writeLines(c(
-    "backend=backend_coverage",
-    paste0("version=", version),
-    paste0("download_date=", format(Sys.time(), "%Y-%m-%d")),
-    paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-    paste0("url=derived from: ", paste(names(paths), collapse = ", ")),
-    paste0("nrow=", nrow(coverage))
-  ), meta_path)
+  write_backbone_meta(vtr_path, "backend_coverage", version,
+                      paste0("derived from: ", paste(names(paths), collapse = ", ")),
+                      nrow(coverage))
 
   if (verbose) {
     message(sprintf("Backend coverage written: %s (%d rows)",

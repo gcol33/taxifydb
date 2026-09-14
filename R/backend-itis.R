@@ -175,14 +175,15 @@ read_itis <- function(sqlite_path, verbose = TRUE) {
 #' embeds synonym info, and writes the final .vtr with indexes.
 #'
 #' @param output_dir Character. Directory for the output .vtr.
-#' @param version Character or NULL. If NULL, uses YYYY.MM of build date.
+#' @param version Character or NULL. If NULL, the `YYYY.MM` of the release the
+#'   ITIS download currently holds.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_itis <- function(output_dir = "output/itis", version = NULL,
                        verbose = TRUE) {
   if (is.null(version)) {
-    version <- format(Sys.Date(), "%Y.%m")
+    version <- release_version_from_date(source_last_modified(.itis_url))
   }
 
   tmp <- tempfile("itis_")

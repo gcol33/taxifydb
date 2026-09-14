@@ -1,7 +1,12 @@
 # WFO (World Flora Online): classification.txt -> normalized data.frame -> .vtr
 #
-# WFO publishes annual Darwin Core backbone snapshots on Zenodo. The archive
-# contains classification.txt, a TSV with the canonical DwC columns
+# WFO publishes a Plant List edition on Zenodo every June and December, each as
+# a new version of one concept record, with the Darwin Core backbone attached as
+# _DwC_backbone_R.zip. The build resolves the newest edition through that
+# concept record, so the download URL and the version come from one record and
+# a new edition is picked up without editing this file.
+#
+# The archive contains classification.csv, a TSV with the canonical DwC columns
 # (taxonID, scientificName, taxonRank, taxonomicStatus, ...). scientificName
 # is already authorship-free (WFO stores authorship separately), so no
 # canonical-name extraction is needed.
@@ -9,8 +14,8 @@
 # WFO quirks: UTF-8 TSV with double-quoted fields, taxonRemarks cut at a fixed
 # byte width that can split a character, uppercase status/rank normalization.
 
-.wfo_url <- "https://zenodo.org/records/14538251/files/_DwC_backbone_R.zip"
-.wfo_version_default <- "2024-12"
+.wfo_concept_record <- "7460141"
+.wfo_backbone_asset <- "_DwC_backbone_R.zip"
 
 # Core matching columns + authorship + infraspecific epithet
 .wfo_match_cols <- c(
@@ -30,6 +35,7 @@
 .wfo_extra_cols <- c(
   "scientificNameID",
   "parentNameUsageID",
+  "originalNameUsageID",
   "namePublishedIn",
   "nomenclaturalStatus",
   "taxonRemarks",
@@ -40,20 +46,62 @@
 )
 
 
+#' Resolve the newest WFO Plant List edition on Zenodo
+#'
+#' Zenodo answers a concept record with its latest version. The edition label
+#' that version carries (`2026-06`) is the release the backbone is built as.
+#'
+#' @param verbose Logical.
+#' @return A list with `record` (Zenodo record id), `edition` (as WFO labels
+#'   it), `version` (`YYYY.MM`) and `url` (the Darwin Core backbone archive).
+#' @export
+wfo_latest_edition <- function(verbose = TRUE) {
+  api <- sprintf("https://zenodo.org/api/records/%s", .wfo_concept_record)
+  rec <- tryCatch(
+    jsonlite::fromJSON(api, simplifyVector = FALSE),
+    error = function(e) {
+      stop("Could not resolve the latest WFO Plant List on Zenodo: ",
+           conditionMessage(e), call. = FALSE)
+    }
+  )
+  files <- vapply(rec$files, function(f) f$key %||% "", character(1L))
+  if (!.wfo_backbone_asset %in% files) {
+    stop(sprintf("Zenodo record %s carries no %s.", rec$id,
+                 .wfo_backbone_asset), call. = FALSE)
+  }
+
+  out <- list(
+    record  = as.character(rec$id),
+    edition = rec$metadata$version %||% "",
+    version = release_version_from_date(rec$metadata$version %||% ""),
+    url     = sprintf("https://zenodo.org/records/%s/files/%s", rec$id,
+                      .wfo_backbone_asset)
+  )
+  if (verbose) {
+    message(sprintf("Latest WFO Plant List: %s (Zenodo record %s)",
+                    out$edition, out$record))
+  }
+  out
+}
+
+
 #' Download and extract the WFO classification file
 #'
 #' @param dest Character. Destination directory.
 #' @param verbose Logical.
+#' @param url Character or NULL. Backbone archive URL; the newest edition's,
+#'   from [wfo_latest_edition()], when `NULL`.
 #' @return Path to the extracted classification file.
 #' @export
-download_wfo <- function(dest = tempdir(), verbose = TRUE) {
+download_wfo <- function(dest = tempdir(), verbose = TRUE, url = NULL) {
   dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+  url <- url %||% wfo_latest_edition(verbose = verbose)$url
 
   if (verbose) {
     message("Downloading WFO backbone from Zenodo (~120 MB)...")
-    message(sprintf("  URL: %s", .wfo_url))
+    message(sprintf("  URL: %s", url))
   }
-  zip_path <- download_curl_file(.wfo_url, dest, "wfo_download.zip")
+  zip_path <- download_curl_file(url, dest, "wfo_download.zip")
 
   if (verbose) message("Extracting classification file...")
   txt_files <- utils::unzip(zip_path, list = TRUE)$Name
@@ -172,19 +220,21 @@ normalize_wfo <- function(df, verbose = TRUE) {
 #' Build the WFO backbone .vtr from source
 #'
 #' @param output_dir Character. Output directory.
-#' @param version Character or NULL. Defaults to the bundled WFO release tag.
+#' @param version Character or NULL. Defaults to the edition
+#'   [wfo_latest_edition()] resolves.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_wfo <- function(output_dir = "output/wfo", version = NULL,
                       verbose = TRUE) {
-  if (is.null(version)) version <- .wfo_version_default
+  edition <- wfo_latest_edition(verbose = verbose)
+  if (is.null(version)) version <- edition$version
 
   tmp <- tempfile("wfo_")
   dir.create(tmp, recursive = TRUE)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
-  txt_path <- download_wfo(dest = tmp, verbose = verbose)
+  txt_path <- download_wfo(dest = tmp, verbose = verbose, url = edition$url)
 
   # classification.csv inflates to roughly 900 MB, so it is staged a block at a
   # time rather than assembled in memory, parsed exactly as read_wfo() parses it.
@@ -193,7 +243,7 @@ build_wfo <- function(output_dir = "output/wfo", version = NULL,
     wfo_feed(txt_path,
              normalize = function(chunk) normalize_wfo(chunk, verbose = FALSE),
              verbose = verbose),
-    vtr_path, "wfo", version, .wfo_url, verbose = verbose
+    vtr_path, "wfo", version, edition$url, verbose = verbose
   )
 
   invisible(vtr_path)

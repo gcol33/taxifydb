@@ -16,9 +16,12 @@
 # The `.rda` is downloaded and `load()`ed directly, so building LCVP needs no
 # extra package dependency.
 
-.lcvp_url <- "https://raw.githubusercontent.com/idiv-biodiversity/LCVP/master/data/tab_lcvp.rda"
+.lcvp_release <- "v.3.0.1"
+.lcvp_url <- sprintf(
+  "https://raw.githubusercontent.com/idiv-biodiversity/LCVP/%s/data/tab_lcvp.rda",
+  .lcvp_release
+)
 .lcvp_source_doi <- "10.1038/s41597-020-00702-z"
-.lcvp_version_default <- "3.0.1"
 
 
 #' Download the LCVP `tab_lcvp` data file
@@ -157,13 +160,14 @@ read_lcvp <- function(rda_path, verbose = TRUE) {
 #' Build the LCVP backbone .vtr from source
 #'
 #' @param output_dir Character. Output directory.
-#' @param version Character or NULL. Defaults to the bundled LCVP data version.
+#' @param version Character or NULL. Defaults to the tagged LCVP release the
+#'   download is pinned to.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_lcvp <- function(output_dir = "output/lcvp", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) version <- .lcvp_version_default
+  if (is.null(version)) version <- sub("^v\\.?", "", .lcvp_release)
 
   tmp <- tempfile("lcvp_")
   dir.create(tmp, recursive = TRUE)

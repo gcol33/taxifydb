@@ -9,7 +9,8 @@ build_lcvp(output_dir = "output/lcvp", version = NULL, verbose = TRUE)
 \arguments{
 \item{output_dir}{Character. Output directory.}
 
-\item{version}{Character or NULL. Defaults to the bundled LCVP data version.}
+\item{version}{Character or NULL. Defaults to the tagged LCVP release the
+download is pinned to.}
 
 \item{verbose}{Logical.}
 }

@@ -14,8 +14,8 @@ build_meow(
 \arguments{
 \item{output_dir}{Character. Output directory. Default: \code{output/meow}.}
 
-\item{version}{Character or NULL. Version string. Defaults to the current
-\code{YYYY.MM}.}
+\item{version}{Character or NULL. Version string. Defaults to the frozen
+snapshot's version.}
 
 \item{source_path}{Character or NULL. A local GeoJSON to parse instead of
 downloading (for offline builds and testing).}

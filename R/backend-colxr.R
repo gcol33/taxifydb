@@ -93,7 +93,7 @@ colxr_latest_release <- function(verbose = TRUE) {
   out <- list(
     key     = as.character(best$key),
     alias   = best$alias,
-    version = best$version %||% best$issued,
+    version = release_version_from_date(best$issued),
     issued  = best$issued
   )
   if (verbose) {

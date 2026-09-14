@@ -5,8 +5,13 @@
 # to TDWG Level 3 codes for the region constraint. Stored as a long-format
 # vertex table so the runtime never fetches the GeoJSON live.
 
-.wgsrpd_url <- paste0(
-  "https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level3.geojson"
+# The download is pinned to the tdwg/wgsrpd commit that last changed the Level 3
+# GeoJSON, and versioned by that commit's date.
+.wgsrpd_commit <- "f68afd99aa94adadaa3e0328e4aadda75ecc4215"
+.wgsrpd_release <- "2018-02-10"
+.wgsrpd_url <- sprintf(
+  "https://raw.githubusercontent.com/tdwg/wgsrpd/%s/geojson/level3.geojson",
+  .wgsrpd_commit
 )
 
 
@@ -98,7 +103,7 @@ read_wgsrpd <- function(path) {
 #' @export
 build_wgsrpd <- function(output_dir = NULL, version = NULL,
                          source_path = NULL, verbose = TRUE) {
-  version <- version %||% format(Sys.Date(), "%Y.%m")
+  version <- version %||% release_version_from_date(.wgsrpd_release)
   output_dir <- output_dir %||% file.path("output", "wgsrpd")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -109,15 +114,7 @@ build_wgsrpd <- function(output_dir = NULL, version = NULL,
   vectra::write_vtr(df, vtr_path, batch_size = 100000L)
   vectra::create_index(vtr_path, "code")
 
-  meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
-  writeLines(c(
-    "backend=wgsrpd",
-    paste0("version=", version),
-    paste0("download_date=", format(Sys.time(), "%Y-%m-%d")),
-    paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-    paste0("url=", .wgsrpd_url),
-    paste0("nrow=", nrow(df))
-  ), meta_path)
+  write_backbone_meta(vtr_path, "wgsrpd", version, .wgsrpd_url, nrow(df))
 
   if (verbose) {
     message(sprintf(

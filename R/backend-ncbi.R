@@ -190,7 +190,9 @@ read_ncbi <- function(dump_dir, verbose = TRUE) {
 #' @export
 build_ncbi <- function(output_dir = "output/ncbi", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) version <- format(Sys.Date(), "%Y.%m")
+  if (is.null(version)) {
+    version <- release_version_from_date(source_last_modified(.ncbi_url))
+  }
 
   tmp <- tempfile("ncbi_")
   dir.create(tmp, recursive = TRUE)

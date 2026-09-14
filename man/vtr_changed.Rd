@@ -2,9 +2,9 @@
 % Please edit documentation in R/publish.R
 \name{vtr_changed}
 \alias{vtr_changed}
-\title{Did a build produce bytes the manifest is not already pointing at?}
+\title{Does a build warrant a release?}
 \usage{
-vtr_changed(manifest_path, backend_name, vtr_path)
+vtr_changed(manifest_path, backend_name, vtr_path, version = NULL)
 }
 \arguments{
 \item{manifest_path}{Character. Path to \code{manifest.json}.}
@@ -12,19 +12,22 @@ vtr_changed(manifest_path, backend_name, vtr_path)
 \item{backend_name}{Character. Backend identifier.}
 
 \item{vtr_path}{Character. Path to the freshly built \code{.vtr}.}
+
+\item{version}{Character or \code{NULL}. The source release the build recorded;
+\code{NULL} compares bytes only.}
 }
 \value{
-Logical scalar. \code{TRUE} when the build differs from the published
-asset and a release is warranted.
+Logical scalar. \code{TRUE} when a release is warranted.
 }
 \description{
-The version a build stamps is \verb{date +\%Y.\%m}, which records when it ran rather
-than what it read. Several backbones read a pinned source and rebuild to the
-same bytes every time -- Euro+Med from a frozen snapshot release, WFO from a
-fixed Zenodo record, COL from the pinned annual archive. Releasing those again
-mints a version whose only difference is its name, and taxify's runtime treats
-a fresh version as reason to refetch, so every user downloads a file they
-already hold.
+Several backbones read a pinned or frozen source and rebuild to the same bytes
+every time -- Euro+Med from a frozen snapshot release, GBIF from its last
+backbone, LCVP from a tagged data release. Publishing those again would
+re-upload a file every taxify user already holds. A build is therefore a
+change when its bytes differ from the published asset, or when the manifest
+records it under a different version than the source release the build names:
+the second case re-releases identical bytes under the tag that says what they
+are.
 }
 \details{
 Fails open: anything that cannot be determined -- no manifest, no entry for

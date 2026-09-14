@@ -47,6 +47,19 @@ test_that("a rebuild that really changed is caught", {
   expect_true(vtr_changed(mf, "demo", vtr))
 })
 
+test_that("identical bytes under a different version are a change", {
+  # A frozen source published under a build-month tag re-releases once under
+  # the source release it actually carries (GBIF 2023.08 served as 2026.08).
+  dd <- withr::local_tempdir()
+  vtr <- vtr_fixture(dd)
+  mf <- manifest_fixture(dd, "relabel", list(
+    demo = list(latest = "2026.08", full_sha256 = taxifydb::sha256(vtr))
+  ))
+  expect_true(vtr_changed(mf, "demo", vtr, version = "2023.08"))
+  expect_false(vtr_changed(mf, "demo", vtr, version = "2026.08"))
+  expect_false(vtr_changed(mf, "demo", vtr))
+})
+
 test_that("it fails open on anything undecidable", {
   dd <- withr::local_tempdir()
   vtr <- vtr_fixture(dd)

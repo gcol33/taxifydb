@@ -85,8 +85,9 @@
 #' @param output_dir Character. The build's output directory.
 #' @param backend Character. Backend identifier.
 #' @return A list with `vtr` (path), `delta` and `meta` (path, or `NULL` when the
-#'   build wrote none) and `extras` (character vector of sidecar paths, possibly
-#'   empty).
+#'   build wrote none), `extras` (character vector of sidecar paths, possibly
+#'   empty) and `version` (the version the build recorded in its `.meta`, or
+#'   `NULL` when it recorded none).
 #' @noRd
 .backbone_artifacts <- function(output_dir, backend) {
   vtr <- file.path(output_dir, paste0(backend, ".vtr"))
@@ -98,11 +99,59 @@
   vtrs  <- list.files(output_dir, pattern = "\\.vtr$")
   extras <- sort(vtrs[startsWith(vtrs, paste0(backend, "_"))])
   list(
-    vtr    = vtr,
-    delta  = if (file.exists(delta)) delta else NULL,
-    meta   = if (file.exists(meta)) meta else NULL,
-    extras = file.path(output_dir, extras)
+    vtr     = vtr,
+    delta   = if (file.exists(delta)) delta else NULL,
+    meta    = if (file.exists(meta)) meta else NULL,
+    extras  = file.path(output_dir, extras),
+    version = .meta_version(meta)
   )
+}
+
+
+#' The version a `.meta` sidecar records, or `NULL`
+#' @noRd
+.meta_version <- function(meta_path) {
+  meta <- read_meta(meta_path)
+  if (is.null(meta) || !"version" %in% names(meta) || !nzchar(meta[["version"]])) {
+    return(NULL)
+  }
+  unname(meta[["version"]])
+}
+
+
+#' The release version of one built backbone
+#'
+#' The only place a publish reads its version from: the `.meta` the build wrote,
+#' which names the source release the data came from. The release tag, the
+#' manifest's `latest` and the version taxify stamps downstream all take it
+#' from here.
+#'
+#' @param output_dir Character. The build's output directory.
+#' @param backend Character. Backend identifier.
+#' @return Character scalar.
+#' @noRd
+.backbone_release_version <- function(output_dir, backend) {
+  version <- .backbone_artifacts(output_dir, backend)$version
+  if (is.null(version)) {
+    stop(sprintf("%s: no version recorded in %s. Build first.", backend,
+                 file.path(output_dir, paste0(backend, ".meta"))), call. = FALSE)
+  }
+  check_release_version(version, backend)
+}
+
+
+#' Stop when a publish names a different version than its build recorded
+#' @noRd
+.check_version_matches_build <- function(version, vtr_path, backend_name) {
+  meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
+  recorded <- .meta_version(meta_path)
+  if (!is.null(recorded) && !identical(recorded, version)) {
+    stop(sprintf(paste0(
+      "%s: publishing as version %s, but the build recorded version %s in %s. ",
+      "A backbone is released under the source version its build wrote."),
+      backend_name, version, recorded, meta_path), call. = FALSE)
+  }
+  invisible(version)
 }
 
 
@@ -170,6 +219,55 @@
 }
 
 
+#' Keep the bytes of a rolling `.vtr` that has no content-addressed copy
+#'
+#' A release published before content-addressed copies existed carries only its
+#' rolling `<name>.vtr`, and a tag published under the build-month scheme can
+#' share its name with a source release (`wfo-2026.06` was a June build of WFO
+#' 2024-12). Clobbering that asset would leave the bytes behind its recorded
+#' `content_id` nowhere, so before a publish replaces it, the asset is fetched
+#' and uploaded under its own content-addressed name. A release that already
+#' carries a `<name>-<content_id>.vtr` needs nothing: every publish since those
+#' copies were introduced uploaded one for the bytes it left in place.
+#'
+#' @param tag Character. Release tag.
+#' @param vtr_path Character. The `.vtr` about to be uploaded; its basename is
+#'   the rolling asset name.
+#' @param repo Character. GitHub repo.
+#' @return The preserved asset name, invisibly, or `character(0)`.
+#' @noRd
+.preserve_uncopied_rolling_vtr <- function(tag, vtr_path, repo) {
+  existing <- .release_asset_names(tag, repo)
+  rolling <- basename(vtr_path)
+  nm <- tools::file_path_sans_ext(rolling)
+  copied <- grepl(sprintf("^%s-[0-9a-f]{32}\\.vtr$", nm), existing)
+  if (!rolling %in% existing || any(copied)) return(invisible(character(0L)))
+
+  staged <- tempfile("taxifydb_preserve_")
+  dir.create(staged, recursive = TRUE)
+  on.exit(unlink(staged, recursive = TRUE), add = TRUE)
+
+  message(sprintf("%s: %s has no content-addressed copy; preserving it first.",
+                  tag, rolling))
+  out <- .gh(c("release", "download", tag, "--repo", repo,
+               "--pattern", rolling,
+               "--dir", shQuote(staged,
+                                type = if (.Platform$OS.type == "windows") "cmd" else "sh")),
+             stdout = TRUE, stderr = TRUE)
+  st <- attr(out, "status")
+  old <- file.path(staged, rolling)
+  if ((!is.null(st) && st != 0L) || !file.exists(old)) {
+    stop(sprintf("Could not fetch %s from %s to preserve it before replacing it.",
+                 rolling, tag), call. = FALSE)
+  }
+  ca <- file.path(staged, sprintf("%s-%s.vtr", nm, unname(tools::md5sum(old))))
+  file.rename(old, ca)
+  .upload_assets(tag, ca, repo, clobber = FALSE,
+                 label = "gh release upload (preserve)")
+  invisible(basename(ca))
+}
+
+
 #' Create a GitHub release and upload backbone artifacts
 #'
 #' Uses the `gh` CLI. Assumes `gh` is authenticated and on PATH.
@@ -177,10 +275,13 @@
 #' The release is created when missing and never deleted. Publishing again under
 #' an existing tag replaces the rolling assets in place (`--clobber`) and adds
 #' the new build's content-addressed copy beside those of earlier cuts, so every
-#' `content_url` a manifest has recorded for the tag keeps resolving.
+#' `content_url` a manifest has recorded for the tag keeps resolving. A rolling
+#' `.vtr` published before those copies existed is preserved under its own
+#' content-addressed name before it is replaced.
 #'
 #' @param backend_name Character. Backend identifier.
-#' @param version Character. Version string.
+#' @param version Character. The source release the build recorded in its
+#'   `.meta`; a different value is an error.
 #' @param vtr_path Character. Path to the main `.vtr` file.
 #' @param delta_path Character or NULL. Path to the `.xdelta` file.
 #' @param meta_path Character or NULL. Path to the `.meta` sidecar.
@@ -197,6 +298,7 @@ publish_release <- function(backend_name, version, vtr_path,
                             extras = character(0L),
                             repo = "gcol33/taxifydb",
                             notes = NULL) {
+  .check_version_matches_build(version, vtr_path, backend_name)
   tag <- sprintf("%s-%s", backend_name, version)
 
   if (is.null(notes)) {
@@ -227,6 +329,7 @@ publish_release <- function(backend_name, version, vtr_path,
     artifacts <- c(artifacts, extras)
   }
 
+  .preserve_uncopied_rolling_vtr(tag, vtr_path, repo)
   .upload_assets(tag, artifacts, repo, clobber = TRUE)
 
   # Preserve this build's bytes under a content-addressed name so a later re-cut
@@ -333,15 +436,14 @@ check_source_url <- function(url, what) {
 
 #' Update manifest.json after a successful backbone build
 #'
-#' The entry records two versions where they differ: `latest` is the release
-#' tag the download URL points at (stamped `YYYY.MM` by the build cycle) and
-#' `source_version` is the version the upstream dataset gives itself, read from
-#' the `.meta` sidecar. Rolling sources carry only `latest`, having no version
-#' of their own.
+#' `latest` is the release tag the download URL points at, and it is the source
+#' release the build recorded in its `.meta` sidecar (WFO `2026.06`, OTT
+#' `3.7.3`), so one field names both the download and the data.
 #'
 #' @param manifest_path Character. Path to manifest.json.
 #' @param backend_name Character.
-#' @param version Character.
+#' @param version Character. The source release the build recorded in its
+#'   `.meta`; a different value is an error.
 #' @param vtr_path Character.
 #' @param delta_path Character or NULL.
 #' @param delta_from Character or NULL. Previous version the delta is from.
@@ -365,6 +467,7 @@ update_manifest <- function(manifest_path, backend_name, version,
                             extras = NULL,
                             repo = "gcol33/taxifydb",
                             source_url = NULL) {
+  .check_version_matches_build(version, vtr_path, backend_name)
   if (file.exists(manifest_path)) {
     manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
   } else {
@@ -419,19 +522,10 @@ update_manifest <- function(manifest_path, backend_name, version,
     entry$source_url <- check_source_url(source_url, backend_name)
   }
 
-  # `latest` is the release tag, stamped YYYY.MM by the build cycle, so it
-  # records when a build ran rather than which upstream release it read. Where
-  # the source names its own version (OTT 3.7.3, LCVP 3.0.1, MDD 2.5) that
-  # identity is otherwise lost the moment the tag is cut, so it is recorded
-  # alongside -- the same split the enrichment manifest makes between `latest`
-  # and `source_version`. A rolling source (ITIS, NCBI, WoRMS) has no version
-  # of its own and stamps the build date, which the tag already carries, so
-  # nothing is recorded for it.
+  # `latest` is the source release itself, so a separate `source_version` would
+  # only repeat it. One written when tags carried the build month is removed
+  # rather than left to disagree with the entry beside it.
   entry$source_version <- NULL
-  if (!is.null(meta) && "version" %in% names(meta) &&
-      nzchar(meta[["version"]]) && !identical(meta[["version"]], version)) {
-    entry$source_version <- meta[["version"]]
-  }
 
   if (!is.null(delta_path) && file.exists(delta_path)) {
     entry$delta_from <- delta_from
@@ -652,15 +746,16 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
 }
 
 
-#' Did a build produce bytes the manifest is not already pointing at?
+#' Does a build warrant a release?
 #'
-#' The version a build stamps is `date +%Y.%m`, which records when it ran rather
-#' than what it read. Several backbones read a pinned source and rebuild to the
-#' same bytes every time -- Euro+Med from a frozen snapshot release, WFO from a
-#' fixed Zenodo record, COL from the pinned annual archive. Releasing those again
-#' mints a version whose only difference is its name, and taxify's runtime treats
-#' a fresh version as reason to refetch, so every user downloads a file they
-#' already hold.
+#' Several backbones read a pinned or frozen source and rebuild to the same bytes
+#' every time -- Euro+Med from a frozen snapshot release, GBIF from its last
+#' backbone, LCVP from a tagged data release. Publishing those again would
+#' re-upload a file every taxify user already holds. A build is therefore a
+#' change when its bytes differ from the published asset, or when the manifest
+#' records it under a different version than the source release the build names:
+#' the second case re-releases identical bytes under the tag that says what they
+#' are.
 #'
 #' Fails open: anything that cannot be determined -- no manifest, no entry for
 #' this backbone, no recorded hash, a first-ever build -- counts as changed, so
@@ -669,16 +764,20 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
 #' @param manifest_path Character. Path to `manifest.json`.
 #' @param backend_name Character. Backend identifier.
 #' @param vtr_path Character. Path to the freshly built `.vtr`.
-#' @return Logical scalar. `TRUE` when the build differs from the published
-#'   asset and a release is warranted.
+#' @param version Character or `NULL`. The source release the build recorded;
+#'   `NULL` compares bytes only.
+#' @return Logical scalar. `TRUE` when a release is warranted.
 #' @export
-vtr_changed <- function(manifest_path, backend_name, vtr_path) {
+vtr_changed <- function(manifest_path, backend_name, vtr_path, version = NULL) {
   if (!file.exists(manifest_path) || !file.exists(vtr_path)) return(TRUE)
 
   entry <- tryCatch(
     jsonlite::read_json(manifest_path, simplifyVector = FALSE)$backends[[backend_name]],
     error = function(e) NULL
   )
+  if (!is.null(version) && !identical(as.character(entry$latest %||% ""), version)) {
+    return(TRUE)
+  }
   published <- entry$full_sha256
   if (is.null(published) || !nzchar(published)) return(TRUE)
 

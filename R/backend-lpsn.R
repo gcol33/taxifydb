@@ -65,9 +65,10 @@
 # requires a link back to the originating LPSN page, so every row carries its
 # own record link in `lpsn_url`.
 
-.lpsn_url <- "https://api.checklistbank.org/dataset/2015/archive"
+.lpsn_dataset_key <- "2015"
+.lpsn_url <- sprintf("https://api.checklistbank.org/dataset/%s/archive",
+                     .lpsn_dataset_key)
 .lpsn_source_page <- "https://lpsn.dsmz.de"
-.lpsn_version_default <- "2026.07"
 
 
 #' Download the LPSN ColDP archive from ChecklistBank
@@ -278,13 +279,16 @@ read_lpsn <- function(lpsn_dir, verbose = TRUE) {
 #' Build the LPSN backbone .vtr from source
 #'
 #' @param output_dir Character. Output directory.
-#' @param version Character or NULL. Defaults to the bundled LPSN version.
+#' @param version Character or NULL. Defaults to the release ChecklistBank
+#'   currently serves.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_lpsn <- function(output_dir = "output/lpsn", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) version <- .lpsn_version_default
+  if (is.null(version)) {
+    version <- checklistbank_release(.lpsn_dataset_key)$version
+  }
 
   tmp <- tempfile("lpsn_")
   dir.create(tmp, recursive = TRUE)

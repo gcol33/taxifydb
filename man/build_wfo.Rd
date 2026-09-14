@@ -9,7 +9,8 @@ build_wfo(output_dir = "output/wfo", version = NULL, verbose = TRUE)
 \arguments{
 \item{output_dir}{Character. Output directory.}
 
-\item{version}{Character or NULL. Defaults to the bundled WFO release tag.}
+\item{version}{Character or NULL. Defaults to the edition
+\code{\link[=wfo_latest_edition]{wfo_latest_edition()}} resolves.}
 
 \item{verbose}{Logical.}
 }

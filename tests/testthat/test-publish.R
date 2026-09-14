@@ -3,7 +3,8 @@
 # the URL 404s while every other field of the entry is correct. gh is replaced
 # by a fake that records each call and answers from a scripted release state.
 
-fake_gh <- function(exists = FALSE, assets = character(0L), upload_status = 0L) {
+fake_gh <- function(exists = FALSE, assets = character(0L), upload_status = 0L,
+                    download_bytes = "published bytes") {
   calls <- list()
   fn <- function(args, stdout = "", stderr = "") {
     calls[[length(calls) + 1L]] <<- args
@@ -11,6 +12,11 @@ fake_gh <- function(exists = FALSE, assets = character(0L), upload_status = 0L) 
     if (verb == "view" && "--json" %in% args) return(assets)
     if (verb == "view") return(if (exists) 0L else 1L)
     if (verb == "create") return(0L)
+    if (verb == "download") {
+      dir <- gsub("^[\"']|[\"']$", "", args[[match("--dir", args) + 1L]])
+      writeLines(download_bytes, file.path(dir, args[[match("--pattern", args) + 1L]]))
+      return(character(0L))
+    }
     if (verb == "upload") {
       out <- character(0L)
       if (upload_status != 0L) attr(out, "status") <- upload_status
@@ -116,7 +122,8 @@ test_that("re-publishing an existing tag keeps it and skips a copy already there
 test_that("a re-cut under an existing tag adds its own content-addressed copy", {
   dir <- withr::local_tempdir()
   vtr <- touch(dir, "wfo.vtr", "new wfo bytes")
-  gh <- fake_gh(exists = TRUE, assets = c("wfo.vtr", "wfo-0123abcd.vtr"))
+  gh <- fake_gh(exists = TRUE,
+                assets = c("wfo.vtr", "wfo-0123456789abcdef0123456789abcdef.vtr"))
   local_mocked_bindings(.gh = gh$fn)
 
   suppressMessages(publish_release("wfo", "2026.09", vtr, repo = "o/r",
@@ -126,6 +133,76 @@ test_that("a re-cut under an existing tag adds its own content-addressed copy", 
   expect_length(up, 2L)
   expect_equal(uploaded_names(up[[2L]]),
                sprintf("wfo-%s.vtr", unname(tools::md5sum(vtr))))
+})
+
+test_that("a rolling .vtr with no content-addressed copy is preserved before it is replaced", {
+  # wfo-2026.06 was cut as a June build of WFO 2024-12, before content-addressed
+  # copies existed; the WFO June 2026 edition publishes under the same tag.
+  dir <- withr::local_tempdir()
+  vtr <- touch(dir, "wfo.vtr", "wfo 2026-06 edition")
+  gh <- fake_gh(exists = TRUE, assets = c("wfo.vtr", "wfo.meta"),
+                download_bytes = "wfo 2024-12 bytes")
+  local_mocked_bindings(.gh = gh$fn)
+
+  suppressMessages(publish_release("wfo", "2026.06", vtr, repo = "o/r",
+                                   notes = "n"))
+
+  calls <- gh$calls()
+  verbs <- vapply(calls, function(a) a[[2L]], character(1L))
+  up <- uploads(calls)
+  expect_length(up, 3L)
+
+  old <- withr::local_tempfile()
+  writeLines("wfo 2024-12 bytes", old)
+  preserved <- sprintf("wfo-%s.vtr", unname(tools::md5sum(old)))
+  expect_equal(uploaded_names(up[[1L]]), preserved)
+  expect_false("--clobber" %in% up[[1L]])
+  # The old bytes are fetched and kept before the clobbering upload runs.
+  expect_lt(match("download", verbs),
+            which(verbs == "upload" & vapply(calls, function(a) "--clobber" %in% a,
+                                             logical(1L))))
+  expect_equal(uploaded_names(up[[2L]]), "wfo.vtr")
+  expect_true("--clobber" %in% up[[2L]])
+})
+
+test_that("a release with no rolling .vtr yet fetches nothing", {
+  dir <- withr::local_tempdir()
+  vtr <- touch(dir, "wfo.vtr")
+  gh <- fake_gh(exists = TRUE, assets = "wfo.meta")
+  local_mocked_bindings(.gh = gh$fn)
+
+  suppressMessages(publish_release("wfo", "2026.06", vtr, repo = "o/r",
+                                   notes = "n"))
+  verbs <- vapply(gh$calls(), function(a) a[[2L]], character(1L))
+  expect_false("download" %in% verbs)
+})
+
+test_that("a publish must use the version its build recorded", {
+  dir <- withr::local_tempdir()
+  vtr <- touch(dir, "wfo.vtr")
+  writeLines(c("backend=wfo", "version=2026.06"), file.path(dir, "wfo.meta"))
+  gh <- fake_gh(exists = FALSE)
+  local_mocked_bindings(.gh = gh$fn)
+
+  expect_error(
+    publish_release("wfo", "2026.09", vtr, repo = "o/r", notes = "n"),
+    "publishing as version 2026.09, but the build recorded version 2026.06")
+  expect_length(gh$calls(), 0L)
+})
+
+test_that("the release version is read from the build's .meta and validated", {
+  dir <- withr::local_tempdir()
+  touch(dir, "gbif.vtr")
+  expect_error(taxifydb:::.backbone_release_version(dir, "gbif"),
+               "no version recorded")
+
+  writeLines(c("backend=gbif", "version=current"), file.path(dir, "gbif.meta"))
+  expect_equal(taxifydb:::.backbone_artifacts(dir, "gbif")$version, "current")
+  expect_error(taxifydb:::.backbone_release_version(dir, "gbif"),
+               "cannot name a release")
+
+  writeLines(c("backend=gbif", "version=2023.08"), file.path(dir, "gbif.meta"))
+  expect_equal(taxifydb:::.backbone_release_version(dir, "gbif"), "2023.08")
 })
 
 test_that("publish_enrichment_release uploads a content-addressed copy per .vtr", {

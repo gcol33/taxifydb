@@ -42,10 +42,10 @@
 # Licence: CC BY 4.0 ("AviList: The Global Avian Checklist (c) 2026 by AviList
 # Core Team is licensed under CC BY 4.0").
 
+.avilist_release <- "2025b"
 .avilist_url <- paste0("https://www.avilist.org/wp-content/uploads/2026/06/",
-                       "AviList-v2025b-10Jun2026-extended.xlsx")
-.avilist_source_doi <- "10.2173/avilist.v2025b"
-.avilist_version_default <- "2025b"
+                       "AviList-v", .avilist_release, "-10Jun2026-extended.xlsx")
+.avilist_source_doi <- paste0("10.2173/avilist.v", .avilist_release)
 
 
 #' Download the AviList extended checklist workbook
@@ -212,7 +212,7 @@ read_avilist <- function(xlsx_path, verbose = TRUE) {
 #' @export
 build_avilist <- function(output_dir = "output/avilist", version = NULL,
                           verbose = TRUE) {
-  if (is.null(version)) version <- .avilist_version_default
+  if (is.null(version)) version <- .avilist_release
 
   tmp <- tempfile("avilist_")
   dir.create(tmp, recursive = TRUE)

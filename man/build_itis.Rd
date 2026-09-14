@@ -9,7 +9,8 @@ build_itis(output_dir = "output/itis", version = NULL, verbose = TRUE)
 \arguments{
 \item{output_dir}{Character. Directory for the output .vtr.}
 
-\item{version}{Character or NULL. If NULL, uses YYYY.MM of build date.}
+\item{version}{Character or NULL. If NULL, the \code{YYYY.MM} of the release the
+ITIS download currently holds.}
 
 \item{verbose}{Logical.}
 }

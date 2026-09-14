@@ -11,8 +11,9 @@
 #     infraspecificEpithet, authorship, genus, ...)
 #   - Synonym.tsv: (taxonID, nameID) pairs — synonym name -> accepted taxon
 
-.fungorum_url <- "https://api.checklistbank.org/dataset/2073/archive"
-.fungorum_version_default <- "2025.04"
+.fungorum_dataset_key <- "2073"
+.fungorum_url <- sprintf("https://api.checklistbank.org/dataset/%s/archive",
+                         .fungorum_dataset_key)
 
 # ColDP rank token -> unified rank vocabulary. Anything below subspecies that
 # we don't explicitly map (Greek letters, digit codes, asterisks, single
@@ -128,7 +129,9 @@ read_fungorum <- function(fungorum_dir, verbose = TRUE) {
 #' @export
 build_fungorum <- function(output_dir = "output/fungorum", version = NULL,
                            verbose = TRUE) {
-  if (is.null(version)) version <- .fungorum_version_default
+  if (is.null(version)) {
+    version <- checklistbank_release(.fungorum_dataset_key)$version
+  }
 
   tmp <- tempfile("fungorum_")
   dir.create(tmp, recursive = TRUE)

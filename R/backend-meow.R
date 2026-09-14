@@ -16,9 +16,10 @@
 # shapefile is a form-gated download with no stable URL). Frozen like the
 # ecoflora / floraweb scrape snapshots.
 
+.meow_snapshot_version <- "2026.07"
 .meow_url <- paste0(
   "https://github.com/gcol33/taxifydb/releases/download/",
-  "marine-snapshots-2026.07/meow_ecos.geojson"
+  "marine-snapshots-", .meow_snapshot_version, "/meow_ecos.geojson"
 )
 
 
@@ -123,8 +124,8 @@ read_meow <- function(path) {
 #' GeoJSON. The marine analogue of [build_wgsrpd()].
 #'
 #' @param output_dir Character. Output directory. Default: `output/meow`.
-#' @param version Character or NULL. Version string. Defaults to the current
-#'   `YYYY.MM`.
+#' @param version Character or NULL. Version string. Defaults to the frozen
+#'   snapshot's version.
 #' @param source_path Character or NULL. A local GeoJSON to parse instead of
 #'   downloading (for offline builds and testing).
 #' @param verbose Logical.
@@ -132,7 +133,7 @@ read_meow <- function(path) {
 #' @export
 build_meow <- function(output_dir = NULL, version = NULL,
                        source_path = NULL, verbose = TRUE) {
-  version <- version %||% format(Sys.Date(), "%Y.%m")
+  version <- version %||% .meow_snapshot_version
   output_dir <- output_dir %||% file.path("output", "meow")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -143,15 +144,7 @@ build_meow <- function(output_dir = NULL, version = NULL,
   vectra::write_vtr(df, vtr_path, batch_size = 100000L)
   vectra::create_index(vtr_path, "code")
 
-  meta_path <- paste0(tools::file_path_sans_ext(vtr_path), ".meta")
-  writeLines(c(
-    "backend=meow",
-    paste0("version=", version),
-    paste0("download_date=", format(Sys.time(), "%Y-%m-%d")),
-    paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
-    paste0("url=", .meow_url),
-    paste0("nrow=", nrow(df))
-  ), meta_path)
+  write_backbone_meta(vtr_path, "meow", version, .meow_url, nrow(df))
 
   if (verbose) {
     message(sprintf(

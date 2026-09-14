@@ -19,7 +19,6 @@
 .col_release <- "2026-09-11"
 .col_url <- sprintf("https://download.checklistbank.org/col/monthly/%s_dwca.zip",
                     .col_release)
-.col_version_default <- sub("^([0-9]{4})-([0-9]{2}).*$", "\\1.\\2", .col_release)
 
 # Columns needed for matching (after stripping namespace prefixes)
 .col_match_cols <- c(
@@ -266,7 +265,7 @@ name_through_epithets <- function(name, specific, infraspecific) {
 #' @export
 build_col <- function(output_dir = "output/col", version = NULL,
                       verbose = TRUE) {
-  if (is.null(version)) version <- .col_version_default
+  if (is.null(version)) version <- release_version_from_date(.col_release)
 
   tmp <- tempfile("col_")
   dir.create(tmp, recursive = TRUE)

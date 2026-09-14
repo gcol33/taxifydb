@@ -17,12 +17,14 @@
 #' species through `SpecCode` and inherits the accepted classification.
 #'
 #' @param server Either "fishbase" or "sealifebase".
+#' @param release Character. rfishbase data release to read, as
+#'   [rfishbase_release()] returns it (`"26.06"`).
 #' @param default_kingdom,default_phylum Used when `load_taxa()` carries no
 #'   kingdom/phylum column (FishBase: all Animalia / Chordata).
 #' @param verbose Logical.
 #' @return A raw data.frame in the pre-normalize column layout.
 #' @noRd
-.read_rfishbase_backbone <- function(server,
+.read_rfishbase_backbone <- function(server, release,
                                      default_kingdom = NA_character_,
                                      default_phylum = NA_character_,
                                      verbose = TRUE) {
@@ -33,7 +35,7 @@
   }
 
   if (verbose) message("Loading ", server, " taxonomy via rfishbase...")
-  tx <- as.data.frame(rfishbase::load_taxa(server = server),
+  tx <- as.data.frame(rfishbase::load_taxa(server = server, version = release),
                       stringsAsFactors = FALSE)
   if (verbose) message(sprintf("  %s accepted species",
                                format(nrow(tx), big.mark = ",")))
@@ -63,7 +65,7 @@
   )
 
   if (verbose) message("Loading ", server, " synonyms...")
-  syn <- as.data.frame(rfishbase::synonyms(server = server),
+  syn <- as.data.frame(rfishbase::synonyms(server = server, version = release),
                        stringsAsFactors = FALSE)
 
   is_syn <- tolower(trimws(syn$Status)) %in%
@@ -120,6 +122,34 @@
 )
 
 
+#' Latest rfishbase data release for a server
+#'
+#' rfishbase serves FishBase and SeaLifeBase as dated snapshots named `YY.MM`
+#' (`"26.06"` is June 2026). The newest is resolved once per build and passed to
+#' every table read, so the taxa and synonyms come from the snapshot the version
+#' names.
+#'
+#' @param server Either "fishbase" or "sealifebase".
+#' @return A list with `release` (rfishbase's `YY.MM` label) and `version`
+#'   (`YYYY.MM`).
+#' @export
+rfishbase_release <- function(server = c("fishbase", "sealifebase")) {
+  server <- match.arg(server)
+  if (!requireNamespace("rfishbase", quietly = TRUE)) {
+    stop("rfishbase is required to build the ", server,
+         " backbone from source.\n",
+         "Install it with: install.packages(\"rfishbase\")", call. = FALSE)
+  }
+  releases <- as.character(rfishbase::available_releases(server = server))
+  releases <- releases[grepl("^[0-9]{2}\\.[0-9]{2}$", releases)]
+  if (length(releases) == 0L) {
+    stop("rfishbase lists no ", server, " release.", call. = FALSE)
+  }
+  release <- releases[order(numeric_version(releases), decreasing = TRUE)][1L]
+  list(release = release, version = paste0("20", release))
+}
+
+
 #' Build the FishBase backbone .vtr
 #'
 #' @param output_dir Character.
@@ -129,9 +159,10 @@
 #' @export
 build_fishbase <- function(output_dir = "output/fishbase", version = NULL,
                            verbose = TRUE) {
-  if (is.null(version)) version <- format(Sys.Date(), "%Y.%m")
+  rel <- rfishbase_release("fishbase")
+  if (is.null(version)) version <- rel$version
 
-  df <- .read_rfishbase_backbone("fishbase",
+  df <- .read_rfishbase_backbone("fishbase", rel$release,
                                  default_kingdom = "Animalia",
                                  default_phylum = "Chordata",
                                  verbose = verbose)

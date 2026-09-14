@@ -9,7 +9,8 @@ build_lpsn(output_dir = "output/lpsn", version = NULL, verbose = TRUE)
 \arguments{
 \item{output_dir}{Character. Output directory.}
 
-\item{version}{Character or NULL. Defaults to the bundled LPSN version.}
+\item{version}{Character or NULL. Defaults to the release ChecklistBank
+currently serves.}
 
 \item{verbose}{Logical.}
 }

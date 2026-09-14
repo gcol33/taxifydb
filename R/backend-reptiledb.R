@@ -18,8 +18,11 @@
 
 .reptiledb_taxa_url      <- "http://reptile-database.reptarium.cz/interfaces/export/taxa.csv"
 .reptiledb_synonyms_url  <- "http://www.reptile-database.org/data/reptile_synonyms_2023_04.xlsx"
-.reptiledb_checklist_url <- "http://www.reptile-database.org/data/reptile_checklist_2026_06.xlsx"
-.reptiledb_version_default <- "2026.06"
+.reptiledb_checklist_release <- "2026-06"
+.reptiledb_checklist_url <- sprintf(
+  "http://www.reptile-database.org/data/reptile_checklist_%s.xlsx",
+  sub("-", "_", .reptiledb_checklist_release, fixed = TRUE)
+)
 
 
 #' Download the Reptile Database bulk files
@@ -216,7 +219,9 @@ read_reptiledb <- function(paths, verbose = TRUE) {
 #' @export
 build_reptiledb <- function(output_dir = "output/reptiledb", version = NULL,
                             verbose = TRUE) {
-  if (is.null(version)) version <- .reptiledb_version_default
+  if (is.null(version)) {
+    version <- release_version_from_date(.reptiledb_checklist_release)
+  }
 
   tmp <- tempfile("reptiledb_")
   dir.create(tmp, recursive = TRUE)

@@ -96,6 +96,24 @@ test_that("a content-addressed url is recorded for the built bytes", {
     cid))
 })
 
+test_that("latest is the build's source release and no source_version is kept", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "worms")
+  writeLines(c("backend=worms", "version=2026.09", "url=https://example.org/x"),
+             file.path(dir, "worms.meta"))
+  mf <- write_manifest(file.path(dir, "manifest.json"),
+                       list(latest = "2026.08", source_version = "2024-12"))
+
+  update_manifest(mf, "worms", "2026.09", vtr)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
+  expect_equal(got$latest, "2026.09")
+  expect_null(got$source_version)
+  expect_match(got$full_url, "/worms-2026.09/worms.vtr", fixed = TRUE)
+
+  expect_error(update_manifest(mf, "worms", "2026.10", vtr),
+               "but the build recorded version 2026.09")
+})
+
 test_that("a delta is dropped when the release has none, unlike a sidecar", {
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "worms")

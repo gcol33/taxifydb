@@ -4,12 +4,15 @@
 \alias{download_wfo}
 \title{Download and extract the WFO classification file}
 \usage{
-download_wfo(dest = tempdir(), verbose = TRUE)
+download_wfo(dest = tempdir(), verbose = TRUE, url = NULL)
 }
 \arguments{
 \item{dest}{Character. Destination directory.}
 
 \item{verbose}{Logical.}
+
+\item{url}{Character or NULL. Backbone archive URL; the newest edition's,
+from \code{\link[=wfo_latest_edition]{wfo_latest_edition()}}, when \code{NULL}.}
 }
 \value{
 Path to the extracted classification file.

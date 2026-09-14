@@ -21,7 +21,8 @@ update_manifest(
 
 \item{backend_name}{Character.}
 
-\item{version}{Character.}
+\item{version}{Character. The source release the build recorded in its
+\code{.meta}; a different value is an error.}
 
 \item{vtr_path}{Character.}
 
@@ -48,9 +49,7 @@ source of truth for provenance.}
 The updated manifest (invisibly).
 }
 \description{
-The entry records two versions where they differ: \code{latest} is the release
-tag the download URL points at (stamped \code{YYYY.MM} by the build cycle) and
-\code{source_version} is the version the upstream dataset gives itself, read from
-the \code{.meta} sidecar. Rolling sources carry only \code{latest}, having no version
-of their own.
+\code{latest} is the release tag the download URL points at, and it is the source
+release the build recorded in its \code{.meta} sidecar (WFO \code{2026.06}, OTT
+\verb{3.7.3}), so one field names both the download and the data.
 }

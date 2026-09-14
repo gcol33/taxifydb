@@ -9,7 +9,8 @@ build_mdd(output_dir = "output/mdd", version = NULL, verbose = TRUE)
 \arguments{
 \item{output_dir}{Character. Output directory.}
 
-\item{version}{Character or NULL. Defaults to the bundled MDD version.}
+\item{version}{Character or NULL. Defaults to the MDD version the downloaded
+archive names in its species file (\code{MDD_v2.5_...species.csv}).}
 
 \item{verbose}{Logical.}
 }

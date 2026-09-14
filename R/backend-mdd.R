@@ -47,7 +47,6 @@
 .mdd_url <- paste0("https://github.com/mammaldiversity/mammaldiversity.github.io/",
                    "raw/refs/heads/master/assets/data/MDD.zip")
 .mdd_source_doi <- "10.1093/jmammal/gyaa192"
-.mdd_version_default <- "2.5"
 
 
 #' Download and unpack the Mammal Diversity Database archive
@@ -79,6 +78,26 @@ download_mdd <- function(dest = tempdir(), verbose = TRUE) {
     stop("MDD archive contains no MDD_v<ver>_<n>species.csv", call. = FALSE)
   }
   dirname(hits[[1L]])
+}
+
+
+#' MDD release version named by the downloaded archive
+#'
+#' The archive on MDD's default branch moves with each release; its species file
+#' carries the version it holds (`MDD_v2.5_6801species.csv`).
+#'
+#' @param dir Character. Directory the archive was extracted into.
+#' @return Character scalar, e.g. `"2.5"`.
+#' @noRd
+mdd_archive_version <- function(dir) {
+  f <- list.files(dir, pattern = "^MDD_v.*species\\.csv$", recursive = TRUE)
+  f <- basename(f[!grepl("__MACOSX", f, fixed = TRUE)])
+  v <- unique(sub("^MDD_v([0-9][0-9.]*[0-9])_.*$", "\\1", f))
+  if (length(v) != 1L || identical(v, f)) {
+    stop("MDD: cannot read the release version from the species file name(s): ",
+         paste(f, collapse = ", "), call. = FALSE)
+  }
+  v
 }
 
 
@@ -225,19 +244,19 @@ read_mdd <- function(dir, verbose = TRUE) {
 #' Build the Mammal Diversity Database backbone .vtr from source
 #'
 #' @param output_dir Character. Output directory.
-#' @param version Character or NULL. Defaults to the bundled MDD version.
+#' @param version Character or NULL. Defaults to the MDD version the downloaded
+#'   archive names in its species file (`MDD_v2.5_...species.csv`).
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_mdd <- function(output_dir = "output/mdd", version = NULL,
                       verbose = TRUE) {
-  if (is.null(version)) version <- .mdd_version_default
-
   tmp <- tempfile("mdd_")
   dir.create(tmp, recursive = TRUE)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
 
   dir_path <- download_mdd(dest = tmp, verbose = verbose)
+  if (is.null(version)) version <- mdd_archive_version(dir_path)
   df <- read_mdd(dir_path, verbose = verbose)
 
   if (verbose) message("Precomputing keys and embedding synonyms...")

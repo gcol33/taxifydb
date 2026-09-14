@@ -28,6 +28,14 @@
 # unbounded image leaves 16 of 1,487 backbone-name pairs unmatched against the
 # forward image's 39; the two arms kept here reach 19, so what corroboration
 # refuses is three pairs, and what it buys is that the canary above stays out.
+#
+# The entry into the hop is checked as well as the exit. A reverse edge is one
+# backbone filing a name under the concept, and a single misfiled synonym opens
+# the hop onto another species: COL XR alone files `acer negundo f. crispum`
+# under Acer pseudoplatanus, where WFO, LCVP, GBIF and WCVP file it in Acer
+# negundo, and the corroborated exit then keyed Acer negundo with sycamore's
+# rows. A hop is taken only when no more backbones place its key in another
+# species than in the input's own.
 
 #' Read a name lookup filtered on one column
 #'
@@ -159,6 +167,59 @@
 }
 
 
+#' Refuse a hop whose entry most backbones place in another species
+#'
+#' A hop enters the input's concept through a key some backbone files under a
+#' name of the input's forward image. When more backbones file that key under a
+#' different species, the entry is the misfiled record, and the hop would key
+#' the input's row onto the species the key really belongs to: *Acer
+#' pseudoplatanus* reached *Acer negundo* through COL XR's lone
+#' `acer negundo f. crispum -> Acer pseudoplatanus`, and *Pinus strobus* reached
+#' *Tsuga canadensis* through its `tsuga canadensis f. fastigiata`.
+#'
+#' Placements are compared on the species part ([.species_of()]), so a backbone
+#' filing the key under the autonym of the input's species votes with it, and
+#' each backbone counts once per side. An even split is not a contradiction: one
+#' backbone synonymising the key onto the concept while one keeps it accepted is
+#' exactly the name the hop exists to reach.
+#'
+#' @param bridged data.frame of `input_name`, `key_ci`, `kept_name`.
+#' @param f2 Re-forward edges carrying `backbone`: every placement of each key
+#'   inside the source's kingdom ([.in_kingdom_edges()]).
+#' @param direct The forward image, `input_name`, `accepted_name`.
+#' @param verbose Logical.
+#' @return `bridged` without the rows whose entry is outvoted.
+#' @noRd
+.drop_outvoted_entries <- function(bridged, f2, direct, verbose = TRUE) {
+  if (!nrow(bridged)) return(bridged)
+  pairs <- unique(bridged[, c("input_name", "key_ci"), drop = FALSE])
+  votes <- merge(pairs, f2[, c("key_ci", "accepted_name", "backbone"),
+                           drop = FALSE], by = "key_ci")
+  own <- paste(direct$input_name, .species_of(direct$accepted_name),
+               sep = "\x1f")
+  votes$inside <- paste(votes$input_name, .species_of(votes$accepted_name),
+                        sep = "\x1f") %in% own
+  votes <- unique(votes[, c("input_name", "key_ci", "backbone", "inside"),
+                        drop = FALSE])
+  pk <- paste(votes$input_name, votes$key_ci, sep = "\x1f")
+  count <- function(side) {
+    n <- table(factor(pk[votes$inside == side], levels = unique(pk)))
+    stats::setNames(as.integer(n), names(n))
+  }
+  n_in  <- count(TRUE)
+  n_out <- count(FALSE)
+  outvoted <- names(n_out)[n_out > n_in[names(n_out)]]
+
+  drop <- paste(bridged$input_name, bridged$key_ci, sep = "\x1f") %in% outvoted
+  if (any(drop) && isTRUE(verbose)) {
+    message(sprintf(
+      "    [entry vote] %s hop(s) through a key most backbones place in another species",
+      format(length(outvoted), big.mark = ",")))
+  }
+  bridged[!drop, , drop = FALSE]
+}
+
+
 #' Map source names to the accepted names every backbone can return for them
 #'
 #' One forward pass (the pre-existing behaviour) plus, when `reverse_hop` is
@@ -217,6 +278,8 @@
 
   extra <- NULL
   if (nrow(f2)) {
+    placements <- .in_kingdom_edges(f2[.pair_key(f2) %in% survived, ,
+                                       drop = FALSE], kingdom)
     f2 <- keep(f2, c("key_ci", "accepted_name", "backbone"))
     # What the hop is allowed to take from the re-forward pass.
     kept <- .hop_targets(f2)
@@ -226,11 +289,13 @@
       # revkey -> the forward-image name it synonymises onto -> the input
       bridge <- merge(keep(rev), self, by = "key_ci")
       if (nrow(bridge)) {
-        extra <- merge(direct, unique(bridge[, c("accepted_name", "kept_name"),
-                                             drop = FALSE]),
-                       by = "accepted_name")
-        extra <- data.frame(input_name = extra$input_name,
-                            accepted_name = extra$kept_name,
+        bridged <- merge(direct,
+                         unique(bridge[, c("key_ci", "accepted_name",
+                                           "kept_name"), drop = FALSE]),
+                         by = "accepted_name")
+        bridged <- .drop_outvoted_entries(bridged, placements, direct, verbose)
+        extra <- data.frame(input_name = bridged$input_name,
+                            accepted_name = bridged$kept_name,
                             stringsAsFactors = FALSE)
       }
     }

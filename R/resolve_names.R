@@ -330,15 +330,8 @@ resolve_name_map <- function(names,
 .drop_out_of_scope_names <- function(edges, kingdom, verbose = TRUE) {
   cols <- c("key_ci", "accepted_name")
   if (!nrow(edges)) return(edges[, cols, drop = FALSE])
-  scope <- unique(taxify::normalize_kingdom_group(kingdom))
-  scope <- scope[!is.na(scope)]
-  if (!length(scope)) {
-    stop(sprintf("kingdom: none of %s is a recognised kingdom.",
-                 paste(kingdom, collapse = ", ")), call. = FALSE)
-  }
-  k <- taxify::normalize_kingdom_group(edges$kingdom)
-  unknown <- is.na(k)
-  k[unknown] <- taxify::backbone_fixed_kingdom(edges$backbone[unknown])
+  scope <- .kingdom_scope(kingdom)
+  k <- .edge_kingdom(edges)
   pk <- .pair_key(edges)
   keep <- pk %in% pk[!is.na(k) & k %in% scope] | !pk %in% pk[!is.na(k)]
   if (any(!keep) && isTRUE(verbose)) {
@@ -348,6 +341,49 @@ resolve_name_map <- function(names,
       paste(scope, collapse = "/")))
   }
   unique(edges[keep, cols, drop = FALSE])
+}
+
+
+#' Normalize a declared kingdom set, erroring when nothing is recognised
+#' @noRd
+.kingdom_scope <- function(kingdom) {
+  scope <- unique(taxify::normalize_kingdom_group(kingdom))
+  scope <- scope[!is.na(scope)]
+  if (!length(scope)) {
+    stop(sprintf("kingdom: none of %s is a recognised kingdom.",
+                 paste(kingdom, collapse = ", ")), call. = FALSE)
+  }
+  scope
+}
+
+
+#' Each edge's kingdom: the lookup's own, else its backbone's fixed kingdom
+#' @noRd
+.edge_kingdom <- function(edges) {
+  k <- taxify::normalize_kingdom_group(edges$kingdom)
+  unknown <- is.na(k)
+  k[unknown] <- taxify::backbone_fixed_kingdom(edges$backbone[unknown])
+  k
+}
+
+
+#' Keep the edges that place a name inside the source's kingdom
+#'
+#' Edge-level counterpart of the two kingdom gates, for counting backbones
+#' rather than keeping pairs: a backbone that reaches a spelling as a homonym in
+#' another kingdom supplies a pair, but is no evidence about where the source's
+#' organism sits. Without a declared scope an edge contradicting its key's
+#' consensus kingdom is dropped; with one, an edge placed outside the scope.
+#'
+#' @param edges Edge frame with `key_ci`, `kingdom`, `backbone`.
+#' @param kingdom Character vector or `NULL`.
+#' @return `edges` without the out-of-kingdom rows, and without `kingdom`.
+#' @noRd
+.in_kingdom_edges <- function(edges, kingdom = NULL) {
+  if (is.null(kingdom)) return(.drop_cross_kingdom_names(edges, verbose = FALSE))
+  k <- .edge_kingdom(edges)
+  edges[is.na(k) | k %in% .kingdom_scope(kingdom),
+        setdiff(names(edges), "kingdom"), drop = FALSE]
 }
 
 

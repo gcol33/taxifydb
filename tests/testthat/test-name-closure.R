@@ -100,11 +100,12 @@ test_that("the hop is still gated on kingdom", {
            c("Animalia", "Animalia")),
     b = lk("cus dus", "Cus dus", "Animalia"),
     c = lk("cus dus", "Cus dus", "Plantae"),
-    d = lk("cus dus", "Cus dus", "Animalia")
+    d = lk("cus dus", "Cus dus", "Animalia"),
+    e = lk("cus dus", "Aus bus", "Animalia")
   ))
   m <- taxifydb:::.name_closure_map("Aus bus", paths, reverse_hop = TRUE,
                                     verbose = FALSE)
-  # Animalia wins the vote 3-1, so the name is kept -- as the same organism.
+  # Animalia wins the vote 4-1, so the name is kept -- as the same organism.
   expect_true("Cus dus" %in% m$accepted_name)
 
   flipped <- fake_lookups(list(
@@ -160,12 +161,14 @@ test_that("a re-routing only one backbone makes is not", {
 test_that("the hop does not cross a key one backbone gives to two species", {
   # `acacia acicularis` is two names: R.Br.'s, a synonym of Acacia brownii, and
   # Humb. & Bonpl.'s, of Vachellia farnesiana. col records both and collapses
-  # the key onto farnesiana; lcvp and wcvp collapse it onto brownii. Two
-  # backbones agreeing on brownii is not corroboration of one concept here.
+  # the key onto farnesiana, as does ncbi; lcvp and wcvp collapse it onto
+  # brownii. Two backbones agreeing on brownii is not corroboration of one
+  # concept here.
   acicularis <- function(col_n) fake_lookups(list(
     col  = lk(c("vachellia farnesiana", "acacia acicularis"),
               c("Vachellia farnesiana", "Vachellia farnesiana"),
               n_species = c(1L, col_n)),
+    ncbi = lk("acacia acicularis", "Vachellia farnesiana"),
     wfo  = lk(c("vachellia farnesiana", "acacia brownii"),
               c("Vachellia farnesiana", "Acacia brownii")),
     lcvp = lk("acacia acicularis", "Acacia brownii"),
@@ -179,6 +182,58 @@ test_that("the hop does not cross a key one backbone gives to two species", {
   m1 <- taxifydb:::.name_closure_map("Vachellia farnesiana", acicularis(1L),
                                      reverse_hop = TRUE, verbose = FALSE)
   expect_true("Acacia brownii" %in% m1$accepted_name)
+})
+
+test_that("the hop does not enter through a placement most backbones contradict (#56)", {
+  # colxr alone files `acer negundo f. crispum` under Acer pseudoplatanus; wfo
+  # and lcvp file it under Acer negundo, gbif and wcvp under its autonym. The
+  # key belongs to the negundo concept, so a sycamore row must not reach the
+  # Acer negundo key through it, even though two backbones agree on the exit.
+  crispum <- fake_lookups(list(
+    colxr = lk(c("acer pseudoplatanus", "acer negundo f. crispum"),
+               c("Acer pseudoplatanus", "Acer pseudoplatanus")),
+    wfo   = lk(c("acer pseudoplatanus", "acer negundo", "acer negundo f. crispum"),
+               c("Acer pseudoplatanus", "Acer negundo", "Acer negundo")),
+    lcvp  = lk(c("acer pseudoplatanus", "acer negundo", "acer negundo f. crispum"),
+               c("Acer pseudoplatanus", "Acer negundo", "Acer negundo")),
+    gbif  = lk(c("acer negundo", "acer negundo f. crispum"),
+               c("Acer negundo", "Acer negundo subsp. negundo")),
+    wcvp  = lk(c("acer negundo", "acer negundo f. crispum"),
+               c("Acer negundo", "Acer negundo subsp. negundo"))
+  ))
+  src <- c("Acer pseudoplatanus", "Acer negundo")
+  m <- taxifydb:::.name_closure_map(src, crispum, reverse_hop = TRUE,
+                                    verbose = FALSE)
+  expect_equal(unique(m$accepted_name[m$input_name == "Acer pseudoplatanus"]),
+               "Acer pseudoplatanus")
+  expect_true("Acer negundo" %in% m$accepted_name[m$input_name == "Acer negundo"])
+
+  # Through the build: the negundo key carries its own year, not the sycamore's
+  # earlier one.
+  local_mocked_bindings(.find_lookup_paths = function(backends) crispum)
+  df <- data.frame(canonical_name = src, country_code = "NL",
+                   alien_first_record = c(1699L, 1809L),
+                   alien_first_record_status = "present",
+                   stringsAsFactors = FALSE)
+  reg <- taxifydb:::.enrichment_build_registry$alien_first_records
+  out <- resolve_enrichment_names(df, group_cols = "country_code",
+                                  backends = names(crispum), verbose = FALSE,
+                                  reduce_fn = reg$reduce_fn)
+  year <- stats::setNames(out$alien_first_record, out$canonical_name)
+  expect_equal(year[["Acer negundo"]], 1809L)
+  expect_equal(year[["Acer pseudoplatanus"]], 1699L)
+})
+
+test_that("a placement the backbones split evenly still lets the hop through", {
+  # One backbone synonymises the key onto the concept and one keeps it accepted:
+  # nothing outvotes the entry, which is the Minuartia hybrida shape.
+  paths <- fake_lookups(list(
+    a = lk(c("aus bus", "cus dus"), c("Aus bus", "Aus bus")),
+    b = lk("cus dus", "Cus dus")
+  ))
+  m <- taxifydb:::.name_closure_map("Aus bus", paths, reverse_hop = TRUE,
+                                    verbose = FALSE)
+  expect_true("Cus dus" %in% m$accepted_name)
 })
 
 test_that("a lookup without n_species is refused, not read as homonym-free", {

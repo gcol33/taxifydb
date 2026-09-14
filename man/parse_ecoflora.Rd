@@ -17,7 +17,10 @@ Reads the per-species Ecoflora scrape (\code{results.csv}, one row per species,
 trait columns named by their Ecoflora short codes) and returns a clean wide
 data.frame keyed on \code{canonical_name}. Numeric fields (heights, seed weight,
 flowering months) take the median of any multiple scraped values;
-categorical fields keep the unique values joined with "; ". Every trait
+categorical fields keep the unique values joined with "; ". Ecoflora records
+height in cm ("Height: 3. typical maximum (cm)", "Height: 4. typical minimum
+(cm)") and seed weight in mg ("Seed weight: 3. mean (mg)"); heights are
+written in mm, seed weight as recorded. Every trait
 column carries a \verb{_uk} suffix to mark the British-flora calibration and to
 avoid collisions when chained with other plant-trait enrichments.
 }

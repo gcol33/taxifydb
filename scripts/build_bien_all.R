@@ -28,25 +28,9 @@ if (!dir.create(lock_d, showWarnings = FALSE)) {
 }
 on.exit(unlink(lock_d, recursive = TRUE), add = TRUE)
 
-# curated spec (nice names / types); keep_all pivots every other fetched trait
-spec <- list(
-  plant_height_m       = list(trait = "whole plant height", type = "num"),
-  max_plant_height_m   = list(trait = "maximum whole plant height", type = "num"),
-  dbh_cm               = list(trait = "diameter at breast height (1.3 m)", type = "num"),
-  sla_mm2_mg           = list(trait = "leaf area per leaf dry mass", type = "num"),
-  leaf_area_mm2        = list(trait = "leaf area", type = "num"),
-  leaf_dry_mass_mg     = list(trait = "leaf dry mass", type = "num"),
-  leaf_n_per_dry_mass  = list(trait = "leaf nitrogen content per leaf dry mass", type = "num"),
-  leaf_p_per_dry_mass  = list(trait = "leaf phosphorus content per leaf dry mass", type = "num"),
-  leaf_thickness_mm    = list(trait = "leaf thickness", type = "num"),
-  seed_mass_mg         = list(trait = "seed mass", type = "num"),
-  wood_density_g_cm3   = list(trait = "stem wood density", type = "num"),
-  leaf_lifespan        = list(trait = "leaf life span", type = "num"),
-  growth_form          = list(trait = "whole plant growth form", type = "cat"),
-  woodiness            = list(trait = "whole plant woodiness", type = "cat"),
-  dispersal_syndrome   = list(trait = "whole plant dispersal syndrome", type = "cat"),
-  flower_color         = list(trait = "flower color", type = "cat")
-)
+# curated spec (nice names / types / BIEN record units); keep_all pivots every
+# other fetched trait
+spec <- taxifydb:::.bien_trait_spec()
 
 tl <- BIEN::BIEN_trait_list()
 traits <- if (is.data.frame(tl)) {
@@ -63,30 +47,28 @@ safe <- function(s) gsub("[^A-Za-z0-9]+", "_", s)
 # Per-trait fetch reducer, run in a child process so a mega-trait (e.g. DBH,
 # millions of records) that hangs the record-level API can be killed and
 # skipped after a wall-clock budget instead of blocking the whole build.
-fetch_one <- function(tr) {
-  raw <- BIEN::BIEN_trait_trait(trait = tr)
-  if (is.data.frame(raw) && nrow(raw) > 0L) {
-    if ("access" %in% names(raw))
-      raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
-    if (nrow(raw) > 0L)
-      return(data.frame(name = as.character(raw$scrubbed_species_binomial),
-                        trait = as.character(raw$trait_name),
-                        value = as.character(raw$trait_value),
-                        stringsAsFactors = FALSE))
-  }
-  NULL
+fetch_one <- function(tr, repo) {
+  suppressMessages(pkgload::load_all(repo, quiet = TRUE))
+  taxifydb:::.bien_fetch_trait(tr)
 }
 PER_TRAIT_TIMEOUT <- 1800L   # 30 min: fair for big traits, caps the intractable
 for (i in seq_along(traits)) {
   tr <- traits[i]
   f  <- file.path(cache, paste0(sprintf("%03d_", i), safe(tr), ".rds"))
   s  <- paste0(tools::file_path_sans_ext(f), ".skip")
+  if (file.exists(f) && is.data.frame(prev <- readRDS(f)) &&
+      !"unit" %in% names(prev)) {
+    logln(sprintf("refetch %d/%d %s (cached without record units)", i,
+                  length(traits), tr))
+    file.remove(f)
+  }
   if (file.exists(f) || file.exists(s)) {
     logln(sprintf("skip %d/%d %s (done)", i, length(traits), tr)); next
   }
   t0 <- Sys.time()
   red <- tryCatch(
-    callr::r(fetch_one, args = list(tr = tr), timeout = PER_TRAIT_TIMEOUT),
+    callr::r(fetch_one, args = list(tr = tr, repo = repo),
+             timeout = PER_TRAIT_TIMEOUT),
     error = function(e) structure(list(), .err = conditionMessage(e)))
   el <- round(as.numeric(difftime(Sys.time(), t0, units = "mins")), 1)
   if (is.list(red) && !is.data.frame(red) && !is.null(attr(red, ".err"))) {
@@ -116,7 +98,8 @@ parts <- parts[!vapply(parts, is.null, logical(1L))]
 long <- do.call(rbind, parts)
 logln(sprintf("long records: %s", format(nrow(long), big.mark = ",")))
 
-res <- taxifydb:::.trait_finalize(taxifydb:::.pivot_species_traits(long, spec))
+res <- taxifydb:::.trait_finalize(taxifydb:::.pivot_species_traits(
+  taxifydb:::.bien_convert_units(long, spec), spec))
 logln(sprintf("pivoted: %d species x %d cols", nrow(res), ncol(res)))
 df <- resolve_enrichment_names(res, group_cols = NULL, verbose = FALSE)
 

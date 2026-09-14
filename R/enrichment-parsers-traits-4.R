@@ -220,13 +220,108 @@ parse_useful_plants <- function(path) {
 
 # ---- BIEN (built via the BIEN R package at build time) ---------------------
 
+#' Curated BIEN trait spec
+#'
+#' Output column -> BIEN `trait_name`, type, and for numeric traits the `unit`
+#' string BIEN records carry for that trait. `scale` converts the recorded unit
+#' to the unit in the column name: BIEN records leaf dry mass in g, written here
+#' in mg.
+#' @noRd
+.bien_trait_spec <- function() {
+  list(
+    plant_height_m       = list(trait = "whole plant height", type = "num",
+                                unit = "m"),
+    max_plant_height_m   = list(trait = "maximum whole plant height",
+                                type = "num", unit = "m"),
+    dbh_cm               = list(trait = "diameter at breast height (1.3 m)",
+                                type = "num", unit = "cm"),
+    sla_mm2_mg           = list(trait = "leaf area per leaf dry mass",
+                                type = "num", unit = "m2.kg-1"),
+    leaf_area_mm2        = list(trait = "leaf area", type = "num",
+                                unit = "mm2"),
+    leaf_dry_mass_mg     = list(trait = "leaf dry mass", type = "num",
+                                unit = "g", scale = 1000),
+    leaf_n_per_dry_mass  = list(trait = "leaf nitrogen content per leaf dry mass",
+                                type = "num", unit = "mg.g-1"),
+    leaf_p_per_dry_mass  = list(
+      trait = "leaf phosphorus content per leaf dry mass", type = "num",
+      unit = "mg.g-1"),
+    leaf_thickness_mm    = list(trait = "leaf thickness", type = "num",
+                                unit = "mm"),
+    seed_mass_mg         = list(trait = "seed mass", type = "num",
+                                unit = "mg"),
+    wood_density_g_cm3   = list(trait = "stem wood density", type = "num",
+                                unit = "g.cm-3"),
+    leaf_lifespan        = list(trait = "leaf life span", type = "num",
+                                unit = "months"),
+    growth_form          = list(trait = "whole plant growth form", type = "cat"),
+    woodiness            = list(trait = "whole plant woodiness", type = "cat"),
+    dispersal_syndrome   = list(trait = "whole plant dispersal syndrome",
+                                type = "cat"),
+    flower_color         = list(trait = "flower color", type = "cat")
+  )
+}
+
+#' Fetch one BIEN trait as public (name, trait, value, unit) records
+#' @noRd
+.bien_fetch_trait <- function(trait) {
+  raw <- BIEN::BIEN_trait_trait(trait = trait)
+  if (!is.data.frame(raw) || nrow(raw) == 0L) return(NULL)
+  if ("access" %in% names(raw)) {
+    raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
+  }
+  if (nrow(raw) == 0L) return(NULL)
+  data.frame(
+    name  = as.character(raw$scrubbed_species_binomial),
+    trait = as.character(raw$trait_name),
+    value = as.character(raw$trait_value),
+    unit  = as.character(raw$unit),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Check BIEN record units against the spec and convert to the column unit
+#'
+#' Every numeric spec entry declares the unit its BIEN records carry. A record
+#' in any other unit stops the build, so a column name never states a unit its
+#' values are not in; `scale` then rescales the values.
+#' @noRd
+.bien_convert_units <- function(long, spec) {
+  if (!"unit" %in% names(long)) {
+    stop("BIEN records carry no `unit` column; the units behind the named ",
+         "columns cannot be checked.", call. = FALSE)
+  }
+  for (oc in names(spec)) {
+    s <- spec[[oc]]
+    if (!identical(s$type, "num") || is.null(s$unit)) next
+    idx <- which(long$trait == s$trait)
+    if (!length(idx)) next
+    seen <- unique(long$unit[idx])
+    bad  <- setdiff(seen, s$unit)
+    if (length(bad)) {
+      stop(sprintf("BIEN trait '%s' (%s) has records in unit(s) %s, expected '%s'.",
+                   s$trait, oc, paste0("'", bad, "'", collapse = ", "), s$unit),
+           call. = FALSE)
+    }
+    if (!is.null(s$scale)) {
+      v <- suppressWarnings(as.numeric(long$value[idx]))
+      long$value[idx] <- ifelse(is.na(v), NA_character_,
+                                format(v * s$scale, digits = 15,
+                                       scientific = FALSE, trim = TRUE))
+    }
+  }
+  long
+}
+
 #' Parse BIEN trait data (queried via the BIEN R package)
 #'
 #' Like fishbase via rfishbase, BIEN is queried directly: a single bulk pull of
 #' the selected traits across all species (one query per trait list), filtered
 #' to public-access records, then pivoted to one row per species (numeric by
 #' median, categorical by mode). The `path` argument is unused (kept for a
-#' uniform parser interface).
+#' uniform parser interface). Curated numeric columns are checked against the
+#' unit each BIEN record carries and converted to the unit in the column name
+#' (leaf dry mass is recorded in g and written in mg).
 #'
 #' @param path Unused.
 #' @return data.frame with canonical_name + plant traits.
@@ -236,30 +331,7 @@ parse_bien <- function(path) {
     stop("Package 'BIEN' is required to build the BIEN enrichment.",
          call. = FALSE)
   }
-  spec <- list(
-    plant_height_m       = list(trait = "whole plant height", type = "num"),
-    max_plant_height_m   = list(trait = "maximum whole plant height",
-                                type = "num"),
-    dbh_cm               = list(trait = "diameter at breast height (1.3 m)",
-                                type = "num"),
-    sla_mm2_mg           = list(trait = "leaf area per leaf dry mass",
-                                type = "num"),
-    leaf_area_mm2        = list(trait = "leaf area", type = "num"),
-    leaf_dry_mass_mg     = list(trait = "leaf dry mass", type = "num"),
-    leaf_n_per_dry_mass  = list(trait = "leaf nitrogen content per leaf dry mass",
-                                type = "num"),
-    leaf_p_per_dry_mass  = list(
-      trait = "leaf phosphorus content per leaf dry mass", type = "num"),
-    leaf_thickness_mm    = list(trait = "leaf thickness", type = "num"),
-    seed_mass_mg         = list(trait = "seed mass", type = "num"),
-    wood_density_g_cm3   = list(trait = "stem wood density", type = "num"),
-    leaf_lifespan        = list(trait = "leaf life span", type = "num"),
-    growth_form          = list(trait = "whole plant growth form", type = "cat"),
-    woodiness            = list(trait = "whole plant woodiness", type = "cat"),
-    dispersal_syndrome   = list(trait = "whole plant dispersal syndrome",
-                                type = "cat"),
-    flower_color         = list(trait = "flower color", type = "cat")
-  )
+  spec <- .bien_trait_spec()
   # Fetch every BIEN trait so none is dropped. The per-trait download is a large
   # global scrape (millions of occurrence records each, dozens of traits), but
   # the output is bounded: each pull is reduced immediately to (name, trait,
@@ -291,21 +363,8 @@ parse_bien <- function(path) {
   # peak to one trait's records.
   long_list <- vector("list", length(traits))
   for (i in seq_along(traits)) {
-    raw <- BIEN::BIEN_trait_trait(trait = traits[i])
-    if (is.data.frame(raw) && nrow(raw) > 0L) {
-      if ("access" %in% names(raw)) {
-        raw <- raw[!is.na(raw$access) & raw$access == "public", , drop = FALSE]
-      }
-      if (nrow(raw) > 0L) {
-        long_list[[i]] <- data.frame(
-          name  = as.character(raw$scrubbed_species_binomial),
-          trait = as.character(raw$trait_name),
-          value = as.character(raw$trait_value),
-          stringsAsFactors = FALSE
-        )
-      }
-    }
-    rm(raw); gc(FALSE)
+    long_list[i] <- list(.bien_fetch_trait(traits[i]))
+    gc(FALSE)
     message(sprintf("  [bien] %d/%d %s: %s records", i, length(traits),
                     traits[i],
                     format(if (is.null(long_list[[i]])) 0L
@@ -316,5 +375,5 @@ parse_bien <- function(path) {
   if (is.null(long) || nrow(long) == 0L) {
     stop("BIEN_trait_trait returned no data.", call. = FALSE)
   }
-  .trait_finalize(.pivot_species_traits(long, spec))
+  .trait_finalize(.pivot_species_traits(.bien_convert_units(long, spec), spec))
 }

@@ -17,5 +17,7 @@ Like fishbase via rfishbase, BIEN is queried directly: a single bulk pull of
 the selected traits across all species (one query per trait list), filtered
 to public-access records, then pivoted to one row per species (numeric by
 median, categorical by mode). The \code{path} argument is unused (kept for a
-uniform parser interface).
+uniform parser interface). Curated numeric columns are checked against the
+unit each BIEN record carries and converted to the unit in the column name
+(leaf dry mass is recorded in g and written in mg).
 }

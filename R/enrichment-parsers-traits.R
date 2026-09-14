@@ -1773,7 +1773,10 @@ parse_baseflor <- function(path) {
 #' trait columns named by their Ecoflora short codes) and returns a clean wide
 #' data.frame keyed on `canonical_name`. Numeric fields (heights, seed weight,
 #' flowering months) take the median of any multiple scraped values;
-#' categorical fields keep the unique values joined with "; ". Every trait
+#' categorical fields keep the unique values joined with "; ". Ecoflora records
+#' height in cm ("Height: 3. typical maximum (cm)", "Height: 4. typical minimum
+#' (cm)") and seed weight in mg ("Seed weight: 3. mean (mg)"); heights are
+#' written in mm, seed weight as recorded. Every trait
 #' column carries a `_uk` suffix to mark the British-flora calibration and to
 #' avoid collisions when chained with other plant-trait enrichments.
 #'
@@ -1803,8 +1806,8 @@ parse_ecoflora <- function(path) {
 
   out <- data.frame(
     canonical_name            = trimws(df$species),
-    height_max_mm_uk          = num("h_max"),
-    height_min_mm_uk          = num("h_min"),
+    height_max_mm_uk          = 10 * num("h_max"),
+    height_min_mm_uk          = 10 * num("h_min"),
     leaf_area_uk              = chr("le_area"),
     leaf_longevity_uk         = chr("le_long"),
     root_system_uk            = chr("root_system"),

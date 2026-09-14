@@ -43,29 +43,6 @@ parse_sharkipedia <- function(path) {
 }
 
 
-# Collapse a group of one-hot 0/1 flag columns into one pipe-delimited
-# categorical column, in source-column order. NestTrait sets several flags per
-# species (e.g. Abroscopus albogularis is tree + nontree + cliff_bank), and the
-# flags carry no magnitude to pick a single dominant modality from, so a
-# priority collapse would invent a primary that isn't in the data. The delimited
-# string keeps every set modality and stays one clean categorical the taxify
-# trait verb can consume. Rows with no flag set become NA.
-.onehot_to_multi <- function(d, cols, labels) {
-  present <- cols %in% names(d)
-  cols <- cols[present]
-  labels <- labels[present]
-  if (!length(cols)) return(rep(NA_character_, nrow(d)))
-  M <- vapply(cols, function(cn) suppressWarnings(as.numeric(d[[cn]])) == 1,
-              logical(nrow(d)))
-  if (is.null(dim(M))) M <- matrix(M, nrow = nrow(d))
-  M[is.na(M)] <- FALSE
-  vapply(seq_len(nrow(M)), function(i) {
-    set <- M[i, ]
-    if (!any(set)) NA_character_ else paste(labels[set], collapse = "|")
-  }, character(1L))
-}
-
-
 #' Parse Bird Nest Traits (NestTrait v2)
 #'
 #' Wide table, one row per bird species, with binary presence flags for nest

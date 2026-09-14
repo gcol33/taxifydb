@@ -15,5 +15,8 @@ data.frame with canonical_name + bryophyte traits.
 \description{
 One row per species. The source is R \code{write.table} output (space-separated,
 quoted strings, leading row-id column). Ellenberg-style indicator values use
-"x" for indifferent, which is mapped to NA.
+"x" for indifferent, which is mapped to NA. The six one-hot substrate class
+flags are also collapsed into a pipe-delimited \code{substrate} set
+(e.g. \code{"soil|rock|bark"}) over \code{soil}, \code{rock}, \code{bark}, \code{wood},
+\code{living_plants} and \code{dung_carcass}.
 }

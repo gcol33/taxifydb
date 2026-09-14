@@ -264,6 +264,35 @@
   names(df)[sq(names(df)) %in% sq(targets)]
 }
 
+#' Collapse a group of one-hot flag columns into one pipe-delimited set
+#'
+#' Sources that record a multi-valued categorical as one 0/1 column per value
+#' (NestTrait's nest site/structure/attachment, BET's substrate classes) set
+#' several flags per species, and the flags carry no magnitude to pick a
+#' dominant value from. The delimited string keeps every set value, in the order
+#' of `cols`, as one categorical column a trait map can read. Rows with no flag
+#' set become NA; columns absent from `d` are skipped.
+#'
+#' @param d data.frame holding the flag columns.
+#' @param cols Character. Flag column names.
+#' @param labels Character, parallel to `cols`. Value emitted for each flag.
+#' @return Character vector of length `nrow(d)`.
+#' @noRd
+.onehot_to_multi <- function(d, cols, labels) {
+  present <- cols %in% names(d)
+  cols <- cols[present]
+  labels <- labels[present]
+  if (!length(cols)) return(rep(NA_character_, nrow(d)))
+  M <- vapply(cols, function(cn) suppressWarnings(as.numeric(d[[cn]])) == 1,
+              logical(nrow(d)))
+  if (is.null(dim(M))) M <- matrix(M, nrow = nrow(d))
+  M[is.na(M)] <- FALSE
+  vapply(seq_len(nrow(M)), function(i) {
+    set <- M[i, ]
+    if (!any(set)) NA_character_ else paste(labels[set], collapse = "|")
+  }, character(1L))
+}
+
 #' Append every un-consumed source column to a curated wide output
 #'
 #' `out` is a parser's curated data.frame (one row per species, keyed on

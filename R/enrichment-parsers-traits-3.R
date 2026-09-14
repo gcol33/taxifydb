@@ -18,7 +18,10 @@
 #'
 #' One row per species. The source is R `write.table` output (space-separated,
 #' quoted strings, leading row-id column). Ellenberg-style indicator values use
-#' "x" for indifferent, which is mapped to NA.
+#' "x" for indifferent, which is mapped to NA. The six one-hot substrate class
+#' flags are also collapsed into a pipe-delimited `substrate` set
+#' (e.g. `"soil|rock|bark"`) over `soil`, `rock`, `bark`, `wood`,
+#' `living_plants` and `dung_carcass`.
 #'
 #' @param path Character. Path to `betdata.txt`.
 #' @return data.frame with canonical_name + bryophyte traits.
@@ -66,20 +69,18 @@ parse_bet <- function(path) {
     stringsAsFactors    = FALSE
   )
 
-  # BET records substrate as four one-hot flags, and a trait-registry map sees
-  # one column at a time, so the primary substrate is derived here. 58.8% of the
-  # species carrying any flag carry several, which is real -- bryophytes grow on
-  # more than one thing -- so this reduces to one class by the same priority
-  # ITALIC's multi-substrate records already use (rock > bark > wood > soil),
-  # keeping the substrate trait single-token so the two sources coalesce.
-  # BET's `deadwood` is ITALIC's `lignum`: both are wood, and for these taxa
-  # typically dead or decorticated wood.
-  set <- function(v) !is.na(v) & v > 0
-  out$substrate <- ifelse(
-    set(out$substrate_rock), "rock",
-    ifelse(set(out$substrate_bark), "bark",
-      ifelse(set(out$substrate_deadwood), "wood",
-        ifelse(set(out$substrate_soil), "soil", NA_character_))))
+  # BET records substrate as six one-hot class flags, and a trait-registry map
+  # sees one column at a time, so the classes are collapsed here into one set.
+  # Most species carry several classes. Labels follow the taxify substrate
+  # vocabulary where the BET definition matches it: `sub_wo` (deadwood) is
+  # `wood`. `sub_nw` (epiphytic on non-woody living substrate: leaves and other
+  # bryophytes) is wider than a foliicolous `leaves` class, and `sub_an` (dead
+  # animal carcass or dung) has no counterpart, so both keep labels of their own.
+  out$substrate <- .onehot_to_multi(
+    df,
+    c("sub_so", "sub_ro", "sub_ba", "sub_wo", "sub_nw", "sub_an"),
+    c("soil", "rock", "bark", "wood", "living_plants", "dung_carcass")
+  )
   out <- .append_all_cols(
     out, df, cname,
     used = c("friendly_name", "gform", "lform", "lstrat", "sex", "size",

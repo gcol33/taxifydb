@@ -21,12 +21,21 @@ has_xdelta3 <- function() {
 
 #' Create a binary diff between two .vtr files
 #'
+#' Besides the patch, writes `<delta_path>.base`: one line holding the content
+#' id (md5) of `old_path`. A patch applies only to the exact bytes it was cut
+#' against, and a release tag does not identify those bytes (a re-cut reuses
+#' it), so the manifest records this id as `delta_from_content_id` and the
+#' runtime patches only a local build carrying it.
+#'
 #' @param old_path Character. Path to the previous-version .vtr.
 #' @param new_path Character. Path to the new-version .vtr.
 #' @param delta_path Character. Output path for the .xdelta file.
 #' @return The delta path (invisibly), or `NULL` if xdelta3 is unavailable.
 #' @export
 create_delta <- function(old_path, new_path, delta_path) {
+  base_path <- delta_base_path(delta_path)
+  if (file.exists(base_path)) unlink(base_path)
+
   if (!has_xdelta3()) {
     message("xdelta3 not found on PATH. Skipping delta creation.")
     return(invisible(NULL))
@@ -46,6 +55,8 @@ create_delta <- function(old_path, new_path, delta_path) {
     return(invisible(NULL))
   }
 
+  writeLines(unname(tools::md5sum(old_path)), base_path)
+
   old_size <- file.size(old_path)
   new_size <- file.size(new_path)
   delta_size <- file.size(delta_path)
@@ -57,6 +68,23 @@ create_delta <- function(old_path, new_path, delta_path) {
   ))
 
   invisible(delta_path)
+}
+
+
+#' Path of the sidecar recording which build a delta was cut against
+#' @noRd
+delta_base_path <- function(delta_path) paste0(delta_path, ".base")
+
+
+#' Content id of the build a delta was cut against, or `NULL`
+#' @noRd
+read_delta_base <- function(delta_path) {
+  if (is.null(delta_path)) return(NULL)
+  base_path <- delta_base_path(delta_path)
+  if (!file.exists(base_path)) return(NULL)
+  id <- trimws(readLines(base_path, n = 1L, warn = FALSE))
+  if (length(id) != 1L || !grepl("^[0-9a-f]{32}$", id)) return(NULL)
+  id
 }
 
 

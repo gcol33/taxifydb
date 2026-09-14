@@ -49,6 +49,7 @@ if (action == "all") {
   taxifydb::update_manifest(
     "manifest/manifest.json", be_name, version, a$vtr,
     delta_path = a$delta,
+    delta_from_content_id = a$delta_from_content_id,
     extras     = if (length(a$extras) > 0L) a$extras else NULL
   )
 } else {

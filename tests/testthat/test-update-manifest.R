@@ -131,6 +131,42 @@ test_that("a delta is dropped when the release has none, unlike a sidecar", {
   expect_null(got$delta_size)
 })
 
+test_that("a delta records the content id of the build it was cut against", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "worms")
+  delta <- file.path(dir, "worms.xdelta")
+  writeLines("patch", delta)
+  base_cid <- "0123456789abcdef0123456789abcdef"
+  mf <- write_manifest(file.path(dir, "manifest.json"),
+                       list(latest = "2026.07", delta_from_content_id = "stale"))
+
+  update_manifest(mf, "worms", "2026.08", vtr, delta_path = delta,
+                  delta_from = "2026.07", delta_from_content_id = base_cid,
+                  source_url = "https://example.org/x")
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
+  expect_equal(got$delta_from, "2026.07")
+  expect_equal(got$delta_from_content_id, base_cid)
+
+  unlink(delta)
+  update_manifest(mf, "worms", "2026.08", vtr, source_url = "https://example.org/x")
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
+  expect_null(got$delta_from_content_id)
+})
+
+test_that("create_delta records the content id of its base beside the patch", {
+  skip_if_not(taxifydb::has_xdelta3())
+  dir <- withr::local_tempdir()
+  old <- file.path(dir, "old.vtr")
+  new <- file.path(dir, "new.vtr")
+  writeBin(as.raw(rep(1:200, 5)), old)
+  writeBin(as.raw(c(rep(1:100, 5), rep(50:149, 5))), new)
+  delta <- file.path(dir, "worms.xdelta")
+
+  suppressMessages(taxifydb::create_delta(old, new, delta))
+  expect_true(file.exists(delta))
+  expect_equal(taxifydb:::read_delta_base(delta), unname(tools::md5sum(old)))
+})
+
 
 # A runtime citation is curated text, often a structured block. It is rewritten
 # from the build only when it no longer names the work being served.

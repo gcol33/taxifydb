@@ -11,6 +11,7 @@ update_manifest(
   vtr_path,
   delta_path = NULL,
   delta_from = NULL,
+  delta_from_content_id = NULL,
   extras = NULL,
   repo = "gcol33/taxifydb",
   source_url = NULL
@@ -29,6 +30,12 @@ update_manifest(
 \item{delta_path}{Character or NULL.}
 
 \item{delta_from}{Character or NULL. Previous version the delta is from.}
+
+\item{delta_from_content_id}{Character or NULL. Content id (md5) of the exact
+build the delta was cut against, as \code{create_delta()} records it. The
+runtime applies the patch only to a local build with this id; a delta
+recorded without one is never applied, since a version label does not
+identify the bytes a patch needs.}
 
 \item{extras}{Character vector or NULL. Paths to sidecar artifacts uploaded
 with the release. Recorded as \verb{extras: [\{name, url, size, sha256\}]} in the

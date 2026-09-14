@@ -85,9 +85,11 @@
 #' @param output_dir Character. The build's output directory.
 #' @param backend Character. Backend identifier.
 #' @return A list with `vtr` (path), `delta` and `meta` (path, or `NULL` when the
-#'   build wrote none), `extras` (character vector of sidecar paths, possibly
-#'   empty) and `version` (the version the build recorded in its `.meta`, or
-#'   `NULL` when it recorded none).
+#'   build wrote none), `delta_from_content_id` (the content id of the build the
+#'   patch was cut against, read from the `<backend>.xdelta.base` sidecar
+#'   `create_delta()` writes, or `NULL`), `extras` (character vector of sidecar
+#'   paths, possibly empty) and `version` (the version the build recorded in its
+#'   `.meta`, or `NULL` when it recorded none).
 #' @noRd
 .backbone_artifacts <- function(output_dir, backend) {
   vtr <- file.path(output_dir, paste0(backend, ".vtr"))
@@ -98,9 +100,11 @@
   meta  <- file.path(output_dir, paste0(backend, ".meta"))
   vtrs  <- list.files(output_dir, pattern = "\\.vtr$")
   extras <- sort(vtrs[startsWith(vtrs, paste0(backend, "_"))])
+  delta <- if (file.exists(delta)) delta else NULL
   list(
     vtr     = vtr,
-    delta   = if (file.exists(delta)) delta else NULL,
+    delta   = delta,
+    delta_from_content_id = read_delta_base(delta),
     meta    = if (file.exists(meta)) meta else NULL,
     extras  = file.path(output_dir, extras),
     version = .meta_version(meta)
@@ -447,6 +451,11 @@ check_source_url <- function(url, what) {
 #' @param vtr_path Character.
 #' @param delta_path Character or NULL.
 #' @param delta_from Character or NULL. Previous version the delta is from.
+#' @param delta_from_content_id Character or NULL. Content id (md5) of the exact
+#'   build the delta was cut against, as `create_delta()` records it. The
+#'   runtime applies the patch only to a local build with this id; a delta
+#'   recorded without one is never applied, since a version label does not
+#'   identify the bytes a patch needs.
 #' @param extras Character vector or NULL. Paths to sidecar artifacts uploaded
 #'   with the release. Recorded as `extras: [{name, url, size, sha256}]` in the
 #'   manifest entry; the runtime downloader fetches each into the same
@@ -464,6 +473,7 @@ check_source_url <- function(url, what) {
 update_manifest <- function(manifest_path, backend_name, version,
                             vtr_path, delta_path = NULL,
                             delta_from = NULL,
+                            delta_from_content_id = NULL,
                             extras = NULL,
                             repo = "gcol33/taxifydb",
                             source_url = NULL) {
@@ -529,11 +539,13 @@ update_manifest <- function(manifest_path, backend_name, version,
 
   if (!is.null(delta_path) && file.exists(delta_path)) {
     entry$delta_from <- delta_from
+    entry$delta_from_content_id <- delta_from_content_id
     entry$delta_url  <- sprintf("%s/%s.xdelta", base_url, backend_name)
     entry$delta_size <- file.size(delta_path)
   } else {
     # Drop stale delta fields if a previous version had them
     entry$delta_from <- NULL
+    entry$delta_from_content_id <- NULL
     entry$delta_url  <- NULL
     entry$delta_size <- NULL
   }

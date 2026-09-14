@@ -35,6 +35,7 @@ taxifydb::update_manifest(
   a$vtr,
   delta_path = a$delta,
   delta_from = delta_from,
+  delta_from_content_id = a$delta_from_content_id,
   extras     = if (length(a$extras) > 0L) a$extras else NULL
 )
 

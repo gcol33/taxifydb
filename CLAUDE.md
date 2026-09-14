@@ -369,8 +369,11 @@ reads it to fetch the sidecar into the same versioned directory as the
 backbone. So `update_manifest(extras = )` distinguishes three cases —
 `NULL` (the default) leaves whatever the manifest already records, a path
 vector replaces it, and `character(0)` removes the block. This is deliberately
-unlike the delta fields on the line above, which ARE cleared when a release
-carries no patch: a delta URL names the release being written and would 404,
+unlike the delta fields on the line above (`delta_from`, `delta_url`,
+`delta_size`, and `delta_from_content_id`: the md5 of the base build, which
+`create_delta()` writes to `<backend>.xdelta.base` and taxify requires before it
+applies a patch), which ARE cleared when a release carries no patch: a delta URL
+names the release being written and would 404,
 where a sidecar keeps the tag it was published under and stays reachable
 across releases that do not ship one. A build that wrote no sidecar passes
 nothing and so preserves; one that did passes every

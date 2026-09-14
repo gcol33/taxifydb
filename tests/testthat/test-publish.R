@@ -60,12 +60,25 @@ test_that("the artifact set is every file the build wrote for its backbone", {
   expect_equal(basename(a$extras), "worms_species_profile.vtr")
 })
 
+test_that("the artifact set reads the content id a patch was cut against", {
+  dir <- withr::local_tempdir()
+  touch(dir, "worms.vtr")
+  touch(dir, "worms.xdelta")
+  expect_null(taxifydb:::.backbone_artifacts(dir, "worms")$delta_from_content_id)
+
+  touch(dir, "worms.xdelta.base", "0123456789abcdef0123456789abcdef")
+  a <- taxifydb:::.backbone_artifacts(dir, "worms")
+  expect_equal(a$delta_from_content_id, "0123456789abcdef0123456789abcdef")
+  expect_length(a$extras, 0L)
+})
+
 test_that("absent optional artifacts come back empty and a missing .vtr stops", {
   dir <- withr::local_tempdir()
   touch(dir, "wfo.vtr")
 
   a <- taxifydb:::.backbone_artifacts(dir, "wfo")
   expect_null(a$delta)
+  expect_null(a$delta_from_content_id)
   expect_null(a$meta)
   expect_length(a$extras, 0L)
 

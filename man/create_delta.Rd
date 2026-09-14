@@ -17,5 +17,9 @@ create_delta(old_path, new_path, delta_path)
 The delta path (invisibly), or \code{NULL} if xdelta3 is unavailable.
 }
 \description{
-Create a binary diff between two .vtr files
+Besides the patch, writes \verb{<delta_path>.base}: one line holding the content
+id (md5) of \code{old_path}. A patch applies only to the exact bytes it was cut
+against, and a release tag does not identify those bytes (a re-cut reuses
+it), so the manifest records this id as \code{delta_from_content_id} and the
+runtime patches only a local build carrying it.
 }

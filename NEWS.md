@@ -1,5 +1,15 @@
 # taxifydb 0.1.23
 
+## A backbone delta records the build it was cut against (gcol33/taxify#83)
+
+* `create_delta()` writes `<backend>.xdelta.base` beside the patch, holding the
+  content id (md5) of the base `.vtr`, and `update_manifest()` records it as
+  `delta_from_content_id`. `delta_from` is a release tag, and a re-cut reuses
+  its tag, so it could not tell taxify whether the build a user holds is the
+  one the patch applies to: taxify tried the patch against other builds and
+  xdelta3 stopped with "target window checksum mismatch". The field is dropped
+  with the other delta fields when a release carries no patch.
+
 ## Wiley supplement downloads retry (#55)
 
 * Wiley's `/action/downloadSupplement` answers the same request with 200 or

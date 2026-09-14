@@ -5703,9 +5703,9 @@
     },
     "chowdhury": {
       "latest": "2026.08",
-      "content_id": "7f1a3e04a95ea37c4b1e9b9d33221e35",
+      "content_id": "a4c4b6f5c62881a3859e437402daf527",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/chowdhury.vtr",
-      "nrow": 633,
+      "nrow": 434,
       "source_url": "https://onlinelibrary.wiley.com/doi/10.1111/ddi.70112",
       "source_format": "xlsx",
       "source_version": "2025.1",
@@ -5755,7 +5755,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/chowdhury-7f1a3e04a95ea37c4b1e9b9d33221e35.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/chowdhury-a4c4b6f5c62881a3859e437402daf527.vtr"
     },
     "finand": {
       "latest": "2026.08",

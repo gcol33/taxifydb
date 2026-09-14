@@ -13,11 +13,13 @@
 # pair would fan one source name onto unrelated neighbours, contaminating any
 # enrichment joined through the lookup. So each key is collapsed to the single
 # best accepted name using the same priority taxify() applies
-# (taxify::candidate_order): accepted before a name the backbone keeps but has
-# not reviewed before a synonym, SPECIES > higher ranks, epithet-preserving
-# accepted target, then the nomenclatural-validity and lowest-taxon_id
-# tiebreaks. The order comes from taxify so the lookup cannot drift away from
-# the resolution it is standing in for.
+# (taxify::candidate_order): accepted before a homotypic synonym before a name
+# the backbone keeps but has not reviewed before any other synonym, SPECIES >
+# higher ranks, epithet-preserving accepted target, then the
+# nomenclatural-validity and lowest-taxon_id tiebreaks. A kept record the
+# backbone leaves unplaced then takes the accepted name of its placed basionym
+# (taxify::basionym_placement). Both come from taxify so the lookup cannot
+# drift away from the resolution it is standing in for.
 
 #' Build a name-lookup .vtr from a backbone .vtr
 #'
@@ -46,8 +48,13 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   # reassignment from a homonym collision. Not every backbone carries one
   # (the vascular-plant backbones have no kingdom column), and an absent
   # kingdom must never contradict anything, so it stays NA.
+  # authorship + accepted_authorship let candidate_order() see a homotypic
+  # synonym; original_name_usage_id + accepted_taxon_id let an unplaced record
+  # resolve through its basionym, as taxify() does (gcol33/taxify#81).
   sel <- c(required,
-           intersect(c("nomenclaturalStatus", "is_synonym", "kingdom"), schema))
+           intersect(c("nomenclaturalStatus", "is_synonym", "kingdom",
+                       "authorship", "accepted_authorship",
+                       "original_name_usage_id", "accepted_taxon_id"), schema))
 
   bb <- vectra::tbl(bb_path) |>
     vectra::select(!!!lapply(sel, as.name)) |>
@@ -68,10 +75,15 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   bb$taxonRank        <- bb$taxon_rank
   bb$matched_name_std <- bb$canonical_name
   bb$taxonID          <- bb$taxon_id
-  bb <- bb[taxify::candidate_order(bb, group_col = "key_ci"), , drop = FALSE]
+  ordered <- bb[taxify::candidate_order(bb, group_col = "key_ci"), , drop = FALSE]
+  best <- ordered[!duplicated(ordered$key_ci), , drop = FALSE]
+  rm(ordered)
+  placed_at <- taxify::basionym_placement(best, bb)
+  moved <- !is.na(placed_at)
+  best$accepted_name[moved] <- bb$accepted_name[placed_at[moved]]
   keep_cols <- c("key_ci", "accepted_name",
-                 if ("kingdom" %in% names(bb)) "kingdom")
-  bb <- bb[!duplicated(bb$key_ci), keep_cols, drop = FALSE]
+                 if ("kingdom" %in% names(best)) "kingdom")
+  bb <- best[, keep_cols, drop = FALSE]
   if (!"kingdom" %in% names(bb)) bb$kingdom <- NA_character_
   bb$n_species <- n_species[match(bb$key_ci, names(n_species))]
   rownames(bb) <- NULL

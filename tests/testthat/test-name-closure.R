@@ -527,3 +527,51 @@ test_that("a backbone with no kingdom cannot rescue a pair others place outside"
   expect_false("Ammodytes" %in% m$accepted_name)
   expect_true("Astragalus" %in% m$accepted_name)
 })
+
+test_that("a lookup resolves a key the way taxify() does for an unplaced record", {
+  # gcol33/taxify#81, on WFO 2024-12's rows: an UNCHECKED combination takes the
+  # accepted name of its placed basionym, and a synonym homotypic with its
+  # accepted name outranks an unplaced homonym of the same string.
+  bb <- data.frame(
+    key_ci = c("sabulina tenuifolia", "arenaria tenuifolia", "minuartia hybrida",
+               "lycopsis orientalis", "lycopsis orientalis",
+               "anchusa arvensis subsp. orientalis", "testia alpha",
+               "probia alpha"),
+    canonical_name = c("Sabulina tenuifolia", "Arenaria tenuifolia",
+                       "Minuartia hybrida", "Lycopsis orientalis",
+                       "Lycopsis orientalis", "Anchusa arvensis subsp. orientalis",
+                       "Testia alpha", "Probia alpha"),
+    taxon_id = c("wfo-0000438413", "wfo-0000546761", "wfo-0000374756",
+                 "wfo-0001327831", "wfo-0000358417", "wfo-0000533555",
+                 "t1", "t2"),
+    taxonomic_status = c("UNCHECKED", "SYNONYM", "ACCEPTED", "UNCHECKED",
+                         "SYNONYM", "ACCEPTED", "UNCHECKED", "UNCHECKED"),
+    taxon_rank = c(rep("SPECIES", 5L), "SUBSPECIES", "SPECIES", "SPECIES"),
+    is_synonym = c(FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE),
+    accepted_name = c("Sabulina tenuifolia", "Minuartia hybrida",
+                      "Minuartia hybrida", "Lycopsis orientalis",
+                      "Anchusa arvensis subsp. orientalis",
+                      "Anchusa arvensis subsp. orientalis", "Testia alpha",
+                      "Probia alpha"),
+    accepted_taxon_id = c("wfo-0000438413", "wfo-0000374756", "wfo-0000374756",
+                          "wfo-0001327831", "wfo-0000533555", "wfo-0000533555",
+                          "t1", "t2"),
+    authorship = c("(L.) Rchb.", "L.", "(Vill.) Schischk.", "Steph.", "L.",
+                   "(L.) Nordh.", "(Foo) Bar", "Foo"),
+    accepted_authorship = c("(L.) Rchb.", "(Vill.) Schischk.",
+                            "(Vill.) Schischk.", "Steph.", "(L.) Nordh.",
+                            "(L.) Nordh.", "(Foo) Bar", "Foo"),
+    original_name_usage_id = c("wfo-0000546761", NA, NA, NA, NA,
+                               "wfo-0000358417", "t2", NA),
+    stringsAsFactors = FALSE)
+  bb_path <- tempfile(fileext = ".vtr")
+  vectra::write_vtr(bb, bb_path)
+  out <- tempfile(fileext = ".vtr")
+  taxifydb::build_name_lookup(bb_path, out, verbose = FALSE)
+  l <- vectra::collect(vectra::tbl(out))
+  acc <- stats::setNames(l$accepted_name, l$key_ci)
+  expect_equal(acc[["sabulina tenuifolia"]], "Minuartia hybrida")
+  expect_equal(acc[["lycopsis orientalis"]], "Anchusa arvensis subsp. orientalis")
+  expect_equal(acc[["testia alpha"]], "Testia alpha")
+  expect_equal(nrow(l), 7L)
+})

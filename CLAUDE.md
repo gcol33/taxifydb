@@ -271,6 +271,19 @@ spelling), not on the id — 557 rows for 268 locations, 56,971 for 28,822 taxa 
 so joining them without deduplicating the id first fans the record table out
 instead of failing.
 
+**A first-record location is the release's own region, not its country
+(`alien_first_records`, gcol33/taxify#81).** The release's locations are
+non-overlapping: Seebens et al. (2017, Methods) standardized them into "282
+non-overlapping regions (countries and sub-national regions such as islands)",
+so the United States of America location excludes Hawaii and Alaska. The group
+column is `location`: the ISO alpha-2 code for a location that is a whole
+country, the location's own name for one listed in `.seebens_subnational`
+(`Hawaii`, `Canary Islands`, `Crozet Islands`). `country_code` is kept on every
+row for an explicit roll-up. Folding the parts into their country dated 665
+v4.0 country records from an island's earlier year and created 3,541 country
+records from island-only ones. A new location that is part of a country needs
+an entry in both maps.
+
 **A first record is a minimum over records (`alien_first_records`, #46).** The
 served year for a species x country is the earliest present-preferred year, and
 that reduction (`.keep_earliest_first_record()`) runs twice: once in the parser

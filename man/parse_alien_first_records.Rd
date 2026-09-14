@@ -10,11 +10,21 @@ parse_alien_first_records(path)
 \item{path}{Character. Path to the \code{FirstRecords} dataset CSV.}
 }
 \value{
-data.frame with canonical_name + country_code + first-record cols.
+data.frame with canonical_name + location + country_code +
+first-record cols.
 }
 \description{
-Reads the public dataset table, maps location names to ISO 3166-1 alpha-2
-codes, and reduces to one row per species x country.
+Reads the public dataset table and reduces it to one row per species x
+location. The release's locations are non-overlapping: countries, and
+islands or other parts of a country recorded as regions of their own. A
+location that is a whole country is keyed on its ISO 3166-1 alpha-2 code and
+a sub-national one on its own name (\code{\link[=.seebens_location_key]{.seebens_location_key()}}), in the
+\code{location} column; \code{country_code} carries the ISO code of the country every
+location lies in, so a roll-up to countries is an explicit choice made on
+that column. Folding the parts into their country would date the country's
+first record from an island's: in v4.0 that moved 665 species x country
+years earlier (Hawaii alone 337, by a median of 25 years) and credited 3,541
+pairs to a country whose own location has no record of the species.
 }
 \details{
 Every location the source names must map. The map is keyed on wording, so a
@@ -25,7 +35,7 @@ A name the map does not hold is therefore a hard error, and the entries that
 resolve to no single country (a record spanning several, "USACanada") are
 recorded in the map as \code{NA} so they read as known rather than missing.
 
-Where a species has several records for one country the earliest year wins,
+Where a species has several records for one location the earliest year wins,
 but a record asserting the species is present is preferred to one recording
 it as absent, uncertain or captive whatever the years are, so the retained
 row does not date a country's occurrence from a record denying it. That

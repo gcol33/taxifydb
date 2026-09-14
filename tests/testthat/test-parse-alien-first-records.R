@@ -40,6 +40,46 @@ test_that("locations are mapped through accent folding and renamed spellings", {
   expect_equal(out$country_code[out$canonical_name == "Aus unus"], "US")
   expect_equal(out$country_code[out$canonical_name == "Aus duo"], "TL")
   expect_equal(out$country_code[out$canonical_name == "Aus tres"], "US")
+  expect_equal(out$location[out$canonical_name == "Aus unus"], "US")
+  expect_equal(out$location[out$canonical_name == "Aus duo"], "TL")
+  expect_equal(out$location[out$canonical_name == "Aus tres"], "Hawaii")
+})
+
+
+test_that("an island recorded as its own region keeps its own first record", {
+  # The release separates Hawaii from the United States and the Canary Islands
+  # from Spain. An island's earlier year must not date the country's record, and
+  # an island-only record must not create one for the country.
+  f <- tempfile(fileext = ".csv")
+  write_fixture(c(HDR,
+                  rec("United States of America", "Aus unus", 1905),
+                  rec("Hawaii", "Aus unus", 1860),
+                  rec("Hawaiian Islands", "Aus unus", 1870),
+                  rec("Canary Islands", "Aus duo", 1790)), f)
+
+  out <- parse_alien_first_records(f)
+  year <- stats::setNames(out$alien_first_record,
+                          paste(out$canonical_name, out$location))
+  expect_equal(nrow(out), 3L)
+  expect_equal(year[["Aus unus US"]], 1905L)
+  expect_equal(year[["Aus unus Hawaii"]], 1860L)
+  expect_equal(year[["Aus duo Canary Islands"]], 1790L)
+  expect_false("ES" %in% out$location)
+  expect_equal(out$country_code[out$location == "Canary Islands"], "ES")
+})
+
+
+test_that("every sub-national location has the country it lies in", {
+  sub <- names(.seebens_subnational)
+  country <- .seebens_country_code(sub)
+  expect_equal(sub[is.na(country)], character(0))
+  keys <- .norm_region_key(sub)
+  by_key <- split(unname(.seebens_subnational), keys)
+  clash <- vapply(by_key, function(v) length(unique(v)) > 1L, logical(1))
+  expect_equal(names(by_key)[clash], character(0))
+  # A canonical location name is itself one of the wordings, so a release that
+  # writes it that way resolves to it.
+  expect_true(all(unique(unname(.seebens_subnational)) %in% sub))
 })
 
 
@@ -261,30 +301,30 @@ test_that("a real year wins over a convention marker for the same pair", {
 
 
 test_that("the concept-grain reducer keeps the earliest present-preferred year", {
-  # Two synonyms collapse onto one accepted name per country; the marker year
+  # Two synonyms collapse onto one accepted name per location; the marker year
   # (already NA after parsing) must not win, and the earliest real year does.
   df <- data.frame(
     canonical_name            = rep("Aus unus", 4L),
-    country_code              = c("SE", "SE", "IT", "IT"),
+    location                  = c("SE", "SE", "IT", "IT"),
     alien_first_record        = c(1838L, 1726L, NA_integer_, 1679L),
     alien_first_record_status = rep("present", 4L),
     stringsAsFactors = FALSE)
 
-  out <- .keep_earliest_first_record(df, c("canonical_name", "country_code"))
-  expect_equal(out$alien_first_record[out$country_code == "SE"], 1726L)
-  expect_equal(out$alien_first_record[out$country_code == "IT"], 1679L)
+  out <- .keep_earliest_first_record(df, c("canonical_name", "location"))
+  expect_equal(out$alien_first_record[out$location == "SE"], 1726L)
+  expect_equal(out$alien_first_record[out$location == "IT"], 1679L)
 })
 
 
 test_that("the reducer prefers a present record to an earlier non-present one", {
   df <- data.frame(
     canonical_name            = rep("Aus unus", 2L),
-    country_code              = rep("FR", 2L),
+    location                  = rep("FR", 2L),
     alien_first_record        = c(1850L, 1900L),
     alien_first_record_status = c("absent", "present"),
     stringsAsFactors = FALSE)
 
-  out <- .keep_earliest_first_record(df, c("canonical_name", "country_code"))
+  out <- .keep_earliest_first_record(df, c("canonical_name", "location"))
   expect_equal(out$alien_first_record, 1900L)
   expect_equal(out$alien_first_record_status, "present")
 })

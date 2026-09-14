@@ -1,5 +1,29 @@
 # taxifydb 0.1.23
 
+## First records are keyed on the release's own locations (gcol33/taxify#81)
+
+* `alien_first_records` is one row per species x location, not per species x
+  country, and its group column is `location`. Seebens et al. record islands
+  and other parts of a country as regions of their own, "a unique set of 282
+  non-overlapping regions (countries and sub-national regions such as
+  islands)" (Seebens et al. 2017, Methods), so the United States of America
+  location excludes Hawaii and Alaska and Spain excludes the Canary and
+  Balearic Islands. The parser mapped every location to its country's ISO code
+  and took the earliest year across them, which folded 7,807 records from 25
+  sub-national locations into 14 countries. In v4.0 that dated 665 species x
+  country first records from an island's earlier year (Hawaii 337, median 25
+  years; Azores 126, median 41.5; Madeira 71, median 60) and credited 3,541
+  pairs to a country whose own location holds no record of the species (Hawaii
+  1,186, Azores 665, Sardinia 362, Corsica 355, Galapagos 303). Peer islands
+  were merged too: Crozet, Kerguelen and Amsterdam Island into `TF`, Saint
+  Helena, Ascension and Tristan da Cunha into `SH`.
+
+* A location that is a whole country keeps its ISO 3166-1 alpha-2 code as its
+  key (`AT`, `US`), and a sub-national one is keyed on its own name (`Hawaii`,
+  `Canary Islands`), listed in `.seebens_subnational`. Every row carries
+  `country_code`, the country the location lies in, so rolling islands up into
+  their country is an explicit step on that column rather than the default.
+
 ## A backbone delta records the build it was cut against (gcol33/taxify#83)
 
 * `create_delta()` writes `<backend>.xdelta.base` beside the patch, holding the

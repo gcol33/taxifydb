@@ -6,7 +6,9 @@
 
 #' Seebens region name to ISO 3166-1 alpha-2 mapping
 #'
-#' Sub-national regions are mapped to their parent country.
+#' Every location maps to the country it lies in, so a sub-national region
+#' carries its parent country here; whether it is keyed on that country or on
+#' its own name is decided by [.seebens_subnational].
 #' Multi-country entries (e.g., "USACanada") are mapped to NA and dropped.
 #' @noRd
 .seebens_region_map <- c(
@@ -333,6 +335,81 @@
 )
 
 
+#' Seebens locations that are part of a country rather than the whole of one
+#'
+#' The release records each of these as a region of its own beside the country
+#' it belongs to. Seebens et al. (2017, Methods) standardized region names "to
+#' obtain a unique set of 282 non-overlapping regions (countries and
+#' sub-national regions such as islands)", and considered islands politically
+#' belonging to a mainland country independently, the Hawaiian Islands from the
+#' United States, the Galapagos from Ecuador, Tasmania from Australia, the
+#' Azores from Portugal and Corsica from France among them. The country's own
+#' location therefore excludes them, and a record for one of them is not a
+#' record for that country. Hawaii alone holds 2,691 of the v4.0 records.
+#'
+#' Names are the wordings a release uses; values are the location each wording
+#' denotes, spelt as v4.0 spells it, which is the group key the location is
+#' published under. Places that are a whole ISO 3166-1 entity (Puerto Rico,
+#' Reunion, the Faroe Islands) are absent and keyed on their ISO code. Bonaire
+#' and Saint Helena are here because ISO's BQ and SH each span several of the
+#' release's locations.
+#' @noRd
+.seebens_subnational <- c(
+  "Aegean" = "Aegean",
+  "Alaska" = "Alaska",
+  "Amsterdam Island" = "Amsterdam Island",
+  "Andaman and Nicobar Islands" = "Andaman and Nicobar Islands",
+  "Anticosti Island" = "Anticosti Island",
+  "Antipodes Island" = "Antipodes Island",
+  "Ascension" = "Ascension",
+  "Azores" = "Azores",
+  "Balearic Islands" = "Balearic Islands",
+  "Bali" = "Bali",
+  "Biak" = "Biak",
+  "Bonaire" = "Bonaire",
+  "Campbell" = "Campbell",
+  "Canary Islands" = "Canary Islands",
+  "Channel Islands" = "Channel Islands",
+  "Clipperton Island" = "Clipperton Island",
+  "Corse" = "Corsica",
+  "Corsica" = "Corsica",
+  "Crete" = "Crete",
+  "Crozet Islands" = "Crozet Islands",
+  "Crozet Islands Group" = "Crozet Islands",
+  "Easter Island" = "Easter Island",
+  "Fernando De Noronha" = "Fernando De Noronha",
+  "Galapagos" = "Galapagos",
+  "Hawaii" = "Hawaii",
+  "Hawaiian Islands" = "Hawaii",
+  "Izu Islands" = "Izu Islands",
+  "Kerguelen Islands" = "Kerguelen Islands",
+  "Kermadec Islands" = "Kermadec Islands",
+  "Lesser Sunda Islands" = "Lesser Sunda Islands",
+  "Lord Howe Island" = "Lord Howe Islands",
+  "Lord Howe Islands" = "Lord Howe Islands",
+  "Macquarie" = "Macquarie",
+  "Madeira" = "Madeira",
+  "Maluku" = "Maluku",
+  "Ogasawara Islands" = "Ogasawara Islands",
+  "Rodriguez Island" = "Rodriguez Island",
+  "Ryukyu Islands" = "Ryukyu Islands",
+  "Saint Helena" = "Saint Helena",
+  "Saint Paul (France)" = "Saint Paul (France)",
+  "Sardinia" = "Sardinia",
+  "Scattered Islands" = "Scattered Islands",
+  "Sea of Cortez Islands" = "Sea of Cortez Islands",
+  "Shetland Islands" = "Shetland Islands",
+  "Sicily" = "Sicily",
+  "Socotra Island" = "Socotra Island",
+  "South Orkney Islands" = "South Orkney Islands",
+  "Sumatra" = "Sumatra",
+  "Tasmania" = "Tasmania",
+  "Tristan da Cunha" = "Tristan da Cunha",
+  "Vancouver Island" = "Vancouver Island",
+  "Zanzibar Island" = "Zanzibar Island"
+)
+
+
 #' Look up location names in the Seebens region map
 #'
 #' The map is keyed on the wording a release happens to use, and successive
@@ -347,8 +424,28 @@
 #'   for the multi-country entries it deliberately records as `NA`.
 #' @noRd
 .seebens_country_code <- function(x) {
+  .seebens_lookup_values(x, .seebens_region_lookup("country"))
+}
+
+#' The group key a Seebens location is published under
+#'
+#' A location that is a whole country is keyed on its ISO 3166-1 alpha-2 code,
+#' the vocabulary the other country-grouped enrichments use; a sub-national
+#' location ([.seebens_subnational]) is keyed on its own name, so its records
+#' never stand in for the country's.
+#'
+#' @param x Character vector of location names.
+#' @return Character vector of group keys; `NA` where [.seebens_country_code()]
+#'   is `NA`.
+#' @noRd
+.seebens_location_key <- function(x) {
+  country <- .seebens_country_code(x)
+  part <- .seebens_lookup_values(x, .seebens_region_lookup("subnational"))
+  ifelse(is.na(part) | is.na(country), country, part)
+}
+
+.seebens_lookup_values <- function(x, lookup) {
   key <- .norm_region_key(.to_utf8(x))
-  lookup <- .seebens_region_lookup()
   unname(lookup[match(key, names(lookup))])
 }
 
@@ -360,26 +457,32 @@
 
 #' Region map re-keyed on the normalized lookup key
 #'
-#' Built once per session. Two wordings that fold to the same key must agree
-#' on the country, or the map is ambiguous and the fold is unsafe for it.
+#' Built once per session per map. Two wordings that fold to the same key must
+#' agree on the value, or the map is ambiguous and the fold is unsafe for it.
+#' @param which `"country"` for [.seebens_region_map], `"subnational"` for
+#'   [.seebens_subnational].
 #' @noRd
 .seebens_region_lookup <- local({
-  cached <- NULL
-  function() {
-    if (!is.null(cached)) return(cached)
-    keys <- .norm_region_key(names(.seebens_region_map))
-    split_codes <- split(unname(.seebens_region_map), keys)
-    clash <- vapply(split_codes,
+  cached <- list()
+  function(which = c("country", "subnational")) {
+    which <- match.arg(which)
+    if (!is.null(cached[[which]])) return(cached[[which]])
+    map <- switch(which,
+                  country     = .seebens_region_map,
+                  subnational = .seebens_subnational)
+    keys <- .norm_region_key(names(map))
+    split_vals <- split(unname(map), keys)
+    clash <- vapply(split_vals,
                     function(v) length(unique(v[!is.na(v)])) > 1L, logical(1))
     if (any(clash)) {
-      stop("Region names fold to one key but different countries: ",
-           paste(names(split_codes)[clash], collapse = ", "), call. = FALSE)
+      stop("Region names fold to one key but different values: ",
+           paste(names(split_vals)[clash], collapse = ", "), call. = FALSE)
     }
-    cached <<- vapply(split_codes, function(v) {
+    cached[[which]] <<- vapply(split_vals, function(v) {
       hit <- v[!is.na(v)]
       if (length(hit)) hit[[1L]] else NA_character_
     }, character(1))
-    cached
+    cached[[which]]
   }
 })
 
@@ -403,8 +506,8 @@
 #' reference travel with its year, so no published field describes a record
 #' other than the one the year came from.
 #'
-#' Used both by the parser (per verbatim species x country) and, after
-#' cross-backbone name resolution, per accepted species x country: a first
+#' Used both by the parser (per verbatim species x location) and, after
+#' cross-backbone name resolution, per accepted species x location: a first
 #' record is a minimum over records, so synonyms collapsing onto one concept
 #' must take the earliest observed year, not the arbitrary trait-richest row a
 #' generic dedup would keep.
@@ -424,8 +527,17 @@
 
 #' Parse the Seebens et al. global first-record database
 #'
-#' Reads the public dataset table, maps location names to ISO 3166-1 alpha-2
-#' codes, and reduces to one row per species x country.
+#' Reads the public dataset table and reduces it to one row per species x
+#' location. The release's locations are non-overlapping: countries, and
+#' islands or other parts of a country recorded as regions of their own. A
+#' location that is a whole country is keyed on its ISO 3166-1 alpha-2 code and
+#' a sub-national one on its own name ([.seebens_location_key()]), in the
+#' `location` column; `country_code` carries the ISO code of the country every
+#' location lies in, so a roll-up to countries is an explicit choice made on
+#' that column. Folding the parts into their country would date the country's
+#' first record from an island's: in v4.0 that moved 665 species x country
+#' years earlier (Hawaii alone 337, by a median of 25 years) and credited 3,541
+#' pairs to a country whose own location has no record of the species.
 #'
 #' Every location the source names must map. The map is keyed on wording, so a
 #' release that renames a place would otherwise drop its records and return a
@@ -435,7 +547,7 @@
 #' resolve to no single country (a record spanning several, "USACanada") are
 #' recorded in the map as `NA` so they read as known rather than missing.
 #'
-#' Where a species has several records for one country the earliest year wins,
+#' Where a species has several records for one location the earliest year wins,
 #' but a record asserting the species is present is preferred to one recording
 #' it as absent, uncertain or captive whatever the years are, so the retained
 #' row does not date a country's occurrence from a record denying it. That
@@ -450,7 +562,8 @@
 #' `NA` here so neither can win that reduction or be served as a year.
 #'
 #' @param path Character. Path to the `FirstRecords` dataset CSV.
-#' @return data.frame with canonical_name + country_code + first-record cols.
+#' @return data.frame with canonical_name + location + country_code +
+#'   first-record cols.
 #' @export
 parse_alien_first_records <- function(path) {
   # Semicolon-delimited, and UTF-8 apart from one run of latin1 lines.
@@ -466,6 +579,7 @@ parse_alien_first_records <- function(path) {
 
   location <- trimws(.to_utf8(df[[loc_col]]))
   df$country_code <- .seebens_country_code(location)
+  df$location_key <- .seebens_location_key(location)
 
   # A location the map has never seen, as against one it records as spanning
   # several countries. Records carrying no location at all are sub- or
@@ -502,6 +616,7 @@ parse_alien_first_records <- function(path) {
 
   out <- data.frame(
     canonical_name               = taxon$canonical_name,
+    location                     = df$location_key,
     country_code                 = df$country_code,
     alien_first_record           = year,
     alien_first_record_status    = status,
@@ -517,21 +632,21 @@ parse_alien_first_records <- function(path) {
   out <- out[keep, , drop = FALSE]
   df  <- df[keep, , drop = FALSE]
 
-  out <- .keep_earliest_first_record(out, c("canonical_name", "country_code"))
+  out <- .keep_earliest_first_record(out, c("canonical_name", "location"))
 
   # Carry every other field (raw location string, habitat, establishment
-  # means, degree of establishment, ...) keyed on (species, country). The
+  # means, degree of establishment, ...) keyed on (species, location). The
   # verbatim year is the record as written, which for a record given as a span
   # is "-3000 - -2000"; read as a number that span is lost, and the column
   # exists to hold exactly what the point estimate above does not.
   out <- .append_all_cols(
     out, df, df$canonical_key,
-    group = "country_code", group_row = df$country_code,
+    group = "location", group_row = df$location_key,
     cat_cols = c(.first_col(df, c("verbatimFirstRecordEvent",
                                   "FirstRecord_orig")),
                  "verbatim_taxon", "taxon_qualifier"),
-    used = c(name_col, "canonical_key", "country_code", year_col, status_col,
-             src_col, ref_col)
+    used = c(name_col, loc_col, "canonical_key", "country_code",
+             "location_key", year_col, status_col, src_col, ref_col)
   )
 
   rownames(out) <- NULL

@@ -257,7 +257,9 @@
       "first records of non-native species, version 4.0. Zenodo ",
       "(doi:10.5281/zenodo.18759840), CC BY 4.0. The year a non-native ",
       "species was first recorded in a region, reduced to one row per ",
-      "species x country by taxifydb. Built from the public dataset table, ",
+      "species x location by taxifydb, where a location is a country or an ",
+      "island or other part of one the release records as a region of its ",
+      "own. Built from the public dataset table, ",
       "whose records the deposit marks free to share; the records their ",
       "holders did not permit sharing are not in it."
     ),
@@ -268,7 +270,7 @@
                            "Firefox/120.0"))
     },
     parse_fn    = function(path) parse_alien_first_records(path),
-    group_col   = "country_code",
+    group_col   = "location",
     # A first-record year is a minimum over records: collapse synonyms onto one
     # accepted concept by the earliest present-preferred year, not the generic
     # trait-richest row, which would serve an arbitrary synonym's later year.

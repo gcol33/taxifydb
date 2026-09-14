@@ -140,3 +140,29 @@ test_that("the parser aggregates archives to one row per species", {
   # it must be gone because it is not Collembola
   expect_false("Carabus auratus" %in% out$canonical_name)
 })
+
+test_that("the harvest stops when a dataset's archive cannot be fetched", {
+  dir <- tempfile("plazi")
+  local_mocked_bindings(
+    .fetch_json = function(url, max_tries = 4L) {
+      if (grepl("dataset/search", url)) {
+        if (grepl("offset=0", url)) {
+          return(list(results = data.frame(key = c("a", "b", "c"),
+                                           type = "CHECKLIST"),
+                      endOfRecords = TRUE))
+        }
+        return(list(results = data.frame()))
+      }
+      if (grepl("/c/endpoint", url)) return(list())
+      data.frame(type = "DWC_ARCHIVE", url = paste0("https://x/", basename(dirname(url))))
+    },
+    download_curl_file = function(url, dest_dir, filename, ...) {
+      if (grepl("/b$", url)) stop("HTTP 504")
+      writeBin(as.raw(rep(1L, 300L)), file.path(dest_dir, filename))
+      file.path(dest_dir, filename)
+    }
+  )
+  expect_error(harvest_plazi_dwca(1L, dir), "could not fetch 1 of 3 datasets [(]b[)]")
+  # The archive that did arrive is kept for the re-run.
+  expect_true(file.exists(file.path(dir, "a.zip")))
+})

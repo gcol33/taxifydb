@@ -647,8 +647,8 @@ harvest_plazi_dwca <- function(taxon_key, dest_dir, query = NULL,
       url <- sprintf(paste0("https://api.gbif.org/v1/dataset/search",
                             "?publishingOrg=%s&limit=%d&offset=%d%s"),
                      plazi_org, limit, offset, extra)
-      j <- tryCatch(jsonlite::fromJSON(url), error = function(e) NULL)
-      if (is.null(j) || is.null(j$results) || !NROW(j$results)) break
+      j <- .fetch_json(url)
+      if (is.null(j$results) || !NROW(j$results)) break
       res <- j$results
       is_cl <- if (is.null(res$type)) TRUE else res$type == "CHECKLIST"
       keys <- c(keys, res$key[is_cl])
@@ -668,35 +668,69 @@ harvest_plazi_dwca <- function(taxon_key, dest_dir, query = NULL,
     stop("No Plazi datasets found for taxonKey ", taxon_key, call. = FALSE)
   }
 
+  # A dataset with no DWC_ARCHIVE endpoint has nothing to harvest; one whose
+  # endpoint or archive could not be fetched is missing data, and an asset
+  # built without it silently loses that paper's species.
+  no_archive <- character(0L)
+  failed <- character(0L)
   for (key in keys) {
     dest <- file.path(dest_dir, paste0(key, ".zip"))
     if (file.exists(dest) && file.size(dest) > 200L) next
 
-    ep <- tryCatch(jsonlite::fromJSON(
-      sprintf("https://api.gbif.org/v1/dataset/%s/endpoint", key)),
-      error = function(e) NULL)
-    if (is.null(ep) || !NROW(ep) || is.null(ep$type)) next
-    hit <- which(ep$type == "DWC_ARCHIVE")
-    if (!length(hit)) next
-
-    h <- curl::new_handle()
-    curl::handle_setopt(h, followlocation = TRUE, connecttimeout = 60L,
-                        timeout = 600L)
-    curl::handle_setheaders(h, "User-Agent" = "Mozilla/5.0 (compatible; taxifydb/0.1)")
+    ep <- tryCatch(
+      .fetch_json(sprintf("https://api.gbif.org/v1/dataset/%s/endpoint", key)),
+      error = function(e) structure(conditionMessage(e), class = "fetch_error"))
+    if (inherits(ep, "fetch_error")) {
+      failed <- c(failed, key)
+      next
+    }
+    hit <- if (NROW(ep) && !is.null(ep$type)) which(ep$type == "DWC_ARCHIVE") else integer(0L)
+    if (!length(hit)) {
+      no_archive <- c(no_archive, key)
+      next
+    }
     ok <- tryCatch({
-      curl::curl_download(ep$url[hit[1L]], dest, handle = h)
+      download_curl_file(ep$url[hit[1L]], dest_dir, paste0(key, ".zip"))
       TRUE
     }, error = function(e) FALSE)
-    if (!ok && file.exists(dest)) unlink(dest)
+    if (!ok) failed <- c(failed, key)
     Sys.sleep(0.15)
   }
 
+  if (length(failed)) {
+    stop(sprintf(paste0(
+      "Plazi harvest could not fetch %d of %d datasets (%s); the archives ",
+      "already cached are kept, so re-running fetches only these."),
+      length(failed), length(keys), paste(utils::head(failed, 5L), collapse = ", ")),
+      call. = FALSE)
+  }
   got <- length(list.files(dest_dir, pattern = "\\.zip$"))
   if (!got) {
     stop("Plazi harvest downloaded no archives for taxonKey ", taxon_key,
          call. = FALSE)
   }
-  message(sprintf("Plazi: %d of %d datasets cached in %s", got, length(keys),
-                  dest_dir))
+  message(sprintf("Plazi: %d archives cached in %s (%d of %d datasets carry no archive)",
+                  got, dest_dir, length(no_archive), length(keys)))
   dest_dir
+}
+
+
+#' Read a JSON API response, retrying transient failures
+#'
+#' @param url Character.
+#' @param max_tries Integer.
+#' @return The parsed JSON.
+#' @noRd
+.fetch_json <- function(url, max_tries = 4L) {
+  last_err <- NULL
+  for (try in seq_len(max_tries)) {
+    out <- tryCatch(jsonlite::fromJSON(url), error = function(e) {
+      last_err <<- conditionMessage(e)
+      NULL
+    })
+    if (!is.null(out)) return(out)
+    if (try < max_tries) Sys.sleep(2L * try)
+  }
+  stop(sprintf("JSON fetch failed after %d tries: %s (%s)", max_tries, url,
+               last_err %||% "empty response"), call. = FALSE)
 }

@@ -595,8 +595,8 @@
       "latest": "2026.08",
       "source_version": "2024.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/wcvp.vtr",
-      "nrow": 6013658,
-      "content_id": "ef4a81746433be4351e9750d880a26f4",
+      "nrow": 4908476,
+      "content_id": "d629fe7b5c4b5cfef94159edc83bfa40",
       "source_url": "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip",
       "source_doi": "10.1038/s41597-021-00997-6",
       "license": "CC BY",
@@ -993,7 +993,7 @@
         "worms"
       ],
       "upstream_id": "Thu, 04 Jun 2026 14:30:32 GMT",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/wcvp-ef4a81746433be4351e9750d880a26f4.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/wcvp-d629fe7b5c4b5cfef94159edc83bfa40.vtr"
     },
     "eive": {
       "latest": "2026.08",

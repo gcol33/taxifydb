@@ -1476,8 +1476,8 @@
       "latest": "2026.08",
       "source_version": "2008.1",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda.vtr",
-      "nrow": 36982,
-      "content_id": "6492fe2bff65df1f924b6ed1757135c0",
+      "nrow": 23717,
+      "content_id": "0dad46eddc12167ea0d1c6158963c638",
       "source_url": "https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/",
       "source_doi": "10.1111/j.1365-2745.2008.01430.x",
       "license": "Free for academic use",
@@ -1502,12 +1502,12 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda-6492fe2bff65df1f924b6ed1757135c0.vtr",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda-0dad46eddc12167ea0d1c6158963c638.vtr",
       "references": {
         "url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda_references.vtr",
-        "content_id": "c5ffb7f8c4950c4cdddcff50cfb037ff",
-        "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda_references-c5ffb7f8c4950c4cdddcff50cfb037ff.vtr",
-        "nrow": 984
+        "content_id": "f9704580cd98ffb4440c5934fece6011",
+        "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda_references-f9704580cd98ffb4440c5934fece6011.vtr",
+        "nrow": 1114
       }
     },
     "algae_traits": {

@@ -64,14 +64,20 @@
 #' every distinct `trait` value not named in `spec` is also pivoted (sanitized
 #' name, inferred type), so no source trait is dropped; pass `spec = list()` to
 #' keep every trait with auto-generated names only.
+#'
+#' When `long` carries a `ref` column (the reference id of each record), every
+#' output column `<oc>` gains `<oc>_source`: the ids of the records behind the
+#' reported value (see `.value_refs()`).
 #' @noRd
 .pivot_species_traits <- function(long, spec = list(), keep_all = TRUE) {
   stopifnot(all(c("name", "trait", "value") %in% names(long)))
+  with_refs <- "ref" %in% names(long)
   # Source labels/names/values may carry invalid UTF-8; make them safe before
   # any gsub/table/sort touches them.
   long$name  <- .to_utf8(long$name)
   long$trait <- .to_utf8(long$trait)
   long$value <- .to_utf8(long$value)
+  if (with_refs) long$ref <- .to_utf8(as.character(long$ref))
   long <- long[!is.na(long$name) & nzchar(trimws(long$name)), , drop = FALSE]
   long$name <- trimws(long$name)
 
@@ -86,19 +92,29 @@
   for (oc in names(spec)) {
     s <- spec[[oc]]
     sub <- long[long$trait == s$trait, , drop = FALSE]
+    sc  <- if (with_refs) .source_colname(oc, names(spec)) else NULL
     if (nrow(sub) == 0L) {
       res[[oc]] <- if (identical(s$type, "num")) NA_real_ else NA_character_
+      if (with_refs) res[[sc]] <- NA_character_
       next
     }
     if (identical(s$type, "num")) {
-      spread <- .num_group_spread(sub$value, sub$name,
-                                  reduce = if (is.null(s$reduce)) "median"
-                                           else s$reduce)
+      reduce <- if (is.null(s$reduce)) "median" else s$reduce
+      spread <- .num_group_spread(sub$value, sub$name, reduce = reduce)
       res    <- .attach_num_spread(res, oc, spread, species)
+      if (with_refs) {
+        res[[sc]] <- .value_refs(sub$name, sub$value, sub$ref, res[[oc]],
+                                 species, type = "num", reduce = reduce)
+      }
     } else {
       fn  <- if (identical(s$reduce, "join")) .cat_join else .cat_mode
       agg <- tapply(sub$value, sub$name, fn)
       res[[oc]] <- as.character(agg[species])
+      if (with_refs) {
+        res[[sc]] <- .value_refs(sub$name, trimws(sub$value), sub$ref,
+                                 res[[oc]], species, type = "cat",
+                                 reduce = s$reduce)
+      }
     }
   }
   res
@@ -450,6 +466,14 @@ parse_combine <- function(path) {
 #' mass per area are recorded mostly at population/individual level, so records
 #' of every entity type are aggregated up to the taxon.
 #'
+#' Every trait column `<col>` has a `<col>_source` column naming the AusTraits
+#' datasets (`dataset_id`) behind the value: for a categorical trait the
+#' datasets whose records state the reported value, for a numeric trait every
+#' dataset whose records enter the median. The ids resolve against the
+#' reference table attached with [attach_references()], built from the
+#' release's `methods.csv` (each dataset's primary source citation) and
+#' `sources.bib` (its DOI).
+#'
 #' @param path Character. Path to the extracted release directory or to
 #'   `traits.csv`.
 #' @return data.frame with canonical_name + plant traits.
@@ -464,7 +488,7 @@ parse_austraits <- function(path) {
     path
   }
 
-  cols <- c("taxon_name", "trait_name", "value")
+  cols <- c("dataset_id", "taxon_name", "trait_name", "value")
   df <- if (requireNamespace("data.table", quietly = TRUE)) {
     as.data.frame(
       data.table::fread(file, select = cols, showProgress = FALSE),
@@ -478,8 +502,10 @@ parse_austraits <- function(path) {
     name  = as.character(df$taxon_name),
     trait = as.character(df$trait_name),
     value = as.character(df$value),
+    ref   = as.character(df$dataset_id),
     stringsAsFactors = FALSE
   )
+  references <- .austraits_references(dirname(file))
 
   spec <- list(
     plant_growth_form     = list(trait = "plant_growth_form", type = "cat"),
@@ -500,7 +526,75 @@ parse_austraits <- function(path) {
     seed_dry_mass_mg      = list(trait = "seed_dry_mass", type = "num"),
     wood_density_g_cm3    = list(trait = "wood_density", type = "num")
   )
-  .trait_finalize(.pivot_species_traits(long, spec))
+  attach_references(.trait_finalize(.pivot_species_traits(long, spec)),
+                    references)
+}
+
+
+#' AusTraits dataset reference table
+#'
+#' One row per `dataset_id`, from the release's `methods.csv`: the dataset's
+#' primary source (`source_primary_key`, `source_primary_citation`) and, where
+#' recorded, its secondary source. The DOI is the `doi` field of the primary
+#' source's `sources.bib` entry, else the first DOI written in the citation.
+#' Citations drop the release's Markdown link and emphasis markup.
+#' @noRd
+.austraits_references <- function(release_dir) {
+  mpath <- file.path(release_dir, "methods.csv")
+  bpath <- file.path(release_dir, "sources.bib")
+  if (!file.exists(mpath)) {
+    stop("AusTraits methods.csv not found beside traits.csv.", call. = FALSE)
+  }
+  m <- utils::read.csv(mpath, stringsAsFactors = FALSE, check.names = FALSE,
+                       encoding = "UTF-8", na.strings = character(0))
+  m <- m[!duplicated(m$dataset_id), , drop = FALSE]
+  chr <- function(v) {
+    v <- trimws(.to_utf8(as.character(v)))
+    v[is.na(v) | !nzchar(v)] <- NA_character_
+    v
+  }
+  bib_doi <- if (file.exists(bpath)) .bib_dois(bpath) else character(0)
+  prim_cit <- .strip_markdown(chr(m$source_primary_citation))
+  prim_key <- chr(m$source_primary_key)
+  doi <- unname(bib_doi[prim_key])
+  doi[is.na(doi)] <- .extract_doi(prim_cit)[is.na(doi)]
+  out <- data.frame(
+    ref_id             = chr(m$dataset_id),
+    citation           = prim_cit,
+    doi                = doi,
+    source_key         = prim_key,
+    secondary_citation = .strip_markdown(chr(m$source_secondary_citation)),
+    stringsAsFactors   = FALSE
+  )
+  out[!is.na(out$ref_id), , drop = FALSE]
+}
+
+
+#' DOI of each entry in a BibTeX file, named by citation key
+#' @noRd
+.bib_dois <- function(path) {
+  lines <- .to_utf8(readLines(path, encoding = "UTF-8", warn = FALSE))
+  start <- grep("^@[A-Za-z]+\\{", lines)
+  if (!length(start)) return(character(0))
+  keys  <- trimws(sub("^@[A-Za-z]+\\{([^,]*),.*$", "\\1", lines[start]))
+  end   <- c(start[-1L] - 1L, length(lines))
+  doi <- vapply(seq_along(start), function(i) {
+    blk <- lines[start[i]:end[i]]
+    hit <- grep("^\\s*doi\\s*=", blk, ignore.case = TRUE, value = TRUE)
+    if (!length(hit)) return(NA_character_)
+    trimws(gsub("^\\s*doi\\s*=\\s*\\{?|\\}?\\s*,?\\s*$", "", hit[1L],
+                ignore.case = TRUE))
+  }, character(1L))
+  stats::setNames(doi, keys)
+}
+
+
+#' Drop Markdown link and emphasis markup from citation text
+#' @noRd
+.strip_markdown <- function(x) {
+  x <- gsub("\\[([^]]*)\\]\\([^)]*\\)", "\\1", x, perl = TRUE)
+  x <- gsub("(?<![[:alnum:]])_([^_]+)_(?![[:alnum:]])", "\\1", x, perl = TRUE)
+  gsub("[[:space:]]+", " ", x)
 }
 
 

@@ -13,5 +13,16 @@ parse_leda(dir_path)
 data.frame with canonical_name + 10 LEDA trait columns.
 }
 \description{
-Parse LEDA trait files (multiple semicolon/tab-delimited files)
+Each trait column \verb{<col>} read from a file that records its references has a
+\verb{<col>_source} column naming the references behind the value: for a
+categorical trait the records that state the reported (first-listed) value,
+for a numeric trait every record entering the median. A record's reference is
+its \verb{original reference} where LEDA gives one (the publication the value was
+taken from), with the contributing \code{reference} kept as \code{via}; otherwise its
+\code{reference}. Ids are the first 12 hex digits of the md5 of the citation and
+\code{via}, and resolve against the table attached with \code{\link[=attach_references]{attach_references()}}.
+\code{dispersal_type.txt} is an aggregated query export with no reference field,
+so \code{dispersal_type} has no provenance column; neither has a column read from
+a file whose rows outnumber its header fields, where the field labelled
+\code{reference} is not the reference.
 }

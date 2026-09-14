@@ -112,3 +112,23 @@ strip_authorship <- function(sci_name, authorship) {
   }
   canonical
 }
+
+
+#' Manifest block for an enrichment's reference table
+#'
+#' `url` names the rolling asset and `content_url` the immutable copy
+#' [publish_enrichment_release()] uploads under the table's content id.
+#' @param refs The `references` block of a build's `meta.json`, or `NULL`.
+#' @param base_url The release download URL the enrichment's `.vtr` lives under.
+#' @return A list, or `NULL` when the build has no reference table.
+#' @noRd
+.references_manifest_block <- function(refs, base_url) {
+  if (is.null(refs) || is.null(refs$file)) return(NULL)
+  stem <- tools::file_path_sans_ext(refs$file)
+  list(
+    url         = sprintf("%s/%s", base_url, refs$file),
+    content_id  = refs$content_id,
+    content_url = sprintf("%s/%s-%s.vtr", base_url, stem, refs$content_id),
+    nrow        = refs$nrow
+  )
+}

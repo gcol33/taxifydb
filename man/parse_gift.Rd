@@ -29,3 +29,14 @@ most frequent entry for categorical ones). Only the redistributable subset
 the API returns is kept; restricted references are excluded by the default
 call. The species name is GIFT's \code{work_species}.
 }
+\details{
+Every trait column \verb{<col>} has a \verb{<col>_source} column holding the GIFT
+reference ids (\code{ref_ID}) GIFT lists for the aggregated value (the
+\code{references} field \code{\link[GIFT:GIFT_traits]{GIFT::GIFT_traits()}} returns beside it). For a
+categorical trait these are the references that state the reported value;
+for a numeric trait the references entering the mean. GIFT writes a
+reference it treats as potentially biased (a resource covering one growth
+form only) with a negative id; the sign is dropped from the cell and kept as
+\code{bias_ref} in the reference table, which comes from
+\code{\link[GIFT:GIFT_references]{GIFT::GIFT_references()}} and is attached with \code{\link[=attach_references]{attach_references()}}.
+}

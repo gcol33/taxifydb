@@ -93,6 +93,12 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     message(sprintf("  Parsed %s rows.", format(nrow(df), big.mark = ",")))
   }
 
+  # A parser that keeps per-value provenance attaches its reference table; name
+  # resolution rebuilds the frame, so the table is held here and handed to the
+  # writer.
+  references <- attr(df, "references", exact = TRUE)
+  prov_cols  <- if (is.null(references)) character(0) else .reference_cols(names(df))
+
   # A registry entry may set resolve_names = FALSE when its parser already
   # resolves to the accepted-name grain (e.g. host-breadth rollups), so the
   # pipeline must not resolve a second time.
@@ -109,7 +115,11 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     df <- resolve_enrichment_names(df, group_cols = group_cols,
                                    verbose = verbose, use_lookup = use_lookup,
                                    strict = strict_names,
-                                   reduce_fn = reg$reduce_fn,
+                                   reduce_fn = reg$reduce_fn %||%
+                                     (if (length(prov_cols)) {
+                                       .reducer_ignoring(.dedup_keep_richest,
+                                                         prov_cols)
+                                     }),
                                    grain = if (genus_grain) "genus" else "species",
                                    kingdom = reg$kingdom)
     resolved_backbones <- attr(df, "resolved_backbones", exact = TRUE)
@@ -148,6 +158,7 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
     static        = reg$static %||% TRUE,
     source_format = reg$source_format,
     provenance    = provenance,
+    references    = references,
     resolved_backbones = resolved_backbones
   )
 

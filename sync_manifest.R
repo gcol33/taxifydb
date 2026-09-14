@@ -64,6 +64,15 @@ for (enr_dir in enrichment_dirs) {
     changed <- TRUE
   }
 
+  # The reference table behind the build's provenance columns, published under
+  # the same release tag as the .vtr the entry already points at.
+  refs <- .references_manifest_block(meta$references,
+                                     dirname(entry$full_url %||% ""))
+  if (!identical(entry$references, refs)) {
+    entry$references <- refs
+    changed <- TRUE
+  }
+
   if (!is.null(meta$available_groups)) {
     if (!identical(entry$available_groups, as.list(meta$available_groups))) {
       entry$available_groups <- as.list(meta$available_groups)

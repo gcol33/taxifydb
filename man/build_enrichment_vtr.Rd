@@ -19,6 +19,7 @@ build_enrichment_vtr(
   static = TRUE,
   source_format = NULL,
   provenance = NULL,
+  references = NULL,
   resolved_backbones = NULL,
   batch_size = 50000L
 )
@@ -63,6 +64,13 @@ taxify's refresh gate (content-id for static, version for non-static).}
 column to its provenance tier, recorded in \code{meta.json}. Used by assets whose
 columns come from mixed sources (the BETSI-recovery matrices); \code{NULL} (the
 default) writes no provenance block.}
+
+\item{references}{data.frame or NULL. The reference table behind the
+enrichment's \verb{<col>_source} provenance columns (see \code{\link[=attach_references]{attach_references()}}).
+Written as \verb{<name>_references.vtr} beside \code{vtr_path}, keeping the references
+some cell names, and declared in \code{meta.json} as \code{references} (\code{file},
+\code{nrow}, \code{content_id}). Every id a provenance cell names must be in the
+table. \code{NULL} (the default) writes none.}
 
 \item{resolved_backbones}{Character vector or NULL. The backbones the
 cross-backbone name expansion actually reached. Recorded so an asset built

@@ -1834,6 +1834,12 @@
       dir.create(dest, recursive = TRUE, showWarnings = FALSE)
       r <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(url)$content))
       fu <- r$files$download_url[r$files$name == "BROT2_dat.csv"][1]
+      # BROT's sources file is its own article in the same figshare collection;
+      # it resolves each record's SourceID to the full reference.
+      s <- jsonlite::fromJSON(rawToChar(curl::curl_fetch_memory(
+        "https://api.figshare.com/v2/articles/5280871")$content))
+      su <- s$files$download_url[s$files$name == "BROT2_sou.csv"][1]
+      download_curl_file(su, dest, "brot_sources.csv")
       download_curl_file(fu, dest, "brot.csv")
     },
     parse_fn    = function(path) parse_brot(path),

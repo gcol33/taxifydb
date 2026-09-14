@@ -1078,15 +1078,36 @@ parse_tetradensity <- function(path) {
 #' the standardised BROT 2.0 conventions (seed mass mg, SLA mm2/mg, height m,
 #' leaf area mm2).
 #'
+#' Every trait column `<col>` has a `<col>_source` column naming the BROT
+#' sources (`SourceID`) behind the value: for a categorical trait the sources
+#' whose records state the reported value, for a numeric trait every source
+#' whose records enter the median. The ids resolve against BROT's own sources
+#' file (`BROT2_sou.csv`: `ID`, `FullSource`), attached with
+#' [attach_references()].
+#'
 #' @param path Path to BROT2_dat.csv.
+#' @param sources Path to BROT2_sou.csv. Defaults to `brot_sources.csv` beside
+#'   `path`, where the registry download places it.
 #' @return data.frame with canonical_name + plant traits.
 #' @export
-parse_brot <- function(path) {
+parse_brot <- function(path,
+                       sources = file.path(dirname(path), "brot_sources.csv")) {
+  if (!file.exists(sources)) {
+    stop(sprintf("BROT sources file not found: %s", sources), call. = FALSE)
+  }
   d <- data.table::fread(path, encoding = "Latin-1", data.table = FALSE)
   long <- data.frame(
     name  = as.character(d$Taxon),
     trait = as.character(d$Trait),
     value = as.character(d$Data),
+    ref   = as.character(d$SourceID),
+    stringsAsFactors = FALSE
+  )
+  s <- data.table::fread(sources, encoding = "UTF-8", data.table = FALSE)
+  references <- data.frame(
+    ref_id   = as.character(s$ID),
+    citation = as.character(s$FullSource),
+    doi      = .extract_doi(s$FullSource),
     stringsAsFactors = FALSE
   )
   spec <- list(
@@ -1101,5 +1122,6 @@ parse_brot <- function(path) {
     soil_seed_bank     = list(trait = "SoilSeedBank", type = "cat"),
     seedling_emergence = list(trait = "SeedlEmerg", type = "cat")
   )
-  .trait_finalize(.pivot_species_traits(long, spec))
+  attach_references(.trait_finalize(.pivot_species_traits(long, spec)),
+                    references)
 }

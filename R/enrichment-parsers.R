@@ -532,6 +532,20 @@ parse_fishmorph <- function(path) {
 
 
 #' Parse LEDA trait files (multiple semicolon/tab-delimited files)
+#'
+#' Each trait column `<col>` read from a file that records its references has a
+#' `<col>_source` column naming the references behind the value: for a
+#' categorical trait the records that state the reported (first-listed) value,
+#' for a numeric trait every record entering the median. A record's reference is
+#' its `original reference` where LEDA gives one (the publication the value was
+#' taken from), with the contributing `reference` kept as `via`; otherwise its
+#' `reference`. Ids are the first 12 hex digits of the md5 of the citation and
+#' `via`, and resolve against the table attached with [attach_references()].
+#' `dispersal_type.txt` is an aggregated query export with no reference field,
+#' so `dispersal_type` has no provenance column; neither has a column read from
+#' a file whose rows outnumber its header fields, where the field labelled
+#' `reference` is not the reference.
+#'
 #' @param dir_path Character. Directory containing the LEDA *.txt files.
 #' @return data.frame with canonical_name + 10 LEDA trait columns.
 #' @export
@@ -622,11 +636,39 @@ parse_leda <- function(dir_path) {
     names(df)[1L]
   }
 
+  ref_tab <- NULL
+  record_refs <- function(df) {
+    nm <- trimws(names(df))
+    # A data row carrying more fields than the header makes read.csv prepend a
+    # `row.names` column and shift every name one place, so `reference` then
+    # labels a different field and cannot be read as one.
+    if (identical(nm[1L], "row.names")) return(NULL)
+    rc <- which(tolower(nm) == "reference")
+    if (!length(rc)) return(NULL)
+    oc <- which(tolower(nm) == "original reference")
+    clean <- function(v) {
+      v <- trimws(as.character(v))
+      v[is.na(v) | !nzchar(v) | v == "NA"] <- NA_character_
+      v
+    }
+    ref  <- clean(df[[rc[1L]]])
+    orig <- if (length(oc)) clean(df[[oc[1L]]]) else rep(NA_character_, nrow(df))
+    cit  <- ifelse(is.na(orig), ref, orig)
+    via  <- ifelse(is.na(orig) | (!is.na(ref) & ref == orig), NA_character_, ref)
+    id   <- .leda_ref_id(cit, via)
+    new  <- unique(data.frame(ref_id = id, citation = cit, via = via,
+                              stringsAsFactors = FALSE)[!is.na(id), ,
+                                                        drop = FALSE])
+    ref_tab <<- unique(rbind(ref_tab, new))
+    id
+  }
+
   merge_trait <- function(master, path, trait_col_patterns, out_col,
                           as_type = "numeric") {
     if (!file.exists(path)) return(master)
     df <- read_leda_trait(path)
     if (is.null(df) || nrow(df) == 0L) return(master)
+    rid <- record_refs(df)
 
     nc <- find_name_col(df)
     tc <- NULL
@@ -651,10 +693,18 @@ parse_leda <- function(dir_path) {
     )
     names(trait_df)[2L] <- out_col
 
+    rec_name <- trait_df$canonical_name
     if (as_type %in% c("numeric", "integer")) {
       trait_df <- .aggregate_spread(trait_df, out_col)
+      rtype <- "num"
     } else {
       trait_df <- trait_df[!duplicated(trait_df$canonical_name), ]
+      rtype <- "cat"
+    }
+    if (!is.null(rid)) {
+      trait_df[[.source_colname(out_col, names(trait_df))]] <- .value_refs(
+        rec_name, vals, rid, trait_df[[out_col]], trait_df$canonical_name,
+        type = rtype)
     }
 
     if (is.null(master)) return(trait_df)
@@ -671,17 +721,25 @@ parse_leda <- function(dir_path) {
       lf_col <- grep("life.form|raunkiaer|lf_", names(df),
                      ignore.case = TRUE, value = TRUE)
       if (length(lf_col) > 0L) {
+        rid <- record_refs(df)
         trait_df <- data.frame(
           canonical_name = trimws(df[[nc]]),
           raunkiaer_life_form = trimws(df[[lf_col[1L]]]),
           stringsAsFactors = FALSE
         )
+        rec <- trait_df
         counts <- table(trait_df$canonical_name)
         variable_spp <- names(counts[counts > 1L])
         trait_df <- trait_df[!duplicated(trait_df$canonical_name), ]
         trait_df$raunkiaer_variable <- as.integer(
           trait_df$canonical_name %in% variable_spp
         )
+        if (!is.null(rid)) {
+          trait_df$raunkiaer_life_form_source <- .value_refs(
+            rec$canonical_name, rec$raunkiaer_life_form, rid,
+            trait_df$raunkiaer_life_form, trait_df$canonical_name,
+            type = "cat")
+        }
         master <- trait_df
       }
     }
@@ -786,7 +844,28 @@ parse_leda <- function(dir_path) {
 
   master <- master[!is.na(master$canonical_name) &
                      nchar(master$canonical_name) > 0L, ]
-  master[!duplicated(master$canonical_name), ]
+  master <- master[!duplicated(master$canonical_name), ]
+  if (is.null(ref_tab)) return(master)
+  ref_tab$citation <- .to_utf8(ref_tab$citation)
+  ref_tab$via      <- .to_utf8(ref_tab$via)
+  ref_tab$doi      <- .extract_doi(ref_tab$citation)
+  attach_references(master, ref_tab[c("ref_id", "citation", "doi", "via")])
+}
+
+
+#' Stable id of a LEDA reference
+#'
+#' The first 12 hex digits of the md5 of the citation and the contributing
+#' reference it came through. `NA` where the record names no reference.
+#' @noRd
+.leda_ref_id <- function(citation, via) {
+  key <- paste(citation, ifelse(is.na(via), "", via), sep = "\x1f")
+  out <- vapply(key, function(k) substr(digest::digest(k, algo = "md5",
+                                                       serialize = FALSE),
+                                        1L, 12L),
+                character(1L), USE.NAMES = FALSE)
+  out[is.na(citation)] <- NA_character_
+  out
 }
 
 

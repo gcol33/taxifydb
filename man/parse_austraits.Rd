@@ -20,3 +20,12 @@ records (numeric by median, categorical by mode). Numeric traits such as leaf
 mass per area are recorded mostly at population/individual level, so records
 of every entity type are aggregated up to the taxon.
 }
+\details{
+Every trait column \verb{<col>} has a \verb{<col>_source} column naming the AusTraits
+datasets (\code{dataset_id}) behind the value: for a categorical trait the
+datasets whose records state the reported value, for a numeric trait every
+dataset whose records enter the median. The ids resolve against the
+reference table attached with \code{\link[=attach_references]{attach_references()}}, built from the
+release's \code{methods.csv} (each dataset's primary source citation) and
+\code{sources.bib} (its DOI).
+}

@@ -53,6 +53,12 @@ enrichment_trait_cols <- function(columns, group_col = NULL) {
 #'   taxify's refresh gate (content-id for static, version for non-static).
 #' @param source_format Character or NULL. Raw source format (e.g. "csv",
 #'   "xlsx", "zip"), recorded for the runtime manifest.
+#' @param references data.frame or NULL. The reference table behind the
+#'   enrichment's `<col>_source` provenance columns (see [attach_references()]).
+#'   Written as `<name>_references.vtr` beside `vtr_path`, keeping the references
+#'   some cell names, and declared in `meta.json` as `references` (`file`,
+#'   `nrow`, `content_id`). Every id a provenance cell names must be in the
+#'   table. `NULL` (the default) writes none.
 #' @param resolved_backbones Character vector or NULL. The backbones the
 #'   cross-backbone name expansion actually reached. Recorded so an asset built
 #'   against a partial backbone set is distinguishable afterwards from a
@@ -66,6 +72,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
                                  attribution = NULL, group_col = NULL,
                                  species_col = NULL, static = TRUE,
                                  source_format = NULL, provenance = NULL,
+                                 references = NULL,
                                  resolved_backbones = NULL,
                                  batch_size = 50000L) {
   if (!"canonical_name" %in% names(df)) {
@@ -86,6 +93,10 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
   vectra::create_index(vtr_path, "canonical_name")
   if (!is.null(group_col) && group_col %in% names(df)) {
     vectra::create_index(vtr_path, group_col)
+  }
+
+  references_meta <- if (!is.null(references)) {
+    .write_references_vtr(df, references, vtr_path, name)
   }
 
   available_groups <- NULL
@@ -125,6 +136,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     trait_cols       = as.list(trait_cols),
     tsita            = tsita,
     provenance       = provenance,
+    references       = references_meta,
     species_col      = species_col,
     resolved_backbones = if (length(resolved_backbones)) {
       as.list(sort(unique(resolved_backbones)))

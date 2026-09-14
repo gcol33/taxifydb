@@ -4,10 +4,13 @@
 \alias{parse_brot}
 \title{Parse BROT 2.0 Mediterranean plant traits}
 \usage{
-parse_brot(path)
+parse_brot(path, sources = file.path(dirname(path), "brot_sources.csv"))
 }
 \arguments{
 \item{path}{Path to BROT2_dat.csv.}
+
+\item{sources}{Path to BROT2_sou.csv. Defaults to \code{brot_sources.csv} beside
+\code{path}, where the registry download places it.}
 }
 \value{
 data.frame with canonical_name + plant traits.
@@ -16,4 +19,12 @@ data.frame with canonical_name + plant traits.
 Long-format trait records reduced to one row per species. Numeric units follow
 the standardised BROT 2.0 conventions (seed mass mg, SLA mm2/mg, height m,
 leaf area mm2).
+}
+\details{
+Every trait column \verb{<col>} has a \verb{<col>_source} column naming the BROT
+sources (\code{SourceID}) behind the value: for a categorical trait the sources
+whose records state the reported value, for a numeric trait every source
+whose records enter the median. The ids resolve against BROT's own sources
+file (\code{BROT2_sou.csv}: \code{ID}, \code{FullSource}), attached with
+\code{\link[=attach_references]{attach_references()}}.
 }

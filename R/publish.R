@@ -368,6 +368,7 @@ publish_enrichment_release <- function(version, vtr_paths,
                                        repo = "gcol33/taxifydb",
                                        notes = NULL) {
   tag <- sprintf("enrichment-%s", version)
+  vtr_paths <- .with_reference_tables(vtr_paths)
 
   missing <- vtr_paths[!file.exists(vtr_paths)]
   if (length(missing) > 0L) {
@@ -393,6 +394,26 @@ publish_enrichment_release <- function(version, vtr_paths,
                   tag, length(vtr_paths),
                   if (length(vtr_paths) == 1L) "" else "s"))
   invisible(tag)
+}
+
+
+#' Add each enrichment's reference table to a set of upload paths
+#'
+#' An enrichment whose `meta.json` declares `references` ships a
+#' `<name>_references.vtr` beside its `.vtr`; the provenance ids in the
+#' enrichment are unreadable without it, so it is published with the enrichment
+#' rather than left for the caller to remember.
+#' @noRd
+.with_reference_tables <- function(vtr_paths) {
+  extra <- unlist(lapply(vtr_paths, function(p) {
+    meta_path <- file.path(dirname(p), "meta.json")
+    if (!file.exists(meta_path)) return(NULL)
+    meta <- jsonlite::read_json(meta_path, simplifyVector = TRUE)
+    if (!identical(meta$name, tools::file_path_sans_ext(basename(p)))) return(NULL)
+    f <- meta$references$file
+    if (is.null(f)) NULL else file.path(dirname(p), f)
+  }), use.names = FALSE)
+  unique(c(vtr_paths, extra))
 }
 
 
@@ -681,6 +702,9 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
     entry$resolved_backbones <- as.list(as.character(
       unlist(meta$resolved_backbones)))
   }
+  # The reference table behind the build's `<col>_source` provenance columns,
+  # published beside the .vtr. A build fact: a build without one clears it.
+  entry$references <- .references_manifest_block(meta$references, base_url)
 
   # A citation names the source it was written for, so it cannot outlive a move
   # to a different one: ThermoFresh's runtime entry went on citing the record

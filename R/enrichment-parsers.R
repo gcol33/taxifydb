@@ -531,128 +531,73 @@ parse_fishmorph <- function(path) {
 }
 
 
-#' Parse LEDA trait files (multiple semicolon/tab-delimited files)
+#' Parse LEDA trait files
+#'
+#' Each LEDA text dump is a query export: an SQL preamble closed by an
+#' `on <date> .` line, then a `;`-separated table whose first line is the header.
+#' [.read_leda_table()] reads that structure, and every output column is taken
+#' from one named header field of one file, listed in `.leda_trait_spec()`. A
+#' named field missing from its file stops the parse rather than falling back to
+#' another column.
+#'
+#' Numeric traits read LEDA's `single value` field. LEDA fills it for every
+#' record as the record's value: the mean where one was reported, otherwise the
+#' median, otherwise the reported extreme or the midpoint of the reported range.
+#' Records are reduced to the species median, with the gated `<col>_min` /
+#' `<col>_max` / `<col>_n` spread of `.num_group_spread()`. Categorical traits
+#' report the species' most frequent value. Units are LEDA's own (Knevel et al.
+#' 2003, *Collecting and measuring standards of life-history traits of the
+#' Northwest European flora*): seed mass mg, seed length mm, canopy height m,
+#' leaf mass mg, leaf size mm2, SLA mm2/mg, LDMC mg/g, terminal velocity m/s,
+#' releasing height m.
+#'
+#' Two traits need more than a field:
+#' * stem specific density (`ssd.txt`) has no `single value` field, so a record
+#'   reads its mean, else its median, else the midpoint of its range. The
+#'   header says g/cm3 and LEDA's validity range is 0-1.5 g/cm3, but most
+#'   records carry wood densities in kg/m3 (Quercus robur 689); a value above
+#'   1.5 is read as kg/m3 and divided by 1000.
+#' * floating capacity (`buoyancy.txt`) is the percentage of diaspores still
+#'   floating after a given time; `floating_capacity_1week_pct` reads the records
+#'   at LEDA's standard final interval, `T6 - 1 week`.
 #'
 #' Each trait column `<col>` read from a file that records its references has a
 #' `<col>_source` column naming the references behind the value: for a
-#' categorical trait the records that state the reported (first-listed) value,
-#' for a numeric trait every record entering the median. A record's reference is
-#' its `original reference` where LEDA gives one (the publication the value was
+#' categorical trait the records that state the reported value, for a numeric
+#' trait every record entering the median. A record's reference is its
+#' `original reference` where LEDA gives one (the publication the value was
 #' taken from), with the contributing `reference` kept as `via`; otherwise its
 #' `reference`. Ids are the first 12 hex digits of the md5 of the citation and
 #' `via`, and resolve against the table attached with [attach_references()].
 #' `dispersal_type.txt` is an aggregated query export with no reference field,
-#' so `dispersal_type` has no provenance column; neither has a column read from
-#' a file whose rows outnumber its header fields, where the field labelled
-#' `reference` is not the reference.
+#' so `dispersal_type` has no provenance column.
 #'
 #' @param dir_path Character. Directory containing the LEDA *.txt files.
-#' @return data.frame with canonical_name + 10 LEDA trait columns.
+#' @return data.frame with canonical_name + LEDA trait columns.
 #' @export
 parse_leda <- function(dir_path) {
-  trait_files <- list(
-    life_form     = "life_form.txt",
-    dispersal     = "dispersal_type.txt",
-    tv            = "TV.txt",
-    seed_mass     = "seed_mass.txt",
-    canopy_height = "canopy_height.txt",
-    leaf_mass     = "leaf_mass.txt",
-    sla           = "SLA.txt",
-    clonal_growth = "clonal_growth.txt",
-    buoyancy      = "buoyancy.txt",
-    age_flower    = "age_of_first_flowering.txt",
-    branching     = "branching.txt",
-    bud_seas      = "buds_seasonality.txt",
-    buds_vert     = "buds_vertical_dist.txt",
-    leaf_dist     = "leaf_distribution.txt",
-    ldmc          = "LDMC_und_Geo.txt",
-    leaf_size     = "leaf_size.txt",
-    morph_disp    = "morphology_dispersal_unit.txt",
-    life_span     = "plant_life_span.txt",
-    rel_height    = "releasing_height.txt",
-    seed_long     = "seed_longevity.txt",
-    seed_number   = "seed_number.txt",
-    seed_shape    = "seed_shape.txt",
-    shoot_gf      = "shoot_growth_form.txt",
-    ssd           = "ssd.txt"
-  )
-
-  read_leda_trait <- function(path) {
-    # LEDA text dumps prefix the data table with an SQL query preamble.
-    # Some files (e.g. SLA.txt) pad the preamble with semicolons to match
-    # the data column count, so a semicolon-count heuristic is unreliable.
-    # Universal LEDA tables are keyed on "SBS name" or "SBS number", so
-    # use that prefix to locate the header row.
-    find_header_skip <- function(p, max_scan = 50L) {
-      con <- file(p, encoding = "latin1")
-      on.exit(close(con))
-      lines <- .to_utf8(readLines(con, n = max_scan, warn = FALSE))
-      hits <- which(grepl("^SBS (name|number)\\s*;", lines,
-                          ignore.case = TRUE))
-      if (length(hits) == 0L) {
-        hits <- which(vapply(lines, function(l) {
-          sc <- sum(charToRaw(l) == charToRaw(";"))
-          sc >= 3L && !grepl("(SELECT |FROM |WHERE |\\(|^The following)", l)
-        }, logical(1L)))
-      }
-      if (length(hits) == 0L) return(0L)
-      hits[1L] - 1L
+  spec <- .leda_trait_spec()
+  tables <- list()
+  table_of <- function(file) {
+    if (is.null(tables[[file]])) {
+      path <- file.path(dir_path, file)
+      tables[[file]] <<- if (file.exists(path)) .read_leda_table(path) else NA
     }
-
-    df0 <- tryCatch({
-      skip_n <- find_header_skip(path)
-      df <- utils::read.csv(path, sep = ";", stringsAsFactors = FALSE,
-                            fileEncoding = "latin1", skip = skip_n,
-                            check.names = FALSE, quote = "", row.names = NULL)
-      if (ncol(df) <= 1L) {
-        df <- utils::read.delim(path, stringsAsFactors = FALSE,
-                                fileEncoding = "latin1", skip = skip_n,
-                                check.names = FALSE, quote = "", row.names = NULL)
-      }
-      df
-    }, error = function(e) {
-      tryCatch(
-        utils::read.delim(path, stringsAsFactors = FALSE, skip = 0L,
-                          check.names = FALSE, quote = "", row.names = NULL),
-        error = function(e2) NULL
-      )
-    })
-    if (is.null(df0)) return(NULL)
-    names(df0) <- .to_utf8(names(df0))
-    for (j in seq_along(df0)) {
-      if (is.character(df0[[j]])) df0[[j]] <- .to_utf8(df0[[j]])
-    }
-    df0
-  }
-
-  find_name_col <- function(df) {
-    candidates <- c("SBS_name", "species", "Species", "SBS.name",
-                    "species_name", "name", "taxon")
-    col <- .first_col(df, candidates)
-    if (!is.null(col)) return(col)
-    col <- grep("species|name|SBS", names(df), ignore.case = TRUE,
-                value = TRUE)
-    if (length(col) > 0L) return(col[1L])
-    names(df)[1L]
+    tables[[file]]
   }
 
   ref_tab <- NULL
   record_refs <- function(df) {
-    nm <- trimws(names(df))
-    # A data row carrying more fields than the header makes read.csv prepend a
-    # `row.names` column and shift every name one place, so `reference` then
-    # labels a different field and cannot be read as one.
-    if (identical(nm[1L], "row.names")) return(NULL)
-    rc <- which(tolower(nm) == "reference")
-    if (!length(rc)) return(NULL)
-    oc <- which(tolower(nm) == "original reference")
+    nm <- names(df)
+    if (!"reference" %in% nm) return(NULL)
     clean <- function(v) {
       v <- trimws(as.character(v))
       v[is.na(v) | !nzchar(v) | v == "NA"] <- NA_character_
       v
     }
-    ref  <- clean(df[[rc[1L]]])
-    orig <- if (length(oc)) clean(df[[oc[1L]]]) else rep(NA_character_, nrow(df))
+    ref  <- clean(df[["reference"]])
+    orig <- if ("original reference" %in% nm) clean(df[["original reference"]])
+            else rep(NA_character_, nrow(df))
     cit  <- ifelse(is.na(orig), ref, orig)
     via  <- ifelse(is.na(orig) | (!is.na(ref) & ref == orig), NA_character_, ref)
     id   <- .leda_ref_id(cit, via)
@@ -663,193 +608,206 @@ parse_leda <- function(dir_path) {
     id
   }
 
-  merge_trait <- function(master, path, trait_col_patterns, out_col,
-                          as_type = "numeric") {
-    if (!file.exists(path)) return(master)
-    df <- read_leda_trait(path)
-    if (is.null(df) || nrow(df) == 0L) return(master)
-    rid <- record_refs(df)
-
-    nc <- find_name_col(df)
-    tc <- NULL
-    for (p in trait_col_patterns) {
-      m <- grep(p, names(df), ignore.case = TRUE, value = TRUE)
-      if (length(m) > 0L) { tc <- m[1L]; break }
+  cols <- list()
+  for (oc in names(spec)) {
+    s  <- spec[[oc]]
+    df <- table_of(s$file)
+    if (!is.data.frame(df)) next
+    need <- setdiff(c("SBS name", s$col, names(s$where)), names(df))
+    if (length(need)) {
+      stop(sprintf("LEDA %s has no field %s.", s$file,
+                   paste(sprintf("'%s'", need), collapse = ", ")), call. = FALSE)
     }
-    if (is.null(tc)) tc <- names(df)[ncol(df)]
-
-    vals <- if (as_type == "numeric") {
-      suppressWarnings(as.numeric(df[[tc]]))
-    } else if (as_type == "integer") {
-      suppressWarnings(as.integer(df[[tc]]))
-    } else {
-      as.character(df[[tc]])
-    }
-
-    trait_df <- data.frame(
-      canonical_name = trimws(df[[nc]]),
-      val = vals,
-      stringsAsFactors = FALSE
-    )
-    names(trait_df)[2L] <- out_col
-
-    rec_name <- trait_df$canonical_name
-    if (as_type %in% c("numeric", "integer")) {
-      trait_df <- .aggregate_spread(trait_df, out_col)
-      rtype <- "num"
-    } else {
-      trait_df <- trait_df[!duplicated(trait_df$canonical_name), ]
-      rtype <- "cat"
-    }
-    if (!is.null(rid)) {
-      trait_df[[.source_colname(out_col, names(trait_df))]] <- .value_refs(
-        rec_name, vals, rid, trait_df[[out_col]], trait_df$canonical_name,
-        type = rtype)
-    }
-
-    if (is.null(master)) return(trait_df)
-    merge(master, trait_df, by = "canonical_name", all = TRUE)
+    keep <- rep(TRUE, nrow(df))
+    for (w in names(s$where)) keep <- keep & df[[w]] %in% s$where[[w]]
+    rid  <- record_refs(df)
+    if (!is.null(rid)) rid <- rid[keep]
+    df   <- df[keep, , drop = FALSE]
+    val  <- if (is.function(s$value)) s$value(df) else df[[s$col]]
+    cols[[oc]] <- list(name = trimws(df[["SBS name"]]), value = val, ref = rid,
+                       type = s$type)
   }
-
-  master <- NULL
-
-  lf_path <- file.path(dir_path, trait_files$life_form)
-  if (file.exists(lf_path)) {
-    df <- read_leda_trait(lf_path)
-    if (!is.null(df) && nrow(df) > 0L) {
-      nc <- find_name_col(df)
-      lf_col <- grep("life.form|raunkiaer|lf_", names(df),
-                     ignore.case = TRUE, value = TRUE)
-      if (length(lf_col) > 0L) {
-        rid <- record_refs(df)
-        trait_df <- data.frame(
-          canonical_name = trimws(df[[nc]]),
-          raunkiaer_life_form = trimws(df[[lf_col[1L]]]),
-          stringsAsFactors = FALSE
-        )
-        rec <- trait_df
-        counts <- table(trait_df$canonical_name)
-        variable_spp <- names(counts[counts > 1L])
-        trait_df <- trait_df[!duplicated(trait_df$canonical_name), ]
-        trait_df$raunkiaer_variable <- as.integer(
-          trait_df$canonical_name %in% variable_spp
-        )
-        if (!is.null(rid)) {
-          trait_df$raunkiaer_life_form_source <- .value_refs(
-            rec$canonical_name, rec$raunkiaer_life_form, rid,
-            trait_df$raunkiaer_life_form, trait_df$canonical_name,
-            type = "cat")
-        }
-        master <- trait_df
-      }
-    }
-  }
-
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$dispersal),
-    c("dispersal.*type", "dispersal_type", "disp"),
-    "dispersal_type", "character"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$tv),
-    c("terminal.*velocity", "tv", "TV"),
-    "terminal_velocity_ms", "numeric"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$seed_mass),
-    c("seed.*mass", "sm_mean", "mass"),
-    "leda_seed_mass_mg", "numeric"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$canopy_height),
-    c("canopy.*height", "ch_mean", "height"),
-    "canopy_height_m", "numeric"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$leaf_mass),
-    c("leaf.*mass", "lm_mean", "mass"),
-    "leaf_mass_mg", "numeric"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$sla),
-    c("sla", "SLA", "specific.*leaf"),
-    "sla_mm2_mg", "numeric"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$clonal_growth),
-    c("clonal", "CGO", "cgo"),
-    "clonal_growth", "integer"
-  )
-  master <- merge_trait(
-    master, file.path(dir_path, trait_files$buoyancy),
-    c("buoyancy", "buoy"),
-    "buoyancy", "character"
-  )
-
-  # Remaining LEDA trait files (value column patterns verified against the
-  # downloaded headers; seed_bank / SNP omitted -- empty upstream).
-  master <- merge_trait(master, file.path(dir_path, trait_files$age_flower),
-    c("age of first flowering"), "age_first_flowering", "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$branching),
-    c("^branching$", "branching"), "branching", "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$bud_seas),
-    c("BBS above ground", "budb seas"), "bud_bank_seasonality", "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$buds_vert),
-    c("buds above ground", "buds in layer"), "buds_vertical_distribution",
-    "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$leaf_dist),
-    c("leaf distribution"), "leaf_distribution", "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$ldmc),
-    c("mean LMDC", "single value .mg/g", "LDMC"), "ldmc_mg_g", "numeric")
-  master <- merge_trait(master, file.path(dir_path, trait_files$leaf_size),
-    c("mean LS", "single value .mm.2", "leaf.*size"), "leaf_size_mm2", "numeric")
-  master <- merge_trait(master, file.path(dir_path, trait_files$morph_disp),
-    c("^diaspore type$", "diaspore type"), "diaspore_type", "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$life_span),
-    c("^plant lifespan$", "plant lifespan", "life span"), "plant_life_span",
-    "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$rel_height),
-    c("mean RH", "single value .m."), "releasing_height_m", "numeric")
-  master <- merge_trait(master, file.path(dir_path, trait_files$seed_long),
-    c("seed longevity index", "max longevity"), "seed_longevity_index",
-    "numeric")
-  master <- merge_trait(master, file.path(dir_path, trait_files$seed_number),
-    c("average SNP", "single value", "seed number"), "seed_number_per_plant",
-    "numeric")
-  master <- merge_trait(master, file.path(dir_path, trait_files$seed_shape),
-    c("length .single value", "length"), "seed_length_mm", "numeric")
-  master <- merge_trait(master, file.path(dir_path, trait_files$shoot_gf),
-    c("shoot growth form"), "shoot_growth_form", "character")
-  master <- merge_trait(master, file.path(dir_path, trait_files$ssd),
-    c("mean SSD", "SSD .g/cm"), "ssd_g_cm3", "numeric")
-
-  if (is.null(master) || nrow(master) == 0L) {
+  if (!length(cols)) {
     stop("No LEDA data could be parsed from downloaded files.", call. = FALSE)
   }
 
-  expected <- c("canonical_name", "raunkiaer_life_form", "raunkiaer_variable",
-                "dispersal_type", "terminal_velocity_ms", "leda_seed_mass_mg",
-                "canopy_height_m", "leaf_mass_mg", "sla_mm2_mg",
-                "clonal_growth", "buoyancy")
-  for (col in expected) {
-    if (!col %in% names(master)) master[[col]] <- NA
+  names_all <- unlist(lapply(cols, function(c) c$name), use.names = FALSE)
+  species <- sort(unique(names_all[!is.na(names_all) & nzchar(names_all)]))
+  master <- data.frame(canonical_name = species, stringsAsFactors = FALSE)
+  for (oc in names(spec)) {
+    c <- cols[[oc]]
+    if (is.null(c)) {
+      master[[oc]] <- if (spec[[oc]]$type == "num") NA_real_ else NA_character_
+      next
+    }
+    if (c$type == "num") {
+      v <- suppressWarnings(as.numeric(c$value))
+      master <- .attach_num_spread(master, oc, .num_group_spread(v, c$name),
+                                   species)
+    } else {
+      v <- trimws(as.character(c$value))
+      v[!is.na(v) & !nzchar(v)] <- NA_character_
+      in_set <- !is.na(c$name) & c$name %in% species
+      agg <- tapply(v[in_set], factor(c$name[in_set], levels = species), .cat_mode)
+      master[[oc]] <- as.character(agg[species])
+    }
+    if (!is.null(c$ref)) {
+      master[[.source_colname(oc, names(master))]] <- .value_refs(
+        c$name, v, c$ref, master[[oc]], species, type = c$type)
+    }
   }
 
-  # LEDA files are latin1; make names and character traits valid UTF-8 so the
-  # downstream name resolution and .vtr write do not choke on stray bytes.
-  master$canonical_name <- .to_utf8(master$canonical_name)
-  for (cc in names(master)) {
-    if (is.character(master[[cc]])) master[[cc]] <- .to_utf8(master[[cc]])
+  if (!is.null(cols$raunkiaer_life_form)) {
+    lf <- cols$raunkiaer_life_form
+    v  <- trimws(lf$value)
+    ok <- !is.na(v) & nzchar(v) & lf$name %in% species
+    n_forms <- tapply(v[ok], factor(lf$name[ok], levels = species),
+                      function(x) length(unique(x)))
+    master$raunkiaer_variable <- ifelse(is.na(master$raunkiaer_life_form),
+                                        NA_integer_,
+                                        as.integer(n_forms[species] > 1L))
   }
 
-  master <- master[!is.na(master$canonical_name) &
-                     nchar(master$canonical_name) > 0L, ]
-  master <- master[!duplicated(master$canonical_name), ]
+  trait_cols <- setdiff(names(master),
+                        c("canonical_name", .reference_cols(names(master))))
+  master <- master[rowSums(!is.na(master[trait_cols])) > 0L, , drop = FALSE]
+  rownames(master) <- NULL
   if (is.null(ref_tab)) return(master)
-  ref_tab$citation <- .to_utf8(ref_tab$citation)
-  ref_tab$via      <- .to_utf8(ref_tab$via)
-  ref_tab$doi      <- .extract_doi(ref_tab$citation)
+  ref_tab$doi <- .extract_doi(ref_tab$citation)
   attach_references(master, ref_tab[c("ref_id", "citation", "doi", "via")])
+}
+
+
+#' What each LEDA output column reads
+#'
+#' One entry per output column: the file, the header field(s) it needs, the kind
+#' (`num` or `cat`), an optional `where` (field -> accepted values) selecting
+#' records, and an optional `value` function computing the record value.
+#' @noRd
+.leda_trait_spec <- function() {
+  num <- function(file, col, where = NULL, value = NULL) {
+    list(file = file, col = col, type = "num", where = where, value = value)
+  }
+  cat <- function(file, col) {
+    list(file = file, col = col, type = "cat", where = NULL, value = NULL)
+  }
+  list(
+    raunkiaer_life_form         = cat("life_form.txt", "plant growth form"),
+    dispersal_type              = cat("dispersal_type.txt", "dispersal type"),
+    terminal_velocity_ms        = num("TV.txt", "single value [m/s]"),
+    leda_seed_mass_mg           = num("seed_mass.txt", "single value [mg]"),
+    canopy_height_m             = num("canopy_height.txt", "single value [m]"),
+    leaf_mass_mg                = num("leaf_mass.txt", "single value [mg]"),
+    sla_mm2_mg                  = num("SLA.txt", "single value [mm^2/mg]"),
+    clonal_growth_organ         = cat("clonal_growth.txt", "clonal growth organ 1"),
+    floating_capacity_1week_pct = num("buoyancy.txt", "single value [%]",
+                                      where = list(`fixed time step` = "T6 - 1 week")),
+    age_first_flowering         = cat("age_of_first_flowering.txt", "age of first flowering"),
+    branching                   = cat("branching.txt", "branching"),
+    bud_bank_seasonality        = cat("buds_seasonality.txt", "BBS above ground"),
+    buds_vertical_distribution  = cat("buds_vertical_dist.txt", "buds above ground"),
+    leaf_distribution           = cat("leaf_distribution.txt", "leaf distribution"),
+    ldmc_mg_g                   = num("LDMC_und_Geo.txt", "single value [mg/g]"),
+    leaf_size_mm2               = num("leaf_size.txt", "single value [mm^2]"),
+    diaspore_type               = cat("morphology_dispersal_unit.txt", "diaspore type"),
+    plant_life_span             = cat("plant_life_span.txt", "plant lifespan"),
+    releasing_height_m          = num("releasing_height.txt", "single value [m]"),
+    seed_longevity_index        = num("seed_longevity.txt", "SSB seed longevity index"),
+    seed_number_per_plant       = num("seed_number.txt", "single value"),
+    seed_length_mm              = num("seed_shape.txt", "length (single value) [mm]"),
+    shoot_growth_form           = cat("shoot_growth_form.txt", "shoot growth form"),
+    ssd_g_cm3                   = num("ssd.txt", c("mean SSD [g/cm^3]",
+                                                   "median SSD [g/cm^3]",
+                                                   "minimum SSD [g/cm^3]",
+                                                   "maximum SSD [g/cm^3]"),
+                                      value = .leda_ssd_value)
+  )
+}
+
+
+#' Stem specific density of each LEDA `ssd.txt` record, in g/cm3
+#'
+#' The mean, else the median, else the midpoint of the reported range. A value
+#' above LEDA's validity range for stem specific density (0-1.5 g/cm3) is a
+#' wood density in kg/m3 and is divided by 1000.
+#' @noRd
+.leda_ssd_value <- function(df) {
+  n <- function(col) suppressWarnings(as.numeric(df[[col]]))
+  mean_ <- n("mean SSD [g/cm^3]")
+  med   <- n("median SSD [g/cm^3]")
+  mid   <- (n("minimum SSD [g/cm^3]") + n("maximum SSD [g/cm^3]")) / 2
+  v <- ifelse(!is.na(mean_), mean_, ifelse(!is.na(med), med, mid))
+  ifelse(!is.na(v) & v > 1.5, v / 1000, v)
+}
+
+
+#' Read one LEDA query export into a table
+#'
+#' The file opens with the SQL query that produced it and an `on <date> .` line;
+#' the first non-empty line after that is the `;`-separated header. Fields are
+#' read on the header's own field count. A few free-text fields contain `; `
+#' (`Same [S]; nicht heteromorph [n]`), which gives their rows more fields than
+#' the header; the extra separators of such a row are exactly those followed by
+#' a space, and a row where that does not account for the excess stops the read.
+#' Lines are decoded one by one, since the dumps are latin1 with UTF-8 mixed in.
+#'
+#' @param path Character. Path to one LEDA `.txt` file.
+#' @return data.frame of character columns named by the trimmed header, empty
+#'   fields as `NA`.
+#' @noRd
+.read_leda_table <- function(path) {
+  raw <- readBin(path, "raw", file.size(path))
+  lines <- strsplit(rawToChar(raw), "\n", fixed = TRUE, useBytes = TRUE)[[1L]]
+  lines <- .to_utf8(sub("\r$", "", lines, useBytes = TRUE))
+
+  on_re <- paste0("^on [A-Z][a-z]{2} [A-Z][a-z]{2} +[0-9]{1,2} ",
+                  "[0-9]{2}:[0-9]{2}:[0-9]{2} [A-Z]+ [0-9]{4} [.];*$")
+  on <- grep(on_re, lines)
+  if (!length(on)) {
+    stop(sprintf("LEDA %s: no 'on <date> .' line closing the query preamble.",
+                 basename(path)), call. = FALSE)
+  }
+  has_text <- function(x) grepl("[^; \t]", x)
+  after <- if (on[1L] < length(lines)) seq.int(on[1L] + 1L, length(lines)) else integer(0)
+  h <- after[has_text(lines[after])][1L]
+  if (is.na(h)) {
+    stop(sprintf("LEDA %s: no header after the query preamble.", basename(path)),
+         call. = FALSE)
+  }
+
+  fields <- function(x) {
+    lapply(strsplit(paste0(x, ";|"), ";", fixed = TRUE),
+           function(v) v[-length(v)])
+  }
+  header <- trimws(fields(lines[h])[[1L]])
+  body   <- if (h < length(lines)) lines[seq.int(h + 1L, length(lines))] else character(0)
+  body   <- body[has_text(body)]
+  rows   <- fields(body)
+  k      <- length(header)
+
+  for (i in which(lengths(rows) > k)) {
+    parts <- rows[[i]]
+    extra <- length(parts) - k
+    join  <- which(startsWith(parts[-1L], " "))
+    if (length(join) != extra) {
+      stop(sprintf(paste0("LEDA %s: row %d has %d more field(s) than the header ",
+                          "and %d separator(s) followed by a space."),
+                   basename(path), i, extra, length(join)), call. = FALSE)
+    }
+    for (j in rev(join)) {
+      parts[j] <- paste0(parts[j], ";", parts[j + 1L])
+      parts <- parts[-(j + 1L)]
+    }
+    rows[[i]] <- parts
+  }
+  short <- lengths(rows) < k
+  rows[short] <- lapply(rows[short], function(v) c(v, rep("", k - length(v))))
+
+  m <- matrix(unlist(rows, use.names = FALSE), ncol = k, byrow = TRUE)
+  m[!nzchar(trimws(m))] <- NA_character_
+  out <- as.data.frame(m, stringsAsFactors = FALSE)
+  names(out) <- header
+  out
 }
 
 

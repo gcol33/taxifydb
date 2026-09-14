@@ -2,7 +2,7 @@
 % Please edit documentation in R/enrichment-parsers.R
 \name{parse_leda}
 \alias{parse_leda}
-\title{Parse LEDA trait files (multiple semicolon/tab-delimited files)}
+\title{Parse LEDA trait files}
 \usage{
 parse_leda(dir_path)
 }
@@ -10,19 +10,48 @@ parse_leda(dir_path)
 \item{dir_path}{Character. Directory containing the LEDA *.txt files.}
 }
 \value{
-data.frame with canonical_name + 10 LEDA trait columns.
+data.frame with canonical_name + LEDA trait columns.
 }
 \description{
+Each LEDA text dump is a query export: an SQL preamble closed by an
+\verb{on <date> .} line, then a \verb{;}-separated table whose first line is the header.
+\code{\link[=.read_leda_table]{.read_leda_table()}} reads that structure, and every output column is taken
+from one named header field of one file, listed in \code{.leda_trait_spec()}. A
+named field missing from its file stops the parse rather than falling back to
+another column.
+}
+\details{
+Numeric traits read LEDA's \verb{single value} field. LEDA fills it for every
+record as the record's value: the mean where one was reported, otherwise the
+median, otherwise the reported extreme or the midpoint of the reported range.
+Records are reduced to the species median, with the gated \verb{<col>_min} /
+\verb{<col>_max} / \verb{<col>_n} spread of \code{.num_group_spread()}. Categorical traits
+report the species' most frequent value. Units are LEDA's own (Knevel et al.
+2003, \emph{Collecting and measuring standards of life-history traits of the
+Northwest European flora}): seed mass mg, seed length mm, canopy height m,
+leaf mass mg, leaf size mm2, SLA mm2/mg, LDMC mg/g, terminal velocity m/s,
+releasing height m.
+
+Two traits need more than a field:
+\itemize{
+\item stem specific density (\code{ssd.txt}) has no \verb{single value} field, so a record
+reads its mean, else its median, else the midpoint of its range. The
+header says g/cm3 and LEDA's validity range is 0-1.5 g/cm3, but most
+records carry wood densities in kg/m3 (Quercus robur 689); a value above
+1.5 is read as kg/m3 and divided by 1000.
+\item floating capacity (\code{buoyancy.txt}) is the percentage of diaspores still
+floating after a given time; \code{floating_capacity_1week_pct} reads the records
+at LEDA's standard final interval, \verb{T6 - 1 week}.
+}
+
 Each trait column \verb{<col>} read from a file that records its references has a
 \verb{<col>_source} column naming the references behind the value: for a
-categorical trait the records that state the reported (first-listed) value,
-for a numeric trait every record entering the median. A record's reference is
-its \verb{original reference} where LEDA gives one (the publication the value was
+categorical trait the records that state the reported value, for a numeric
+trait every record entering the median. A record's reference is its
+\verb{original reference} where LEDA gives one (the publication the value was
 taken from), with the contributing \code{reference} kept as \code{via}; otherwise its
 \code{reference}. Ids are the first 12 hex digits of the md5 of the citation and
 \code{via}, and resolve against the table attached with \code{\link[=attach_references]{attach_references()}}.
 \code{dispersal_type.txt} is an aggregated query export with no reference field,
-so \code{dispersal_type} has no provenance column; neither has a column read from
-a file whose rows outnumber its header fields, where the field labelled
-\code{reference} is not the reference.
+so \code{dispersal_type} has no provenance column.
 }

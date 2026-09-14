@@ -126,17 +126,36 @@ parse_gift <- function(path = NULL, agreement = 0.66, batch_size = 12L,
 #' Turn GIFT `references_<trait>` strings into provenance cells
 #'
 #' GIFT lists the reference ids behind an aggregated value comma-separated,
-#' writing a reference it flags as potentially biased with a negative id.
+#' writing a reference it flags as potentially biased with a negative id. The
+#' cells come out as `.ref_join()` would build them row by row, from one
+#' C-locale sort over every token of the column.
 #' @return list with `cell` (the `|`-joined unsigned ids per row) and
 #'   `negative` (the distinct ids that carried a minus sign).
 #' @noRd
 .gift_ref_cells <- function(x) {
   x <- as.character(x)
-  if (!length(x)) return(list(cell = character(0), negative = character(0)))
-  parts <- strsplit(ifelse(is.na(x), "", x), ",", fixed = TRUE)
-  toks  <- trimws(unlist(parts, use.names = FALSE))
-  neg   <- unique(sub("^-", "", toks[startsWith(toks, "-")]))
-  cell  <- vapply(parts, function(p) .ref_join(sub("^-", "", trimws(p))),
-                  character(1L))
+  n <- length(x)
+  if (!n) return(list(cell = character(0), negative = character(0)))
+  has   <- which(!is.na(x))
+  parts <- strsplit(x[has], ",", fixed = TRUE)
+  row   <- rep(has, lengths(parts))
+  tok   <- trimws(unlist(parts, use.names = FALSE))
+  neg   <- unique(sub("^-", "", tok[startsWith(tok, "-")]))
+  id    <- sub("^-", "", tok)
+  keep  <- nzchar(id)
+  row   <- row[keep]
+  id    <- id[keep]
+  o     <- order(row, id, method = "radix")
+  row   <- row[o]
+  id    <- id[o]
+  first <- c(TRUE, row[-1L] != row[-length(row)] | id[-1L] != id[-length(id)])
+  row   <- row[first]
+  id    <- id[first]
+  cell  <- rep(NA_character_, n)
+  if (length(id)) {
+    grp <- split(id, row)
+    cell[as.integer(names(grp))] <- vapply(grp, paste, character(1L),
+                                           collapse = "|")
+  }
   list(cell = cell, negative = neg)
 }

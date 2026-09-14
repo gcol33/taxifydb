@@ -79,6 +79,20 @@ test_that(".gift_ref_cells drops the bias sign and reports the flagged ids", {
   expect_equal(got$negative, "10321")
 })
 
+test_that(".gift_ref_cells builds each cell as .ref_join would row by row", {
+  set.seed(84)
+  ids <- c("272", "10255", "-10321", "10598", " 7", "", "-")
+  x <- vapply(1:500, function(i) {
+    if (i %% 7 == 0) return(NA_character_)
+    paste(sample(ids, sample(1:4, 1), replace = TRUE), collapse = ",")
+  }, character(1L))
+  rowwise <- vapply(strsplit(ifelse(is.na(x), "", x), ",", fixed = TRUE),
+                    function(p) .ref_join(sub("^-", "", trimws(p))),
+                    character(1L))
+  expect_identical(.gift_ref_cells(x)$cell, rowwise)
+  expect_setequal(.gift_ref_cells(x)$negative, c("10321", ""))
+})
+
 test_that(".extract_doi finds a DOI in citation text", {
   expect_equal(
     .extract_doi(c("Nature 491 (2012). doi: [10.1038/nature11688](https://x).",

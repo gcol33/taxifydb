@@ -35,7 +35,10 @@
 # under Acer pseudoplatanus, where WFO, LCVP, GBIF and WCVP file it in Acer
 # negundo, and the corroborated exit then keyed Acer negundo with sycamore's
 # rows. A hop is taken only when no more backbones place its key in another
-# species than in the input's own.
+# species than in the input's own, and only when no more backbones resolve the
+# input and the reached name to two species than to one: a key disputed
+# between two species every backbone keeps apart (`brassica macrorhiza`,
+# swede or rape) says nothing about whether they are one.
 
 #' Read a name lookup filtered on one column
 #'
@@ -220,6 +223,70 @@
 }
 
 
+#' Refuse a hop onto a species the backbones keep apart from the input
+#'
+#' The hop reaches a name through a key the backbones disagree about, and a
+#' disagreement over a third name is not evidence that the input and the
+#' reached name are one species. `brassica macrorhiza` is filed under *Brassica
+#' napus* by four backbones and under *Brassica rapa* by WFO and LCVP, so the
+#' hop keyed rape with swede's rows, though every backbone holding both names
+#' resolves them to different species. The *Minuartia hybrida* case is the
+#' opposite: COL, WCVP and Euro+Med synonymise the reached name itself onto
+#' *Sabulina tenuifolia*, and only WFO keeps the two apart.
+#'
+#' So each backbone that resolves both the input's key and the reached name's
+#' key casts one vote: for the hop when the two land in one species (compared
+#' on [.species_of()]), against it when they land in two. A backbone holding
+#' only one of the names, or recording a key under two species, casts none. The
+#' hop is refused when the votes against outnumber the votes for.
+#'
+#' @param bridged data.frame of `input_name`, `kept_name`.
+#' @param input_edges Forward edges of the input keys: `input_name`,
+#'   `accepted_name`, `backbone`, inside the source's kingdom.
+#' @param lookup_paths Named character vector of lookup `.vtr` paths.
+#' @param kingdom Character vector or `NULL`; see [.in_kingdom_edges()].
+#' @param verbose Logical.
+#' @return `bridged` without the rows reaching a species kept apart.
+#' @noRd
+.drop_split_targets <- function(bridged, input_edges, lookup_paths,
+                                kingdom = NULL, verbose = TRUE) {
+  if (!nrow(bridged)) return(bridged)
+  cand <- unique(bridged[, c("input_name", "kept_name"), drop = FALSE])
+  cand$key_ci <- .to_key_ci(cand$kept_name)
+
+  tgt <- .closure_pass(lookup_paths, "key_ci", unique(cand$key_ci), FALSE,
+                       "[target]")
+  tgt <- tgt[is.na(tgt$n_species) | tgt$n_species <= 1L, , drop = FALSE]
+  tgt <- .in_kingdom_edges(tgt, kingdom)
+  tgt <- unique(data.frame(key_ci = tgt$key_ci, backbone = tgt$backbone,
+                           sp_tgt = .species_of(tgt$accepted_name),
+                           stringsAsFactors = FALSE))
+  src <- unique(data.frame(input_name = input_edges$input_name,
+                           backbone = input_edges$backbone,
+                           sp_in = .species_of(input_edges$accepted_name),
+                           stringsAsFactors = FALSE))
+
+  votes <- merge(merge(cand, tgt, by = "key_ci"), src,
+                 by = c("input_name", "backbone"))
+  if (!nrow(votes)) return(bridged)
+  votes$pair <- paste(votes$input_name, votes$kept_name, sep = "\x1f")
+  same <- tapply(votes$sp_in == votes$sp_tgt,
+                 paste(votes$pair, votes$backbone, sep = "\x1f"), any)
+  pair_of <- sub("\x1f[^\x1f]*$", "", names(same))
+  n_for     <- tapply(same, pair_of, sum)
+  n_against <- tapply(!same, pair_of, sum)
+  split <- names(n_against)[n_against > n_for]
+
+  drop <- paste(bridged$input_name, bridged$kept_name, sep = "\x1f") %in% split
+  if (any(drop) && isTRUE(verbose)) {
+    message(sprintf(
+      "    [species vote] %s hop(s) onto a species the backbones keep apart from the input",
+      format(length(split), big.mark = ",")))
+  }
+  bridged[!drop, , drop = FALSE]
+}
+
+
 #' Map source names to the accepted names every backbone can return for them
 #'
 #' One forward pass (the pre-existing behaviour) plus, when `reverse_hop` is
@@ -268,11 +335,15 @@
   keep <- function(d, cols = c("key_ci", "accepted_name")) {
     unique(d[.pair_key(d) %in% survived, cols, drop = FALSE])
   }
+  inp <- data.frame(input_name = unique_names, key_ci = query_keys,
+                    stringsAsFactors = FALSE)
+  input_edges <- merge(
+    inp, .in_kingdom_edges(fwd[.pair_key(fwd) %in% survived, , drop = FALSE],
+                           kingdom),
+    by = "key_ci")
   fwd <- keep(fwd)
   if (!nrow(fwd)) return(NULL)
 
-  inp <- data.frame(input_name = unique_names, key_ci = query_keys,
-                    stringsAsFactors = FALSE)
   direct <- merge(inp, fwd, by = "key_ci")[, c("input_name", "accepted_name"),
                                            drop = FALSE]
 
@@ -294,6 +365,8 @@
                                            "kept_name"), drop = FALSE]),
                          by = "accepted_name")
         bridged <- .drop_outvoted_entries(bridged, placements, direct, verbose)
+        bridged <- .drop_split_targets(bridged, input_edges, lookup_paths,
+                                       kingdom, verbose)
         extra <- data.frame(input_name = bridged$input_name,
                             accepted_name = bridged$kept_name,
                             stringsAsFactors = FALSE)

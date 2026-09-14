@@ -169,8 +169,7 @@ test_that("the hop does not cross a key one backbone gives to two species", {
               c("Vachellia farnesiana", "Vachellia farnesiana"),
               n_species = c(1L, col_n)),
     ncbi = lk("acacia acicularis", "Vachellia farnesiana"),
-    wfo  = lk(c("vachellia farnesiana", "acacia brownii"),
-              c("Vachellia farnesiana", "Acacia brownii")),
+    wfo  = lk("vachellia farnesiana", "Vachellia farnesiana"),
     lcvp = lk("acacia acicularis", "Acacia brownii"),
     wcvp = lk("acacia acicularis", "Acacia brownii")
   ))
@@ -222,6 +221,60 @@ test_that("the hop does not enter through a placement most backbones contradict 
   year <- stats::setNames(out$alien_first_record, out$canonical_name)
   expect_equal(year[["Acer negundo"]], 1809L)
   expect_equal(year[["Acer pseudoplatanus"]], 1699L)
+})
+
+test_that("the hop does not reach a species the backbones keep apart (#56)", {
+  # `brassica macrorhiza` is disputed: col, colxr and gbif file it under
+  # Brassica napus, wfo and lcvp under Brassica rapa. The entry wins its vote,
+  # but every backbone holding both species resolves them apart, so rape must
+  # not be keyed with swede's rows.
+  macrorhiza <- fake_lookups(list(
+    col   = lk(c("brassica napus", "brassica rapa", "brassica macrorhiza"),
+               c("Brassica napus", "Brassica rapa", "Brassica napus")),
+    colxr = lk(c("brassica napus", "brassica rapa", "brassica macrorhiza"),
+               c("Brassica napus", "Brassica rapa", "Brassica napus")),
+    gbif  = lk(c("brassica napus", "brassica rapa", "brassica macrorhiza"),
+               c("Brassica napus", "Brassica rapa", "Brassica napus")),
+    wfo   = lk(c("brassica napus", "brassica rapa", "brassica macrorhiza"),
+               c("Brassica napus", "Brassica rapa", "Brassica rapa")),
+    lcvp  = lk(c("brassica napus", "brassica rapa", "brassica macrorhiza"),
+               c("Brassica napus", "Brassica rapa", "Brassica rapa"))
+  ))
+  src <- c("Brassica napus", "Brassica rapa")
+  m <- taxifydb:::.name_closure_map(src, macrorhiza, reverse_hop = TRUE,
+                                    verbose = FALSE)
+  expect_equal(unique(m$accepted_name[m$input_name == "Brassica napus"]),
+               "Brassica napus")
+
+  local_mocked_bindings(.find_lookup_paths = function(backends) macrorhiza)
+  df <- data.frame(canonical_name = src, country_code = "FR",
+                   alien_first_record = c(1913L, 1985L),
+                   alien_first_record_status = "present",
+                   stringsAsFactors = FALSE)
+  reg <- taxifydb:::.enrichment_build_registry$alien_first_records
+  out <- resolve_enrichment_names(df, group_cols = "country_code",
+                                  backends = names(macrorhiza), verbose = FALSE,
+                                  reduce_fn = reg$reduce_fn)
+  year <- stats::setNames(out$alien_first_record, out$canonical_name)
+  expect_equal(year[["Brassica rapa"]], 1985L)
+})
+
+test_that("a hop onto a name most backbones synonymise onto the input is kept", {
+  # The Minuartia hybrida shape with its real vote: three backbones file the
+  # reached name inside the input's species, one keeps the two apart.
+  paths <- fake_lookups(list(
+    col     = lk(c("sabulina tenuifolia", "minuartia hybrida"),
+                 c("Sabulina tenuifolia", "Sabulina tenuifolia")),
+    wcvp    = lk(c("sabulina tenuifolia", "minuartia hybrida"),
+                 c("Sabulina tenuifolia", "Sabulina tenuifolia")),
+    euromed = lk(c("sabulina tenuifolia", "minuartia hybrida"),
+                 c("Sabulina tenuifolia", "Sabulina tenuifolia")),
+    wfo     = lk(c("sabulina tenuifolia", "minuartia hybrida"),
+                 c("Sabulina tenuifolia", "Minuartia hybrida"))
+  ))
+  m <- taxifydb:::.name_closure_map("Sabulina tenuifolia", paths,
+                                    reverse_hop = TRUE, verbose = FALSE)
+  expect_true("Minuartia hybrida" %in% m$accepted_name)
 })
 
 test_that("a placement the backbones split evenly still lets the hop through", {

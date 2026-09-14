@@ -3079,8 +3079,8 @@
       "latest": "2026.08",
       "source_version": "4.0",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alien_first_records.vtr",
-      "nrow": 409370,
-      "content_id": "ffa5511219a5bd83c62af58c5583de3c",
+      "nrow": 327475,
+      "content_id": "273277d6468b4570a69018f6cb185143",
       "source_url": "https://zenodo.org/api/records/18759840/files/FirstRecords_dataset_public_v4.0.csv/content",
       "source_doi": "10.5281/zenodo.18759840",
       "license": "CC BY 4.0",
@@ -3354,7 +3354,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alien_first_records-ffa5511219a5bd83c62af58c5583de3c.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/alien_first_records-273277d6468b4570a69018f6cb185143.vtr"
     },
     "fungal_traits": {
       "latest": "2026.08",

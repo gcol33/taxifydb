@@ -1,5 +1,16 @@
 # taxifydb 0.1.23
 
+## Wiley supplement downloads retry (#55)
+
+* Wiley's `/action/downloadSupplement` answers the same request with 200 or
+  403 from one attempt to the next, and `cf_fetch.py` made one request, so
+  building `chowdhury` or `clopla` failed by chance. On 2026-09-14 chowdhury
+  failed three times and missed the #52 re-cut, then downloaded on the next
+  attempt. The `wiley` and `get` modes now retry up to five times with
+  backoff, with a new session each attempt. The article page loaded first to
+  prime cookies now returns a Cloudflare challenge, and the supplement
+  request succeeds without it, so its status is no longer relied on.
+
 ## The reverse hop no longer crosses a homonym (#52)
 
 * A name lookup keeps one accepted name per spelling, so a homonym such as

@@ -20,6 +20,7 @@ Usage:
 """
 import json
 import sys
+import time
 from urllib.parse import urlsplit
 
 # Pin the newest concrete browser identity, NOT the bare "chrome" alias: the
@@ -33,20 +34,41 @@ def _session():
     return creq.Session(impersonate=IMPERSONATE)
 
 
+MAX_TRIES = 5
+
+
+def _fetch_with_retries(request, out_path, label):
+    """Stream the response of `request()` to `out_path`, retrying failures.
+
+    Wiley's supplement endpoint answers the same request with 200 or 403 from
+    one attempt to the next, so a single try fails a build by chance. Each
+    attempt calls `request` afresh, which builds a new session; a network
+    error, a non-200 status and a near-empty body all count as a failed try.
+    """
+    last = None
+    for attempt in range(1, MAX_TRIES + 1):
+        try:
+            r = request()
+            if r.status_code == 200:
+                n = _stream_to_file(r, out_path)
+                if n >= 100:
+                    print(f"cf_fetch {label}: wrote {n} bytes to {out_path}", flush=True)
+                    return
+                last = f"suspiciously small response ({n} bytes)"
+            else:
+                r.close()
+                last = f"HTTP {r.status_code}"
+        except Exception as e:  # noqa: BLE001 - transient network or TLS failure
+            last = f"{type(e).__name__}: {e}"
+        sys.stderr.write(f"cf_fetch {label}: attempt {attempt}/{MAX_TRIES} failed ({last})\n")
+        if attempt < MAX_TRIES:
+            time.sleep(3 * 2 ** (attempt - 1))
+    sys.exit(f"cf_fetch {label}: {last} after {MAX_TRIES} tries")
+
+
 def cmd_get(url, out_path):
-    sess = _session()
-    r = sess.get(url, timeout=900, stream=True)
-    if r.status_code != 200:
-        sys.exit(f"cf_fetch get: HTTP {r.status_code} for {url}")
-    n = 0
-    with open(out_path, "wb") as fh:
-        for chunk in r.iter_content(chunk_size=1 << 20):
-            fh.write(chunk)
-            n += len(chunk)
-    r.close()
-    if n < 100:
-        sys.exit(f"cf_fetch get: suspiciously small response ({n} bytes)")
-    print(f"cf_fetch get: wrote {n} bytes to {out_path}", flush=True)
+    _fetch_with_retries(lambda: _session().get(url, timeout=900, stream=True),
+                        out_path, "get")
 
 
 def cmd_ckan(api_base, resource_id, out_path):
@@ -76,7 +98,6 @@ def cmd_ckan(api_base, resource_id, out_path):
                     sys.stderr.write(f"  retry {attempt}: {str(j.get('error'))[:120]}\n")
                 except Exception as e:  # noqa: BLE001 - transient CF/ES hiccup
                     sys.stderr.write(f"  retry {attempt} EXC: {type(e).__name__}: {e}\n")
-                import time
                 time.sleep(2 * (attempt + 1))
             if res is None:
                 sys.exit("cf_fetch ckan: page fetch failed after retries")
@@ -98,36 +119,38 @@ def cmd_ckan(api_base, resource_id, out_path):
 
 
 def _stream_to_file(r, out_path):
-    if r.status_code != 200:
-        r.close()
-        sys.exit(f"cf_fetch: HTTP {r.status_code}")
+    """Write a 200 response body to `out_path`; return the byte count."""
     n = 0
     with open(out_path, "wb") as fh:
         for chunk in r.iter_content(chunk_size=1 << 20):
             fh.write(chunk)
             n += len(chunk)
     r.close()
-    if n < 100:
-        sys.exit(f"cf_fetch: suspiciously small response ({n} bytes)")
-    print(f"cf_fetch: wrote {n} bytes to {out_path}", flush=True)
+    return n
 
 
 def cmd_wiley(article_url, doi, sup_file, out_path):
     """Download a Wiley/Atypon supporting-information file.
 
-    Atypon serves supplements from /action/downloadSupplement only to a session
-    that has first loaded the article page (which sets the required cookies) and
-    that sends the article as Referer; a cold request returns 403. Priming the
-    session with a GET of the article, then requesting the supplement with the
-    doi/file as query parameters, clears both checks.
+    The supplement is served from /action/downloadSupplement with the doi and
+    file as query parameters and the article as Referer. Wiley has at times
+    required a session that loaded the article page first, so each attempt
+    still requests the article; that page is now behind a Cloudflare challenge
+    and the supplement request succeeds without it, so its status is ignored.
     """
-    sess = _session()
     p = urlsplit(article_url)
-    sess.get(article_url, timeout=300)  # prime session cookies
     action = f"{p.scheme}://{p.netloc}/action/downloadSupplement"
-    r = sess.get(action, params={"doi": doi, "file": sup_file},
-                 headers={"Referer": article_url}, timeout=900, stream=True)
-    _stream_to_file(r, out_path)
+
+    def request():
+        sess = _session()
+        try:
+            sess.get(article_url, timeout=300)
+        except Exception:  # noqa: BLE001 - priming is best effort
+            pass
+        return sess.get(action, params={"doi": doi, "file": sup_file},
+                        headers={"Referer": article_url}, timeout=900, stream=True)
+
+    _fetch_with_retries(request, out_path, "wiley")
 
 
 def main(argv):

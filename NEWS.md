@@ -24,6 +24,134 @@
   `country_code`, the country the location lies in, so rolling islands up into
   their country is an explicit step on that column rather than the default.
 
+## Trait values keep the references behind them (gcol33/taxify#84)
+
+* A parser that keeps per-record references writes, beside every value column
+  `<col>`, a `<col>_source` column of the reference ids behind the reported
+  value (`|`-joined): the records stating a categorical value, the records
+  entering a numeric aggregate. `attach_references()` attaches the reference
+  table, `build_enrichment_vtr()` writes it as `<name>_references.vtr` and
+  declares it in `meta.json`, `publish_enrichment_release()` uploads it, and
+  the manifest entry records it under `references`. Name resolution ranks
+  candidate rows without the provenance columns, so every value column stays
+  as it was.
+
+* Carried by AusTraits (`dataset_id`, cited by the dataset's primary source),
+  GIFT (the references `GIFT_traits()` returns beside each aggregate), BROT 2.0
+  (`SourceID`, resolved by `BROT2_sou.csv`) and LEDA (`original reference`,
+  else `reference`). GIFT prefixes some ids with `-` or `+` without
+  documenting either; the table keeps them as `listed_negative` /
+  `listed_positive` rather than naming a meaning. Four GIFT woodiness ids that
+  GIFT serves nowhere keep an `NA` citation and a note. A reference a source
+  lists once per scope (WCSP 2014 over 189 families) is folded to one row.
+
+## LEDA columns read their named header field (#57)
+
+* `parse_leda()` matched columns by pattern and fell back to a file's last
+  column, and `read.csv()` shifted names in files whose rows carry more fields
+  than the header: `leda_seed_mass_mg` held the diaspore type code,
+  `seed_length_mm` the seed width, and canopy height, leaf mass, terminal
+  velocity and Raunkiaer life form were empty. `.read_leda_table()` reads the
+  export's own structure and `.leda_trait_spec()` names the one file and field
+  each output column reads; a missing field stops the parse. Numeric traits
+  read LEDA's per-record single value, categorical traits report the species
+  mode, and stem specific density records above LEDA's 0-1.5 g/cm3 range are
+  divided by 1000. `clonal_growth` and `buoyancy` become `clonal_growth_organ`
+  and `floating_capacity_1week_pct`. Seed mass calibrates at 1.00 against
+  Kew SID (2,198 shared species), GIFT (2,252) and BIEN (1,662).
+
+## BIEN leaf dry mass is in mg and Ecoflora heights in mm (#57)
+
+* BIEN records leaf dry mass in g, and the parser wrote those values under
+  `leaf_dry_mass_mg`; they are now x1000 (*Acer campestre* 184 mg). The curated
+  `.bien_trait_spec()` declares the unit BIEN records for every numeric column,
+  and a record in an undeclared unit stops the build.
+
+* Ecoflora records typical maximum and minimum height in cm, written under
+  `height_max_mm_uk` / `height_min_mm_uk`; they are now x10 (*Quercus robur*
+  30,000 mm, *Bellis perennis* 120).
+
+## Unplaced records resolve through their basionym (gcol33/taxify#81)
+
+* WFO's `originalNameUsageID` and COL's `dwc:originalNameUsageID` map to the
+  unified `original_name_usage_id`, which taxify reads to resolve an unplaced
+  record (WFO `UNCHECKED`) through its basionym. GBIF's `basionym_key` is not
+  mapped, since no GBIF record reaches the unplaced grade.
+
+* `build_name_lookup()` selects the authorship columns and the basionym link,
+  so a lookup key resolves the way `taxify()` does: a synonym homotypic with
+  its accepted name is ranked through `candidate_order()`, and a key the
+  backbone leaves unplaced takes its placed basionym's accepted name through
+  `taxify::basionym_placement()`. Against WFO 2026.06, 6,546 of 1,568,661 keys
+  (0.42%) change accepted name. `build_name_lookup()` takes the candidate order
+  from taxify rather than a copy of its sort columns. taxifydb requires taxify
+  (>= 0.5.3.9000).
+
+## Name expansion follows the species vote (#56, #46)
+
+* The reverse hop entered a concept through any backbone filing a key under
+  the input's forward image. Each hop now counts the backbones placing the key
+  in the input's species against those placing it in another, and is refused
+  when the other side outnumbers it: COL XR alone filed
+  `acer negundo f. crispum` under *Acer pseudoplatanus*, so sycamore's rows
+  were keyed on *Acer negundo*. A hop onto a name every backbone keeps apart
+  from the input (`brassica macrorhiza` under *B. napus* and *B. rapa*), or
+  onto a name recorded under two or more species, is refused too, and forward
+  resolutions go through the same vote. An even split (*Minuartia hybrida*)
+  still resolves.
+
+* Source names key on the canonical `taxify::parse_name()` gives them, so an
+  author, a sensu-lato note or an unpunctuated rank marker no longer keeps a
+  record from its species. A record naming two taxa, an open-nomenclature name
+  and a cut-off hybrid name keep their verbatim spelling.
+
+* `alien_first_records` drops the 1492 and 1500 convention markers to `NA`
+  (the raw value stays in the verbatim column) and reduces synonyms to the
+  earliest year after name resolution, since a first record is a minimum over
+  records.
+
+## Backbones are released under their source release (#54, #53, #49)
+
+* The build workflows tagged every backbone with the build month, and that tag
+  is the version `taxify_lock()` stamps: `col-2026.08` was COL 2025 and
+  `wfo-2026.08` was WFO 2024-12. Each builder now resolves its version from
+  where it downloads, `write_backbone_meta()` rejects a version that cannot
+  name a release, and publishing stops on a version that differs from the
+  `.meta`.
+
+* `col` builds from the current COL monthly release and is versioned by it:
+  `col-2026.09` is COL26.9 (5,432,444 rows).
+
+* Both build workflows publish through `publish_release()`, so a CI release
+  uploads the content-addressed `<name>-<content_id>.vtr` its manifest
+  `content_url` names, and a re-cut reuses its release rather than deleting
+  the tag (#47).
+
+## Species are keyed on the binomial, not the subgenus rendering (#50)
+
+* A species written `Genus (Subgenus) epithet` had no key for the binomial a
+  user types, so the fuzzy pass landed on another taxon (*Camponotus
+  herculeanus* on *Camponotites heracleus*). `normalize_backbone()` drops each
+  one-word parenthesised group between the genus and the epithet, two of them
+  in WoRMS' `Thoracostoma (Pseudocella) (Corythostoma) filipjevi` (COL 325,523
+  names, WoRMS 102,977), while a parenthesis holding an authorship or a
+  hybrid formula stays, and
+  `split_scientific_name()` uses the same locator. Enrichment source names
+  written with a subgenus key on the binomial through the same
+  `drop_infrageneric()`.
+
+## Smaller fixes
+
+* `parse_bet()` keeps every BET substrate class as a pipe-delimited set over
+  all six classes, through the shared `.onehot_to_multi()`; taxify's
+  `substrate` trait takes the primary class.
+* `harvest_plazi_dwca()` retries requests and stops when a dataset still
+  cannot be fetched, instead of skipping it (309 of 489 datasets were cached
+  under load).
+* xdelta3 paths are quoted, so a data directory with a space works.
+* taxifydb requires vectra (>= 0.12.4).
+* `datasets/` is excluded from the package build and from tracking.
+
 ## A backbone delta records the build it was cut against (gcol33/taxify#83)
 
 * `create_delta()` writes `<backend>.xdelta.base` beside the patch, holding the

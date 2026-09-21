@@ -633,7 +633,7 @@
     source_doi  = "10.1038/s41597-022-01364-9",
     version     = "1.0",
     license     = "CC0",
-    attribution = "Hebert K et al. (2022) AnimalTraits -- a curated animal trait database for body mass, metabolic rate and brain size. Scientific Data 9:265.",
+    attribution = "Herberstein ME et al. (2022) AnimalTraits -- a curated animal trait database for body mass, metabolic rate and brain size. Scientific Data 9:265.",
     download_fn = function(url, dest) {
       download_curl_file(url, dest, "observations.csv")
     },

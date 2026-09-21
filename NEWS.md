@@ -1,5 +1,28 @@
 # taxifydb (development version)
 
+## A name's own concept keeps its region rows (#58)
+
+* In an enrichment carrying an authorship column, cross-backbone expansion no
+  longer lets a re-keyed concept replace the name's own concept at a
+  (name, group) key. taxify's grouped join keeps only the rows whose authorship
+  matches the concept the caller resolved to, so a WCVP species another
+  backbone sinks (*Eucalyptus bicostata* Maiden, Blakely & Simmonds, *Quercus
+  broteroana* O.Schwarz) left in place of *E. globulus* Labill. in Victoria or
+  *Q. robur* L. in Spain and Portugal dropped native ranges WCVP states for
+  those names. `.keep_own_concept()` drops the re-keyed rows at every key the
+  own concept reaches, before the reducer runs; a re-keyed row still fills a
+  region the own concept lacks, under its own authorship. The authorship column
+  is the one taxify's guard reads (`taxify::enrichment_authorship_col()`, so
+  taxify >= 0.5.5.9000). Enrichments without one (every other grouped
+  enrichment) keep the trait-richest row as before.
+* `wcvp` republished into `enrichment-2026.08` (content id
+  `c940e7e650d79dc6a01e3b52b9d34743`, 4,908,476 rows, unchanged): 407,917 of
+  5,872,271 expanded rows displaced, names carrying more than one authorship
+  31,694 -> 27,305 (rows 863,624 -> 763,604). The same build without the change
+  reproduces the previous asset's counts exactly.
+
+# taxifydb (development version)
+
 ## Backbone builds record the source's release date (gcol33/taxify#88)
 
 * `build_vtr()` and `build_vtr_streamed()` take a `source_date`, written to the

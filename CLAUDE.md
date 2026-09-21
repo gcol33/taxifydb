@@ -150,6 +150,22 @@ written:
 Group-based enrichments (GRIIS, WCVP, common_names, marine_distribution) pass
 `group_cols` so deduplication respects the grouping column.
 
+**A name's own concept keeps its rows (#58).** Expansion re-keys a source
+concept under every accepted name some backbone gives it, so a species another
+backbone sinks lands on the same (name, group) key as the name's own concept.
+When the frame carries an authorship column (the one
+`taxify::enrichment_authorship_col()` picks, which taxify's grouped homonym
+guard reads), `.keep_own_concept()` in `R/resolve_names.R` drops the re-keyed
+rows at every key the own concept reaches, before the reducer runs; a re-keyed
+row still fills a key the own concept lacks, under its own authorship, and the
+runtime guard decides it. Without the rule the trait-richest reducer kept
+*Eucalyptus bicostata* Maiden, Blakely & Simmonds in Victoria under
+*E. globulus* Labill. and *Quercus broteroana* O.Schwarz in Spain/Portugal under
+*Q. robur* L., and taxify dropped both native ranges. Only `wcvp` is grouped and
+authorship-bearing; `fishbase`/`sealifebase` (`author`, ungrouped) take the rule
+on their next rebuild. Republished `wcvp` 2026-09-21: names with more than one
+authorship 31,694 -> 27,305, row count unchanged at 4,908,476.
+
 **Enrichment granularity: one source, many traits = columns; one trait, many
 sources = separate enrichments.** Multiple traits from a single source are
 columns in one enrichment (`pantheria`, `betsi_collembola_traits` with 9 trait

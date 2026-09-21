@@ -121,9 +121,11 @@ resolve_enrichment_names <- function(df,
   expanded <- merge(df, map, by.x = "canonical_name", by.y = "input_name",
                     all.x = TRUE)
   has_resolved <- !is.na(expanded$accepted_name)
+  rekeyed <- has_resolved & expanded$accepted_name != expanded$canonical_name
   expanded$canonical_name[has_resolved] <- expanded$accepted_name[has_resolved]
   expanded$accepted_name <- NULL
 
+  expanded <- .keep_own_concept(expanded, rekeyed, group_cols)
   expanded <- reduce_fn(expanded, group_cols)
 
   if (verbose) {
@@ -427,7 +429,49 @@ resolve_name_map <- function(names,
 }
 
 
-# ---- Dedup helper ----------------------------------------------------------
+# ---- Dedup helpers ---------------------------------------------------------
+
+#' Keep a name's own concept wherever the source states it
+#'
+#' An enrichment carrying an authorship column says, row by row, which concept
+#' the row describes, and taxify's grouped join keeps only the rows whose
+#' authorship matches the concept the caller resolved to; the column is the one
+#' [taxify::enrichment_authorship_col()] picks. Expansion re-keys a source
+#' concept under every accepted name some backbone gives it, so a species
+#' another backbone sinks, or an infraspecific taxon, lands on the same
+#' (name, group) key as the name's own concept, and the reducer could keep it
+#' there. Its authorship then disagrees with the caller's, and the runtime
+#' drops a row the source states for that name: WCVP's *Eucalyptus bicostata*
+#' Maiden, Blakely & Simmonds filled Victoria under *E. globulus* Labill. that
+#' way.
+#'
+#' At every key where the source states the name's own concept, the rows
+#' re-keyed onto it are dropped before reduction. A re-keyed row still fills a
+#' key the own concept does not reach, under its own authorship, so the runtime
+#' guard decides it as it decides any other concept. An enrichment without an
+#' authorship column gives the runtime nothing to tell concepts apart by, and
+#' its reducer keeps choosing over every row.
+#'
+#' @param expanded Expanded enrichment frame, `canonical_name` already set to
+#'   the accepted name each row is keyed under.
+#' @param rekeyed Logical along `expanded`: the row's source name differs from
+#'   the name it is now keyed under.
+#' @param group_cols Grouping columns, or `NULL`.
+#' @return `expanded` without the displaced rows.
+#' @noRd
+.keep_own_concept <- function(expanded, rekeyed, group_cols = NULL) {
+  if (is.null(taxify::enrichment_authorship_col(names(expanded))) ||
+      !any(rekeyed)) {
+    return(expanded)
+  }
+  key <- do.call(paste, c(expanded[c("canonical_name", group_cols)],
+                          list(sep = "\x1f")))
+  displaced <- rekeyed & key %in% key[!rekeyed]
+  out <- expanded[!displaced, , drop = FALSE]
+  rownames(out) <- NULL
+  out
+}
+
 
 #' Collapse to one row per accepted name (plus group columns), keeping richest
 #'

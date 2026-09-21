@@ -286,9 +286,8 @@ read_lpsn <- function(lpsn_dir, verbose = TRUE) {
 #' @export
 build_lpsn <- function(output_dir = "output/lpsn", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) {
-    version <- checklistbank_release(.lpsn_dataset_key)$version
-  }
+  release <- checklistbank_release(.lpsn_dataset_key)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("lpsn_")
   dir.create(tmp, recursive = TRUE)
@@ -301,7 +300,7 @@ build_lpsn <- function(output_dir = "output/lpsn", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "lpsn.vtr")
-  build_vtr(df, vtr_path, "lpsn", version, .lpsn_source_page)
+  build_vtr(df, vtr_path, "lpsn", version, .lpsn_source_page, release$date)
 
   invisible(vtr_path)
 }

@@ -182,9 +182,8 @@ read_itis <- function(sqlite_path, verbose = TRUE) {
 #' @export
 build_itis <- function(output_dir = "output/itis", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) {
-    version <- release_version_from_date(source_last_modified(.itis_url))
-  }
+  release <- last_modified_release(.itis_url)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("itis_")
   dir.create(tmp, recursive = TRUE)
@@ -197,7 +196,7 @@ build_itis <- function(output_dir = "output/itis", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "itis.vtr")
-  build_vtr(df, vtr_path, "itis", version, .itis_url)
+  build_vtr(df, vtr_path, "itis", version, .itis_url, release$date)
 
   invisible(vtr_path)
 }

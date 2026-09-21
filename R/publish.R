@@ -558,6 +558,15 @@ update_manifest <- function(manifest_path, backend_name, version,
   # rather than left to disagree with the entry beside it.
   entry$source_version <- NULL
 
+  # The date the source gives this release, which `latest` cannot carry: a
+  # YYYY.MM version drops the day, a named release (3.7.3, 2025b) has no date,
+  # and a frozen source (GBIF 2023-08-28) is years older than its tag reads.
+  # A .meta written before the field existed leaves the recorded date in place.
+  if (!is.null(meta) && "source_date" %in% names(meta) &&
+      nzchar(meta[["source_date"]])) {
+    entry$source_date <- unname(meta[["source_date"]])
+  }
+
   if (!is.null(delta_path) && file.exists(delta_path)) {
     entry$delta_from <- delta_from
     entry$delta_from_content_id <- delta_from_content_id

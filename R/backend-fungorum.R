@@ -129,9 +129,8 @@ read_fungorum <- function(fungorum_dir, verbose = TRUE) {
 #' @export
 build_fungorum <- function(output_dir = "output/fungorum", version = NULL,
                            verbose = TRUE) {
-  if (is.null(version)) {
-    version <- checklistbank_release(.fungorum_dataset_key)$version
-  }
+  release <- checklistbank_release(.fungorum_dataset_key)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("fungorum_")
   dir.create(tmp, recursive = TRUE)
@@ -144,7 +143,7 @@ build_fungorum <- function(output_dir = "output/fungorum", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "fungorum.vtr")
-  build_vtr(df, vtr_path, "fungorum", version, .fungorum_url)
+  build_vtr(df, vtr_path, "fungorum", version, .fungorum_url, release$date)
 
   invisible(vtr_path)
 }

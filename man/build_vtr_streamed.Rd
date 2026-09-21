@@ -10,6 +10,7 @@ build_vtr_streamed(
   backend_name,
   version,
   source_url,
+  source_date,
   synonym_pattern = "SYNONYM",
   batch_size = 50000L,
   work_dir = NULL,
@@ -29,6 +30,9 @@ was filtered out entirely, not that the source has ended.}
 \item{version}{Character. Version string.}
 
 \item{source_url}{Character. URL the source data was downloaded from.}
+
+\item{source_date}{Character. The source's release date, as for
+\code{\link[=build_vtr]{build_vtr()}}.}
 
 \item{synonym_pattern}{Character. Regex matching the statuses that count as
 a synonym, as passed to \code{\link[=precompute_backbone]{precompute_backbone()}}.}

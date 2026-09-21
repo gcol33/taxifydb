@@ -101,6 +101,30 @@ mdd_archive_version <- function(dir) {
 }
 
 
+#' Release date of an extracted MDD archive
+#'
+#' Each archive ships a `release.toml` whose `[metadata]` table carries
+#' `release_date = "YYYY-MM-DD"`.
+#'
+#' @param dir Character. Directory the archive was extracted into.
+#' @return Character `YYYY-MM-DD`.
+#' @noRd
+mdd_archive_release_date <- function(dir) {
+  f <- list.files(dir, pattern = "^release\\.toml$", recursive = TRUE,
+                  full.names = TRUE)
+  f <- f[!grepl("__MACOSX", f, fixed = TRUE)]
+  lines <- if (length(f) == 1L) readLines(f, warn = FALSE) else character(0)
+  hit <- regmatches(lines, regexec(
+    "^\\s*release_date\\s*=\\s*\"([^\"]*)\"", lines))
+  hit <- unique(vapply(Filter(length, hit), `[`, character(1L), 2L))
+  if (length(hit) != 1L) {
+    stop("MDD: cannot read release_date from the archive's release.toml.",
+         call. = FALSE)
+  }
+  source_date_from(hit)
+}
+
+
 #' Read and normalize the Mammal Diversity Database
 #'
 #' @param dir Character. Directory holding the extracted MDD CSVs.
@@ -257,13 +281,14 @@ build_mdd <- function(output_dir = "output/mdd", version = NULL,
 
   dir_path <- download_mdd(dest = tmp, verbose = verbose)
   if (is.null(version)) version <- mdd_archive_version(dir_path)
+  source_date <- mdd_archive_release_date(dir_path)
   df <- read_mdd(dir_path, verbose = verbose)
 
   if (verbose) message("Precomputing keys and embedding synonyms...")
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "mdd.vtr")
-  build_vtr(df, vtr_path, "mdd", version, .mdd_url)
+  build_vtr(df, vtr_path, "mdd", version, .mdd_url, source_date)
 
   invisible(vtr_path)
 }

@@ -114,6 +114,26 @@ test_that("latest is the build's source release and no source_version is kept", 
                "but the build recorded version 2026.09")
 })
 
+test_that("source_date is carried from the meta, and kept when the meta has none", {
+  dir <- withr::local_tempdir()
+  vtr <- fake_vtr(dir, "worms")
+  meta <- file.path(dir, "worms.meta")
+  mf <- write_manifest(file.path(dir, "manifest.json"),
+                       list(latest = "2026.08", source_date = "2026-08-01"))
+
+  writeLines(c("backend=worms", "version=2026.09", "url=https://example.org/x"),
+             meta)
+  update_manifest(mf, "worms", "2026.09", vtr)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
+  expect_equal(got$source_date, "2026-08-01")
+
+  writeLines(c("backend=worms", "version=2026.09", "url=https://example.org/x",
+               "source_date=2026-09-01"), meta)
+  update_manifest(mf, "worms", "2026.09", vtr)
+  got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
+  expect_equal(got$source_date, "2026-09-01")
+})
+
 test_that("a delta is dropped when the release has none, unlike a sidecar", {
   dir <- withr::local_tempdir()
   vtr <- fake_vtr(dir, "worms")

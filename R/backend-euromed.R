@@ -18,6 +18,8 @@
 # Snapshot assets (produced by crawl_euromed.py, hosted as release assets).
 .euromed_snapshot_version <- "2026.07"
 .euromed_snapshot_release <- paste0("euromed-snapshot-", .euromed_snapshot_version)
+# The day the harvest was taken, which is the date of the data it froze.
+.euromed_snapshot_date <- "2026-07-11"
 .euromed_snapshot_assets <- c("euromed.jsonl", "nodes.tsv")
 
 
@@ -249,7 +251,8 @@ build_euromed <- function(output_dir = "output/euromed", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "euromed.vtr")
-  build_vtr(df, vtr_path, "euromed", version, .euromed_url)
+  build_vtr(df, vtr_path, "euromed", version, .euromed_url,
+            .euromed_snapshot_date)
 
   invisible(vtr_path)
 }

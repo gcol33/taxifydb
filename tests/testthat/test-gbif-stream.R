@@ -237,7 +237,7 @@ test_that("a block filtered down to nothing does not end the build", {
   }
 
   path <- file.path(dir, "gapped.vtr")
-  build_vtr_streamed(feed, path, "test", "1.0", "http://example",
+  build_vtr_streamed(feed, path, "test", "1.0", "http://example", "2026-01-01",
                      verbose = FALSE)
   got <- vectra::collect(vectra::tbl(path))
   expect_equal(nrow(got), 2L)

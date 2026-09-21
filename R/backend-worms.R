@@ -247,9 +247,8 @@ normalize_worms <- function(df, verbose = TRUE) {
 #' @export
 build_worms <- function(output_dir = "output/worms", version = NULL,
                         verbose = TRUE) {
-  if (is.null(version)) {
-    version <- checklistbank_release(.worms_dataset_key)$version
-  }
+  release <- checklistbank_release(.worms_dataset_key)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("worms_")
   dir.create(tmp, recursive = TRUE)
@@ -269,7 +268,7 @@ build_worms <- function(output_dir = "output/worms", version = NULL,
                        normalize_worms(chunk, verbose = FALSE)
                      },
                      quote = "\"", na_strings = "", verbose = verbose),
-    vtr_path, "worms", version, .worms_url, verbose = verbose
+    vtr_path, "worms", version, .worms_url, release$date, verbose = verbose
   )
 
   sp_files <- list.files(tmp, pattern = "SpeciesProfile|speciesprofile",

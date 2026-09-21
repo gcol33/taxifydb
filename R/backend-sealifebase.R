@@ -24,6 +24,6 @@ build_sealifebase <- function(output_dir = "output/sealifebase", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "sealifebase.vtr")
-  build_vtr(df, vtr_path, "sealifebase", version, .sealifebase_url)
+  build_vtr(df, vtr_path, "sealifebase", version, .sealifebase_url, rel$date)
   invisible(vtr_path)
 }

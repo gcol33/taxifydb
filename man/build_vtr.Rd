@@ -4,7 +4,15 @@
 \alias{build_vtr}
 \title{Write a backbone .vtr file from a precomputed data.frame}
 \usage{
-build_vtr(df, vtr_path, backend_name, version, source_url, batch_size = 50000L)
+build_vtr(
+  df,
+  vtr_path,
+  backend_name,
+  version,
+  source_url,
+  source_date,
+  batch_size = 50000L
+)
 }
 \arguments{
 \item{df}{A precomputed backbone data.frame (from \code{precompute_backbone()}).}
@@ -16,6 +24,10 @@ build_vtr(df, vtr_path, backend_name, version, source_url, batch_size = 50000L)
 \item{version}{Character. Version string.}
 
 \item{source_url}{Character. URL the source data was downloaded from.}
+
+\item{source_date}{Character. The date the source gives the release it was
+built from (\code{YYYY-MM-DD}, or \code{YYYY-MM} / \code{YYYY} where the source dates it
+no finer), recorded in the \code{.meta} sidecar and from there in the manifest.}
 
 \item{batch_size}{Integer. Row group size for vectra (default 50000).}
 }

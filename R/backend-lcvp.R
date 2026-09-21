@@ -22,6 +22,8 @@
   .lcvp_release
 )
 .lcvp_source_doi <- "10.1038/s41597-020-00702-z"
+# Publication date of the v.3.0.1 GitHub release.
+.lcvp_release_date <- "2022-11-07"
 
 
 #' Download the LCVP `tab_lcvp` data file
@@ -180,7 +182,7 @@ build_lcvp <- function(output_dir = "output/lcvp", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "lcvp.vtr")
-  build_vtr(df, vtr_path, "lcvp", version, .lcvp_url)
+  build_vtr(df, vtr_path, "lcvp", version, .lcvp_url, .lcvp_release_date)
 
   invisible(vtr_path)
 }

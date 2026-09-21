@@ -130,8 +130,8 @@
 #' names.
 #'
 #' @param server Either "fishbase" or "sealifebase".
-#' @return A list with `release` (rfishbase's `YY.MM` label) and `version`
-#'   (`YYYY.MM`).
+#' @return A list with `release` (rfishbase's `YY.MM` label), `version`
+#'   (`YYYY.MM`) and `date` (`YYYY-MM`, the snapshot's month).
 #' @export
 rfishbase_release <- function(server = c("fishbase", "sealifebase")) {
   server <- match.arg(server)
@@ -146,7 +146,8 @@ rfishbase_release <- function(server = c("fishbase", "sealifebase")) {
     stop("rfishbase lists no ", server, " release.", call. = FALSE)
   }
   release <- releases[order(numeric_version(releases), decreasing = TRUE)][1L]
-  list(release = release, version = paste0("20", release))
+  list(release = release, version = paste0("20", release),
+       date = paste0("20", sub(".", "-", release, fixed = TRUE)))
 }
 
 
@@ -172,6 +173,6 @@ build_fishbase <- function(output_dir = "output/fishbase", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "fishbase.vtr")
-  build_vtr(df, vtr_path, "fishbase", version, .fishbase_url)
+  build_vtr(df, vtr_path, "fishbase", version, .fishbase_url, rel$date)
   invisible(vtr_path)
 }

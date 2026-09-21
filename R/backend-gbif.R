@@ -196,7 +196,8 @@ normalize_gbif <- function(df, higher, verbose = TRUE) {
 #' @export
 build_gbif <- function(output_dir = "output/gbif", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) version <- release_version_from_date(.gbif_release)
+  release <- release_from_date(.gbif_release)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("gbif_")
   dir.create(tmp, recursive = TRUE)
@@ -231,7 +232,7 @@ build_gbif <- function(output_dir = "output/gbif", version = NULL,
                      },
                      quote = "", na_strings = "\\N",
                      col_names = .gbif_col_names, verbose = verbose),
-    vtr_path, "gbif", version, .gbif_url, verbose = verbose
+    vtr_path, "gbif", version, .gbif_url, release$date, verbose = verbose
   )
 
   invisible(vtr_path)

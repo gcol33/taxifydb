@@ -94,7 +94,8 @@ colxr_latest_release <- function(verbose = TRUE) {
     key     = as.character(best$key),
     alias   = best$alias,
     version = release_version_from_date(best$issued),
-    issued  = best$issued
+    issued  = best$issued,
+    date    = source_date_from(best$issued)
   )
   if (verbose) {
     message(sprintf("Latest COL XR: %s (issued %s, dataset key %s)",
@@ -267,7 +268,7 @@ build_colxr <- function(output_dir = "output/colxr", version = NULL,
                        normalize_colxr(chunk, verbose = FALSE)
                      },
                      verbose = verbose),
-    vtr_path, "colxr", version, colxr_export_url(release$key),
+    vtr_path, "colxr", version, colxr_export_url(release$key), release$date,
     synonym_pattern = "SYNONYM|MISAPPLIED",
     verbose = verbose
   )

@@ -10,8 +10,8 @@ rfishbase_release(server = c("fishbase", "sealifebase"))
 \item{server}{Either "fishbase" or "sealifebase".}
 }
 \value{
-A list with \code{release} (rfishbase's \code{YY.MM} label) and \code{version}
-(\code{YYYY.MM}).
+A list with \code{release} (rfishbase's \code{YY.MM} label), \code{version}
+(\code{YYYY.MM}) and \code{date} (\code{YYYY-MM}, the snapshot's month).
 }
 \description{
 rfishbase serves FishBase and SeaLifeBase as dated snapshots named \code{YY.MM}

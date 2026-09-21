@@ -34,6 +34,48 @@ release_version_from_date <- function(x) {
 }
 
 
+#' Normalize a source release date to the `source_date` form
+#'
+#' A backbone's version names its release; `source_date` records the day the
+#' source dates it, at the precision the source gives. The version alone cannot
+#' carry it: a `YYYY.MM` version drops the day, and a named release (`3.7.3`,
+#' `2025b`) carries no date at all.
+#'
+#' @param x A `Date`, a `POSIXct`, or a character string beginning
+#'   `YYYY-MM-DD` (`"2026-08-26 XR"`), a compact `YYYYMMDD`, a month
+#'   `YYYY-MM`, or a year `YYYY`.
+#' @return Character scalar: `"YYYY-MM-DD"`, `"YYYY-MM"` or `"YYYY"`.
+#' @noRd
+source_date_from <- function(x) {
+  if (inherits(x, c("Date", "POSIXt"))) {
+    if (is.na(x)) stop("Source release date is missing.", call. = FALSE)
+    return(format(x, "%Y-%m-%d", tz = "UTC"))
+  }
+  x <- trimws(as.character(x))
+  if (length(x) == 1L && !is.na(x)) {
+    if (grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}", x)) return(substr(x, 1L, 10L))
+    if (grepl("^[0-9]{8}$", x)) {
+      return(paste(substr(x, 1L, 4L), substr(x, 5L, 6L), substr(x, 7L, 8L),
+                   sep = "-"))
+    }
+    if (grepl("^[0-9]{4}-[0-9]{2}$", x) || grepl("^[0-9]{4}$", x)) return(x)
+  }
+  stop(sprintf("Cannot read a source date from '%s'.", paste(x, collapse = ", ")),
+       call. = FALSE)
+}
+
+
+#' A release read from one source date: its version and its `source_date`
+#'
+#' @param x Anything [source_date_from()] and [release_version_from_date()]
+#'   both accept.
+#' @return A list with `version` (`YYYY.MM` or `YYYY`) and `date`.
+#' @noRd
+release_from_date <- function(x) {
+  list(version = release_version_from_date(x), date = source_date_from(x))
+}
+
+
 #' Stop unless a version can name a backbone release
 #'
 #' The version becomes the `<backend>-<version>` release tag, so it has to be a
@@ -67,7 +109,8 @@ check_release_version <- function(version, backend_name) {
 #' release.
 #'
 #' @param key Character or integer. ChecklistBank dataset key.
-#' @return A list with `key`, `issued` (as recorded) and `version` (`YYYY.MM`).
+#' @return A list with `key`, `issued` (as recorded), `version` (`YYYY.MM`)
+#'   and `date` (the `source_date`).
 #' @noRd
 checklistbank_release <- function(key) {
   url <- sprintf("%s/dataset/%s", .checklistbank_api, key)
@@ -83,8 +126,7 @@ checklistbank_release <- function(key) {
     stop(sprintf("ChecklistBank dataset %s records no issued date.", key),
          call. = FALSE)
   }
-  list(key = as.character(key), issued = issued,
-       version = release_version_from_date(issued))
+  c(list(key = as.character(key), issued = issued), release_from_date(issued))
 }
 
 
@@ -115,4 +157,14 @@ source_last_modified <- function(url) {
          call. = FALSE)
   }
   res$modified
+}
+
+
+#' The release a republished-in-place file currently holds
+#'
+#' @param url Character. Download URL.
+#' @return A list with `version` and `date`, read from `Last-Modified`.
+#' @noRd
+last_modified_release <- function(url) {
+  release_from_date(source_last_modified(url))
 }

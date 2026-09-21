@@ -10,6 +10,25 @@
 
 .ott_url <- "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz"
 .ott_version_default <- "3.7.3"
+# Open Tree publishes a properties.json beside each taxonomy archive; its
+# `date` field dates the release.
+.ott_properties_url <- sub("[^/]+$", "properties.json", .ott_url)
+
+
+#' Release date of the pinned OTT archive
+#'
+#' @return Character `YYYY-MM-DD`, read from the archive's `properties.json`.
+#' @noRd
+ott_release_date <- function() {
+  props <- tryCatch(
+    jsonlite::fromJSON(.ott_properties_url, simplifyVector = FALSE),
+    error = function(e) {
+      stop(sprintf("Could not read %s: %s", .ott_properties_url,
+                   conditionMessage(e)), call. = FALSE)
+    }
+  )
+  source_date_from(props$date %||% "")
+}
 
 .ott_keep_ranks <- c(
   "species", "genus", "family", "order", "class", "phylum", "kingdom",
@@ -206,7 +225,7 @@ build_ott <- function(output_dir = "output/ott", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "ott.vtr")
-  build_vtr(df, vtr_path, "ott", version, .ott_url)
+  build_vtr(df, vtr_path, "ott", version, .ott_url, ott_release_date())
 
   invisible(vtr_path)
 }

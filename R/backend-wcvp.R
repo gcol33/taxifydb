@@ -151,9 +151,8 @@ normalize_wcvp <- function(df, verbose = TRUE) {
 #' @export
 build_wcvp <- function(output_dir = "output/wcvp", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) {
-    version <- release_version_from_date(source_last_modified(.wcvp_url))
-  }
+  release <- last_modified_release(.wcvp_url)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("wcvp_")
   dir.create(tmp, recursive = TRUE)
@@ -173,7 +172,7 @@ build_wcvp <- function(output_dir = "output/wcvp", version = NULL,
                      },
                      sep = "|", quote = "", encoding = "UTF-8",
                      select = .wcvp_read_cols, verbose = verbose),
-    vtr_path, "wcvp", version, .wcvp_url, verbose = verbose
+    vtr_path, "wcvp", version, .wcvp_url, release$date, verbose = verbose
   )
 
   invisible(vtr_path)

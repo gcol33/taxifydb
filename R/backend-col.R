@@ -267,7 +267,8 @@ name_through_epithets <- function(name, specific, infraspecific) {
 #' @export
 build_col <- function(output_dir = "output/col", version = NULL,
                       verbose = TRUE) {
-  if (is.null(version)) version <- release_version_from_date(.col_release)
+  release <- release_from_date(.col_release)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("col_")
   dir.create(tmp, recursive = TRUE)
@@ -280,7 +281,7 @@ build_col <- function(output_dir = "output/col", version = NULL,
   df <- precompute_backbone(df, synonym_pattern = "SYNONYM|MISAPPLIED")
 
   vtr_path <- file.path(output_dir, "col.vtr")
-  build_vtr(df, vtr_path, "col", version, .col_url)
+  build_vtr(df, vtr_path, "col", version, .col_url, release$date)
 
   sp_path <- file.path(col_dir, "SpeciesProfile.tsv")
   if (file.exists(sp_path)) {

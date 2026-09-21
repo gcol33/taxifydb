@@ -74,6 +74,7 @@ wfo_latest_edition <- function(verbose = TRUE) {
     record  = as.character(rec$id),
     edition = rec$metadata$version %||% "",
     version = release_version_from_date(rec$metadata$version %||% ""),
+    date    = source_date_from(rec$metadata$publication_date %||% ""),
     url     = sprintf("https://zenodo.org/records/%s/files/%s", rec$id,
                       .wfo_backbone_asset)
   )
@@ -244,7 +245,7 @@ build_wfo <- function(output_dir = "output/wfo", version = NULL,
     wfo_feed(txt_path,
              normalize = function(chunk) normalize_wfo(chunk, verbose = FALSE),
              verbose = verbose),
-    vtr_path, "wfo", version, edition$url, verbose = verbose
+    vtr_path, "wfo", version, edition$url, edition$date, verbose = verbose
   )
 
   invisible(vtr_path)

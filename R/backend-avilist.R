@@ -43,6 +43,9 @@
 # Core Team is licensed under CC BY 4.0").
 
 .avilist_release <- "2025b"
+# The checklist page (avilist.org/checklist/v2025b) states the revision "was
+# published 11 June 2026".
+.avilist_release_date <- "2026-06-11"
 .avilist_url <- paste0("https://www.avilist.org/wp-content/uploads/2026/06/",
                        "AviList-v", .avilist_release, "-10Jun2026-extended.xlsx")
 .avilist_source_doi <- paste0("10.2173/avilist.v", .avilist_release)
@@ -225,7 +228,8 @@ build_avilist <- function(output_dir = "output/avilist", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "avilist.vtr")
-  build_vtr(df, vtr_path, "avilist", version, .avilist_url)
+  build_vtr(df, vtr_path, "avilist", version, .avilist_url,
+            .avilist_release_date)
 
   invisible(vtr_path)
 }

@@ -3,6 +3,7 @@
   "backends": {
     "wfo": {
       "latest": "2026.06",
+      "source_date": "2026-06-21",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/wfo-2026.06/wfo.vtr",
       "full_size": 775220522,
       "full_sha256": "57ff93a4dca9a35c941b38e0e556ba57a9315cc72138bd531e416fd4c34d1f70",
@@ -17,6 +18,7 @@
     },
     "col": {
       "latest": "2026.09",
+      "source_date": "2026-09-11",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col.vtr",
       "full_size": 2055697356,
       "full_sha256": "42d1ffb23b14e2aa2c712de3b434d95cf0ee6135e32df9a46c90cfbcb63d53a6",
@@ -46,6 +48,7 @@
     },
     "itis": {
       "latest": "2026.09",
+      "source_date": "2026-08-27",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/itis-2026.09/itis.vtr",
       "full_size": 206331022,
       "full_sha256": "640f290353d5190fa1d2c13544b400925e7968fbde96faa11bcd99d9daefb829",
@@ -56,6 +59,7 @@
     },
     "ncbi": {
       "latest": "2026.09",
+      "source_date": "2026-09",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/ncbi-2026.09/ncbi.vtr",
       "full_size": 549436782,
       "full_sha256": "6cecfbdf360217f651f5578f603a8dc7c9749d75b56603f3d5430d123ae4e4b5",
@@ -66,6 +70,7 @@
     },
     "ott": {
       "latest": "2026.09",
+      "source_date": "2025-12-20",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/ott-2026.09/ott.vtr",
       "full_size": 763329349,
       "full_sha256": "ce893f5c3c8afe5baf8f3432a4ec2ce28fff901a48a3046c5b9ee295d312d9b5",
@@ -77,6 +82,7 @@
     },
     "worms": {
       "latest": "2026.09",
+      "source_date": "2026-09-01",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/worms-2026.09/worms.vtr",
       "full_size": 304097643,
       "full_sha256": "277ea7ca1d280a7563179ebbe5a9e8af565a9f0df91c91a01cc0d14a02ac4906",
@@ -95,6 +101,7 @@
     },
     "euromed": {
       "latest": "2026.08",
+      "source_date": "2026-07-11",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-2026.08/euromed.vtr",
       "full_size": 34576063,
       "full_sha256": "4515c73ed5ab65dcdb87f94be55e747ff6e4095321ffe6cb697f1da8e25f1731",
@@ -108,6 +115,7 @@
     },
     "fungorum": {
       "latest": "2026.08",
+      "source_date": "2024-04-28",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/fungorum-2026.08/fungorum.vtr",
       "full_size": 71353563,
       "full_sha256": "dea9b6625b9311912244fbd3ac01a93faa1c9efc213021366a5f9edf085e9ef3",
@@ -121,6 +129,7 @@
     },
     "algaebase": {
       "latest": "2026.09",
+      "source_date": "2021",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/algaebase-2026.09/algaebase.vtr",
       "full_size": 36030507,
       "full_sha256": "d592ab4fccd4f76b23f6dfa06b9aa30e1180f3c6b67818ee872e183ebbc1bbfc",
@@ -132,6 +141,7 @@
     },
     "fishbase": {
       "latest": "2026.08",
+      "source_date": "2025-04",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/fishbase-2026.08/fishbase.vtr",
       "full_size": 18738290,
       "full_sha256": "a902d8e2771dc1fdb79b5afa1fce3ca8f4574fb0939bf4190130a4a03f26f9c3",
@@ -144,6 +154,7 @@
     },
     "sealifebase": {
       "latest": "2026.08",
+      "source_date": "2025-04",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/sealifebase-2026.08/sealifebase.vtr",
       "full_size": 28834975,
       "full_sha256": "4626a9d021f38010c7d7666851b493938d11f31610288df0094ecee07c76f42a",
@@ -156,6 +167,7 @@
     },
     "reptiledb": {
       "latest": "2026.07",
+      "source_date": "2026-06",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/reptiledb-2026.07/reptiledb.vtr",
       "nrow": 50043,
       "full_size": 9594935,
@@ -178,6 +190,7 @@
     },
     "lcvp": {
       "latest": "2026.08",
+      "source_date": "2022-11-07",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/lcvp-2026.08/lcvp.vtr",
       "nrow": 1337891,
       "full_size": 252372487,
@@ -203,6 +216,7 @@
     },
     "wcvp": {
       "latest": "2026.08",
+      "source_date": "2026-06-04",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.08/wcvp.vtr",
       "nrow": 1448984,
       "full_size": 309175561,
@@ -228,6 +242,7 @@
     },
     "wgsrpd": {
       "latest": "2026.07",
+      "source_date": "2018-02-10",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/wgsrpd-2026.07/wgsrpd.vtr",
       "nrow": 44549,
       "full_size": 569514,
@@ -287,6 +302,7 @@
     },
     "mdd": {
       "latest": "2026.08",
+      "source_date": "2026-07-28",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/mdd-2026.08/mdd.vtr",
       "full_size": 10534251,
       "full_sha256": "fc532bd3c8dff8ffcbcca677544db4b3ebe8aa538605fae7538c6acab2c2f05d",
@@ -297,6 +313,7 @@
     },
     "avilist": {
       "latest": "2026.08",
+      "source_date": "2026-06-11",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/avilist-2026.08/avilist.vtr",
       "full_size": 8209706,
       "full_sha256": "fd97150acd8bb9e9a85f9c9370ecffddf760e1a052067bd35108cfed29a273f5",
@@ -307,6 +324,7 @@
     },
     "lpsn": {
       "latest": "2026.08",
+      "source_date": "2026-07-26",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/lpsn-2026.08/lpsn.vtr",
       "full_size": 12451302,
       "full_sha256": "9598b90af1b60f9fb974a2915b6958d3de45124b8884db9d68c042970155ef4c",
@@ -317,6 +335,7 @@
     },
     "colxr": {
       "latest": "2026.09",
+      "source_date": "2026-08-26",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.09/colxr.vtr",
       "full_size": 1592109448,
       "full_sha256": "04a25585eea9e405a7e17f93a1918158260cc82a3e8d2daed58a856520df1a47",

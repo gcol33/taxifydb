@@ -87,9 +87,8 @@ read_algaebase <- function(records, verbose = TRUE) {
 #' @export
 build_algaebase <- function(output_dir = "output/algaebase", version = NULL,
                             verbose = TRUE) {
-  if (is.null(version)) {
-    version <- checklistbank_release(.algaebase_dataset_key)$version
-  }
+  release <- checklistbank_release(.algaebase_dataset_key)
+  if (is.null(version)) version <- release$version
 
   records <- download_algaebase(verbose = verbose)
   df <- read_algaebase(records, verbose = verbose)
@@ -98,7 +97,7 @@ build_algaebase <- function(output_dir = "output/algaebase", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "algaebase.vtr")
-  build_vtr(df, vtr_path, "algaebase", version, .algaebase_search_url)
+  build_vtr(df, vtr_path, "algaebase", version, .algaebase_search_url, release$date)
 
   invisible(vtr_path)
 }

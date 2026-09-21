@@ -16,6 +16,28 @@ test_that("release dates normalize to the YYYY.MM version form", {
   expect_error(f(""), "Cannot read a release date")
 })
 
+test_that("release dates normalize to the source_date form", {
+  f <- taxifydb:::source_date_from
+  expect_equal(f("2026-09-11"), "2026-09-11")
+  expect_equal(f("2026-08-26 XR"), "2026-08-26")
+  expect_equal(f("2026-06-21T07:38:42Z"), "2026-06-21")
+  expect_equal(f("20251220"), "2025-12-20")
+  expect_equal(f("2026-06"), "2026-06")
+  expect_equal(f("2021"), "2021")
+  expect_equal(f(as.Date("2024-04-28")), "2024-04-28")
+  expect_equal(f(as.POSIXct("2026-08-27 21:32:18", tz = "UTC")), "2026-08-27")
+  expect_error(f("current"), "Cannot read a source date")
+  expect_error(f("Apr 2024"), "Cannot read a source date")
+  expect_error(f(""), "Cannot read a source date")
+})
+
+test_that("one release date gives both the version and the source_date", {
+  expect_equal(taxifydb:::release_from_date("2026-09-11"),
+               list(version = "2026.09", date = "2026-09-11"))
+  expect_equal(taxifydb:::release_from_date("2021"),
+               list(version = "2021", date = "2021"))
+})
+
 test_that("only a release identifier can become a version", {
   f <- taxifydb:::check_release_version
   for (ok in c("2026.06", "3.7.3", "2025b", "2.5", "2021")) {
@@ -39,6 +61,27 @@ test_that("a build cannot write a meta whose version names no release", {
   taxifydb:::write_backbone_meta(vtr, "gbif", "2023.08", "https://x.org", 1L)
   expect_equal(unname(taxifydb:::read_meta(file.path(dir, "gbif.meta"))[["version"]]),
                "2023.08")
+})
+
+test_that("the meta records source_date, and only in the source_date form", {
+  dir <- withr::local_tempdir()
+  vtr <- file.path(dir, "gbif.vtr")
+  taxifydb:::write_backbone_meta(vtr, "gbif", "2023.08", "https://x.org", 1L,
+                                 source_date = "2023-08-28")
+  expect_equal(unname(taxifydb:::read_meta(file.path(dir, "gbif.meta"))[["source_date"]]),
+               "2023-08-28")
+
+  for (bad in c("2023.08", "28 Aug 2023", "2023-08-28 13:58")) {
+    expect_error(
+      taxifydb:::write_backbone_meta(vtr, "gbif", "2023.08", "https://x.org", 1L,
+                                     source_date = bad),
+      "is not a date in the form")
+  }
+
+  reg <- file.path(dir, "genus_register.vtr")
+  taxifydb:::write_backbone_meta(reg, "genus_register", "2026.08", "derived", 1L)
+  expect_false("source_date" %in%
+                 names(taxifydb:::read_meta(file.path(dir, "genus_register.meta"))))
 })
 
 test_that("pinned backbones derive URL and version from one release constant", {
@@ -70,6 +113,21 @@ test_that("the MDD version is read from the archive's species file", {
   expect_error(taxifydb:::mdd_archive_version(empty), "cannot read the release")
 })
 
+test_that("the MDD source_date is read from the archive's release.toml", {
+  dir <- withr::local_tempdir()
+  inner <- file.path(dir, "MDD")
+  dir.create(inner)
+  writeLines(c("[metadata]", 'version = "v2.5"', 'release_date = "2026-07-28"'),
+             file.path(inner, "release.toml"))
+  dir.create(file.path(dir, "__MACOSX", "MDD"), recursive = TRUE)
+  writeLines('release_date = "1999-01-01"',
+             file.path(dir, "__MACOSX", "MDD", "release.toml"))
+  expect_equal(taxifydb:::mdd_archive_release_date(dir), "2026-07-28")
+
+  empty <- withr::local_tempdir()
+  expect_error(taxifydb:::mdd_archive_release_date(empty), "cannot read release_date")
+})
+
 test_that("the WFO edition, URL and version come from one Zenodo record", {
   skip_on_cran()
   skip_if_offline("zenodo.org")
@@ -79,6 +137,7 @@ test_that("the WFO edition, URL and version come from one Zenodo record", {
   expect_equal(ed$url, sprintf("https://zenodo.org/records/%s/files/_DwC_backbone_R.zip",
                                ed$record))
   expect_gte(as.numeric(ed$record), 20782718)
+  expect_match(ed$date, "^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 })
 
 test_that("a ChecklistBank dataset is versioned by the release it serves", {
@@ -87,4 +146,11 @@ test_that("a ChecklistBank dataset is versioned by the release it serves", {
   rel <- taxifydb:::checklistbank_release(taxifydb:::.fungorum_dataset_key)
   expect_match(rel$issued, "^[0-9]{4}")
   expect_equal(rel$version, taxifydb:::release_version_from_date(rel$issued))
+  expect_equal(rel$date, taxifydb:::source_date_from(rel$issued))
+})
+
+test_that("the pinned OTT archive is dated by its properties.json", {
+  skip_on_cran()
+  skip_if_offline("files.opentreeoflife.org")
+  expect_equal(taxifydb:::ott_release_date(), "2025-12-20")
 })

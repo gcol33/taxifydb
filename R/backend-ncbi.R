@@ -190,9 +190,8 @@ read_ncbi <- function(dump_dir, verbose = TRUE) {
 #' @export
 build_ncbi <- function(output_dir = "output/ncbi", version = NULL,
                        verbose = TRUE) {
-  if (is.null(version)) {
-    version <- release_version_from_date(source_last_modified(.ncbi_url))
-  }
+  release <- last_modified_release(.ncbi_url)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("ncbi_")
   dir.create(tmp, recursive = TRUE)
@@ -205,7 +204,7 @@ build_ncbi <- function(output_dir = "output/ncbi", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "ncbi.vtr")
-  build_vtr(df, vtr_path, "ncbi", version, .ncbi_url)
+  build_vtr(df, vtr_path, "ncbi", version, .ncbi_url, release$date)
 
   invisible(vtr_path)
 }

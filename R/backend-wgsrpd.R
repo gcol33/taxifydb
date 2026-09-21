@@ -103,7 +103,8 @@ read_wgsrpd <- function(path) {
 #' @export
 build_wgsrpd <- function(output_dir = NULL, version = NULL,
                          source_path = NULL, verbose = TRUE) {
-  version <- version %||% release_version_from_date(.wgsrpd_release)
+  release <- release_from_date(.wgsrpd_release)
+  version <- version %||% release$version
   output_dir <- output_dir %||% file.path("output", "wgsrpd")
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -114,7 +115,8 @@ build_wgsrpd <- function(output_dir = NULL, version = NULL,
   vectra::write_vtr(df, vtr_path, batch_size = 100000L)
   vectra::create_index(vtr_path, "code")
 
-  write_backbone_meta(vtr_path, "wgsrpd", version, .wgsrpd_url, nrow(df))
+  write_backbone_meta(vtr_path, "wgsrpd", version, .wgsrpd_url, nrow(df),
+                      source_date = release$date)
 
   if (verbose) {
     message(sprintf(

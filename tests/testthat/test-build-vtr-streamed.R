@@ -44,9 +44,10 @@ build_both <- function(df, chunk_size, dir) {
   direct <- file.path(dir, "direct.vtr")
   streamed <- file.path(dir, "streamed.vtr")
 
-  build_vtr(precompute_backbone(df), direct, "test", "1.0", "http://example")
+  build_vtr(precompute_backbone(df), direct, "test", "1.0", "http://example",
+            "2026-01-01")
   build_vtr_streamed(feed_in_chunks(df, chunk_size), streamed, "test", "1.0",
-                     "http://example", verbose = FALSE)
+                     "http://example", "2026-01-01", verbose = FALSE)
 
   list(direct = vectra::collect(vectra::tbl(direct)),
        streamed = vectra::collect(vectra::tbl(streamed)),
@@ -155,7 +156,8 @@ test_that("an empty feed is an error rather than an empty store", {
   dir <- withr::local_tempdir()
   expect_error(
     build_vtr_streamed(function() NULL, file.path(dir, "x.vtr"),
-                       "test", "1.0", "http://example", verbose = FALSE),
+                       "test", "1.0", "http://example", "2026-01-01",
+                       verbose = FALSE),
     "yielded no rows"
   )
 })

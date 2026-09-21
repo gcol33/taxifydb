@@ -1,3 +1,17 @@
+# taxifydb (development version)
+
+## Backbone builds record the source's release date (gcol33/taxify#88)
+
+* `build_vtr()` and `build_vtr_streamed()` take a `source_date`, written to the
+  `.meta` sidecar and carried by `update_manifest()` into the manifest entry.
+  It is the date the source gives the release (`YYYY-MM-DD`, or `YYYY-MM` /
+  `YYYY` where the source dates it no finer), read from the same place the
+  version is: ChecklistBank `issued`, `Last-Modified`, the WFO Zenodo record's
+  publication date, OTT's `properties.json`, MDD's `release.toml`, the
+  rfishbase snapshot month, or a release constant for pinned sources. A
+  `.meta` without the field leaves a recorded date in place.
+* Both manifests are backfilled for the releases currently published.
+
 # taxifydb 0.1.23
 
 ## First records are keyed on the release's own locations (gcol33/taxify#81)

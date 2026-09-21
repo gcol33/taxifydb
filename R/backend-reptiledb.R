@@ -219,9 +219,8 @@ read_reptiledb <- function(paths, verbose = TRUE) {
 #' @export
 build_reptiledb <- function(output_dir = "output/reptiledb", version = NULL,
                             verbose = TRUE) {
-  if (is.null(version)) {
-    version <- release_version_from_date(.reptiledb_checklist_release)
-  }
+  release <- release_from_date(.reptiledb_checklist_release)
+  if (is.null(version)) version <- release$version
 
   tmp <- tempfile("reptiledb_")
   dir.create(tmp, recursive = TRUE)
@@ -234,7 +233,8 @@ build_reptiledb <- function(output_dir = "output/reptiledb", version = NULL,
   df <- precompute_backbone(df)
 
   vtr_path <- file.path(output_dir, "reptiledb.vtr")
-  build_vtr(df, vtr_path, "reptiledb", version, .reptiledb_taxa_url)
+  build_vtr(df, vtr_path, "reptiledb", version, .reptiledb_taxa_url,
+            release$date)
 
   invisible(vtr_path)
 }

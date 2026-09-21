@@ -49,6 +49,8 @@
 #' @param backend_name Character. Backend identifier (e.g. `"colxr"`).
 #' @param version Character. Version string.
 #' @param source_url Character. URL the source data was downloaded from.
+#' @param source_date Character. The source's release date, as for
+#'   [build_vtr()].
 #' @param synonym_pattern Character. Regex matching the statuses that count as
 #'   a synonym, as passed to [precompute_backbone()].
 #' @param batch_size Integer. Row group size for vectra (default 50000).
@@ -58,7 +60,8 @@
 #' @return The path to the .vtr file (invisibly).
 #' @export
 build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
-                               source_url, synonym_pattern = "SYNONYM",
+                               source_url, source_date,
+                               synonym_pattern = "SYNONYM",
                                batch_size = 50000L, work_dir = NULL,
                                verbose = TRUE) {
   if (!is.function(feed)) stop("`feed` must be a function.", call. = FALSE)
@@ -198,7 +201,8 @@ build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
   }
 
   index_backbone_vtr(vtr_path, genus_col)
-  write_backbone_meta(vtr_path, backend_name, version, source_url, n_rows)
+  write_backbone_meta(vtr_path, backend_name, version, source_url, n_rows,
+                      source_date = source_date)
   report_built_backbone(vtr_path, backend_name, n_rows)
 
   invisible(vtr_path)

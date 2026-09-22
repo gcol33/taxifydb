@@ -1,5 +1,23 @@
 # taxifydb (development version)
 
+## GBIF: doubtful status kept, occurrence counts per key
+
+* The GBIF reader no longer folds `DOUBTFUL` and `PROVISIONALLY_ACCEPTED` into
+  `ACCEPTED`. Both stay their own status (`"DOUBTFUL"`,
+  `"PROVISIONALLY ACCEPTED"`), which taxify ranks below an accepted record of
+  the same name. Folded, a doubtful key with no data could win a tie on taxon
+  ID: *Karwinskia mollis* resolved to the doubtful Standl. key (0 GBIF
+  occurrence records) over the accepted Schltdl. one (663).
+* The GBIF backbone carries an `n_occurrences` column: the GBIF occurrence
+  count of each key whose count can decide a pick, i.e. every record sharing a
+  matching key with a record of another accepted taxon, plus those records'
+  accepted targets (`gbif_count_keys()`). Other keys are `NA`. The counts are
+  taken by `build_gbif_occurrence_counts()` through faceted occurrence searches
+  (`count_gbif_occurrences()`), frozen as the `gbif-occurrence-counts-2026.09`
+  release asset, and read by `build_gbif()` (recorded as `occurrence_counts=`
+  in the `.meta`). `build_name_lookup()` passes the column to
+  `taxify::candidate_order()`, which ranks by it from taxify 0.6.0.
+
 ## A name's own concept keeps its region rows (#58)
 
 * In an enrichment carrying an authorship column, cross-backbone expansion no

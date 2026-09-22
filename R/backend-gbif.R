@@ -8,7 +8,11 @@
 # - Synonyms point to their accepted taxon via parent_key (not
 #   acceptedNameUsageID).
 # - Status values include HOMOTYPIC_SYNONYM, HETEROTYPIC_SYNONYM,
-#   PROXY_SYNONYM, MISAPPLIED, ... — collapsed to ACCEPTED/SYNONYM.
+#   PROXY_SYNONYM, MISAPPLIED, ... — collapsed to SYNONYM. ACCEPTED and
+#   DOUBTFUL are kept apart: a doubtful record is a name GBIF holds without
+#   vouching for it, and taxify ranks it below an accepted one.
+# - `n_occurrences` carries the GBIF occurrence count of each key that can
+#   decide a pick, from the frozen snapshot in gbif-occurrence-counts.R.
 # - canonical_name (no authorship) is already separate from scientific_name.
 #
 # Each backbone release sits in a directory named for its release date, and
@@ -71,10 +75,12 @@ download_gbif <- function(dest = tempdir(), verbose = TRUE) {
 #' Read and normalize the GBIF backbone
 #'
 #' @param gz_path Character. Path to simple.txt.gz.
+#' @param counts Named numeric vector of occurrence counts by taxon key, from
+#'   [read_gbif_occurrence_counts()], or `NULL` for none.
 #' @param verbose Logical.
 #' @return A normalized data.frame ready for [precompute_backbone()].
 #' @export
-read_gbif <- function(gz_path, verbose = TRUE) {
+read_gbif <- function(gz_path, counts = NULL, verbose = TRUE) {
   if (verbose) message("Reading simple.txt.gz (this may take a while)...")
   df <- utils::read.delim(
     gz_path,
@@ -88,7 +94,7 @@ read_gbif <- function(gz_path, verbose = TRUE) {
   if (verbose) message(sprintf("  %s rows", format(nrow(df), big.mark = ",")))
 
   normalize_gbif(df, gbif_higher_lookup(df$id, df$canonical_name),
-                 verbose = verbose)
+                 counts = counts, verbose = verbose)
 }
 
 
@@ -102,10 +108,13 @@ read_gbif <- function(gz_path, verbose = TRUE) {
 #' @param df A data.frame of raw GBIF rows, named by [.gbif_col_names].
 #' @param higher Named character vector of canonical names by id, from
 #'   [gbif_higher_lookup()].
+#' @param counts Named numeric vector of occurrence counts by taxon key, from
+#'   [read_gbif_occurrence_counts()], or `NULL`. When given, the rows gain an
+#'   `n_occurrences` column (`NA` for a key the snapshot does not hold).
 #' @param verbose Logical.
 #' @return A normalized data.frame ready for [precompute_backbone()].
 #' @export
-normalize_gbif <- function(df, higher, verbose = TRUE) {
+normalize_gbif <- function(df, higher, counts = NULL, verbose = TRUE) {
   if (verbose) message("Denormalizing higher classification via self-join...")
   # Resolve the denormalized ancestor names from each row's *_key columns while
   # the KINGDOM/PHYLUM/CLASS/ORDER rows are still present (they are dropped
@@ -128,8 +137,8 @@ normalize_gbif <- function(df, higher, verbose = TRUE) {
 
   df$id <- as.character(df$id)
   df$parent_key <- as.character(df$parent_key)
+  if (!is.null(counts)) df$n_occurrences <- unname(counts[df$id])
 
-  # Map raw GBIF status to ACCEPTED/SYNONYM
   df$status <- gbif_status_to_standard(df$status)
 
   text_cols <- intersect(
@@ -179,7 +188,7 @@ normalize_gbif <- function(df, higher, verbose = TRUE) {
   )
 
   extra_cols <- list()
-  for (col in .gbif_extra_cols) {
+  for (col in c(.gbif_extra_cols, "n_occurrences")) {
     if (col %in% names(df)) extra_cols[[col]] <- col
   }
 
@@ -202,6 +211,14 @@ build_gbif <- function(output_dir = "output/gbif", version = NULL,
   tmp <- tempfile("gbif_")
   dir.create(tmp, recursive = TRUE)
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  counts <- read_gbif_occurrence_counts(
+    download_gbif_occurrence_counts(dest = tmp, verbose = verbose))
+  if (verbose) {
+    message(sprintf("  %s occurrence counts (%s)",
+                    format(length(counts), big.mark = ","),
+                    .gbif_counts_release))
+  }
 
   gz_path <- download_gbif(dest = tmp, verbose = verbose)
   txt_path <- gunzip_file(gz_path, file.path(tmp, "gbif_simple.txt"),
@@ -228,11 +245,14 @@ build_gbif <- function(output_dir = "output/gbif", version = NULL,
   build_vtr_streamed(
     delim_chunk_feed(txt_path,
                      normalize = function(chunk) {
-                       normalize_gbif(chunk, higher, verbose = FALSE)
+                       normalize_gbif(chunk, higher, counts = counts,
+                                      verbose = FALSE)
                      },
                      quote = "", na_strings = "\\N",
                      col_names = .gbif_col_names, verbose = verbose),
-    vtr_path, "gbif", version, .gbif_url, release$date, verbose = verbose
+    vtr_path, "gbif", version, .gbif_url, release$date,
+    meta_extra = c(occurrence_counts = .gbif_counts_release),
+    verbose = verbose
   )
 
   invisible(vtr_path)
@@ -326,15 +346,23 @@ gbif_render_infraspecific <- function(canonical_name, scientific_name,
 }
 
 
-#' Map GBIF status values to standard ACCEPTED/SYNONYM
+#' Map GBIF status values to the standard vocabulary
+#'
+#' `ACCEPTED` stays accepted and every synonym flavour (homotypic,
+#' heterotypic, pro parte, misapplied, ...) becomes `SYNONYM`. `DOUBTFUL` and
+#' `PROVISIONALLY_ACCEPTED` are names GBIF keeps as their own concept without
+#' vouching for them, so they are kept apart (`"DOUBTFUL"`,
+#' `"PROVISIONALLY ACCEPTED"`): taxify ranks them below an accepted record of
+#' the same name, and folding them into `ACCEPTED` let a doubtful key with no
+#' data win a tie on taxon ID.
 #'
 #' @param status Character vector of GBIF status values.
-#' @return Character vector with "ACCEPTED" or "SYNONYM".
+#' @return Character vector of standard status values.
 #' @noRd
 gbif_status_to_standard <- function(status) {
-  ifelse(
-    status %in% c("ACCEPTED", "DOUBTFUL", "PROVISIONALLY_ACCEPTED"),
-    "ACCEPTED",
-    "SYNONYM"
-  )
+  out <- rep("SYNONYM", length(status))
+  out[status %in% "ACCEPTED"] <- "ACCEPTED"
+  out[status %in% "DOUBTFUL"] <- "DOUBTFUL"
+  out[status %in% "PROVISIONALLY_ACCEPTED"] <- "PROVISIONALLY ACCEPTED"
+  out
 }

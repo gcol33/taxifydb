@@ -4,13 +4,17 @@
 \alias{normalize_gbif}
 \title{Normalize one block of GBIF rows to the unified schema}
 \usage{
-normalize_gbif(df, higher, verbose = TRUE)
+normalize_gbif(df, higher, counts = NULL, verbose = TRUE)
 }
 \arguments{
 \item{df}{A data.frame of raw GBIF rows, named by \link{.gbif_col_names}.}
 
 \item{higher}{Named character vector of canonical names by id, from
 \code{\link[=gbif_higher_lookup]{gbif_higher_lookup()}}.}
+
+\item{counts}{Named numeric vector of occurrence counts by taxon key, from
+\code{\link[=read_gbif_occurrence_counts]{read_gbif_occurrence_counts()}}, or \code{NULL}. When given, the rows gain an
+\code{n_occurrences} column (\code{NA} for a key the snapshot does not hold).}
 
 \item{verbose}{Logical.}
 }

@@ -53,6 +53,9 @@
 #'   [build_vtr()].
 #' @param synonym_pattern Character. Regex matching the statuses that count as
 #'   a synonym, as passed to [precompute_backbone()].
+#' @param meta_extra Named character vector of further `key=value` lines for
+#'   the `.meta` sidecar (e.g. the input snapshot a column was read from), or
+#'   `NULL`.
 #' @param batch_size Integer. Row group size for vectra (default 50000).
 #' @param work_dir Character. Directory for the staging store. Defaults to a
 #'   session temporary directory, removed on exit.
@@ -62,6 +65,7 @@
 build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
                                source_url, source_date,
                                synonym_pattern = "SYNONYM",
+                               meta_extra = NULL,
                                batch_size = 50000L, work_dir = NULL,
                                verbose = TRUE) {
   if (!is.function(feed)) stop("`feed` must be a function.", call. = FALSE)
@@ -202,7 +206,7 @@ build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
 
   index_backbone_vtr(vtr_path, genus_col)
   write_backbone_meta(vtr_path, backend_name, version, source_url, n_rows,
-                      source_date = source_date)
+                      source_date = source_date, extra = meta_extra)
   report_built_backbone(vtr_path, backend_name, n_rows)
 
   invisible(vtr_path)

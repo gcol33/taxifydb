@@ -63,10 +63,11 @@ index_backbone_vtr <- function(vtr_path, genus_col = "genus") {
 #' @param source_date Character or NULL. The source's release date, in a form
 #'   [source_date_from()] returns unchanged. `NULL` only for a store derived
 #'   from other backbones (the genus register), which has no upstream date.
+#' @param extra Named character vector of further `key=value` lines, or `NULL`.
 #' @return Invisible path to the .meta file.
 #' @noRd
 write_backbone_meta <- function(vtr_path, backend_name, version, source_url,
-                                n_rows, source_date = NULL) {
+                                n_rows, source_date = NULL, extra = NULL) {
   check_release_version(version, backend_name)
   if (!is.null(source_date) &&
       !identical(tryCatch(source_date_from(source_date), error = function(e) NULL),
@@ -84,7 +85,8 @@ write_backbone_meta <- function(vtr_path, backend_name, version, source_url,
     paste0("download_timestamp=", format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")),
     paste0("url=", source_url),
     if (!is.null(source_date)) paste0("source_date=", source_date),
-    paste0("nrow=", n_rows)
+    paste0("nrow=", n_rows),
+    if (length(extra)) paste0(names(extra), "=", unname(extra))
   ), meta_path)
   invisible(meta_path)
 }

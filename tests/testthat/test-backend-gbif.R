@@ -2,9 +2,11 @@
 
 test_that("gbif_status_to_standard maps correctly", {
   expect_equal(taxifydb:::gbif_status_to_standard("ACCEPTED"), "ACCEPTED")
-  expect_equal(taxifydb:::gbif_status_to_standard("DOUBTFUL"), "ACCEPTED")
+  # Doubtful and provisional names stay apart from accepted ones, so taxify
+  # can rank them below an accepted record of the same name.
+  expect_equal(taxifydb:::gbif_status_to_standard("DOUBTFUL"), "DOUBTFUL")
   expect_equal(taxifydb:::gbif_status_to_standard("PROVISIONALLY_ACCEPTED"),
-               "ACCEPTED")
+               "PROVISIONALLY ACCEPTED")
   expect_equal(taxifydb:::gbif_status_to_standard("SYNONYM"), "SYNONYM")
   expect_equal(taxifydb:::gbif_status_to_standard("HOMOTYPIC_SYNONYM"),
                "SYNONYM")

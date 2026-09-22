@@ -50,11 +50,13 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
   # kingdom must never contradict anything, so it stays NA.
   # authorship + accepted_authorship let candidate_order() see a homotypic
   # synonym; original_name_usage_id + accepted_taxon_id let an unplaced record
-  # resolve through its basionym, as taxify() does (gcol33/taxify#81).
+  # resolve through its basionym, as taxify() does (gcol33/taxify#81);
+  # n_occurrences lets it rank GBIF keys by their occurrence records.
   sel <- c(required,
            intersect(c("nomenclaturalStatus", "is_synonym", "kingdom",
                        "authorship", "accepted_authorship",
-                       "original_name_usage_id", "accepted_taxon_id"), schema))
+                       "original_name_usage_id", "accepted_taxon_id",
+                       "n_occurrences"), schema))
 
   bb <- vectra::tbl(bb_path) |>
     vectra::select(!!!lapply(sel, as.name)) |>

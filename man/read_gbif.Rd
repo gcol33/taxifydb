@@ -4,10 +4,13 @@
 \alias{read_gbif}
 \title{Read and normalize the GBIF backbone}
 \usage{
-read_gbif(gz_path, verbose = TRUE)
+read_gbif(gz_path, counts = NULL, verbose = TRUE)
 }
 \arguments{
 \item{gz_path}{Character. Path to simple.txt.gz.}
+
+\item{counts}{Named numeric vector of occurrence counts by taxon key, from
+\code{\link[=read_gbif_occurrence_counts]{read_gbif_occurrence_counts()}}, or \code{NULL} for none.}
 
 \item{verbose}{Logical.}
 }

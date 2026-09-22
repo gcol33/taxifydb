@@ -12,6 +12,7 @@ build_vtr_streamed(
   source_url,
   source_date,
   synonym_pattern = "SYNONYM",
+  meta_extra = NULL,
   batch_size = 50000L,
   work_dir = NULL,
   verbose = TRUE
@@ -36,6 +37,10 @@ was filtered out entirely, not that the source has ended.}
 
 \item{synonym_pattern}{Character. Regex matching the statuses that count as
 a synonym, as passed to \code{\link[=precompute_backbone]{precompute_backbone()}}.}
+
+\item{meta_extra}{Named character vector of further \code{key=value} lines for
+the \code{.meta} sidecar (e.g. the input snapshot a column was read from), or
+\code{NULL}.}
 
 \item{batch_size}{Integer. Row group size for vectra (default 50000).}
 

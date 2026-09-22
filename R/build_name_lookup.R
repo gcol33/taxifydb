@@ -57,7 +57,8 @@ build_name_lookup <- function(bb_path, out_path, verbose = TRUE) {
            intersect(c("nomenclaturalStatus", "is_synonym", "kingdom",
                        "authorship", "accepted_authorship",
                        "original_name_usage_id", "accepted_taxon_id",
-                       "n_occurrences", "year", "name_published_in"), schema))
+                       "n_occurrences", "year", "bracket_year",
+                       "bracket_authorship", "name_published_in"), schema))
 
   bb <- vectra::tbl(bb_path) |>
     vectra::select(!!!lapply(sel, as.name)) |>

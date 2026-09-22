@@ -36,15 +36,15 @@
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col-c2999654decfc2a45771631a59ca7ba5.vtr"
     },
     "gbif": {
-      "latest": "2026.08",
+      "latest": "2023.08",
       "source_date": "2023-08-28",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2026.08/gbif.vtr",
-      "full_size": 1648730639,
-      "full_sha256": "cd885094b462241d3b50c6de2e81096483d32b0e6b5e5529d6a73114dd11c104",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2023.08/gbif.vtr",
+      "full_size": 1701103048,
+      "full_sha256": "bdebb0202e3bc1d675c4350230508a3829f22a364749be501e0d94837dea95cf",
       "nrow": 6404001,
-      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz",
-      "content_id": "4ecece7e2df32dd065f742b72636bcac",
-      "source_version": "current"
+      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/2023-08-28/simple.txt.gz",
+      "content_id": "b7b633ae13e9a23a5bca63dd8189c742",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/gbif-2023.08/gbif-b7b633ae13e9a23a5bca63dd8189c742.vtr"
     },
     "itis": {
       "latest": "2026.09",

@@ -283,22 +283,24 @@
       "license": "CC BY 4.0"
     },
     "genus_register": {
-      "latest": "2026.08",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.08/genus_register.vtr",
-      "full_size": 16479028,
-      "full_sha256": "75d7ecbc6919cfde15d26c950807eeffcfbe5dc98891abb2bdf7013224e1adbc",
-      "content_id": "f1950ddba060666ac49b220e8bf9f387",
-      "nrow": 503262,
-      "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase"
+      "latest": "2026.09",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.09/genus_register.vtr",
+      "full_size": 16467179,
+      "full_sha256": "52826fe25bed366fbfca852f56972de2ce10dba2cb3d693eaebfaa75a2cbca97",
+      "content_id": "ea5f1a2bae0d482a5be637bc3f1bc6e9",
+      "nrow": 502381,
+      "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.09/genus_register-ea5f1a2bae0d482a5be637bc3f1bc6e9.vtr"
     },
     "backend_coverage": {
-      "latest": "2026.08",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.08/backend_coverage.vtr",
-      "full_size": 15365481,
-      "full_sha256": "a09c6cb4d77b8dc30df9be91a00dc2a63c269bbb582ca4f495d5fdbca43bc964",
-      "content_id": "e7e77e8608d0380c0de2dbd6d8868615",
-      "nrow": 1871955,
-      "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase"
+      "latest": "2026.09",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.09/backend_coverage.vtr",
+      "full_size": 14539662,
+      "full_sha256": "db0146fe49e6cc7a9679969edb086a19526afaf8286ecc94ecc92236aafcbf7a",
+      "content_id": "ca69015d30e7587c4d510ea860f3daf3",
+      "nrow": 1867463,
+      "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/backend_coverage-2026.09/backend_coverage-ca69015d30e7587c4d510ea860f3daf3.vtr"
     },
     "mdd": {
       "latest": "2026.08",

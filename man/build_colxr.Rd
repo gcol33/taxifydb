@@ -20,8 +20,8 @@ ChecklistBank when \code{NULL} so the stamped version is the date of the data
 rather than the date of the build.}
 
 \item{gbif_path}{Character or NULL. The \code{gbif} \code{.vtr} the \code{gbif_key} column
-is derived from. Defaults to \code{output/gbif/gbif.vtr}, else the published
-build named in \code{manifest_path}.}
+is derived from. Defaults to the published build named in
+\code{manifest_path}, else \code{output/gbif/gbif.vtr}.}
 
 \item{manifest_path}{Character. Path to \code{manifest.json}.}
 

@@ -365,8 +365,9 @@ colxr_gbif_lookup <- function(crosswalk, canonical_name, authorship,
 
 #' Resolve the GBIF backbone a COL XR build crosswalks against
 #'
-#' An explicit path wins, then a local `output/gbif/gbif.vtr`, then the
-#' version published in `manifest.json`, the same order the register build uses.
+#' An explicit path wins, then the version published in `manifest.json`, which
+#' is the backbone taxify serves and so the one the keys have to describe. A
+#' local build is read only when the manifest lists none.
 #' @noRd
 colxr_gbif_path <- function(gbif_path, output_dir, manifest_path, verbose) {
   manifest <- if (file.exists(manifest_path)) {
@@ -376,12 +377,16 @@ colxr_gbif_path <- function(gbif_path, output_dir, manifest_path, verbose) {
   }
   path <- .resolve_one_backbone_path(
     "gbif", if (is.null(gbif_path)) list() else list(gbif = gbif_path),
-    file.path(output_dir, "_gbif"), manifest, verbose
+    file.path(output_dir, "_gbif"), manifest, verbose, prefer_local = FALSE
   )
   if (is.null(path)) {
+    path <- .resolve_one_backbone_path("gbif", list(), output_dir, manifest,
+                                       verbose)
+  }
+  if (is.null(path)) {
     stop("COL XR carries the legacy GBIF key from the GBIF backbone, which ",
-         "was found neither at `gbif_path`, nor in output/gbif, nor in the ",
-         "manifest. Build or publish `gbif` first.", call. = FALSE)
+         "was found neither at `gbif_path`, nor in the manifest, nor in ",
+         "output/gbif. Build or publish `gbif` first.", call. = FALSE)
   }
   path
 }
@@ -394,8 +399,8 @@ colxr_gbif_path <- function(gbif_path, output_dir, manifest_path, verbose) {
 #'   ChecklistBank when `NULL` so the stamped version is the date of the data
 #'   rather than the date of the build.
 #' @param gbif_path Character or NULL. The `gbif` `.vtr` the `gbif_key` column
-#'   is derived from. Defaults to `output/gbif/gbif.vtr`, else the published
-#'   build named in `manifest_path`.
+#'   is derived from. Defaults to the published build named in
+#'   `manifest_path`, else `output/gbif/gbif.vtr`.
 #' @param manifest_path Character. Path to `manifest.json`.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
@@ -432,7 +437,7 @@ build_colxr <- function(output_dir = "output/colxr", version = NULL,
                      verbose = verbose),
     vtr_path, "colxr", version, colxr_export_url(release$key), release$date,
     synonym_pattern = "SYNONYM|MISAPPLIED",
-    meta_extra = c(gbif_key_source = basename(gbif_path)),
+    meta_extra = c(gbif_key_source = unname(tools::md5sum(gbif_path))),
     verbose = verbose
   )
 

@@ -905,10 +905,13 @@ resolve_kingdom_via_gbif <- function(resolved, gbif_path) {
 #' @param output_dir Character. The register/coverage build's own output dir.
 #' @param manifest Parsed manifest.json (as a list).
 #' @param verbose Logical.
+#' @param prefer_local Logical. `FALSE` skips the local build and resolves the
+#'   published one, for a consumer that must describe what users download.
 #' @return Character path, or `NULL` if the backbone could not be resolved.
 #' @noRd
 .resolve_one_backbone_path <- function(name, backbone_paths, output_dir,
-                                       manifest, verbose) {
+                                       manifest, verbose,
+                                       prefer_local = TRUE) {
   # `[[` on a missing name errors for an atomic vector (unlike a list, where it
   # returns NULL) -- backbone_paths may be either, since build_register() feeds
   # its own resolve_register_backbone_paths() output (a named character
@@ -925,7 +928,7 @@ resolve_kingdom_via_gbif <- function(resolved, gbif_path) {
   }
 
   local_path <- file.path("output", name, paste0(name, ".vtr"))
-  if (file.exists(local_path)) {
+  if (prefer_local && file.exists(local_path)) {
     if (verbose) message(sprintf("  [%s] Using local build: %s", name, local_path))
     return(local_path)
   }

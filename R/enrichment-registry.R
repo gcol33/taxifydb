@@ -2307,7 +2307,7 @@
       "traits for United States freshwater fishes."
     ),
     download_fn = function(url, dest) {
-      download_curl_file(url, dest, "FishTraits_14.3.xls")
+      download_cf_file(url, dest, "FishTraits_14.3.xls")
     },
     parse_fn    = function(path) parse_fishtraits(path),
     group_col   = NULL,

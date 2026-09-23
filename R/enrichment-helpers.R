@@ -447,18 +447,26 @@ download_dryad_file <- function(doi, dest_dir, filename,
              .py_launcher_pythons(),
              Sys.which("python3"), Sys.which("python"))
   cands <- unique(unname(cands[nzchar(cands)]))
-  for (py in cands) {
-    ok <- tryCatch(
-      system2(py, c("-c", shQuote("import curl_cffi")),
+  has <- function(py, mods) {
+    tryCatch(
+      system2(py, c("-c", shQuote(paste0("import ", paste(mods, collapse = ", ")))),
               stdout = FALSE, stderr = FALSE) == 0L,
       error = function(e) FALSE)
-    if (isTRUE(ok)) return(py)
   }
-  stop("No Python with curl_cffi found. Cloudflare-gated enrichments ",
-       "(hosts, usda_fungus_host, clopla) need it at build time.\n",
-       "Tried:\n  ", paste(cands, collapse = "\n  "), "\n",
-       "Install with:\n  pip install curl_cffi\n",
-       "or point TAXIFYDB_PYTHON at a suitable interpreter.", call. = FALSE)
+  # curl_cffi clears most walls, but a host running a JavaScript challenge
+  # needs nodriver too, so an interpreter carrying both is preferred over the
+  # first one that merely imports curl_cffi -- otherwise the browser rung is
+  # unavailable on a machine where the two live in different interpreters.
+  with_curl <- Filter(function(py) has(py, "curl_cffi"), cands)
+  if (!length(with_curl)) {
+    stop("No Python with curl_cffi found. Cloudflare-gated enrichments ",
+         "(hosts, usda_fungus_host, clopla, fishtraits) need it at build time.\n",
+         "Tried:\n  ", paste(cands, collapse = "\n  "), "\n",
+         "Install with:\n  pip install curl_cffi nodriver\n",
+         "or point TAXIFYDB_PYTHON at a suitable interpreter.", call. = FALSE)
+  }
+  both <- Filter(function(py) has(py, c("curl_cffi", "nodriver")), with_curl)
+  if (length(both)) both[[1L]] else with_curl[[1L]]
 }
 
 
@@ -476,7 +484,10 @@ download_dryad_file <- function(doi, dest_dir, filename,
 #' Download a Cloudflare-fronted file via the curl_cffi helper
 #'
 #' Downloads `url` into `dest_dir/filename` with a browser TLS impersonation
-#' that passes Cloudflare's "Just a moment" challenge. Cached: skips if the
+#' that passes Cloudflare's "Just a moment" challenge. A host running a
+#' JavaScript challenge, which no impersonation can satisfy, is instead cleared
+#' once in a visible Chrome window and the resulting cookies reused for 12h;
+#' that rung needs the Python package nodriver. Cached: skips if the
 #' destination exists and is non-empty.
 #'
 #' @param url Character. URL to download.

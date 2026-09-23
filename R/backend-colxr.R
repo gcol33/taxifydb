@@ -22,7 +22,10 @@
 #   are split off the canonical name against the genus column.
 #
 # Identifiers are alphanumeric (CRLT8, G7PX), not the integers the legacy GBIF
-# backbone used.
+# backbone used. GBIF serves occurrence records only for those legacy keys, and
+# neither the export nor ChecklistBank's usage records carry a mapping to them,
+# so the build derives one from the GBIF backbone (see colxr_gbif_crosswalk())
+# and stores it beside the COL XR identifier as `gbif_key`.
 
 .colxr_api_base <- "https://api.checklistbank.org"
 
@@ -187,10 +190,12 @@ read_colxr <- function(tsv_path, verbose = TRUE) {
 #'
 #' @param df A data.frame of raw COL XR rows, with the export's own column
 #'   names.
+#' @param gbif_crosswalk A [colxr_gbif_crosswalk()], or `NULL` to leave
+#'   `gbif_key` unset.
 #' @param verbose Logical.
 #' @return A normalized data.frame.
 #' @export
-normalize_colxr <- function(df, verbose = TRUE) {
+normalize_colxr <- function(df, gbif_crosswalk = NULL, verbose = TRUE) {
   # Strip namespace prefixes (dwc:taxonID -> taxonID, clb:taxGroup -> taxGroup)
   names(df) <- sub("^[a-z]+:", "", names(df))
 
@@ -232,7 +237,153 @@ normalize_colxr <- function(df, verbose = TRUE) {
     if (col %in% names(df)) extra_cols[[col]] <- col
   }
 
-  normalize_backbone(df, col_map, extra_cols)
+  out <- normalize_backbone(df, col_map, extra_cols)
+  out$gbif_key <- if (is.null(gbif_crosswalk)) {
+    rep(NA_character_, nrow(out))
+  } else {
+    colxr_gbif_lookup(gbif_crosswalk, out$canonical_name, out$authorship,
+                      out$taxon_rank)
+  }
+  out
+}
+
+
+#' Authorship as compared across the two backbones
+#'
+#' COL XR and GBIF write the same authorship differently: a zoological name
+#' carries its year and brackets in one and not the other ("(Hupe, 1857)" and
+#' "Hupe"), and a botanical recombination carries its basionym author in
+#' brackets in one and not the other ("(Romagn.) Noordel." and "Noordel.").
+#' Two forms are compared. `full` keeps every author, brackets dropped;
+#' `outer` keeps only the authors outside the brackets. Both fold case and
+#' accents and drop years and punctuation.
+#' @noRd
+crosswalk_authorship <- function(authorship) {
+  s <- tolower(fold_accents(ifelse(is.na(authorship), "", authorship)))
+  squash <- function(x) gsub("[^a-z0-9]+", "", gsub("[0-9]{4}", " ", x))
+  list(full  = squash(gsub("[()]", " ", s)),
+       outer = squash(gsub("[(][^)]*[)]", " ", s)))
+}
+
+
+#' Crosswalk key: canonical name, normalized authorship and rank
+#'
+#' A unit separator joins the parts so none can run into its neighbour.
+#' @noRd
+crosswalk_key <- function(canonical_name, authorship, taxon_rank) {
+  paste(canonical_name, authorship, taxon_rank, sep = "\x1f")
+}
+
+
+#' Group ids by key into `|`-delimited sets, ascending by id
+#' @noRd
+collapse_keys <- function(key, id) {
+  o <- order(suppressWarnings(as.numeric(id)))
+  id <- id[o]
+  key <- key[o]
+  first <- !duplicated(key)
+  out <- stats::setNames(id[first], key[first])
+  shared <- unique(key[duplicated(key)])
+  if (length(shared) > 0L) {
+    hit <- key %in% shared
+    sets <- split(id[hit], key[hit])
+    out[names(sets)] <- vapply(sets, paste, character(1L), collapse = "|")
+  }
+  out
+}
+
+
+#' Legacy GBIF keys for each COL XR usage, from the GBIF backbone
+#'
+#' COL XR replaced the taxonomy behind GBIF.org, but GBIF serves occurrence
+#' records only for the numeric keys of its legacy backbone. This reads the
+#' `gbif` backbone and groups its usages by canonical name, rank and
+#' authorship (see `crosswalk_authorship()`). A name several GBIF usages share
+#' (a homonym, or one name GBIF split itself) maps to the set of their keys,
+#' `|`-delimited in ascending order.
+#'
+#' @param gbif_path Character. Path to the `gbif` `.vtr`.
+#' @return A `colxr_gbif_crosswalk`: the key sets grouped by full authorship
+#'   and by outer authorship, for [colxr_gbif_lookup()].
+#' @export
+colxr_gbif_crosswalk <- function(gbif_path) {
+  if (!file.exists(gbif_path)) {
+    stop("GBIF backbone not found: ", gbif_path, call. = FALSE)
+  }
+  g <- vectra::collect(vectra::select(
+    vectra::tbl(gbif_path),
+    taxon_id, canonical_name, authorship, taxon_rank
+  ))
+  g <- g[!is.na(g$canonical_name) & !is.na(g$taxon_id), , drop = FALSE]
+
+  au <- crosswalk_authorship(g$authorship)
+  has_outer <- nzchar(au$outer)
+  structure(
+    list(
+      full  = collapse_keys(
+        crosswalk_key(g$canonical_name, au$full, g$taxon_rank), g$taxon_id),
+      outer = collapse_keys(
+        crosswalk_key(g$canonical_name[has_outer], au$outer[has_outer],
+                      g$taxon_rank[has_outer]),
+        g$taxon_id[has_outer])
+    ),
+    class = "colxr_gbif_crosswalk"
+  )
+}
+
+
+#' Look COL XR usages up in a GBIF crosswalk
+#'
+#' In order: the usage's full authorship against GBIF's, its outer authorship
+#' against GBIF's outer authorship, and, where GBIF records no authorship for
+#' the name, the name and rank alone. A GBIF usage that names a different
+#' author is a different name and is never matched.
+#'
+#' @param crosswalk A [colxr_gbif_crosswalk()].
+#' @param canonical_name,authorship,taxon_rank Character vectors of the COL XR
+#'   usages.
+#' @return Character vector of `|`-delimited GBIF keys, `NA` where none.
+#' @export
+colxr_gbif_lookup <- function(crosswalk, canonical_name, authorship,
+                              taxon_rank) {
+  taxon_rank <- rep_len(taxon_rank, length(canonical_name))
+  au <- crosswalk_authorship(authorship)
+  pick <- function(table, key) unname(table[key])
+
+  out <- pick(crosswalk$full,
+              crosswalk_key(canonical_name, au$full, taxon_rank))
+  todo <- is.na(out) & nzchar(au$outer)
+  out[todo] <- pick(crosswalk$outer,
+                    crosswalk_key(canonical_name[todo], au$outer[todo],
+                                  taxon_rank[todo]))
+  todo <- is.na(out)
+  out[todo] <- pick(crosswalk$full,
+                    crosswalk_key(canonical_name[todo], "", taxon_rank[todo]))
+  out
+}
+
+
+#' Resolve the GBIF backbone a COL XR build crosswalks against
+#'
+#' An explicit path wins, then a local `output/gbif/gbif.vtr`, then the
+#' version published in `manifest.json`, the same order the register build uses.
+#' @noRd
+colxr_gbif_path <- function(gbif_path, output_dir, manifest_path, verbose) {
+  manifest <- if (file.exists(manifest_path)) {
+    jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  } else {
+    list(backends = list())
+  }
+  path <- .resolve_one_backbone_path(
+    "gbif", if (is.null(gbif_path)) list() else list(gbif = gbif_path),
+    file.path(output_dir, "_gbif"), manifest, verbose
+  )
+  if (is.null(path)) {
+    stop("COL XR carries the legacy GBIF key from the GBIF backbone, which ",
+         "was found neither at `gbif_path`, nor in output/gbif, nor in the ",
+         "manifest. Build or publish `gbif` first.", call. = FALSE)
+  }
+  path
 }
 
 
@@ -242,13 +393,23 @@ normalize_colxr <- function(df, verbose = TRUE) {
 #' @param version Character or NULL. The COL XR release version, resolved from
 #'   ChecklistBank when `NULL` so the stamped version is the date of the data
 #'   rather than the date of the build.
+#' @param gbif_path Character or NULL. The `gbif` `.vtr` the `gbif_key` column
+#'   is derived from. Defaults to `output/gbif/gbif.vtr`, else the published
+#'   build named in `manifest_path`.
+#' @param manifest_path Character. Path to `manifest.json`.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_colxr <- function(output_dir = "output/colxr", version = NULL,
+                        gbif_path = NULL,
+                        manifest_path = "manifest/manifest.json",
                         verbose = TRUE) {
   release <- colxr_latest_release(verbose = verbose)
   if (is.null(version)) version <- release$version
+
+  gbif_path <- colxr_gbif_path(gbif_path, output_dir, manifest_path, verbose)
+  if (verbose) message("Building the GBIF key crosswalk from ", gbif_path)
+  crosswalk <- colxr_gbif_crosswalk(gbif_path)
 
   tmp <- tempfile("colxr_")
   dir.create(tmp, recursive = TRUE)
@@ -265,11 +426,13 @@ build_colxr <- function(output_dir = "output/colxr", version = NULL,
   build_vtr_streamed(
     delim_chunk_feed(tsv_path,
                      normalize = function(chunk) {
-                       normalize_colxr(chunk, verbose = FALSE)
+                       normalize_colxr(chunk, gbif_crosswalk = crosswalk,
+                                       verbose = FALSE)
                      },
                      verbose = verbose),
     vtr_path, "colxr", version, colxr_export_url(release$key), release$date,
     synonym_pattern = "SYNONYM|MISAPPLIED",
+    meta_extra = c(gbif_key_source = basename(gbif_path)),
     verbose = verbose
   )
 

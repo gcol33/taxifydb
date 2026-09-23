@@ -4,7 +4,13 @@
 \alias{build_colxr}
 \title{Build the COL XR backbone .vtr}
 \usage{
-build_colxr(output_dir = "output/colxr", version = NULL, verbose = TRUE)
+build_colxr(
+  output_dir = "output/colxr",
+  version = NULL,
+  gbif_path = NULL,
+  manifest_path = "manifest/manifest.json",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{output_dir}{Character. Output directory.}
@@ -12,6 +18,12 @@ build_colxr(output_dir = "output/colxr", version = NULL, verbose = TRUE)
 \item{version}{Character or NULL. The COL XR release version, resolved from
 ChecklistBank when \code{NULL} so the stamped version is the date of the data
 rather than the date of the build.}
+
+\item{gbif_path}{Character or NULL. The \code{gbif} \code{.vtr} the \code{gbif_key} column
+is derived from. Defaults to \code{output/gbif/gbif.vtr}, else the published
+build named in \code{manifest_path}.}
+
+\item{manifest_path}{Character. Path to \code{manifest.json}.}
 
 \item{verbose}{Logical.}
 }

@@ -281,6 +281,9 @@ collapse_keys <- function(key, id) {
   o <- order(suppressWarnings(as.numeric(id)))
   id <- id[o]
   key <- key[o]
+  once <- !duplicated(data.frame(key, id, stringsAsFactors = FALSE))
+  id <- id[once]
+  key <- key[once]
   first <- !duplicated(key)
   out <- stats::setNames(id[first], key[first])
   shared <- unique(key[duplicated(key)])
@@ -298,9 +301,11 @@ collapse_keys <- function(key, id) {
 #' COL XR replaced the taxonomy behind GBIF.org, but GBIF serves occurrence
 #' records only for the numeric keys of its legacy backbone. This reads the
 #' `gbif` backbone and groups its usages by canonical name, rank and
-#' authorship (see `crosswalk_authorship()`). A name several GBIF usages share
-#' (a homonym, or one name GBIF split itself) maps to the set of their keys,
-#' `|`-delimited in ascending order.
+#' authorship (see `crosswalk_authorship()`). GBIF files the records of a
+#' synonym under its accepted taxon, so a synonym usage contributes its
+#' accepted taxon's key. A name several GBIF usages share (a homonym, or one
+#' name GBIF split itself) maps to the set of their keys, `|`-delimited in
+#' ascending order.
 #'
 #' @param gbif_path Character. Path to the `gbif` `.vtr`.
 #' @return A `colxr_gbif_crosswalk`: the key sets grouped by full authorship
@@ -312,20 +317,23 @@ colxr_gbif_crosswalk <- function(gbif_path) {
   }
   g <- vectra::collect(vectra::select(
     vectra::tbl(gbif_path),
-    taxon_id, canonical_name, authorship, taxon_rank
+    taxon_id, canonical_name, authorship, taxon_rank, is_synonym,
+    accepted_taxon_id
   ))
   g <- g[!is.na(g$canonical_name) & !is.na(g$taxon_id), , drop = FALSE]
+  g$key <- ifelse(g$is_synonym %in% TRUE & !is.na(g$accepted_taxon_id),
+                  g$accepted_taxon_id, g$taxon_id)
 
   au <- crosswalk_authorship(g$authorship)
   has_outer <- nzchar(au$outer)
   structure(
     list(
       full  = collapse_keys(
-        crosswalk_key(g$canonical_name, au$full, g$taxon_rank), g$taxon_id),
+        crosswalk_key(g$canonical_name, au$full, g$taxon_rank), g$key),
       outer = collapse_keys(
         crosswalk_key(g$canonical_name[has_outer], au$outer[has_outer],
                       g$taxon_rank[has_outer]),
-        g$taxon_id[has_outer])
+        g$key[has_outer])
     ),
     class = "colxr_gbif_crosswalk"
   )

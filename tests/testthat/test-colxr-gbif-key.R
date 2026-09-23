@@ -1,13 +1,18 @@
 gbif_fixture <- function() {
   path <- tempfile(fileext = ".vtr")
   vectra::write_vtr(data.frame(
-    taxon_id       = c("2878688", "7911626", "8206510", "4087167", "100", "101", "102"),
+    taxon_id       = c("2878688", "7911626", "8206510", "4087167", "100", "101",
+                       "102", "200", "201"),
     canonical_name = c("Quercus robur", "Quercus robur", "Quercus robur",
                        "Entoloma truncatum", "Corona loroisiana",
-                       "Homonymus alpha", "Homonymus alpha"),
+                       "Homonymus alpha", "Homonymus alpha",
+                       "Synonymus beta", "Synonymus beta"),
     authorship     = c("L.", "Asso", "A.DC.", "Noordel. & Co-David", NA,
-                       "Smith", "Smith"),
+                       "Smith", "Smith", "Jones", "Jones"),
     taxon_rank     = "SPECIES",
+    is_synonym     = c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+                       TRUE, FALSE),
+    accepted_taxon_id = c(NA, NA, NA, NA, NA, NA, NA, "201", NA),
     stringsAsFactors = FALSE
   ), path)
   path
@@ -45,6 +50,12 @@ test_that("a homonym maps to the ascending set of its GBIF keys", {
     colxr_gbif_lookup(cw, "Homonymus alpha", "Smith", "SPECIES"),
     "101|102"
   )
+})
+
+test_that("a GBIF synonym contributes its accepted taxon's key, once", {
+  cw <- colxr_gbif_crosswalk(gbif_fixture())
+  expect_equal(colxr_gbif_lookup(cw, "Synonymus beta", "Jones", "SPECIES"),
+               "201")
 })
 
 test_that("normalize_colxr writes gbif_key beside the COL XR identifier", {

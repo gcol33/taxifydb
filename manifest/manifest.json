@@ -336,16 +336,15 @@
       "source_version": "2026.07"
     },
     "colxr": {
-      "latest": "2026.09",
+      "latest": "2026.08",
       "source_date": "2026-08-26",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.09/colxr.vtr",
-      "full_size": 1592109448,
-      "full_sha256": "04a25585eea9e405a7e17f93a1918158260cc82a3e8d2daed58a856520df1a47",
-      "content_id": "c454069c5f336c276ca2be32d17dd385",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.08/colxr.vtr",
+      "full_size": 1673401497,
+      "full_sha256": "1ad37c30565ac0468945a851322d2d04f039cf7ab9dac08a8cd8eecc95a37adf",
+      "content_id": "f7fcdbaac5e2eb11b0b23373189588db",
       "nrow": 8096804,
       "source_url": "https://api.checklistbank.org/dataset/316165/export.zip?format=DwCA",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.09/colxr-c454069c5f336c276ca2be32d17dd385.vtr",
-      "source_version": "2026-08-26 XR"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.08/colxr-f7fcdbaac5e2eb11b0b23373189588db.vtr"
     }
   },
   "enrichments": {

@@ -31,10 +31,10 @@ test_that("status classes follow the Euro+Med vocabulary", {
     cls(c("native", "endemic", "not endemic", "naturalised", "casual",
           "cultivated", "introduced", "introduced: uncertain degree of naturalisation",
           "native: presence questionable", "introduced: doubtfully introduced (perhaps cultivated only)",
-          "undefined", "native: formerly native", "native: reported in error", ""),
-        c(rep(FALSE, 11), TRUE, TRUE, FALSE)),
+          "undefined", "unknown endemism", "native: formerly native", "native: reported in error", ""),
+        c(rep(FALSE, 12), TRUE, TRUE, FALSE)),
     c("native", "native", "native", "naturalised", "casual", "cultivated",
-      "introduced", "introduced", "doubtful", "doubtful", "doubtful",
+      "introduced", "introduced", "doubtful", "doubtful", "doubtful", "native",
       "extinct", NA, NA))
 })
 

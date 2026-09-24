@@ -29,7 +29,7 @@
   known <- nzchar(t)
   out[known & grepl("questionable|doubtful", t)]    <- "doubtful"
   out[known & t == "undefined"]                     <- "doubtful"
-  out[known & is.na(out) & grepl("^(native|endemic|not endemic)", t)] <- "native"
+  out[known & is.na(out) & grepl("^(native|endemic|not endemic|unknown endemism)", t)] <- "native"
   out[known & is.na(out) & t == "naturalised"]      <- "naturalised"
   out[known & is.na(out) & t == "casual"]           <- "casual"
   out[known & is.na(out) & t == "cultivated"]       <- "cultivated"

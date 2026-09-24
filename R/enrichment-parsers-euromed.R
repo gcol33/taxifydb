@@ -64,7 +64,7 @@
   "Poland" = "PL", "Portugal" = "PT", "Romania" = "RO", "Serbia" = "RS",
   "Slovakia" = "SK", "Slovenia" = "SI", "Spain" = "ES", "Sweden" = "SE",
   "Switzerland" = "CH", "Syria" = "SY", "Tunisia" = "TN", "Turkey" = "TR",
-  "T00fcrkiye" = "TR",
+  "T\u00fcrkiye" = "TR",
   "Ukraine" = "UA"
 )
 

@@ -90,6 +90,8 @@ def descriptions(uuid):
                 if ce._api_alive():
                     return None
                 ce._wait_out_throttle()
+            except ce.Unavailable:
+                ce._wait_out_throttle()
         recs.extend(page.get("records") or [])
         nxt = page.get("nextIndex")
         if nxt is None or nxt == idx:

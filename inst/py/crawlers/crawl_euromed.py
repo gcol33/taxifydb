@@ -80,6 +80,11 @@ class Forbidden(Exception):
     """A 403 that persisted through retries."""
 
 
+class Unavailable(Exception):
+    """A 429/502/503/504 that persisted through retries: the server is overloaded
+    or has blocked the client, which no taxon-level skip can be right about."""
+
+
 def _rate_gate():
     # Assign each caller a time slot MIN_INTERVAL apart (and past any active
     # global cooldown), sleeping outside the lock so the global request rate is
@@ -117,6 +122,9 @@ def get_json(path, retries=3):
             if exc.code == 403:
                 time.sleep(RETRY_403_DELAY)
                 continue
+            if exc.code in (429, 502, 503, 504):
+                time.sleep(30 * (attempt + 1))
+                continue
             if attempt == retries - 1:
                 raise
             time.sleep(2 * (attempt + 1))
@@ -127,6 +135,8 @@ def get_json(path, retries=3):
             time.sleep(2 * (attempt + 1))
     if isinstance(err, urllib.error.HTTPError) and err.code == 403:
         raise Forbidden(path)
+    if isinstance(err, urllib.error.HTTPError) and err.code in (429, 502, 503, 504):
+        raise Unavailable(path)
     raise err
 
 

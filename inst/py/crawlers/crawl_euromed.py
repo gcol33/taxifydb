@@ -31,7 +31,7 @@ Three phases, each resume-safe:
 
 Stdlib only. Output feeds taxifydb read_euromed() on the build machine.
 """
-import json, os, ssl, sys, threading, time
+import gzip, json, os, ssl, sys, threading, time
 import urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -105,8 +105,12 @@ def get_json(path, retries=3):
         _rate_gate()
         try:
             req = urllib.request.Request(
-                url, headers={"User-Agent": UA, "Accept": "application/json"})
-            raw = urllib.request.urlopen(req, timeout=60, context=_ctx).read()
+                url, headers={"User-Agent": UA, "Accept": "application/json",
+                              "Accept-Encoding": "gzip"})
+            resp = urllib.request.urlopen(req, timeout=120, context=_ctx)
+            raw = resp.read()
+            if resp.headers.get("Content-Encoding") == "gzip":
+                raw = gzip.decompress(raw)
             return json.loads(raw.decode("utf-8", "replace"))
         except urllib.error.HTTPError as exc:
             err = exc

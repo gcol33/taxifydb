@@ -343,6 +343,30 @@
     requires    = character(0)
   ),
 
+  euromed_distribution = list(
+    source_url  = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                         "euromed-snapshot-2026.09/euromed_distribution.jsonl"),
+    source_doi  = NULL,
+    version     = "2026.09",
+    license     = "CC BY-SA",
+    attribution = paste0(
+      "Euro+Med PlantBase (https://europlusmed.org), the Euro+Med Editorial ",
+      "Committee. Per-area status (native, endemic, naturalised, introduced, ",
+      "casual, cultivated, doubtful, former presence) harvested per accepted ",
+      "taxon from the CyberTaxonomy CDM REST API behind europlusmed.org, ",
+      "keyed on the taxon's CDM UUID (the euromed backbone's taxon_id); the ",
+      "citing references of each record are kept. Each area is a Euro+Med ",
+      "area, and carries an ISO 3166-1 alpha-2 country code where it is one ",
+      "country. A report retracted as made in error is dropped."
+    ),
+    download_fn = function(url, dest) {
+      download_curl_file(url, dest, "euromed_distribution.jsonl")
+    },
+    parse_fn    = function(path) parse_euromed_distribution(path),
+    group_col   = "area_code",
+    requires    = "jsonlite"
+  ),
+
   common_names = list(
     source_url  = paste(
       "https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip",

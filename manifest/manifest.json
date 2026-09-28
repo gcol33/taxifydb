@@ -6549,6 +6549,45 @@
       ],
       "upstream_id": "7194559",
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ecomorphosis-b81485c84f90b3fb0714d606b3fa09a4.vtr"
+    },
+    "euromed_distribution": {
+      "latest": "2026.09",
+      "source_version": "2026.09",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.09/euromed_distribution.vtr",
+      "nrow": 1594402,
+      "content_id": "756245589e4653de35499a8a69d446d8",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.09/euromed_distribution-756245589e4653de35499a8a69d446d8.vtr",
+      "resolved_backbones": [
+        "algaebase",
+        "avilist",
+        "col",
+        "colxr",
+        "euromed",
+        "fishbase",
+        "fungorum",
+        "gbif",
+        "itis",
+        "lcvp",
+        "lpsn",
+        "mdd",
+        "ncbi",
+        "ott",
+        "reptiledb",
+        "sealifebase",
+        "wcvp",
+        "wfo",
+        "worms"
+      ],
+      "references": {
+        "url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.09/euromed_distribution_references.vtr",
+        "content_id": "fc86c80f1bb665932a0f67eb9340d078",
+        "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.09/euromed_distribution_references-fc86c80f1bb665932a0f67eb9340d078.vtr",
+        "nrow": 6889
+      },
+      "source_url": "https://github.com/gcol33/taxifydb/releases/download/euromed-snapshot-2026.09/euromed_distribution.jsonl",
+      "license": "CC BY-SA",
+      "group_col": "area_code",
+      "available_groups": ["Ab", "Ab(A)", "Ab(N)", "AE", "AE(G)", "AE(T)", "Ag", "Al", "Ar", "Au", "Au(A)", "Au(L)", "Az", "Az(C)", "Az(F)", "Az(G)", "Az(J)", "Az(L)", "Az(M)", "Az(P)", "Az(S)", "Az(T)", "Be", "Be(B)", "Be(L)", "BH", "Bl", "Bl(I)", "Bl(M)", "Bl(N)", "Br", "Bt", "Bu", "By", "Ca", "Ca(C)", "Ca(F)", "Ca(G)", "Ca(H)", "Ca(L)", "Ca(P)", "Ca(T)", "Cc", "Cg", "Cm", "Co", "Cr", "Cs", "Ct", "Cy", "Cz", "Da", "Eg", "EgSn", "EM", "Es", "Fa", "Fe", "Ga", "Ga(C)", "Ga(F)", "Ga(M)", "Ge", "Gg", "Gr", "Gr+AE(G)", "Hb", "Hb(E)", "Hb(N)", "He", "Ho", "Hs", "Hs(A)", "Hs(G)", "Hs(S)", "Hu", "IJ", "Ir", "Is", "It", "It(I)", "It(S)", "It(V)", "Jo", "Ju", "Ko", "La", "Le", "Li", "LS", "Lt", "Lu", "Ma", "Md", "Md(D)", "Md(M)", "Md(P)", "Mk", "Mo", "No", "Po", "Rf", "Rf(A)", "Rf(A2)", "Rf(C)", "Rf(C2)", "Rf(CS)", "Rf(E)", "Rf(K)", "Rf(N)", "Rf(NE)", "Rf(NW)", "Rf(NW2)", "Rf(S)", "Rf(SE)", "Rf(SU)", "Rm", "Sa", "Sb", "Se", "Sg", "Si", "Si(M)", "Si(S)", "Sk", "Sl", "SM", "Sn", "Sr", "Su", "Sy", "Tcs", "Tn", "Tu", "Tu(A)", "Tu(E)", "UC", "Uk"]
     }
   }
 }

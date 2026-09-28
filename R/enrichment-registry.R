@@ -353,8 +353,9 @@
       "Euro+Med PlantBase (https://europlusmed.org), the Euro+Med Editorial ",
       "Committee. Per-area status (native, endemic, naturalised, introduced, ",
       "casual, cultivated, doubtful, former presence) harvested per accepted ",
-      "taxon from the CyberTaxonomy CDM REST API behind europlusmed.org, ",
-      "keyed on the taxon's CDM UUID (the euromed backbone's taxon_id); the ",
+      "taxon from the europlusmed.org portal taxon pages (served from the ",
+      "CyberTaxonomy CDM), keyed on the taxon's CDM UUID (the euromed ",
+      "backbone's taxon_id); the ",
       "citing references of each record are kept. Each area is a Euro+Med ",
       "area, and carries an ISO 3166-1 alpha-2 country code where it is one ",
       "country. A report retracted as made in error is dropped."

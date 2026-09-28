@@ -14,7 +14,11 @@ bot_wall.WallSession (curl_cffi session, cookies reused for the whole crawl).
 
 Differences from the API records, by construction of the page:
   * area codes and levels are not printed (the page's nesting depth is not the
-    area level); both come from euromed_areas.json (area label -> level, code).
+    area level); both come from euromed_areas.json (area label, level, code,
+    CDM vocabulary). Euro+Med keeps two area vocabularies, "E+M Areas" and
+    "E+M Mosses Areas", and one label ("NW European Russia") names a term in
+    each, Rf(NW) and Rf(NW2); the page's classification breadcrumb decides it,
+    a taxon under the "Bryophytes" node reading the mosses term.
     A label missing from the table is logged to
     portal.unknown_areas.tsv and written with an empty code, and the archived
     page keeps the data for --reparse once the table is extended.
@@ -66,11 +70,13 @@ ABSENT = ("reported in error", "formerly native")
 # A taxon-wide endemism note ("Europe: endemic" / "Europe: not endemic")
 # shares the descriptionElement/area_label/distributionStatus markup with the
 # genuine per-country Distribution entries but is a different CDM feature
-# (endemism, not presence/absence); "Europe" carries no Euro+Med area code
-# (the checklist's top area is "Euro+Med", not "Europe") and every other
-# unmapped area label's status set held real presence/absence terms
-# (native/introduced/naturalised/...), never bare endemism ones.
+# (endemism, not presence/absence), so its status terms are not distribution
+# statuses. Every "Europe" element on the portal carries only these terms.
 ENDEMISM = ("endemic", "not endemic", "unknown endemism")
+
+MAIN_AREAS = "E+M Areas"
+MOSS_AREAS = "E+M Mosses Areas"
+BRYOPHYTES = "276203a7-ca5a-4f61-a267-762e479e1480"
 
 
 def _classes(attrs):
@@ -88,10 +94,22 @@ class _Page(HTMLParser):
         self.refs = {}        # footnote letter -> citation text
         self.foot = None      # letter of the bibliography entry being read
         self.buf = None
+        self.lineage = []     # taxon uuids of the classification breadcrumb
+        self.crumb = None     # [tag, open depth] while inside the breadcrumb
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         cls = _classes(attrs)
+        if self.crumb is None and "breadcrumbs" in cls:
+            self.crumb = [tag, 1]
+            return
+        if self.crumb is not None:
+            if tag == self.crumb[0]:
+                self.crumb[1] += 1
+            m = re.match(r"/cdm_dataportal/taxon/([0-9a-f-]{36})", a.get("href") or "")
+            if tag == "a" and m:
+                self.lineage.append(m.group(1))
+            return
         if tag == "div" and "footnote" in cls:
             m = next((re.match(r"footnote-(\w+)$", c) for c in cls
                       if re.match(r"footnote-(\w+)$", c)), None)
@@ -124,6 +142,12 @@ class _Page(HTMLParser):
         self.spans.append(kind)
 
     def handle_endtag(self, tag):
+        if self.crumb is not None:
+            if tag == self.crumb[0]:
+                self.crumb[1] -= 1
+                if self.crumb[1] == 0:
+                    self.crumb = None
+            return
         if tag != "span" or not self.spans:
             return
         kind = self.spans.pop()
@@ -156,8 +180,23 @@ def _ref_id(citation):
 
 
 def load_areas():
+    """Area label -> {vocabulary: (level, code)}."""
+    areas = {}
     with open(AREAS, encoding="utf-8") as fh:
-        return {n: (l, c) for n, l, c in json.load(fh)}
+        for name, level, code, vocab in json.load(fh):
+            areas.setdefault(name, {})[vocab] = (level, code)
+    return areas
+
+
+def _area(areas, name, vocab):
+    """Level and code of an area label; a label naming a term in both
+    vocabularies takes the one the taxon is scored in."""
+    terms = areas.get(name)
+    if not terms:
+        return "", ""
+    if len(terms) == 1:
+        return next(iter(terms.values()))
+    return terms[vocab]
 
 
 def parse_page(html, areas):
@@ -165,12 +204,13 @@ def parse_page(html, areas):
     table does not know."""
     p = _Page()
     p.feed(html)
+    vocab = MOSS_AREAS if BRYOPHYTES in p.lineage else MAIN_AREAS
     rows, unknown = [], set()
     for el in p.out:
         status = [(c, t) for c, t in el["status"] if t.strip().lower() not in ENDEMISM]
         if not status or not el["area_name"]:
             continue
-        level, code = areas.get(el["area_name"], ("", ""))
+        level, code = _area(areas, el["area_name"], vocab)
         if not code:
             unknown.add(el["area_name"])
         refs = []

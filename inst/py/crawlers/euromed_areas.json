@@ -2,676 +2,871 @@
  [
   "Egypt and Sinai",
   "",
-  "EgSn"
+  "EgSn",
+  "E+M Mosses Areas"
  ],
  [
   "East Aegean islands",
   "Euro+Med 1. area level",
-  "AE"
+  "AE",
+  "E+M Areas"
  ],
  [
   "Azerbaijan",
   "Euro+Med 1. area level",
-  "Ab"
+  "Ab",
+  "E+M Areas"
  ],
  [
   "Algeria",
   "Euro+Med 1. area level",
-  "Ag"
+  "Ag",
+  "E+M Areas"
  ],
  [
   "Albania",
   "Euro+Med 1. area level",
-  "Al"
+  "Al",
+  "E+M Areas"
  ],
  [
   "Armenia",
   "Euro+Med 1. area level",
-  "Ar"
+  "Ar",
+  "E+M Areas"
  ],
  [
   "Austria, with Liechtenstein",
   "Euro+Med 1. area level",
-  "Au"
+  "Au",
+  "E+M Areas"
  ],
  [
   "Belgium, with Luxembourg",
   "Euro+Med 1. area level",
-  "Be"
+  "Be",
+  "E+M Areas"
  ],
  [
   "Baleares",
   "Euro+Med 1. area level",
-  "Bl"
+  "Bl",
+  "E+M Areas"
  ],
  [
   "Great Britain",
   "Euro+Med 1. area level",
-  "Br"
+  "Br",
+  "E+M Areas"
  ],
  [
   "Bulgaria",
   "Euro+Med 1. area level",
-  "Bu"
+  "Bu",
+  "E+M Areas"
  ],
  [
   "Belarus",
   "Euro+Med 1. area level",
-  "By"
+  "By",
+  "E+M Areas"
  ],
  [
   "Canary islands",
   "Euro+Med 1. area level",
-  "Ca"
+  "Ca",
+  "E+M Areas"
  ],
  [
   "Corsica",
   "Euro+Med 1. area level",
-  "Co"
+  "Co",
+  "E+M Areas"
  ],
  [
   "Crete, with Karpathos",
   "Euro+Med 1. area level",
-  "Cr"
+  "Cr",
+  "E+M Areas"
  ],
  [
   "Cyprus",
   "Euro+Med 1. area level",
-  "Cy"
+  "Cy",
+  "E+M Areas"
  ],
  [
   "Former Czechoslovakia",
   "Euro+Med 1. area level",
-  "Cz"
+  "Cz",
+  "E+M Areas"
  ],
  [
   "Denmark",
   "Euro+Med 1. area level",
-  "Da"
+  "Da",
+  "E+M Areas"
  ],
  [
   "Egypt",
   "Euro+Med 1. area level",
-  "Eg"
+  "Eg",
+  "E+M Areas"
  ],
  [
   "Estonia",
   "Euro+Med 1. area level",
-  "Es"
+  "Es",
+  "E+M Areas"
  ],
  [
   "Finland",
   "Euro+Med 1. area level",
-  "Fe"
+  "Fe",
+  "E+M Areas"
  ],
  [
   "France, with Channel is. and Monaco",
   "Euro+Med 1. area level",
-  "Ga"
+  "Ga",
+  "E+M Areas"
  ],
  [
   "Germany",
   "Euro+Med 1. area level",
-  "Ge"
+  "Ge",
+  "E+M Areas"
  ],
  [
   "Georgia",
   "Euro+Med 1. area level",
-  "Gg"
+  "Gg",
+  "E+M Areas"
  ],
  [
   "Greece",
   "Euro+Med 1. area level",
-  "Gr"
+  "Gr",
+  "E+M Areas"
  ],
  [
   "Ireland, with N Ireland",
   "Euro+Med 1. area level",
-  "Hb"
+  "Hb",
+  "E+M Areas"
  ],
  [
   "Switzerland",
   "Euro+Med 1. area level",
-  "He"
+  "He",
+  "E+M Areas"
  ],
  [
   "Netherlands",
   "Euro+Med 1. area level",
-  "Ho"
+  "Ho",
+  "E+M Areas"
  ],
  [
   "Spain, with Gibraltar and Andorra",
   "Euro+Med 1. area level",
-  "Hs"
+  "Hs",
+  "E+M Areas"
  ],
  [
   "Hungary",
   "Euro+Med 1. area level",
-  "Hu"
+  "Hu",
+  "E+M Areas"
  ],
  [
   "Israel/Palestine-Jordan",
   "Euro+Med 1. area level",
-  "IJ"
+  "IJ",
+  "E+M Areas"
  ],
  [
   "Iceland",
   "Euro+Med 1. area level",
-  "Is"
+  "Is",
+  "E+M Areas"
  ],
  [
   "Italy, with San Marino and Vatican City",
   "Euro+Med 1. area level",
-  "It"
+  "It",
+  "E+M Areas"
  ],
  [
   "Former Yugoslavia",
   "Euro+Med 1. area level",
-  "Ju"
+  "Ju",
+  "E+M Areas"
  ],
  [
   "Kazakhstan in Europe",
   "Euro+Med 1. area level",
-  "Kz"
+  "Kz",
+  "E+M Areas"
  ],
  [
   "Lebanon-Syria",
   "Euro+Med 1. area level",
-  "LS"
+  "LS",
+  "E+M Areas"
  ],
  [
   "Latvia",
   "Euro+Med 1. area level",
-  "La"
+  "La",
+  "E+M Areas"
  ],
  [
   "Libya",
   "Euro+Med 1. area level",
-  "Li"
+  "Li",
+  "E+M Areas"
  ],
  [
   "Lithuania",
   "Euro+Med 1. area level",
-  "Lt"
+  "Lt",
+  "E+M Areas"
  ],
  [
   "Portugal",
   "Euro+Med 1. area level",
-  "Lu"
+  "Lu",
+  "E+M Areas"
  ],
  [
   "Morocco",
   "Euro+Med 1. area level",
-  "Ma"
+  "Ma",
+  "E+M Areas"
  ],
  [
   "Madeira archipelago",
   "Euro+Med 1. area level",
-  "Md"
+  "Md",
+  "E+M Areas"
  ],
  [
   "Moldova",
   "Euro+Med 1. area level",
-  "Mo"
+  "Mo",
+  "E+M Areas"
  ],
  [
   "Norway",
   "Euro+Med 1. area level",
-  "No"
+  "No",
+  "E+M Areas"
  ],
  [
   "Poland",
   "Euro+Med 1. area level",
-  "Po"
+  "Po",
+  "E+M Areas"
  ],
  [
   "Romania",
   "Euro+Med 1. area level",
-  "Rm"
+  "Rm",
+  "E+M Areas"
  ],
  [
   "Sardinia",
   "Euro+Med 1. area level",
-  "Sa"
+  "Sa",
+  "E+M Areas"
  ],
  [
   "Svalbard",
   "Euro+Med 1. area level",
-  "Sb"
+  "Sb",
+  "E+M Areas"
  ],
  [
   "Sicily, with Malta",
   "Euro+Med 1. area level",
-  "Si"
+  "Si",
+  "E+M Areas"
  ],
  [
   "Sinai",
   "Euro+Med 1. area level",
-  "Sn"
+  "Sn",
+  "E+M Areas"
  ],
  [
   "Sweden",
   "Euro+Med 1. area level",
-  "Su"
+  "Su",
+  "E+M Areas"
  ],
  [
   "Tunisia",
   "Euro+Med 1. area level",
-  "Tn"
+  "Tn",
+  "E+M Areas"
  ],
  [
   "Türkiye",
   "Euro+Med 1. area level",
-  "Tu"
+  "Tu",
+  "E+M Areas"
  ],
  [
   "Ukraine, with Crimea",
   "Euro+Med 1. area level",
-  "UC"
+  "UC",
+  "E+M Areas"
  ],
  [
   "Greek East Aegean islands",
   "Euro+Med 2. area level",
-  "AE(G)"
+  "AE(G)",
+  "E+M Areas"
  ],
  [
   "Azerbaijan (core)",
   "Euro+Med 2. area level",
-  "Ab(A)"
+  "Ab(A)",
+  "E+M Areas"
  ],
  [
   "Nakhchivan",
   "Euro+Med 2. area level",
-  "Ab(N)"
+  "Ab(N)",
+  "E+M Areas"
  ],
  [
   "Austria",
   "Euro+Med 2. area level",
-  "Au(A)"
+  "Au(A)",
+  "E+M Areas"
  ],
  [
   "Liechtenstein",
   "Euro+Med 2. area level",
-  "Au(L)"
+  "Au(L)",
+  "E+M Areas"
  ],
  [
   "Bosnia-Herzegovina",
   "Euro+Med 2. area level",
-  "BH"
+  "BH",
+  "E+M Areas"
  ],
  [
   "Belgium",
   "Euro+Med 2. area level",
-  "Be(B)"
+  "Be(B)",
+  "E+M Areas"
  ],
  [
   "Luxembourg",
   "Euro+Med 2. area level",
-  "Be(L)"
+  "Be(L)",
+  "E+M Areas"
  ],
  [
   "Ibiza",
   "Euro+Med 2. area level",
-  "Bl(I)"
+  "Bl(I)",
+  "E+M Areas"
  ],
  [
   "Mallorca",
   "Euro+Med 2. area level",
-  "Bl(M)"
+  "Bl(M)",
+  "E+M Areas"
  ],
  [
   "Menorca",
   "Euro+Med 2. area level",
-  "Bl(N)"
+  "Bl(N)",
+  "E+M Areas"
  ],
  [
   "Gran Canaria",
   "Euro+Med 2. area level",
-  "Ca(C)"
+  "Ca(C)",
+  "E+M Areas"
  ],
  [
   "Fuerteventura",
   "Euro+Med 2. area level",
-  "Ca(F)"
+  "Ca(F)",
+  "E+M Areas"
  ],
  [
   "Gomera",
   "Euro+Med 2. area level",
-  "Ca(G)"
+  "Ca(G)",
+  "E+M Areas"
  ],
  [
   "Lanzarote",
   "Euro+Med 2. area level",
-  "Ca(L)"
+  "Ca(L)",
+  "E+M Areas"
  ],
  [
   "La Palma",
   "Euro+Med 2. area level",
-  "Ca(P)"
+  "Ca(P)",
+  "E+M Areas"
  ],
  [
   "Tenerife",
   "Euro+Med 2. area level",
-  "Ca(T)"
+  "Ca(T)",
+  "E+M Areas"
  ],
  [
   "Montenegro",
   "Euro+Med 2. area level",
-  "Cg"
+  "Cg",
+  "E+M Areas"
  ],
  [
   "Crimea",
   "Euro+Med 2. area level",
-  "Cm"
+  "Cm",
+  "E+M Areas"
  ],
  [
   "Czech Republic",
   "Euro+Med 2. area level",
-  "Cs"
+  "Cs",
+  "E+M Areas"
  ],
  [
   "Croatia",
   "Euro+Med 2. area level",
-  "Ct"
+  "Ct",
+  "E+M Areas"
  ],
  [
   "Channel islands",
   "Euro+Med 2. area level",
-  "Ga(C)"
+  "Ga(C)",
+  "E+M Areas"
  ],
  [
   "France",
   "Euro+Med 2. area level",
-  "Ga(F)"
+  "Ga(F)",
+  "E+M Areas"
  ],
  [
   "Ireland",
   "Euro+Med 2. area level",
-  "Hb(E)"
+  "Hb(E)",
+  "E+M Areas"
  ],
  [
   "Northern Ireland",
   "Euro+Med 2. area level",
-  "Hb(N)"
+  "Hb(N)",
+  "E+M Areas"
  ],
  [
   "Andorra",
   "Euro+Med 2. area level",
-  "Hs(A)"
+  "Hs(A)",
+  "E+M Areas"
  ],
  [
   "Gibraltar",
   "Euro+Med 2. area level",
-  "Hs(G)"
+  "Hs(G)",
+  "E+M Areas"
  ],
  [
   "Spain",
   "Euro+Med 2. area level",
-  "Hs(S)"
+  "Hs(S)",
+  "E+M Areas"
  ],
  [
   "Israel/Palestine",
   "Euro+Med 2. area level",
-  "Ir"
+  "Ir",
+  "E+M Areas"
  ],
  [
   "Jordan",
   "Euro+Med 2. area level",
-  "Jo"
+  "Jo",
+  "E+M Areas"
  ],
  [
   "Lebanon",
   "Euro+Med 2. area level",
-  "Le"
+  "Le",
+  "E+M Areas"
  ],
  [
   "Madeira island",
   "Euro+Med 2. area level",
-  "Md(M)"
+  "Md(M)",
+  "E+M Areas"
  ],
  [
   "North Macedonia",
   "Euro+Med 2. area level",
-  "Mk"
+  "Mk",
+  "E+M Areas"
  ],
  [
   "Novaya Zemlya & Franz-Joseph Land",
   "Euro+Med 2. area level",
-  "Rf(A)"
+  "Rf(A)",
+  "E+M Areas"
  ],
  [
   "C European Russia",
   "Euro+Med 2. area level",
-  "Rf(C)"
+  "Rf(C)",
+  "E+M Areas"
  ],
  [
   "North Caucasus",
   "Euro+Med 2. area level",
-  "Rf(CS)"
+  "Rf(CS)",
+  "E+M Areas"
  ],
  [
   "E European Russia",
   "Euro+Med 2. area level",
-  "Rf(E)"
+  "Rf(E)",
+  "E+M Areas"
  ],
  [
   "Kaliningrad region",
   "Euro+Med 2. area level",
-  "Rf(K)"
+  "Rf(K)",
+  "E+M Areas"
  ],
  [
   "N European Russia",
   "Euro+Med 2. area level",
-  "Rf(N)"
+  "Rf(N)",
+  "E+M Areas"
  ],
  [
   "NW European Russia",
   "Euro+Med 2. area level",
-  "Rf(NW)"
+  "Rf(NW)",
+  "E+M Areas"
  ],
  [
   "S European Russia",
   "Euro+Med 2. area level",
-  "Rf(S)"
+  "Rf(S)",
+  "E+M Areas"
  ],
  [
   "Former USSR: Russia Central",
   "Euro+Med 2. area level",
-  "Rs(C)"
+  "Rs(C)",
+  "E+M Areas"
  ],
  [
   "Former USSR: Russia Southeast",
   "Euro+Med 2. area level",
-  "Rs(E)"
+  "Rs(E)",
+  "E+M Areas"
  ],
  [
   "Former USSR: Russia Northern",
   "Euro+Med 2. area level",
-  "Rs(N)"
+  "Rs(N)",
+  "E+M Areas"
  ],
  [
   "Former USSR: Russia Southwest",
   "Euro+Med 2. area level",
-  "Rs(W)"
+  "Rs(W)",
+  "E+M Areas"
  ],
  [
   "Malta",
   "Euro+Med 2. area level",
-  "Si(M)"
+  "Si(M)",
+  "E+M Areas"
  ],
  [
   "Sicily",
   "Euro+Med 2. area level",
-  "Si(S)"
+  "Si(S)",
+  "E+M Areas"
  ],
  [
   "Slovakia",
   "Euro+Med 2. area level",
-  "Sk"
+  "Sk",
+  "E+M Areas"
  ],
  [
   "Slovenia",
   "Euro+Med 2. area level",
-  "Sl"
+  "Sl",
+  "E+M Areas"
  ],
  [
   "Serbia, with Kosovo",
   "Euro+Med 2. area level",
-  "Sr"
+  "Sr",
+  "E+M Areas"
  ],
  [
   "Syria",
   "Euro+Med 2. area level",
-  "Sy"
+  "Sy",
+  "E+M Areas"
  ],
  [
   "Türkiye, Asiatic part",
   "Euro+Med 2. area level",
-  "Tu(A)"
+  "Tu(A)",
+  "E+M Areas"
  ],
  [
   "Türkiye-in-Europe",
   "Euro+Med 2. area level",
-  "Tu(E)"
+  "Tu(E)",
+  "E+M Areas"
  ],
  [
   "Ukraine",
   "Euro+Med 2. area level",
-  "Uk"
+  "Uk",
+  "E+M Areas"
  ],
  [
   "Euro+Med",
   "Euro+Med top area level",
-  "EM"
+  "EM",
+  "E+M Areas"
  ],
  [
   "Azores",
   "Euro+Med 1. area level",
-  "Az"
+  "Az",
+  "E+M Areas"
  ],
  [
   "Corvo",
   "Euro+Med 2. area level",
-  "Az(C)"
+  "Az(C)",
+  "E+M Areas"
  ],
  [
   "Faial",
   "Euro+Med 2. area level",
-  "Az(F)"
+  "Az(F)",
+  "E+M Areas"
  ],
  [
   "Graciosa",
   "Euro+Med 2. area level",
-  "Az(G)"
+  "Az(G)",
+  "E+M Areas"
  ],
  [
   "São Jorge",
   "Euro+Med 2. area level",
-  "Az(J)"
+  "Az(J)",
+  "E+M Areas"
  ],
  [
   "Flores",
   "Euro+Med 2. area level",
-  "Az(L)"
+  "Az(L)",
+  "E+M Areas"
  ],
  [
   "São Miguel",
   "Euro+Med 2. area level",
-  "Az(M)"
+  "Az(M)",
+  "E+M Areas"
  ],
  [
   "Pico",
   "Euro+Med 2. area level",
-  "Az(P)"
+  "Az(P)",
+  "E+M Areas"
  ],
  [
   "Santa Maria",
   "Euro+Med 2. area level",
-  "Az(S)"
+  "Az(S)",
+  "E+M Areas"
  ],
  [
   "Terceira",
   "Euro+Med 2. area level",
-  "Az(T)"
+  "Az(T)",
+  "E+M Areas"
  ],
  [
   "Faroe islands",
   "Euro+Med 1. area level",
-  "Fa"
+  "Fa",
+  "E+M Areas"
  ],
  [
   "Baltic states, with Kaliningrad region",
   "Euro+Med 1. area level",
-  "Bt"
+  "Bt",
+  "E+M Areas"
  ],
  [
   "Turkish East Aegean islands",
   "Euro+Med 2. area level",
-  "AE(T)"
+  "AE(T)",
+  "E+M Areas"
  ],
  [
   "Kosovo",
   "Euro+Med 2. area level",
-  "Ko"
+  "Ko",
+  "E+M Areas"
  ],
  [
   "Serbia",
   "Euro+Med 2. area level",
-  "Se"
+  "Se",
+  "E+M Areas"
  ],
  [
   "South Caucasus",
   "Euro+Med 1. area level",
-  "Tcs"
+  "Tcs",
+  "E+M Areas"
  ],
  [
   "Caucasia (Ab + Ar + Gg + Rf(CS))",
   "Euro+Med 1. area level",
-  "Cc"
+  "Cc",
+  "E+M Areas"
  ],
  [
   "Hierro",
   "Euro+Med 2. area level",
-  "Ca(H)"
+  "Ca(H)",
+  "E+M Areas"
  ],
  [
   "Porto Santo",
   "Euro+Med 2. area level",
-  "Md(P)"
+  "Md(P)",
+  "E+M Areas"
  ],
  [
   "Desertas",
   "Euro+Med 2. area level",
-  "Md(D)"
+  "Md(D)",
+  "E+M Areas"
  ],
  [
   "Salvage islands",
   "Euro+Med 1. area level",
-  "Sg"
+  "Sg",
+  "E+M Areas"
  ],
  [
   "Monaco",
   "Euro+Med 2. area level",
-  "Ga(M)"
+  "Ga(M)",
+  "E+M Areas"
  ],
  [
   "Italy",
   "Euro+Med 2. area level",
-  "It(I)"
+  "It(I)",
+  "E+M Mosses Areas"
  ],
  [
   "San Marino",
   "Euro+Med 2. area level",
-  "It(S)"
+  "It(S)",
+  "E+M Mosses Areas"
  ],
  [
   "Vatican City",
   "Euro+Med 2. area level",
-  "It(V)"
+  "It(V)",
+  "E+M Mosses Areas"
  ],
  [
   "Russia",
   "Euro+Med 1. area level",
-  "Rf"
+  "Rf",
+  "E+M Areas"
+ ],
+ [
+  "Serbia, with Kosovo and Montenegro",
+  "Euro+Med 2. area level",
+  "SM",
+  "E+M Areas"
+ ],
+ [
+  "Greece with East Aegean Islands",
+  "",
+  "Gr+AE(G)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "Arctic European Russia",
+  "",
+  "Rf(A2)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "Central European Russia",
+  "",
+  "Rf(C2)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "NE European Russia",
+  "",
+  "Rf(NE)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "NW European Russia",
+  "",
+  "Rf(NW2)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "SE European Russia",
+  "",
+  "Rf(SE)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "North Urals",
+  "",
+  "Rf(NU)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "South Urals",
+  "",
+  "Rf(SU)",
+  "E+M Mosses Areas"
+ ],
+ [
+  "Europe",
+  "",
+  "EUR",
+  "E+M Mosses Areas"
  ]
 ]

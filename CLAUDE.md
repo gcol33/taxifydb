@@ -59,7 +59,7 @@ R/backend-wgsrpd.R         — reference geometry (not a backbone): WGSRPD Level
 R/backend-meow.R           — reference geometry (not a backbone): MEOW marine
                               ecoregions -> meow.vtr (marine range polygons, #21)
 R/register.R               — genus extractors, kingdom normalization,
-                              resolve_kingdom_via_gbif(), build_genus_register(),
+                              resolve_genus_classification(), build_genus_register(),
                               build_backend_coverage(), build_register() (#23)
 R/life-form.R              — family -> taxon_group / kingdom_group lookup table,
                               assign_life_form()
@@ -349,12 +349,16 @@ individually) unions the fixed 13-backbone set `register_backbones()` returns
 `R/register.R`. Each backbone's `.vtr` resolves, in order: an explicit
 `backbone_paths` override, a local `output/<name>/<name>.vtr` build, or the
 version published in `manifest/manifest.json` (downloaded into
-`<output_dir>/_cache/`). Classification conflicts resolve by backbone
-priority (WoRMS > COL > WCVP > Reptile DB > GBIF > Euro+Med > LCVP > ITIS >
-NCBI > OTT > WFO > FishBase > SeaLifeBase); `kingdom_group`/`taxon_group`/
-`life_form` come from `R/life-form.R`'s family lookup table, with a GBIF
-parent-key hierarchy walk (`resolve_kingdom_via_gbif()`) as a second pass for
-genera the family table cannot place. Each `.vtr` publishes under its own
+`<output_dir>/_cache/`). `resolve_genus_classification()` picks one winning
+row per genus: accepted before provisional before synonym, then the kingdom
+with the most accepted species in any one source, then the (kingdom, family)
+occupant with the most, then `.register_priority()`. Family comes from that
+row, higher ranks only from rows agreeing with its kingdom and family; genera
+accepted in more than one kingdom get `multi_kingdom = TRUE`.
+`kingdom_group`/`taxon_group`/`life_form` come from `R/life-form.R`'s family
+lookup table. Coverage stamps each backbone with the manifest's `latest` when
+the file is the published build (content id), else `NA` with a warning.
+Each `.vtr` publishes under its own
 release tag like a backbone (`genus_register-<version>`,
 `backend_coverage-<version>`), and both are recorded in `manifest.json`'s
 `backends` block (alongside `wgsrpd`/`meow`, the other non-taxonomic

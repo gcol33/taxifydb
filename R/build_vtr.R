@@ -131,6 +131,35 @@ read_meta <- function(meta_path) {
 }
 
 
+#' Read the build record of a `.vtr`, wherever it is kept
+#'
+#' A `.vtr` in taxifydb's build output carries a `<name>.meta` sidecar
+#' ([read_meta()]); the same file installed by taxify sits beside a
+#' `meta.json` instead. Either is returned in the sidecar's shape. The two
+#' mean different things by `version`: the sidecar's is the version the source
+#' calls itself, taxify's is the release tag. The latter is returned as
+#' `release`, so `version` always means the source's, and `downloaded_at`
+#' becomes `download_date`.
+#'
+#' @param vtr_path Character. Path to the `.vtr`.
+#' @return Named character vector of fields, or `NULL` when neither record
+#'   exists.
+#' @noRd
+read_build_meta <- function(vtr_path) {
+  meta <- read_meta(paste0(tools::file_path_sans_ext(vtr_path), ".meta"))
+  if (!is.null(meta)) return(meta)
+
+  json_path <- file.path(dirname(vtr_path), "meta.json")
+  if (!file.exists(json_path)) return(NULL)
+  js <- jsonlite::read_json(json_path, simplifyVector = TRUE)
+  js <- js[vapply(js, function(v) is.atomic(v) && length(v) == 1L, logical(1L))]
+  meta <- vapply(js, as.character, character(1L))
+  names(meta)[names(meta) == "version"] <- "release"
+  names(meta)[names(meta) == "downloaded_at"] <- "download_date"
+  meta
+}
+
+
 #' Compute SHA-256 checksum of a file
 #'
 #' @param path Character. Path to the file.

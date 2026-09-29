@@ -543,7 +543,7 @@ update_manifest <- function(manifest_path, backend_name, version,
   # single source of truth for provenance: the URL the data was downloaded from
   # and the version the source calls itself. An explicit source_url argument
   # overrides the recorded one.
-  meta <- read_meta(paste0(tools::file_path_sans_ext(vtr_path), ".meta"))
+  meta <- read_build_meta(vtr_path)
 
   if (is.null(source_url) && !is.null(meta) &&
       "url" %in% names(meta) && nzchar(meta[["url"]])) {
@@ -747,7 +747,7 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   if (!is.null(meta$group_col))  entry$group_col  <- meta$group_col
 
   if (!is.null(meta$available_groups)) {
-    entry$available_groups <- meta$available_groups
+    entry$available_groups <- as.list(as.character(unlist(meta$available_groups)))
   }
 
   # Runtime-only fields (what the taxify door reads). Filled only when absent so

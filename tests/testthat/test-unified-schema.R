@@ -162,8 +162,7 @@ test_that("read_gbif emits unified-schema column names", {
               info = paste("missing:",
                            paste(setdiff(unified_main_cols, names(df)),
                                  collapse = ", ")))
-  # parent_key must survive as an extra — taxify::resolve_kingdom_via_gbif()
-  # needs it for the genus-to-kingdom walk.
+  # parent_key, the record's GBIF parent, survives as an extra.
   expect_true("parent_key" %in% names(df))
 })
 

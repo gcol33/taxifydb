@@ -156,14 +156,20 @@ extract_col_genera <- function(bb_path) {
 
 #' Extract genus rows from GBIF backbone
 #'
-#' GBIF backbone stores kingdom/phylum/class/order as separate taxonomy keys
-#' that are not present in the converted .vtr. Higher classification comes
-#' from the GBIF hierarchy instead (see `resolve_kingdom_via_gbif()`).
+#' The GBIF backbone stores kingdom/phylum/class/order denormalized on every
+#' row. GBIF files a genus it cannot place under the kingdom "incertae sedis",
+#' which names no kingdom and is read as `NA`.
 #'
 #' @param bb_path Character. Path to GBIF .vtr file.
 #' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
-extract_gbif_genera <- function(bb_path) .extract_genus_rank(bb_path)
+extract_gbif_genera <- function(bb_path) {
+  out <- .extract_genus_rank(bb_path,
+                             ranks = c("kingdom", "phylum", "class", "order"))
+  out$kingdom[!is.na(out$kingdom) & out$kingdom == "incertae sedis"] <-
+    NA_character_
+  out
+}
 
 
 #' Extract unique genera from a Euro+Med backbone
@@ -729,18 +735,36 @@ resolve_genus_classification <- function(genera_list) {
   # that carries both need not cover both equally. Priority settles an equal
   # count and every genus no source counts species for.
   grade <- .register_status_grade(combined$status)
+  #
+  # A row recording no kingdom (WFO, ITIS, Fungorum, AlgaeBase) is read in the
+  # kingdom its family carries elsewhere in the input, so an accepted genus
+  # placed in a family is not outranked by a doubtful record naming a kingdom
+  # and nothing below it (GBIF files the alga Acetabulum, accepted in
+  # Polyphysaceae elsewhere, as a doubtful Animalia genus). Among rows of one
+  # status, a row placed in a phylum or family also wins over one naming only
+  # the kingdom, whatever the species counts.
+  row_kg <- combined$kingdom
+  fam_ok <- has_kg & is_val(combined$family)
+  if (any(fam_ok)) {
+    fam_kg <- tapply(row_kg[fam_ok], combined$family[fam_ok],
+                     function(k) names(which.max(table(k))))
+    need <- !has_kg & is_val(combined$family)
+    row_kg[need] <- unname(fam_kg[combined$family[need]])
+  }
+  has_rkg <- is_val(row_kg)
+
   n_sp  <- combined$n_species
   n_sp[is.na(n_sp) | !has_kg] <- 0L
-  king_max <- stats::ave(n_sp, paste(genera_all, combined$kingdom, sep = "\r"),
+  king_max <- stats::ave(n_sp, paste(genera_all, row_kg, sep = "\r"),
                          FUN = max)
-  occ_max  <- stats::ave(n_sp, .occupant_key(genera_all, combined$kingdom,
+  occ_max  <- stats::ave(n_sp, .occupant_key(genera_all, row_kg,
                                              combined$family), FUN = max)
-  w_ord  <- order(genera_all, !has_kg, grade, -king_max, -occ_max,
+  placed <- is_val(combined$phylum) | is_val(combined$family)
+  w_ord  <- order(genera_all, !has_rkg, grade, !placed, -king_max, -occ_max,
                   combined$priority_rank, -support)
   winner <- w_ord[!duplicated(genera_all[w_ord])]
   winner <- winner[match(result$genus, genera_all[winner])]
-  result$kingdom <- ifelse(has_kg[winner], combined$kingdom[winner],
-                           NA_character_)
+  result$kingdom <- ifelse(has_rkg[winner], row_kg[winner], NA_character_)
 
   # A genus the accepted records place in more than one kingdom, whether two
   # genera share the spelling or the sources disagree on its placement. The
@@ -754,20 +778,11 @@ resolve_genus_classification <- function(genera_list) {
   # A row may only fill a rank if it describes the winning occupant. Resolving
   # each rank independently let the losing kingdom fill the ranks the winner
   # left empty, which produced rows like a Plantae genus in the bird order
-  # Piciformes. A row recording no kingdom (WFO, GBIF, Fungorum, AlgaeBase) is
-  # judged by the kingdom its family carries elsewhere in the input, so a WFO
-  # synonym cannot hand Lamiaceae to the cnidarian Leonura; a row whose family
-  # is unknown there too stays eligible.
-  row_kg <- combined$kingdom
-  fam_ok <- has_kg & is_val(combined$family)
-  if (any(fam_ok)) {
-    fam_kg <- tapply(row_kg[fam_ok], combined$family[fam_ok],
-                     function(k) names(which.max(table(k))))
-    need <- !has_kg & is_val(combined$family)
-    row_kg[need] <- unname(fam_kg[combined$family[need]])
-  }
+  # Piciformes. A row recording no kingdom is judged by the kingdom its family
+  # carries (row_kg above), so a WFO synonym cannot hand Lamiaceae to the
+  # cnidarian Leonura; a row whose family is unknown there too stays eligible.
   w <- match(genera_all, result$genus)
-  coherent <- !is_val(row_kg) | is.na(result$kingdom[w]) |
+  coherent <- !has_rkg | is.na(result$kingdom[w]) |
     row_kg == result$kingdom[w]
 
   # Family comes from the winning row where it records one, otherwise from the
@@ -807,175 +822,6 @@ empty_resolved_genus_df <- function() {
     family        = character(0L),
     stringsAsFactors = FALSE
   )
-}
-
-
-# ---- GBIF hierarchy walk for unresolved kingdoms ----
-
-#' Session cache for the GBIF parent-key hierarchy walk
-#'
-#' Holds `gbif_hierarchy_cache` across repeated `resolve_kingdom_via_gbif()`
-#' calls within one build session (loading the full GBIF taxon_id/parent_key
-#' table costs several seconds).
-#' @noRd
-.register_env <- new.env(parent = emptyenv())
-
-
-#' Resolve unknown genera to kingdom_group via GBIF parent_key traversal
-#'
-#' For genera where taxon_group is "unknown", walks the GBIF backbone
-#' parent_key chain upward until a KINGDOM-rank row is found, then maps
-#' the kingdom name to kingdom_group and taxon_group.
-#'
-#' This runs only during build_genus_register() -- one-time build cost.
-#'
-#' @param resolved data.frame with genus/kingdom_group/taxon_group columns.
-#' @param gbif_path Character. Path to GBIF .vtr file.
-#' @return Updated resolved data.frame.
-#' @noRd
-resolve_kingdom_via_gbif <- function(resolved, gbif_path) {
-  if (is.null(gbif_path) || is.na(gbif_path) || !file.exists(gbif_path)) {
-    return(resolved)
-  }
-
-  unknown_idx <- which(resolved$taxon_group == "unknown" |
-                       resolved$kingdom_group == "unknown")
-  if (length(unknown_idx) == 0L) return(resolved)
-
-  unknown_genera <- resolved$genus[unknown_idx]
-  if (length(unknown_genera) == 0L) return(resolved)
-
-  # Load the GBIF backbone columns needed for traversal
-  # taxon_id, parent_key, taxon_rank, canonical_name -- subset to minimize memory
-  if (is.null(.register_env$gbif_hierarchy_cache)) {
-    gbif_df <- tryCatch({
-      vectra::tbl(gbif_path) |>
-        vectra::select(taxon_id, parent_key, taxon_rank, canonical_name) |>
-        vectra::collect()
-    }, error = function(e) NULL)
-    if (is.null(gbif_df) || nrow(gbif_df) == 0L) return(resolved)
-    .register_env$gbif_hierarchy_cache <- gbif_df
-  } else {
-    gbif_df <- .register_env$gbif_hierarchy_cache
-  }
-
-  # Build hash maps for fast traversal
-  id_to_parent    <- stats::setNames(gbif_df$parent_key,    gbif_df$taxon_id)
-  id_to_rank      <- stats::setNames(gbif_df$taxon_rank,    gbif_df$taxon_id)
-  id_to_canonical <- stats::setNames(gbif_df$canonical_name, gbif_df$taxon_id)
-
-  # Kingdom name -> kingdom_group mapping
-  kingdom_group_map <- c(
-    "Plantae"   = "plantae",
-    "Fungi"     = "fungi",
-    "Animalia"  = "animalia",
-    "Chromista" = "chromista",
-    "Protozoa"  = "protozoa",
-    "Bacteria"  = "bacteria",
-    "Archaea"   = "archaea",
-    "Viruses"   = "viruses"
-  )
-  kingdom_taxon_map <- c(
-    "Plantae"   = "unknown",
-    "Fungi"     = "fungus",
-    "Animalia"  = "animal",
-    "Chromista" = "unknown",
-    "Protozoa"  = "unknown",
-    "Bacteria"  = "unknown",
-    "Archaea"   = "unknown",
-    "Viruses"   = "unknown"
-  )
-
-  # Vectorized parent_key traversal -- repeated joins instead of a per-genus loop.
-  # Start: match each unknown genus name to its GBIF taxon_id.
-  genus_rows <- gbif_df[!is.na(gbif_df$taxon_rank) & gbif_df$taxon_rank == "GENUS" &
-                          gbif_df$canonical_name %in% unknown_genera, ,
-                        drop = FALSE]
-
-  if (nrow(genus_rows) == 0L) return(resolved)
-
-  # Walk ALL genus entries (including duplicates across kingdoms).
-  # After the walk, pick the most common kingdom per genus name to avoid
-  # misclassification from homonymous genera (e.g., Escherichia in both
-  # Bacteria and Animalia).
-  work <- data.frame(
-    genus_name   = genus_rows$canonical_name,
-    current_id   = genus_rows$taxon_id,
-    kingdom_name = NA_character_,
-    stringsAsFactors = FALSE
-  )
-
-  # pre-build lookup vectors once
-  id_to_parent    <- stats::setNames(gbif_df$parent_key,    gbif_df$taxon_id)
-  id_to_rank      <- stats::setNames(gbif_df$taxon_rank,    gbif_df$taxon_id)
-  id_to_canonical <- stats::setNames(gbif_df$canonical_name, gbif_df$taxon_id)
-
-  # iteratively hop to parent until all rows hit KINGDOM or exhaust depth
-  for (step in seq_len(20L)) {
-    pending <- is.na(work$kingdom_name)
-    if (!any(pending)) break
-
-    cur_ids  <- work$current_id[pending]
-    cur_rank <- id_to_rank[cur_ids]
-
-    # rows that reached KINGDOM this step
-    at_kingdom <- !is.na(cur_rank) & cur_rank == "KINGDOM"
-    if (any(at_kingdom)) {
-      idx <- which(pending)[at_kingdom]
-      work$kingdom_name[idx] <- id_to_canonical[work$current_id[idx]]
-    }
-
-    # rows still pending: hop to parent
-    still_pending <- pending & is.na(work$kingdom_name)
-    if (!any(still_pending)) break
-    parents <- id_to_parent[work$current_id[still_pending]]
-    # stop rows that hit NA parent or self-loop
-    dead <- is.na(parents) | parents == work$current_id[still_pending]
-    if (any(dead)) work$kingdom_name[which(still_pending)[dead]] <- "unknown_stop"
-    work$current_id[still_pending] <- parents
-  }
-
-  # For genus names with multiple GBIF entries (homonyms across kingdoms),
-  # pick the most common resolved kingdom per genus name.
-  work$kg <- kingdom_group_map[work$kingdom_name]
-  work$kg[is.na(work$kg)] <- "unknown"
-  # Aggregate: for each genus, pick kingdom with most GBIF entries
-  genus_split <- split(work, work$genus_name)
-  best <- vapply(genus_split, function(sub) {
-    tab <- table(sub$kg)
-    tab <- tab[names(tab) != "unknown"]
-    if (length(tab) == 0L) return("unknown")
-    names(which.max(tab))
-  }, character(1L))
-  work <- data.frame(
-    genus_name   = names(best),
-    kingdom_name = NA_character_,
-    stringsAsFactors = FALSE
-  )
-  # Map best kingdom_group back to kingdom_name for taxon_map lookup
-  best_kg <- unname(best)
-  kg_to_kingdom <- stats::setNames(names(kingdom_group_map), kingdom_group_map)
-  work$kingdom_name <- kg_to_kingdom[best_kg]
-  work$kingdom_name[is.na(work$kingdom_name)] <- "unknown_stop"
-
-  # map kingdom names to kingdom_group / taxon_group
-  kg_vec <- kingdom_group_map[work$kingdom_name]
-  tg_vec <- kingdom_taxon_map[work$kingdom_name]
-  kg_vec[is.na(kg_vec)] <- "unknown"
-  tg_vec[is.na(tg_vec)] <- "unknown"
-
-  # apply to resolved data.frame via match (vectorized)
-  m <- match(resolved$genus[unknown_idx], work$genus_name)
-  hit <- !is.na(m)
-  if (any(hit)) {
-    update_idx <- unknown_idx[hit]
-    resolved$kingdom_group[update_idx] <- unname(kg_vec[m[hit]])
-    resolved$taxon_group[update_idx]   <- unname(tg_vec[m[hit]])
-    resolved$life_form[update_idx]     <-
-      gsub("_", " ", unname(tg_vec[m[hit]]), fixed = TRUE)
-  }
-
-  resolved
 }
 
 
@@ -1108,8 +954,7 @@ resolve_register_backbone_paths <- function(backbone_paths = NULL,
 #' Reads genus-rank rows from each of [register_backbones()] (resolved via
 #' `resolve_register_backbone_paths()`), unions them, resolves classification
 #' conflicts, normalizes non-standard kingdom names, assigns `kingdom_group` /
-#' `taxon_group` / `life_form` (via `assign_life_form()`, falling back to a
-#' GBIF parent-key hierarchy walk for genera still unresolved), and writes
+#' `taxon_group` / `life_form` (via `assign_life_form()`), and writes
 #' `genus_register.vtr`.
 #'
 #' Every call unions the same fixed backbone set, so the built register is
@@ -1172,25 +1017,6 @@ build_genus_register <- function(backbone_paths = NULL, output_dir = NULL,
   resolved$taxon_group   <- lf$taxon_group
   resolved$life_form     <- lf$life_form
 
-  # Second pass: use GBIF parent_key traversal to resolve remaining unknowns
-  gbif_path <- unname(paths["gbif"])
-  n_unknown_before <- sum(resolved$taxon_group == "unknown", na.rm = TRUE)
-  if (n_unknown_before > 0L && length(gbif_path) > 0L && !is.na(gbif_path)) {
-    if (verbose) {
-      message(sprintf(
-        "  Resolving %d unknown genera via GBIF hierarchy...", n_unknown_before
-      ))
-    }
-    resolved <- resolve_kingdom_via_gbif(resolved, gbif_path)
-    n_unknown_after <- sum(resolved$taxon_group == "unknown", na.rm = TRUE)
-    if (verbose) {
-      message(sprintf(
-        "  %d resolved; %d still unknown.",
-        n_unknown_before - n_unknown_after, n_unknown_after
-      ))
-    }
-  }
-
   # Reconcile kingdom <-> kingdom_group:
   # 1. Where kingdom is set (from WoRMS/COL), override kingdom_group/taxon_group
   # 2. Where kingdom is NA, backfill from kingdom_group
@@ -1205,7 +1031,7 @@ build_genus_register <- function(backbone_paths = NULL, output_dir = NULL,
     Archaea = "unknown", Viruses = "unknown"
   )
   has_kingdom <- !is.na(resolved$kingdom) & resolved$kingdom %in% names(kingdom_to_group)
-  # Override kingdom_group from authoritative kingdom (WoRMS/COL win over GBIF walk)
+  # Override kingdom_group from the resolved kingdom
   resolved$kingdom_group[has_kingdom] <- kingdom_to_group[resolved$kingdom[has_kingdom]]
   # Only override taxon_group if it was wrongly set (not from life_form assignment)
   wrong_taxon <- has_kingdom & resolved$taxon_group != kingdom_to_taxon[resolved$kingdom]
@@ -1319,11 +1145,28 @@ build_backend_coverage <- function(backbone_paths = NULL, output_dir = NULL,
     ), call. = FALSE)
   }
 
+  # `version` is the release a user installs: the manifest's `latest` for a
+  # backbone whose file is the build the manifest publishes (same content id).
+  # Any other file has no release to name.
+  released <- if (file.exists(manifest_path)) {
+    jsonlite::read_json(manifest_path, simplifyVector = FALSE)$backends
+  } else {
+    list()
+  }
+
   coverage_rows <- list()
+  unpublished <- character()
   for (nm in names(paths)) {
-    meta <- read_meta(paste0(tools::file_path_sans_ext(paths[[nm]]), ".meta"))
-    be_version <- if (!is.null(meta) && "version" %in% names(meta) &&
-                      nzchar(meta[["version"]])) meta[["version"]] else NA_character_
+    entry <- released[[nm]]
+    be_version <- if (!is.null(entry$content_id) && !is.null(entry$latest) &&
+                      identical(unname(tools::md5sum(paths[[nm]])),
+                                entry$content_id)) {
+      entry$latest
+    } else {
+      NA_character_
+    }
+    if (is.na(be_version)) unpublished <- c(unpublished, nm)
+    meta <- read_build_meta(paths[[nm]])
     date_added <- if (!is.null(meta) && "download_date" %in% names(meta)) {
       meta[["download_date"]]
     } else {
@@ -1351,6 +1194,11 @@ build_backend_coverage <- function(backbone_paths = NULL, output_dir = NULL,
 
   if (length(coverage_rows) == 0L) {
     stop("No coverage rows produced from any resolved backbone.", call. = FALSE)
+  }
+  if (length(unpublished) > 0L) {
+    warning(sprintf(
+      "Not the build %s publishes: %s. Their coverage rows carry no version.",
+      manifest_path, paste(unpublished, collapse = ", ")), call. = FALSE)
   }
 
   coverage <- do.call(rbind, coverage_rows)

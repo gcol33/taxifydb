@@ -364,3 +364,27 @@ test_that("a move to a different work rewrites the citation from the build", {
   expect_true(is.character(got$citation))
   expect_match(got$citation, "van Kleunen", fixed = TRUE)
 })
+
+
+test_that("available_groups is written as an array, one group per line", {
+  # A character vector renders inline under jsonlite's pretty printer and a
+  # single group collapses to a scalar under auto_unbox; every other array in
+  # the manifest is a list.
+  for (groups in list(c("AT", "DE"), "AT")) {
+    dir <- withr::local_tempdir()
+    vtr <- fake_vtr(dir, "glonaf")
+    jsonlite::write_json(
+      list(name = "glonaf", version = "2.02", nrow = 3L, group_col = "region",
+           available_groups = I(groups), trait_cols = list("status")),
+      file.path(dir, "meta.json"), auto_unbox = TRUE)
+    mf <- write_enrichment_manifest(file.path(dir, "manifest.json"),
+                                    list(latest = "2026.07"))
+
+    update_enrichment_manifest(mf, "glonaf", vtr, release_version = "2026.08",
+                               runtime = TRUE)
+    got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$glonaf
+    expect_type(got$available_groups, "list")
+    expect_equal(unlist(got$available_groups), groups)
+    expect_true(any(trimws(readLines(mf)) == '"available_groups": ['))
+  }
+})

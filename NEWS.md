@@ -5,24 +5,51 @@
 * The genus extractors carry each genus row's taxonomic status and the number
   of accepted species the backbone places under it (per kingdom and family
   where the backbone records a kingdom). `resolve_genus_classification()`
-  reads the kingdom from accepted rows before provisional ones and synonyms,
-  then from the kingdom with the most accepted species in any one source, then
-  in priority order. Before, the first source by priority decided, so COL XR's
+  picks one winning row per genus: accepted before provisional before
+  synonym, then a row placed in a phylum or family before one naming only a
+  kingdom, then the kingdom with the most accepted species in any one source,
+  then priority. Before, the first source by priority decided, so COL XR's
   animal synonym rows for *Aa* and *Acaena* put the orchid and the rose in
   Animalia, and WoRMS, which carries both *Olea* and counts two sea slugs to
-  one olive, made the olive a sea slug. 4,773 of the 502,381 genera change
-  kingdom.
-* Family is read from the winning row, and phylum, class and order only from
-  rows agreeing with its kingdom and family, so two genera sharing a spelling
-  inside one kingdom no longer mix: *Panthera* read a geometrid moth's phylum
-  and family, *Pteropus* a stick insect's. A row recording no kingdom (WFO,
-  GBIF, Fungorum, AlgaeBase) is judged by the kingdom its family carries in
-  the other sources. Genera whose kingdom disagrees with the majority kingdom
-  of their family fall from 585 to 105.
-* The register has a new logical column `multi_kingdom`: `TRUE` for the 3,142
+  one olive, made the olive a sea slug.
+* A row recording no kingdom (WFO, ITIS, Fungorum, AlgaeBase) is read in the
+  kingdom its family carries in the other sources, both when the winning row
+  is chosen and when ranks are filled. Family is read from the winning row,
+  and phylum, class and order only from rows agreeing with its kingdom and
+  family, so two genera sharing a spelling no longer mix: *Panthera* read a
+  geometrid moth's phylum and family, *Pteropus* a stick insect's.
+* The GBIF extractor reads the kingdom, phylum, class and order the GBIF
+  backbone stores on every row (its "incertae sedis" kingdom as `NA`). It had
+  read none of them, so GBIF's 535,447 genera contributed no kingdom, and the
+  parent-key walk meant to recover one never resolved a genus: the backbone
+  carries no KINGDOM-rank rows. The walk (`resolve_kingdom_via_gbif()`) is
+  removed.
+* Against the previous register: genera without a kingdom fall from 44,024 to
+  2,978, without a phylum from 90,504 to 22,321, without an order from 115,727
+  to 74,990; 5,767 genera change kingdom; genera whose kingdom disagrees with
+  the majority kingdom of their family fall from 585 to 136. 231 more genera
+  have no family, where the only family recorded belongs to another genus of
+  the same spelling.
+* The register has a new logical column `multi_kingdom`: `TRUE` for the 5,026
   genera that accepted records place in more than one kingdom, where the
   register's single kingdom is a choice between homonyms (or between
   placements). taxify reads the kingdom of the matched record for these.
+
+## Backend coverage records the release it indexed
+
+* `build_backend_coverage()` stamps each backbone with the manifest's `latest`
+  when the file is the published build (its md5 is the manifest's
+  `content_id`), and warns naming any backbone that is not. It read the
+  version from a `<name>.meta` sidecar, which only taxifydb's own build output
+  has, so the published coverage carried no version for 17 of its 19
+  backbones.
+* `read_build_meta()` reads a `.vtr`'s build record from either a `.meta`
+  sidecar or taxify's installed `meta.json`, and keeps their two meanings
+  apart: the sidecar's `version` is the source's own version, taxify's is the
+  release tag (returned as `release`). `update_manifest()` reads through it.
+* `update_enrichment_manifest()` writes `available_groups` as a list, like
+  every other array in the manifest. A character vector printed on one line
+  under jsonlite's pretty printer, and a single group collapsed to a scalar.
 
 ## GBIF: doubtful status kept, occurrence counts per key
 

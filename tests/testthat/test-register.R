@@ -575,9 +575,12 @@ test_that("build_genus_register() and build_backend_coverage() build from explic
     expect_equal(b$kingdom_group, "fungi")
 
     cov_dir <- file.path(out_dir, "coverage")
-    cov_path <- build_backend_coverage(
-      backbone_paths = bp, output_dir = cov_dir, version = "2026.09",
-      manifest_path = no_manifest, verbose = FALSE
+    expect_warning(
+      cov_path <- build_backend_coverage(
+        backbone_paths = bp, output_dir = cov_dir, version = "2026.09",
+        manifest_path = no_manifest, verbose = FALSE
+      ),
+      "Not the build .* wfo, col"
     )
     expect_true(file.exists(cov_path))
     cov <- vectra::tbl(cov_path) |> vectra::collect()
@@ -635,11 +638,94 @@ test_that("build_register() builds both artifacts from the same backbone_paths",
   ))
 
   with_isolated_wd({
-    res <- build_register(
-      backbone_paths = list(wfo = wfo_vtr), version = "2026.09",
-      manifest_path = tempfile(fileext = ".json"), verbose = FALSE
+    expect_warning(
+      res <- build_register(
+        backbone_paths = list(wfo = wfo_vtr), version = "2026.09",
+        manifest_path = tempfile(fileext = ".json"), verbose = FALSE
+      ),
+      "Not the build"
     )
     expect_true(file.exists(res$register))
     expect_true(file.exists(res$coverage))
   })
+})
+
+
+test_that("read_build_meta() reads a build sidecar or an installed meta.json", {
+  dir <- withr::local_tempdir()
+  vtr <- file.path(dir, "wfo.vtr")
+  file.create(vtr)
+  expect_null(read_build_meta(vtr))
+
+  jsonlite::write_json(list(version = "2026.06", downloaded_at = "2026-09-15",
+                            pinned = TRUE),
+                       file.path(dir, "meta.json"), auto_unbox = TRUE)
+  m <- read_build_meta(vtr)
+  # taxify's version is the release tag, never the source's own version.
+  expect_equal(m[["release"]], "2026.06")
+  expect_false("version" %in% names(m))
+  expect_equal(m[["download_date"]], "2026-09-15")
+
+  writeLines(c("version=2026.07", "download_date=2026-07-01"),
+             file.path(dir, "wfo.meta"))
+  expect_equal(read_build_meta(vtr)[["version"]], "2026.07")
+})
+
+test_that("backend coverage stamps the release of a published backbone", {
+  dir <- withr::local_tempdir()
+  vtr <- file.path(dir, "wfo.vtr")
+  write_genus_fixture(vtr, data.frame(
+    taxon_id = "1", canonical_name = "Quercus", taxon_rank = "GENUS",
+    family = "Fagaceae", genus = "Quercus", stringsAsFactors = FALSE))
+  jsonlite::write_json(list(version = "2026.06", downloaded_at = "2026-09-15"),
+                       file.path(dir, "meta.json"), auto_unbox = TRUE)
+  mf <- file.path(dir, "manifest.json")
+  write_manifest <- function(cid) {
+    jsonlite::write_json(list(backends = list(
+      wfo = list(latest = "2026.06", content_id = cid))), mf, auto_unbox = TRUE)
+  }
+
+  with_isolated_wd({
+    write_manifest(unname(tools::md5sum(vtr)))
+    cov <- vectra::collect(vectra::tbl(build_backend_coverage(
+      backbone_paths = list(wfo = vtr), output_dir = file.path(dir, "cov"),
+      version = "2026.09", manifest_path = mf, verbose = FALSE)))
+    expect_equal(cov$version, "2026.06")
+    expect_equal(cov$date_added, "2026-09-15")
+
+    # A file that is not the published build names no release.
+    write_manifest("0123456789abcdef0123456789abcdef")
+    expect_warning(
+      cov2 <- vectra::collect(vectra::tbl(build_backend_coverage(
+        backbone_paths = list(wfo = vtr), output_dir = file.path(dir, "cov2"),
+        version = "2026.09", manifest_path = mf, verbose = FALSE))),
+      "Not the build .* wfo")
+    expect_true(is.na(cov2$version))
+  })
+})
+
+test_that("a placed record wins over one naming only the kingdom", {
+  # GBIF counts species under a family-less Animalia Hozmadia; COL XR places
+  # the radiolarian in Poulpidae but counts none.
+  colxr <- genus_rows("Hozmadia", "Chromista", "Poulpidae", status = "ACCEPTED",
+                      n_species = 0L, phylum = "Radiozoa")
+  gbif <- genus_rows("Hozmadia", "Animalia", NA_character_, status = "ACCEPTED",
+                     n_species = 3L)
+  resolved <- resolve_genus_classification(list(colxr = colxr, gbif = gbif))
+  expect_equal(resolved$kingdom, "Chromista")
+  expect_equal(resolved$family, "Poulpidae")
+})
+
+test_that("an accepted genus with no kingdom column competes by its family", {
+  # GBIF files the alga Acetabulum as a doubtful Animalia genus; WFO-style
+  # rows carry the accepted genus in Polyphysaceae with no kingdom.
+  gbif <- genus_rows(c("Acetabulum", "Bornetella"), c("Animalia", "Plantae"),
+                     c(NA_character_, "Polyphysaceae"),
+                     status = c("DOUBTFUL", "ACCEPTED"))
+  wfo <- genus_rows("Acetabulum", NA_character_, "Polyphysaceae",
+                    status = "ACCEPTED")
+  resolved <- resolve_genus_classification(list(gbif = gbif, wfo = wfo))
+  ace <- resolved[resolved$genus == "Acetabulum", ]
+  expect_equal(ace$kingdom, "Plantae")
+  expect_equal(ace$family, "Polyphysaceae")
 })

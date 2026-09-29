@@ -285,12 +285,12 @@
     "genus_register": {
       "latest": "2026.09",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.09/genus_register.vtr",
-      "full_size": 16467179,
-      "full_sha256": "52826fe25bed366fbfca852f56972de2ce10dba2cb3d693eaebfaa75a2cbca97",
-      "content_id": "ea5f1a2bae0d482a5be637bc3f1bc6e9",
+      "full_size": 16556279,
+      "full_sha256": "9bf4be8ad1a23d15b76704cff11e8e5cd0d81c3ff4b62e977ce58bbb60189d7f",
+      "content_id": "e7fda770abd28cc4489f0503b90d8231",
       "nrow": 502381,
       "source_url": "derived from: wfo, col, colxr, gbif, itis, ncbi, ott, worms, euromed, fishbase, sealifebase, reptiledb, lcvp, wcvp, mdd, avilist, lpsn, fungorum, algaebase",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.09/genus_register-ea5f1a2bae0d482a5be637bc3f1bc6e9.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/genus_register-2026.09/genus_register-e7fda770abd28cc4489f0503b90d8231.vtr"
     },
     "backend_coverage": {
       "latest": "2026.09",

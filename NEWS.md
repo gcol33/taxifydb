@@ -1,5 +1,29 @@
 # taxifydb (development version)
 
+## Genus register: one occupant per genus, synonyms no longer decide
+
+* The genus extractors carry each genus row's taxonomic status and the number
+  of accepted species the backbone places under it (per kingdom and family
+  where the backbone records a kingdom). `resolve_genus_classification()`
+  reads the kingdom from accepted rows before provisional ones and synonyms,
+  then from the kingdom with the most accepted species in any one source, then
+  in priority order. Before, the first source by priority decided, so COL XR's
+  animal synonym rows for *Aa* and *Acaena* put the orchid and the rose in
+  Animalia, and WoRMS, which carries both *Olea* and counts two sea slugs to
+  one olive, made the olive a sea slug. 4,773 of the 502,381 genera change
+  kingdom.
+* Family is read from the winning row, and phylum, class and order only from
+  rows agreeing with its kingdom and family, so two genera sharing a spelling
+  inside one kingdom no longer mix: *Panthera* read a geometrid moth's phylum
+  and family, *Pteropus* a stick insect's. A row recording no kingdom (WFO,
+  GBIF, Fungorum, AlgaeBase) is judged by the kingdom its family carries in
+  the other sources. Genera whose kingdom disagrees with the majority kingdom
+  of their family fall from 585 to 105.
+* The register has a new logical column `multi_kingdom`: `TRUE` for the 3,142
+  genera that accepted records place in more than one kingdom, where the
+  register's single kingdom is a choice between homonyms (or between
+  placements). taxify reads the kingdom of the matched record for these.
+
 ## GBIF: doubtful status kept, occurrence counts per key
 
 * The GBIF reader no longer folds `DOUBTFUL` and `PROVISIONALLY_ACCEPTED` into

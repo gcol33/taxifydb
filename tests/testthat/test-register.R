@@ -258,10 +258,76 @@ test_that("an even split inside a source leaves the incoming order alone", {
   expect_equal(resolved$class, "Magnoliopsida")
 })
 
-test_that("resolve_genus_classification() returns empty_genus_df() schema on empty input", {
+test_that("resolve_genus_classification() returns the resolved schema on empty input", {
   resolved <- resolve_genus_classification(list())
   expect_equal(nrow(resolved), 0L)
-  expect_equal(names(resolved), names(empty_genus_df()))
+  expect_equal(names(resolved), names(empty_resolved_genus_df()))
+})
+
+genus_rows <- function(genus, kingdom, family, status = NA_character_,
+                       n_species = NA_integer_, phylum = NA_character_,
+                       class = NA_character_, order = NA_character_) {
+  data.frame(genus = genus, kingdom = kingdom, phylum = phylum, class = class,
+             order = order, family = family, status = status,
+             n_species = n_species, stringsAsFactors = FALSE)
+}
+
+test_that("a synonym genus row never decides the kingdom over an accepted one", {
+  # COL XR files Aa as an accepted orchid and as a molluscan synonym.
+  colxr <- genus_rows("Aa", c("Animalia", "Plantae"),
+                      c("Microcystidae", "Orchidaceae"),
+                      status = c("SYNONYM", "ACCEPTED"), n_species = c(0L, 25L))
+  wcvp <- genus_rows("Aa", "Plantae", "Orchidaceae", status = "ACCEPTED",
+                     n_species = 25L)
+  resolved <- resolve_genus_classification(list(colxr = colxr, wcvp = wcvp))
+  expect_equal(resolved$kingdom, "Plantae")
+  expect_equal(resolved$family, "Orchidaceae")
+  expect_false(resolved$multi_kingdom)
+})
+
+test_that("accepted homonyms in two kingdoms resolve to the one with more species", {
+  # WoRMS leads the priority order and carries both Olea, but a marine
+  # checklist counts few olives; COL's count decides.
+  worms <- genus_rows("Olea", c("Animalia", "Plantae"),
+                      c("Limapontiidae", "Oleaceae"),
+                      status = "ACCEPTED", n_species = c(1L, 0L))
+  col <- genus_rows("Olea", c("Animalia", "Plantae"),
+                    c("Limapontiidae", "Oleaceae"),
+                    status = "ACCEPTED", n_species = c(1L, 33L),
+                    phylum = c("Mollusca", "Tracheophyta"))
+  resolved <- resolve_genus_classification(list(worms = worms, col = col))
+  expect_equal(resolved$kingdom, "Plantae")
+  expect_equal(resolved$family, "Oleaceae")
+  expect_equal(resolved$phylum, "Tracheophyta")
+  expect_true(resolved$multi_kingdom)
+})
+
+test_that("homonyms inside one kingdom keep the ranks of one occupant", {
+  # Panthera is a cat genus and a geometrid moth genus.
+  col <- genus_rows("Panthera", "Animalia", c("Geometridae", "Felidae"),
+                    status = "ACCEPTED", n_species = c(2L, 5L),
+                    phylum = c("Arthropoda", "Chordata"),
+                    class = c("Insecta", "Mammalia"),
+                    order = c("Lepidoptera", "Carnivora"))
+  resolved <- resolve_genus_classification(list(col = col))
+  expect_equal(resolved$family, "Felidae")
+  expect_equal(resolved$phylum, "Chordata")
+  expect_equal(resolved$order, "Carnivora")
+  expect_false(resolved$multi_kingdom)
+})
+
+test_that("a row with no kingdom cannot fill a family its kingdom disagrees with", {
+  # WFO records no kingdom; its synonym genus row for Leonura sits in
+  # Lamiaceae, which other rows place in Plantae.
+  worms <- genus_rows("Leonura", "Animalia", NA_character_, status = "ACCEPTED",
+                      phylum = "Cnidaria")
+  col <- genus_rows("Mentha", "Plantae", "Lamiaceae", status = "ACCEPTED")
+  wfo <- genus_rows("Leonura", NA_character_, "Lamiaceae", status = "SYNONYM")
+  resolved <- resolve_genus_classification(list(worms = worms, col = col,
+                                                wfo = wfo))
+  leo <- resolved[resolved$genus == "Leonura", ]
+  expect_equal(leo$kingdom, "Animalia")
+  expect_true(is.na(leo$family))
 })
 
 
@@ -312,7 +378,7 @@ test_that("extract_col_genera() reads genus-rank rows with full classification",
 
   out <- extract_col_genera(vtr)
   expect_equal(nrow(out), 2L)
-  expect_equal(names(out), c("genus", "kingdom", "phylum", "class", "order", "family"))
+  expect_equal(names(out), names(empty_genus_df()))
   expect_true(all(c("Quercus", "Pinus") %in% out$genus))
   expect_equal(out$kingdom[out$genus == "Quercus"], "Plantae")
 })

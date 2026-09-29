@@ -25,33 +25,119 @@
 # Each extractor reads genus-rank rows (or, for species-only backbones,
 # derives genera from accepted species) from a built backbone `.vtr` and
 # returns a data.frame with columns genus, kingdom, phylum, class, order,
-# family.
+# family, status and n_species.
+#
+# `status` is the row's taxonomic status as the backbone records it, so the
+# resolver can tell an accepted genus from a synonym that shares its spelling
+# in another kingdom (COL XR files the orchid Aa beside a molluscan synonym
+# Aa). `n_species` is the number of accepted species the backbone places under
+# that genus in that kingdom and family, which the resolver reads when two
+# accepted genera share a name; it is NA where the backbone gives
+# the genus no kingdom, since the count then decides nothing.
 
-#' Extract genus rows from WFO backbone
+#' Accepted species per genus (and kingdom) in a backbone
 #'
-#' @param bb_path Character. Path to WFO .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order,
-#'   family (kingdom/phylum/class/order are NA for WFO -- not stored in
-#'   backbone).
+#' @param bb_path Path to a backbone `.vtr`.
+#' @param by_kingdom Logical. Count per genus x the backbone's own `kingdom`
+#'   value rather than per genus.
+#' @return A table keyed on `genus`, or on genus and kingdom joined by a
+#'   carriage return, or `NULL` when the backbone has no accepted species.
 #' @noRd
-extract_wfo_genera <- function(bb_path) {
+.accepted_species_counts <- function(bb_path, by_kingdom) {
+  sp <- tryCatch({
+    q <- vectra::tbl(bb_path) |>
+      vectra::filter(taxon_rank == "SPECIES" & taxonomic_status == "ACCEPTED")
+    q <- if (by_kingdom) vectra::select(q, genus, kingdom, family) else
+      vectra::select(q, genus)
+    vectra::collect(q)
+  }, error = function(e) NULL)
+  if (is.null(sp) || nrow(sp) == 0L) return(NULL)
+  sp <- sp[!is.na(sp$genus) & nzchar(sp$genus), , drop = FALSE]
+  if (nrow(sp) == 0L) return(NULL)
+  table(if (by_kingdom) .occupant_key(sp$genus, sp$kingdom, sp$family) else
+    sp$genus)
+}
+
+
+#' Key a genus by the kingdom and family it sits in
+#'
+#' Two genera sharing a spelling are told apart by kingdom, and within one
+#' kingdom by family (Panthera is a cat and a geometrid moth).
+#' @noRd
+.occupant_key <- function(genus, kingdom, family) {
+  family[is.na(family)] <- ""
+  paste(genus, kingdom, family, sep = "\r")
+}
+
+
+#' Look up genus rows in an `.accepted_species_counts()` table
+#'
+#' @return Integer vector, 0 for a genus with no accepted species, `NA`
+#'   throughout when `counts` is `NULL`.
+#' @noRd
+.species_count_for <- function(counts, genus, kingdom = NULL, family = NULL) {
+  if (is.null(counts)) return(rep(NA_integer_, length(genus)))
+  key <- if (is.null(kingdom)) genus else .occupant_key(genus, kingdom, family)
+  n <- as.integer(counts[match(key, names(counts))])
+  n[is.na(n)] <- 0L
+  n
+}
+
+
+#' Extract the genus-rank rows of a backbone
+#'
+#' Shared by every backbone that records genera as rows of their own.
+#'
+#' @param bb_path Character. Path to the backbone `.vtr`.
+#' @param kingdom Character scalar stamped on every row, for a backbone scoped
+#'   to one kingdom that stores no `kingdom` column, or `NULL`.
+#' @param ranks Which of `kingdom`, `phylum`, `class` and `order` to read from
+#'   the backbone's own columns; the rest come back `NA`.
+#' @return data.frame with columns genus, kingdom, phylum, class, order,
+#'   family, status, n_species.
+#' @noRd
+.extract_genus_rank <- function(bb_path, kingdom = NULL, ranks = character()) {
   df <- vectra::tbl(bb_path) |>
     vectra::filter(taxon_rank == "GENUS") |>
-    vectra::select(canonical_name, family, genus) |>
     vectra::collect()
 
   if (nrow(df) == 0L) return(empty_genus_df())
 
-  data.frame(
+  pick <- function(col) {
+    if (col %in% ranks && col %in% names(df)) df[[col]] else NA_character_
+  }
+  out <- data.frame(
     genus   = df$canonical_name,
-    kingdom = NA_character_,
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = NA_character_,
-    family  = df$family,
+    kingdom = if (!is.null(kingdom)) kingdom else pick("kingdom"),
+    phylum  = pick("phylum"),
+    class   = pick("class"),
+    order   = pick("order"),
+    family  = if ("family" %in% names(df)) df$family else NA_character_,
+    status  = if ("taxonomic_status" %in% names(df)) df$taxonomic_status else
+      NA_character_,
     stringsAsFactors = FALSE
   )
+
+  out$n_species <- if (!is.null(kingdom)) {
+    .species_count_for(.accepted_species_counts(bb_path, FALSE), out$genus)
+  } else if ("kingdom" %in% ranks && "kingdom" %in% names(df)) {
+    .species_count_for(.accepted_species_counts(bb_path, TRUE),
+                       out$genus, out$kingdom, out$family)
+  } else {
+    NA_integer_
+  }
+  out
 }
+
+
+#' Extract genus rows from WFO backbone
+#'
+#' WFO stores no kingdom, phylum, class or order.
+#'
+#' @param bb_path Character. Path to WFO .vtr file.
+#' @return data.frame, see [.extract_genus_rank()].
+#' @noRd
+extract_wfo_genera <- function(bb_path) .extract_genus_rank(bb_path)
 
 
 #' Extract genus rows from a COL backbone
@@ -61,85 +147,34 @@ extract_wfo_genera <- function(bb_path) {
 #' columns.
 #'
 #' @param bb_path Character. Path to a COL .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
 extract_col_genera <- function(bb_path) {
-  # Collect genus rows -- vectra select() uses bare names; collect all columns
-  # then subset in R to handle the optionally-present higher-classification cols.
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  result <- data.frame(
-    genus  = df$canonical_name,
-    family = if ("family" %in% names(df)) df$family else NA_character_,
-    stringsAsFactors = FALSE
-  )
-  for (col in c("kingdom", "phylum", "class", "order")) {
-    result[[col]] <- if (col %in% names(df)) df[[col]] else NA_character_
-  }
-  result[, c("genus", "kingdom", "phylum", "class", "order", "family"),
-         drop = FALSE]
+  .extract_genus_rank(bb_path, ranks = c("kingdom", "phylum", "class", "order"))
 }
 
 
 #' Extract genus rows from GBIF backbone
 #'
 #' GBIF backbone stores kingdom/phylum/class/order as separate taxonomy keys
-#' that are not present in the converted .vtr. We do have `genus` and
-#' `family`. Higher classification columns are absent; they need to be
-#' provided via the GBIF hierarchy (see `resolve_kingdom_via_gbif()`).
+#' that are not present in the converted .vtr. Higher classification comes
+#' from the GBIF hierarchy instead (see `resolve_kingdom_via_gbif()`).
 #'
 #' @param bb_path Character. Path to GBIF .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
-extract_gbif_genera <- function(bb_path) {
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::select(canonical_name, family, genus) |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  data.frame(
-    genus   = df$canonical_name,
-    kingdom = NA_character_,
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = NA_character_,
-    family  = df$family,
-    stringsAsFactors = FALSE
-  )
-}
+extract_gbif_genera <- function(bb_path) .extract_genus_rank(bb_path)
 
 
 #' Extract unique genera from a Euro+Med backbone
 #'
-#' Euro+Med uses the unified backbone schema (canonical_name, taxon_rank, genus).
 #' Plants-only, so kingdom is always "Plantae".
 #'
 #' @param bb_path Character. Path to Euro+Med .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
 extract_euromed_genera <- function(bb_path) {
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::select(canonical_name, family, genus) |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  data.frame(
-    genus   = df$canonical_name,
-    kingdom = "Plantae",
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = NA_character_,
-    family  = df$family,
-    stringsAsFactors = FALSE
-  )
+  .extract_genus_rank(bb_path, kingdom = "Plantae")
 }
 
 
@@ -148,54 +183,21 @@ extract_euromed_genera <- function(bb_path) {
 #' ITIS uses unified schema. No kingdom column.
 #'
 #' @param bb_path Character. Path to ITIS .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
-extract_itis_genera <- function(bb_path) {
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::select(canonical_name, family, genus) |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  data.frame(
-    genus   = df$canonical_name,
-    kingdom = NA_character_,
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = NA_character_,
-    family  = df$family,
-    stringsAsFactors = FALSE
-  )
-}
+extract_itis_genera <- function(bb_path) .extract_genus_rank(bb_path)
 
 
 #' Extract genus rows from NCBI backbone
 #'
-#' NCBI uses unified schema. Has kingdom column but values are NCBI-specific
-#' (e.g. "Pseudomonadati") -- not standard kingdom names, so treated as NA
-#' here and normalized later via `normalize_kingdom_names()`.
+#' NCBI's kingdom values are clade names (e.g. "Pseudomonadati"), normalized
+#' later via `normalize_kingdom_names()`. Phylum, class and order are not read.
 #'
 #' @param bb_path Character. Path to NCBI .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
 extract_ncbi_genera <- function(bb_path) {
-  # Collect genus rows; runtime build may omit kingdom/phylum/class/order.
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  data.frame(
-    genus   = df$canonical_name,
-    kingdom = if ("kingdom" %in% names(df)) df$kingdom else NA_character_,
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = NA_character_,
-    family  = if ("family" %in% names(df)) df$family else NA_character_,
-    stringsAsFactors = FALSE
-  )
+  .extract_genus_rank(bb_path, ranks = "kingdom")
 }
 
 
@@ -204,65 +206,37 @@ extract_ncbi_genera <- function(bb_path) {
 #' OTT uses unified schema. Kingdom column exists, populated for ~2% of genera.
 #'
 #' @param bb_path Character. Path to OTT .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
 extract_ott_genera <- function(bb_path) {
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  data.frame(
-    genus   = df$canonical_name,
-    kingdom = if ("kingdom" %in% names(df)) df$kingdom else NA_character_,
-    phylum  = NA_character_,
-    class   = NA_character_,
-    order   = NA_character_,
-    family  = if ("family" %in% names(df)) df$family else NA_character_,
-    stringsAsFactors = FALSE
-  )
+  .extract_genus_rank(bb_path, ranks = "kingdom")
 }
 
 
 #' Extract genus rows from WoRMS backbone
 #'
 #' WoRMS has fully denormalized classification: kingdom, phylum, class, order.
-#' Most valuable source for higher-taxonomy resolution.
 #'
 #' @param bb_path Character. Path to WoRMS .vtr file.
-#' @return data.frame with columns: genus, kingdom, phylum, class, order, family.
+#' @return data.frame, see [.extract_genus_rank()].
 #' @noRd
 extract_worms_genera <- function(bb_path) {
-  df <- vectra::tbl(bb_path) |>
-    vectra::filter(taxon_rank == "GENUS") |>
-    vectra::collect()
-
-  if (nrow(df) == 0L) return(empty_genus_df())
-
-  pick <- function(col) if (col %in% names(df)) df[[col]] else NA_character_
-  data.frame(
-    genus   = df$canonical_name,
-    kingdom = pick("kingdom"),
-    phylum  = pick("phylum"),
-    class   = pick("class"),
-    order   = pick("order"),
-    family  = pick("family"),
-    stringsAsFactors = FALSE
-  )
+  .extract_genus_rank(bb_path, ranks = c("kingdom", "phylum", "class", "order"))
 }
 
 
-#' Empty genus data.frame (zero rows, correct schema)
+#' Empty genus data.frame (zero rows, extractor schema)
 #' @noRd
 empty_genus_df <- function() {
   data.frame(
-    genus   = character(0L),
-    kingdom = character(0L),
-    phylum  = character(0L),
-    class   = character(0L),
-    order   = character(0L),
-    family  = character(0L),
+    genus     = character(0L),
+    kingdom   = character(0L),
+    phylum    = character(0L),
+    class     = character(0L),
+    order     = character(0L),
+    family    = character(0L),
+    status    = character(0L),
+    n_species = integer(0L),
     stringsAsFactors = FALSE
   )
 }
@@ -291,10 +265,14 @@ empty_genus_df <- function() {
     class   = pick("class"),
     order   = pick("order"),
     family  = df$family,
+    status  = "ACCEPTED",
     stringsAsFactors = FALSE
   )
   out <- out[!is.na(out$genus) & nzchar(out$genus), , drop = FALSE]
-  out[!duplicated(out$genus), , drop = FALSE]
+  n <- table(out$genus)
+  out <- out[!duplicated(out$genus), , drop = FALSE]
+  out$n_species <- as.integer(n[out$genus])
+  out
 }
 
 extract_fishbase_genera <- function(bb_path) {
@@ -341,7 +319,7 @@ extract_reptiledb_genera <- function(bb_path) {
     error = function(e) NULL
   )
 
-  as_rows <- function(df, genus_col) {
+  as_rows <- function(df, genus_col, status) {
     data.frame(
       genus   = df[[genus_col]],
       kingdom = pick(df, "kingdom"),
@@ -349,16 +327,17 @@ extract_reptiledb_genera <- function(bb_path) {
       class   = pick(df, "class"),
       order   = pick(df, "order"),
       family  = pick(df, "family"),
+      status  = status,
       stringsAsFactors = FALSE
     )
   }
 
   rows <- list()
   if (!is.null(gr) && nrow(gr) > 0L) {
-    rows$genus_rank <- as_rows(gr, "canonical_name")
+    rows$genus_rank <- as_rows(gr, "canonical_name", pick(gr, "taxonomic_status"))
   }
   if (!is.null(sp) && nrow(sp) > 0L) {
-    rows$species <- as_rows(sp, "genus")
+    rows$species <- as_rows(sp, "genus", "ACCEPTED")
   }
   if (length(rows) == 0L) return(empty_genus_df())
 
@@ -367,6 +346,16 @@ extract_reptiledb_genera <- function(bb_path) {
                        drop = FALSE]
   if (nrow(combined) == 0L) return(empty_genus_df())
 
+  # A genus named both by a genus-rank row and by accepted species is taken
+  # from the genus-rank row, unless that row is a synonym and the species
+  # show the genus in use.
+  n_sp <- if (is.null(rows$species)) integer() else table(rows$species$genus)
+  n <- as.integer(n_sp[combined$genus])
+  n[is.na(n)] <- 0L
+  combined$n_species <- n
+  is_syn <- .register_status_grade(combined$status) == 2L
+  combined <- combined[order(combined$genus, is_syn, seq_len(nrow(combined))), ,
+                       drop = FALSE]
   combined[!duplicated(combined$genus), , drop = FALSE]
 }
 
@@ -609,18 +598,38 @@ infer_kingdom_from_family <- function(resolved) {
 
 # ---- Classification conflict resolution ----
 
+#' Grade a genus row's taxonomic status
+#'
+#' 0 for an accepted genus; 2 for a synonym, misapplied or ambiguous-synonym
+#' row, whose spelling names another genus; 1 for everything in between
+#' (provisionally accepted, doubtful, unchecked, or no status recorded).
+#'
+#' @param status Character vector of backbone taxonomic statuses.
+#' @return Integer vector.
+#' @noRd
+.register_status_grade <- function(status) {
+  s <- toupper(trimws(as.character(status)))
+  grade <- rep(1L, length(s))
+  grade[!is.na(s) & s == "ACCEPTED"] <- 0L
+  grade[!is.na(s) & grepl("SYNONYM|MISAPPLIED", s)] <- 2L
+  grade
+}
+
+
 #' Resolve classification conflicts across backends
 #'
-#' Merges genera from multiple backends, preferring WoRMS > COL > WCVP >
-#' Reptile DB > GBIF > Euro+Med > LCVP > ITIS > NCBI > OTT > WFO > FishBase >
-#' SeaLifeBase for each classification column.
-#' When the same genus appears in multiple backends, the first non-NA value
-#' in priority order is used.
+#' Merges genera from multiple backends. The kingdom is read from accepted
+#' rows before provisional ones and synonyms, then from the kingdom with the
+#' most accepted species, then in [.register_priority()] order. Phylum, class,
+#' order and family are each the first value in priority order among the rows
+#' agreeing with that kingdom (or recording none).
 #'
-#' @param genera_list Named list of data.frames, each with columns
-#'   genus, kingdom, phylum, class, order, family.
+#' @param genera_list Named list of data.frames in the extractor schema
+#'   ([empty_genus_df()]); `status` and `n_species` may be absent.
 #'   Names should be backend identifiers (e.g., "col", "gbif", "wfo").
-#' @return data.frame with deduplicated genera and resolved classification.
+#' @return data.frame with one row per genus: genus, kingdom, multi_kingdom,
+#'   phylum, class, order, family. `multi_kingdom` is `TRUE` where accepted
+#'   rows place the genus in more than one kingdom.
 #' @noRd
 resolve_genus_classification <- function(genera_list) {
   priority <- .register_priority()
@@ -638,11 +647,14 @@ resolve_genus_classification <- function(genera_list) {
   all_rows <- lapply(priority, function(be) {
     df <- genera_list[[be]]
     if (is.null(df) || nrow(df) == 0L) return(NULL)
+    if (!"status" %in% names(df)) df$status <- NA_character_
+    if (!"n_species" %in% names(df)) df$n_species <- NA_integer_
+    df <- df[, names(empty_genus_df()), drop = FALSE]
     df$source_backend <- be
     df
   })
   all_rows <- Filter(Negate(is.null), all_rows)
-  if (length(all_rows) == 0L) return(empty_genus_df())
+  if (length(all_rows) == 0L) return(empty_resolved_genus_df())
 
   combined <- do.call(rbind, all_rows)
 
@@ -665,17 +677,22 @@ resolve_genus_classification <- function(genera_list) {
   # ones. Rank each row by how often its source repeats that kingdom for that
   # genus so the source's own majority speaks for it; an even split keeps the
   # incoming order, and rows recording no kingdom stay where they are.
+  is_val <- function(v) !is.na(v) & nzchar(v)
+  has_kg <- is_val(combined$kingdom)
+
   kg <- paste(combined$genus, combined$source_backend, combined$kingdom,
               sep = "\r")
   kg_tab <- table(kg)
   support <- as.integer(kg_tab[match(kg, names(kg_tab))])
-  support[is.na(combined$kingdom) | !nzchar(combined$kingdom)] <- 0L
+  support[!has_kg] <- 0L
 
   # Order by genus, then priority, then within-source kingdom support, so the
   # first non-NA per genus wins via match()
   combined$priority_rank <- match(combined$source_backend, priority)
-  combined <- combined[order(combined$genus, combined$priority_rank,
-                             -support), ]
+  ord <- order(combined$genus, combined$priority_rank, -support)
+  combined <- combined[ord, ]
+  support  <- support[ord]
+  has_kg   <- has_kg[ord]
 
   genera_all <- combined$genus
 
@@ -693,27 +710,103 @@ resolve_genus_classification <- function(genera_list) {
     first_hit <- which(!duplicated(sub_genus))
     sub_vals[first_hit][match(result$genus, sub_genus[first_hit])]
   }
-  is_val <- function(v) !is.na(v) & nzchar(v)
 
-  # Kingdom first: it decides which rows may speak for the ranks below it.
-  result$kingdom <- fill_col(combined$kingdom, is_val(combined$kingdom))
+  # The genus the register describes is one row's occupant: a kingdom and a
+  # family, read from a single winning row, which every rank below then has to
+  # agree with.
+  #
+  # Accepted rows win before provisional ones, and both before synonyms. A
+  # synonym genus row names a genus placed elsewhere: COL XR carries Aa,
+  # Acaena and Acanthella as animal synonyms beside the accepted orchid, rose
+  # and sponge, and read by priority alone those rows put all three in
+  # Animalia.
+  #
+  # Where accepted genera in two kingdoms share the spelling (Olea is the olive
+  # and a sea slug, Abrus a legume and a leafhopper), the register holds the
+  # kingdom with more accepted species, counted in whichever source carries
+  # the most for that genus and kingdom; within the kingdom, the family with
+  # more (Panthera is a cat and a geometrid moth). The first source by priority
+  # that carries both need not cover both equally. Priority settles an equal
+  # count and every genus no source counts species for.
+  grade <- .register_status_grade(combined$status)
+  n_sp  <- combined$n_species
+  n_sp[is.na(n_sp) | !has_kg] <- 0L
+  king_max <- stats::ave(n_sp, paste(genera_all, combined$kingdom, sep = "\r"),
+                         FUN = max)
+  occ_max  <- stats::ave(n_sp, .occupant_key(genera_all, combined$kingdom,
+                                             combined$family), FUN = max)
+  w_ord  <- order(genera_all, !has_kg, grade, -king_max, -occ_max,
+                  combined$priority_rank, -support)
+  winner <- w_ord[!duplicated(genera_all[w_ord])]
+  winner <- winner[match(result$genus, genera_all[winner])]
+  result$kingdom <- ifelse(has_kg[winner], combined$kingdom[winner],
+                           NA_character_)
 
-  # A genus name can belong to two kingdoms at once -- Goodfellowia is a
-  # starling and a bacterium, Verreauxia a plant and a piculet -- and a flat
-  # genus index holds one answer. Resolving each rank independently let the
-  # losing kingdom still fill the ranks the winner left empty, which produced
-  # rows like a Plantae genus in the bird order Piciformes. A source may now
-  # only fill a rank if it agrees with the resolved kingdom, or records no
-  # kingdom at all (Fungorum, AlgaeBase and much of GBIF record none, and they
-  # stay eligible so the fill they provide is not lost).
-  win <- result$kingdom[match(genera_all, result$genus)]
-  coherent <- !is_val(combined$kingdom) | is.na(win) | combined$kingdom == win
+  # A genus the accepted records place in more than one kingdom, whether two
+  # genera share the spelling or the sources disagree on its placement. The
+  # register's single kingdom for it is then a choice, and a caller that knows
+  # which record it matched should read the kingdom from that record.
+  acc <- has_kg & grade == 0L
+  n_kg <- tapply(combined$kingdom[acc], genera_all[acc],
+                 function(k) length(unique(k)))
+  result$multi_kingdom <- !is.na(n_kg[result$genus]) & n_kg[result$genus] > 1L
 
-  for (col in c("phylum", "class", "order", "family")) {
+  # A row may only fill a rank if it describes the winning occupant. Resolving
+  # each rank independently let the losing kingdom fill the ranks the winner
+  # left empty, which produced rows like a Plantae genus in the bird order
+  # Piciformes. A row recording no kingdom (WFO, GBIF, Fungorum, AlgaeBase) is
+  # judged by the kingdom its family carries elsewhere in the input, so a WFO
+  # synonym cannot hand Lamiaceae to the cnidarian Leonura; a row whose family
+  # is unknown there too stays eligible.
+  row_kg <- combined$kingdom
+  fam_ok <- has_kg & is_val(combined$family)
+  if (any(fam_ok)) {
+    fam_kg <- tapply(row_kg[fam_ok], combined$family[fam_ok],
+                     function(k) names(which.max(table(k))))
+    need <- !has_kg & is_val(combined$family)
+    row_kg[need] <- unname(fam_kg[combined$family[need]])
+  }
+  w <- match(genera_all, result$genus)
+  coherent <- !is_val(row_kg) | is.na(result$kingdom[w]) |
+    row_kg == result$kingdom[w]
+
+  # Family comes from the winning row where it records one, otherwise from the
+  # first coherent row in priority order; the ranks above it then come in
+  # priority order from rows agreeing with that family.
+  is_winner <- seq_along(genera_all) %in% winner
+  f_ord  <- order(genera_all, !is_winner, combined$priority_rank, -support)
+  f_use  <- f_ord[(is_val(combined$family) & coherent)[f_ord]]
+  f_hit  <- f_use[!duplicated(genera_all[f_use])]
+  result$family <- combined$family[f_hit][match(result$genus,
+                                                genera_all[f_hit])]
+
+  agree <- function(col) {
+    r <- result[[col]][w]
+    !is_val(combined[[col]]) | is.na(r) | combined[[col]] == r
+  }
+  coherent <- coherent & agree("family")
+  for (col in c("phylum", "class", "order")) {
     result[[col]] <- fill_col(combined[[col]], is_val(combined[[col]]) & coherent)
+    coherent <- coherent & agree(col)
   }
 
-  result
+  result[, names(empty_resolved_genus_df()), drop = FALSE]
+}
+
+
+#' Empty resolved-genus data.frame (zero rows, resolver schema)
+#' @noRd
+empty_resolved_genus_df <- function() {
+  data.frame(
+    genus         = character(0L),
+    kingdom       = character(0L),
+    multi_kingdom = logical(0L),
+    phylum        = character(0L),
+    class         = character(0L),
+    order         = character(0L),
+    family        = character(0L),
+    stringsAsFactors = FALSE
+  )
 }
 
 
@@ -1066,7 +1159,7 @@ build_genus_register <- function(backbone_paths = NULL, output_dir = NULL,
   }
 
   if (verbose) {
-    message("Resolving classification conflicts (WoRMS > COL > WCVP > ...)...")
+    message("Resolving classification conflicts...")
   }
   resolved <- resolve_genus_classification(genera_list)
 
@@ -1177,7 +1270,7 @@ build_genus_register <- function(backbone_paths = NULL, output_dir = NULL,
   # Reorder columns
   resolved <- resolved[, c("genus", "kingdom", "phylum", "class", "order",
                             "family", "kingdom_group", "taxon_group",
-                            "life_form"), drop = FALSE]
+                            "life_form", "multi_kingdom"), drop = FALSE]
   resolved <- resolved[order(resolved$genus), , drop = FALSE]
   rownames(resolved) <- NULL
 

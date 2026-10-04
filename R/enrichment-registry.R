@@ -1680,17 +1680,17 @@
   frugivoria = list(
     # The mammal and bird "simple" tables, the two entities the build reads.
     source_url  = paste(
-      "https://pasta.lternet.edu/package/data/eml/edi/1220/5/3c655f2ab1d525d1b1f05ee78153e875",
-      "https://pasta.lternet.edu/package/data/eml/edi/1220/5/5a86fde71322a1ff64d94ace0ed1982c",
+      "https://pasta.lternet.edu/package/data/eml/edi/1220/6/3c655f2ab1d525d1b1f05ee78153e875",
+      "https://pasta.lternet.edu/package/data/eml/edi/1220/6/5a86fde71322a1ff64d94ace0ed1982c",
       sep = " ; "
     ),
     source_doi  = "10.6073/pasta/frugivoria",
-    version     = "1.220.5",
+    version     = "1.220.6",
     license     = "CC BY 4.0",
     attribution = paste0(
       "Gerstner BE et al. (2023) Frugivoria: a trait database for birds and ",
       "mammals exhibiting frugivory across contiguous Neotropical moist ",
-      "forests. EDI (edi.1220.5), CC BY 4.0. Mammal + bird 'simple' tables ",
+      "forests. EDI (edi.1220.6), CC BY 4.0. Mammal + bird 'simple' tables ",
       "combined on a shared trait core."
     ),
     download_fn = function(url, dest) {

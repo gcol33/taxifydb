@@ -4478,12 +4478,12 @@
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/pelagic-d314e381fc5627c60b4345f6295e98ba.vtr"
     },
     "frugivoria": {
-      "latest": "2026.08",
-      "source_version": "1.220.5",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/frugivoria.vtr",
+      "latest": "2026.10",
+      "source_version": "1.220.6",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.10/frugivoria.vtr",
       "nrow": 3032,
-      "content_id": "8af656e0c244d6d2196a0a1d91722aba",
-      "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/5/3c655f2ab1d525d1b1f05ee78153e875 ; https://pasta.lternet.edu/package/data/eml/edi/1220/5/5a86fde71322a1ff64d94ace0ed1982c",
+      "content_id": "da73a185dca6bfac95c492a5a69316e6",
+      "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/6/3c655f2ab1d525d1b1f05ee78153e875 ; https://pasta.lternet.edu/package/data/eml/edi/1220/6/5a86fde71322a1ff64d94ace0ed1982c",
       "source_doi": "10.6073/pasta/frugivoria",
       "license": "CC BY 4.0",
       "resolved_backbones": [
@@ -4507,7 +4507,7 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/frugivoria-8af656e0c244d6d2196a0a1d91722aba.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.10/frugivoria-da73a185dca6bfac95c492a5a69316e6.vtr"
     },
     "parravicini": {
       "latest": "2026.08",

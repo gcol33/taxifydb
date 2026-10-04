@@ -215,13 +215,13 @@
       "source_version": "3.0.1"
     },
     "wcvp": {
-      "latest": "2026.08",
+      "latest": "2026.06",
       "source_date": "2026-06-04",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.08/wcvp.vtr",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.06/wcvp.vtr",
       "nrow": 1448984,
-      "full_size": 309175561,
-      "full_sha256": "20da853008377c7ab601a3796a12328cb9500c37c2ae179cfd2327a3432e55cf",
-      "content_id": "1148cb280192de2391f4f2aee591d451",
+      "full_size": 341800361,
+      "full_sha256": "e6d24b941bfd366a435647bea79dfb12963f395607e096ae51818658c65050e9",
+      "content_id": "2e00aa92101d7fa20dd6ffe92b4b8983",
       "source_url": "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip",
       "citation": {
         "key": "govaerts2021wcvp",
@@ -235,10 +235,11 @@
         "doi": "10.1038/s41597-021-00997-6"
       },
       "license": "CC BY 4.0",
-      "delta_from": "2026.06",
-      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.08/wcvp.xdelta",
-      "delta_size": 88710405,
-      "source_version": "2026.06"
+      "delta_from": "2026.08",
+      "delta_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.06/wcvp.xdelta",
+      "delta_size": 93183650,
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/wcvp-2026.06/wcvp-2e00aa92101d7fa20dd6ffe92b4b8983.vtr",
+      "delta_from_content_id": "1148cb280192de2391f4f2aee591d451"
     },
     "wgsrpd": {
       "latest": "2026.07",

@@ -21,7 +21,7 @@ test_that("a source host picks its probe, and api.gbif wins over gbif", {
     "check_gbif_api_version")
   expect_equal(
     .upstream_probe_for("https://hosted-datasets.gbif.org/eBird/x.zip"),
-    "check_gbif_version")
+    "check_last_modified")
   expect_null(.upstream_probe_for("https://example.org/traits.csv"))
   expect_null(.upstream_probe_for(NULL))
 })
@@ -255,4 +255,58 @@ test_that("the host record reaches the probe, source_record first", {
   entry$source_record <- NULL
   check_enrichment_source_version(entry, probe = probe)
   expect_equal(seen, "10.1890/paper")
+})
+
+test_that("every repository host class has its probe", {
+  expect_equal(.upstream_probe_for(
+    "https://pasta.lternet.edu/package/data/eml/edi/481/5/3a88bfdfefcfe6dcafb27afd3ce4e90c"),
+    "check_edi_version")
+  expect_equal(.upstream_probe_for(
+    "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn:uuid:e576e4b7"),
+    "check_dataone_version")
+  expect_equal(.upstream_probe_for(
+    "https://borealisdata.ca/api/datasets/:persistentId?persistentId=doi:10.5683/SP3/0YFJED"),
+    "check_dataverse_version")
+  expect_equal(.upstream_probe_for("https://doi.org/10.15454/UU2FQT"),
+               "check_dataverse_version")
+  expect_equal(.upstream_probe_for("https://doi.org/10.1002/eap.70034"),
+               "check_crossref_version")
+  expect_equal(.upstream_probe_for("https://esapubs.org/archive/ecol/E096/202/"),
+               "check_crossref_version")
+  expect_equal(.upstream_probe_for(
+    "https://esapubs.org/archive/ecol/E090/184/PanTHERIA_1-0_WR05_Aug2008.txt"),
+    "check_last_modified")
+  expect_equal(.upstream_probe_for(
+    "http://web.archive.org/web/20231002005253id_/https://example.org/f.xlsx"),
+    "check_wayback_version")
+  expect_equal(.upstream_probe_for(
+    "https://ipt.biodiversity.be/archive.do?r=arthropod-trait-dataset&v=1.1"),
+    "check_ipt_version")
+})
+
+test_that("a multi-URL source needs a probe for every part", {
+  covered <- paste("https://hosted-datasets.gbif.org/a.zip",
+                   "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
+                   sep = " ; ")
+  expect_equal(.upstream_probe_for(covered),
+               c("check_last_modified", "check_ott_version"))
+  expect_null(.upstream_probe_for(
+    paste("https://hosted-datasets.gbif.org/a.zip", "https://example.org/b",
+          sep = " ; ")))
+})
+
+test_that("live and challenge-walled sources report why, without the network", {
+  probe <- function(url, record) stop("the network must not be reached here")
+  live <- check_enrichment_source_version(
+    list(source_url = "https://bien.nceas.ucsb.edu", source_version = "2026.09"),
+    probe = probe)
+  expect_true(is.na(live$outdated))
+  expect_match(live$note, "live database")
+
+  walled <- check_enrichment_source_version(
+    list(source_url = "https://www.sciencebase.gov/catalog/file/get/x?name=y.xls",
+         source_version = "14.3"),
+    probe = probe)
+  expect_true(is.na(walled$outdated))
+  expect_match(walled$note, "JavaScript challenge")
 })

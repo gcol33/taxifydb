@@ -12,6 +12,8 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # EDI's PASTA API refuses unauthenticated calls since 2026-07-30.
+      EDI_API_KEY: ${{ secrets.EDI_API_KEY }}
       R_KEEP_PKG_SOURCE: yes
 
     steps:
@@ -43,6 +45,7 @@ jobs:
           # polls upstream Zenodo/Figshare/Dryad/GBIF APIs and has no need
           # for the build pipeline that uses taxify.
           source("R/utils.R")          # provides %||%
+          source("R/enrichment-helpers.R")  # .anubis_fetch() for Phaidra
           source("R/check_versions.R")
           results <- check_all_enrichment_versions("manifest/manifest.json")
           jsonlite::write_json(results, "version_results.json",

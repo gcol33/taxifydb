@@ -10,12 +10,15 @@ probe_upstream_identity(source_url, record = NULL)
 \item{source_url}{Character. The URL a build downloads its source from.}
 
 \item{record}{Character or NULL. The source's host record (registry
-\code{source_record}, else \code{source_doi}); see \code{\link[=check_figshare_version]{check_figshare_version()}}.}
+\code{source_record}, else \code{source_doi}); see \code{\link[=check_figshare_version]{check_figshare_version()}}.
+A source downloading from several URLs (\verb{url ; url}) is probed part by
+part, and its identity is theirs joined: it moves when any part moves, it is
+pinned only when every part is, and it dates from its newest part.}
 }
 \value{
 The probe's result (\code{id}, \code{version}, \code{date}, optionally \code{pinned},
 \code{url}), or \code{NULL} when no probe covers the host or the host cannot be
-reached.
+reached (for a multi-URL source: any of its hosts).
 }
 \description{
 The single entry point to the probes: a build calls it to record what it

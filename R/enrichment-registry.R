@@ -9,6 +9,38 @@
 # for the build pipeline.
 
 
+# LEDA trait files: local name = file name on the LEDA server. One list feeds
+# both the download and the source URL the freshness check probes file by file.
+.leda_base <- "https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/"
+.leda_trait_files <- c(
+  "life_form.txt"         = "plant_growth_form.txt",
+  "dispersal_type.txt"    = "dispersal_type.txt",
+  "TV.txt"                = "TV_2016.txt",
+  "seed_mass.txt"         = "seed_mass.txt",
+  "canopy_height.txt"     = "canopy_height.txt",
+  "leaf_mass.txt"         = "leaf_mass.txt",
+  "SLA.txt"               = "SLA_und_geo_neu2.txt",
+  "clonal_growth.txt"     = "CGO.txt",
+  "buoyancy.txt"          = "buoyancy_2016.txt",
+  # remaining LEDA trait files (seed_bank / SNP omitted: empty upstream)
+  "age_of_first_flowering.txt"    = "age_of_first_flowering.txt",
+  "branching.txt"                 = "branching.txt",
+  "buds_seasonality.txt"          = "buds_seasonality.txt",
+  "buds_vertical_dist.txt"        = "buds_vertical_dist.txt",
+  "leaf_distribution.txt"         = "leaf_distribution.txt",
+  "LDMC_und_Geo.txt"              = "LDMC_und_Geo.txt",
+  "leaf_size.txt"                 = "leaf_size.txt",
+  "morphology_dispersal_unit.txt" = "morphology_dispersal_unit.txt",
+  "plant_life_span.txt"           = "plant_life_span.txt",
+  "releasing_height.txt"          = "releasing_height.txt",
+  "seed_longevity.txt"            = "seed_longevity.txt",
+  "seed_number.txt"               = "seed_number.txt",
+  "seed_shape.txt"                = "seed_shape.txt",
+  "shoot_growth_form.txt"         = "shoot_growth_form.txt",
+  "ssd.txt"                       = "ssd.txt"
+)
+
+
 #' Internal registry of enrichment builders
 #' @noRd
 .enrichment_build_registry <- list(
@@ -112,45 +144,17 @@
   ),
 
   leda = list(
-    source_url  = "https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/",
+    source_url  = paste(paste0(.leda_base, .leda_trait_files), collapse = " ; "),
     source_doi  = "10.1111/j.1365-2745.2008.01430.x",
     version     = "2008.1",
     license     = "Free for academic use",
     attribution = "Kleyer M et al. (2008) The LEDA Traitbase: a database of life-history traits of the Northwest European flora. J Ecol 96:1266-1274.",
     download_fn = function(url, dest) {
       dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-      leda_base <- "https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/"
-      trait_files <- c(
-        "life_form.txt"         = "plant_growth_form.txt",
-        "dispersal_type.txt"    = "dispersal_type.txt",
-        "TV.txt"                = "TV_2016.txt",
-        "seed_mass.txt"         = "seed_mass.txt",
-        "canopy_height.txt"     = "canopy_height.txt",
-        "leaf_mass.txt"         = "leaf_mass.txt",
-        "SLA.txt"               = "SLA_und_geo_neu2.txt",
-        "clonal_growth.txt"     = "CGO.txt",
-        "buoyancy.txt"          = "buoyancy_2016.txt",
-        # remaining LEDA trait files (seed_bank / SNP omitted: empty upstream)
-        "age_of_first_flowering.txt"    = "age_of_first_flowering.txt",
-        "branching.txt"                 = "branching.txt",
-        "buds_seasonality.txt"          = "buds_seasonality.txt",
-        "buds_vertical_dist.txt"        = "buds_vertical_dist.txt",
-        "leaf_distribution.txt"         = "leaf_distribution.txt",
-        "LDMC_und_Geo.txt"              = "LDMC_und_Geo.txt",
-        "leaf_size.txt"                 = "leaf_size.txt",
-        "morphology_dispersal_unit.txt" = "morphology_dispersal_unit.txt",
-        "plant_life_span.txt"           = "plant_life_span.txt",
-        "releasing_height.txt"          = "releasing_height.txt",
-        "seed_longevity.txt"            = "seed_longevity.txt",
-        "seed_number.txt"               = "seed_number.txt",
-        "seed_shape.txt"                = "seed_shape.txt",
-        "shoot_growth_form.txt"         = "shoot_growth_form.txt",
-        "ssd.txt"                       = "ssd.txt"
-      )
-      for (out_name in names(trait_files)) {
-        upstream <- trait_files[[out_name]]
+      for (out_name in names(.leda_trait_files)) {
+        upstream <- .leda_trait_files[[out_name]]
         tryCatch(
-          download_curl_file(paste0(leda_base, upstream), dest, out_name),
+          download_curl_file(paste0(.leda_base, upstream), dest, out_name),
           error = function(e) {
             message(sprintf("  Warning: failed to download LEDA %s (%s): %s",
                             out_name, upstream, conditionMessage(e)))
@@ -1674,7 +1678,12 @@
   ),
 
   frugivoria = list(
-    source_url  = "https://pasta.lternet.edu/package/data/eml/edi/1220/5/",
+    # The mammal and bird "simple" tables, the two entities the build reads.
+    source_url  = paste(
+      "https://pasta.lternet.edu/package/data/eml/edi/1220/5/3c655f2ab1d525d1b1f05ee78153e875",
+      "https://pasta.lternet.edu/package/data/eml/edi/1220/5/5a86fde71322a1ff64d94ace0ed1982c",
+      sep = " ; "
+    ),
     source_doi  = "10.6073/pasta/frugivoria",
     version     = "1.220.5",
     license     = "CC BY 4.0",
@@ -1686,10 +1695,9 @@
     ),
     download_fn = function(url, dest) {
       dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-      download_edi_file(paste0(url, "3c655f2ab1d525d1b1f05ee78153e875"),
-                        dest, "mammal.csv")
-      download_edi_file(paste0(url, "5a86fde71322a1ff64d94ace0ed1982c"),
-                        dest, "bird.csv")
+      urls <- strsplit(url, " ; ", fixed = TRUE)[[1L]]
+      download_edi_file(urls[1L], dest, "mammal.csv")
+      download_edi_file(urls[2L], dest, "bird.csv")
       dest
     },
     parse_fn    = function(path) parse_frugivoria(path),
@@ -1996,10 +2004,10 @@
     source_url  = "https://phaidra.univie.ac.at/api/object/o:861474/octets",
     source_doi  = "10.25365/phaidra.49",
     version     = "2019.1",
-    license     = "CC BY 4.0",
+    license     = "CC BY-NC 4.0",
     attribution = paste0(
       "Degen R, Faulwetter S (2019) The Arctic Traits Database. University of ",
-      "Vienna (PHAIDRA doi:10.25365/phaidra.49), CC BY 4.0. Long-format ",
+      "Vienna (PHAIDRA doi:10.25365/phaidra.49), CC BY-NC 4.0. Long-format ",
       "fuzzy-coded traits reduced to the dominant category per species by ",
       "taxifydb."
     ),
@@ -2064,6 +2072,9 @@
   hosts = list(
     source_url  = "https://data.nhm.ac.uk/dataset/hosts-a-database-of-the-world-s-lepidopteran-hostplants",
     source_doi  = "10.5519/havt50xw",
+    source_record = paste0(
+      "https://data.nhm.ac.uk/dataset/11623cfb-ae19-41df-8d4e-fa7a1665ac29/",
+      "resource/877f387a-36a3-486c-a0c1-b8d5fb69f85a"),
     version     = "2010.1",
     license     = "CC0",
     attribution = paste0(

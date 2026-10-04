@@ -1495,7 +1495,7 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/leda.vtr",
       "nrow": 23748,
       "content_id": "03a7bb2070f8c4dbb011c2a373ac730a",
-      "source_url": "https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/",
+      "source_url": "https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/plant_growth_form.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/dispersal_type.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/TV_2016.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/seed_mass.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/canopy_height.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/leaf_mass.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/SLA_und_geo_neu2.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/CGO.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/buoyancy_2016.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/age_of_first_flowering.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/branching.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/buds_seasonality.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/buds_vertical_dist.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/leaf_distribution.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/LDMC_und_Geo.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/leaf_size.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/morphology_dispersal_unit.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/plant_life_span.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/releasing_height.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/seed_longevity.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/seed_number.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/seed_shape.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/shoot_growth_form.txt ; https://uol.de/f/5/inst/biologie/ag/landeco/download/LEDA/Data_files/ssd.txt",
       "source_doi": "10.1111/j.1365-2745.2008.01430.x",
       "license": "Free for academic use",
       "resolved_backbones": [
@@ -4483,7 +4483,7 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/frugivoria.vtr",
       "nrow": 3032,
       "content_id": "8af656e0c244d6d2196a0a1d91722aba",
-      "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/5/",
+      "source_url": "https://pasta.lternet.edu/package/data/eml/edi/1220/5/3c655f2ab1d525d1b1f05ee78153e875 ; https://pasta.lternet.edu/package/data/eml/edi/1220/5/5a86fde71322a1ff64d94ace0ed1982c",
       "source_doi": "10.6073/pasta/frugivoria",
       "license": "CC BY 4.0",
       "resolved_backbones": [
@@ -4881,7 +4881,7 @@
       "content_id": "9454ecf86372614e9e14e6bdfc0a5276",
       "source_url": "https://phaidra.univie.ac.at/api/object/o:861474/octets",
       "source_doi": "10.25365/phaidra.49",
-      "license": "CC BY 4.0",
+      "license": "CC BY-NC 4.0",
       "resolved_backbones": [
         "algaebase",
         "avilist",
@@ -5017,7 +5017,8 @@
       "source_url": "https://data.nhm.ac.uk/dataset/hosts-a-database-of-the-world-s-lepidopteran-hostplants",
       "source_doi": "10.5519/havt50xw",
       "license": "CC0",
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/hosts-9fddbcbd152a40242ea6e8680acdef1b.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/hosts-9fddbcbd152a40242ea6e8680acdef1b.vtr",
+      "source_record": "https://data.nhm.ac.uk/dataset/11623cfb-ae19-41df-8d4e-fa7a1665ac29/resource/877f387a-36a3-486c-a0c1-b8d5fb69f85a"
     },
     "usda_fungus_host": {
       "latest": "2026.08",
@@ -5232,7 +5233,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ramond-395641d8333865e72b883b0450d75704.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/ramond-395641d8333865e72b883b0450d75704.vtr",
+      "upstream_id": "56963.csv;56964.csv;56965.csv"
     },
     "freshwater_insects_conus": {
       "latest": "2026.08",

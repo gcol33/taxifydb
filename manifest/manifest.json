@@ -16,20 +16,20 @@
       "latest": "2026.09",
       "source_date": "2026-09-11",
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col.vtr",
-      "full_size": 2055697356,
-      "full_sha256": "42d1ffb23b14e2aa2c712de3b434d95cf0ee6135e32df9a46c90cfbcb63d53a6",
+      "full_size": 2094519779,
+      "full_sha256": "e7887156be6fb31afa04fc52e462181c81fcf7e83025b3a02c100f607dcdd37a",
       "nrow": 5432444,
       "source_url": "https://download.checklistbank.org/col/monthly/2026-09-11_dwca.zip",
-      "content_id": "c2999654decfc2a45771631a59ca7ba5",
+      "content_id": "b52e77fcf293024ace61080bc6061008",
       "extras": [
         {
           "name": "col_species_profile.vtr",
           "url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col_species_profile.vtr",
-          "size": 24718472,
-          "sha256": "8a0cc867b19e4927640d5699fb378003c0a6b3ffaa74be09388b9bb07f3f02ea"
+          "size": 24718496,
+          "sha256": "ffa0675822c6beb99ac1f9c3debf0d74ff5960b3161b2f2efa15189e7ee0cf21"
         }
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col-c2999654decfc2a45771631a59ca7ba5.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/col-2026.09/col-b52e77fcf293024ace61080bc6061008.vtr"
     },
     "gbif": {
       "latest": "2023.08",

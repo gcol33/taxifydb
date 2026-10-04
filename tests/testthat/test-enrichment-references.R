@@ -298,7 +298,7 @@ test_that("build_enrichment carries the parser's reference table to the writer",
     parse_fn = function(path) parsed,
     requires = character(0))
   local_mocked_bindings(.enrichment_build_registry = list(demo = reg),
-                        probe_upstream_identity = function(url) list())
+                        probe_upstream_identity = function(...) list())
   suppressMessages(build_enrichment("demo", output_dir = dir,
                                     resolve_names = FALSE, verbose = FALSE))
   expect_true(file.exists(file.path(dir, "demo_references.vtr")))

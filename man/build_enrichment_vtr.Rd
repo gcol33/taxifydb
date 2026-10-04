@@ -11,6 +11,7 @@ build_enrichment_vtr(
   version,
   source_url,
   source_doi = NULL,
+  source_record = NULL,
   upstream_id = NULL,
   license = "unknown",
   attribution = NULL,
@@ -36,6 +37,10 @@ build_enrichment_vtr(
 \item{source_url}{Character. URL the source data was downloaded from.}
 
 \item{source_doi}{Character or NULL. DOI of the source dataset.}
+
+\item{source_record}{Character or NULL. The host record a download URL
+belongs to, where neither the URL nor \code{source_doi} names it (a Figshare
+file URL beside a journal DOI). Read by \code{\link[=check_figshare_version]{check_figshare_version()}}.}
 
 \item{upstream_id}{Character or NULL. The identity the source host gives the
 version this build read -- a Zenodo record number, a Figshare or Dryad

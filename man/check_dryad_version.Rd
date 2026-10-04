@@ -4,14 +4,17 @@
 \alias{check_dryad_version}
 \title{Check a Dryad dataset for the latest version}
 \usage{
-check_dryad_version(source_url)
+check_dryad_version(source_url, record = NULL)
 }
 \arguments{
-\item{source_url}{Character. Dryad download URL containing a DOI.}
+\item{source_url}{Character. Dryad download URL containing a DOI, or the
+bare Dryad DOI (\verb{10.5061/dryad.<id>}, optionally behind \code{doi.org}).}
+
+\item{record}{Unused; the URL names the dataset.}
 }
 \value{
-Named list with \code{id} and \code{version} (both the newest version number)
-and \code{url}; \code{NULL} if the dataset cannot be read.
+Named list with \code{id} and \code{version} (both the newest version number),
+\code{date}, and \code{url}; \code{NULL} if the dataset cannot be read.
 }
 \description{
 Check a Dryad dataset for the latest version

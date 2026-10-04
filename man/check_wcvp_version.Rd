@@ -4,14 +4,16 @@
 \alias{check_wcvp_version}
 \title{Check Kew WCVP for the latest version}
 \usage{
-check_wcvp_version(source_url)
+check_wcvp_version(source_url, record = NULL)
 }
 \arguments{
 \item{source_url}{Character. WCVP download URL.}
+
+\item{record}{Unused.}
 }
 \value{
-Named list with \code{id}, \code{version}, and \code{url}; \code{NULL} if the header is
-absent.
+Named list with \code{id}, \code{version}, \code{date}, and \code{url}; \code{NULL} if the
+header is absent.
 }
 \description{
 WCVP has no dedicated API, so we fall back to a HEAD request via

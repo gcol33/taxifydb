@@ -111,6 +111,12 @@ jobs:
         if: steps.check.outputs.outdated_count != '0'
         run: |
           BODY=$(cat issue_body.md)
+          # The label is what the lookup below keys on; creating it here keeps a
+          # deleted label from failing the step after the check already ran.
+          gh label create "enrichment-outdated" --repo ${{ github.repository }} \
+            --color FBCA04 \
+            --description "Upstream enrichment source has a newer version" \
+            --force
           EXISTING=$(gh issue list --repo ${{ github.repository }} \
             --label "enrichment-outdated" --state open --json number -q '.[0].number')
 

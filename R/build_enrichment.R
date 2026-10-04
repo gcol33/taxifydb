@@ -71,7 +71,9 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
   # is being made rather than reconstructed later. A host with no probe, or one
   # that cannot be reached, records nothing and the freshness check falls back
   # to reporting the entry as uncheckable.
-  upstream <- probe_upstream_identity(source_url)
+  source_record <- if (!is.null(url)) NULL else reg$source_record
+  upstream <- probe_upstream_identity(
+    source_url, source_record %||% (if (is.null(url)) reg$source_doi))
   upstream_id <- upstream$pinned %||% upstream$id
   if (verbose && !is.null(upstream_id)) {
     message(sprintf("  Upstream identity: %s", upstream_id))
@@ -148,6 +150,7 @@ build_enrichment <- function(name, output_dir = NULL, version = NULL,
                     (if (!is.null(url)) format(Sys.Date(), "%Y.%m") else reg$version),
     source_url    = source_url,
     source_doi    = if (!is.null(url)) NULL else reg$source_doi,
+    source_record = source_record,
     upstream_id   = upstream_id,
     license       = reg$license,
     attribution   = reg$attribution,

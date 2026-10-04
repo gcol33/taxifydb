@@ -4,14 +4,18 @@
 \alias{probe_upstream_identity}
 \title{Ask a source host what identity its newest version carries}
 \usage{
-probe_upstream_identity(source_url)
+probe_upstream_identity(source_url, record = NULL)
 }
 \arguments{
 \item{source_url}{Character. The URL a build downloads its source from.}
+
+\item{record}{Character or NULL. The source's host record (registry
+\code{source_record}, else \code{source_doi}); see \code{\link[=check_figshare_version]{check_figshare_version()}}.}
 }
 \value{
-The probe's result (\code{id}, \code{version}, optionally \code{pinned}, \code{url}), or
-\code{NULL} when no probe covers the host or the host cannot be reached.
+The probe's result (\code{id}, \code{version}, \code{date}, optionally \code{pinned},
+\code{url}), or \code{NULL} when no probe covers the host or the host cannot be
+reached.
 }
 \description{
 The single entry point to the probes: a build calls it to record what it

@@ -4,14 +4,16 @@
 \alias{check_gbif_version}
 \title{Check a GBIF hosted dataset for the Last-Modified date}
 \usage{
-check_gbif_version(source_url)
+check_gbif_version(source_url, record = NULL)
 }
 \arguments{
 \item{source_url}{Character. GBIF hosted dataset URL.}
+
+\item{record}{Unused.}
 }
 \value{
 Named list with \code{id} (the \code{Last-Modified} stamp), \code{version} (that
-stamp as \code{YYYY.MM}), and \code{url}; \code{NULL} if the header is absent.
+stamp as \code{YYYY.MM}), \code{date}, and \code{url}; \code{NULL} if the header is absent.
 }
 \description{
 The header stamp is kept whole as the identity and shortened to \code{YYYY.MM}

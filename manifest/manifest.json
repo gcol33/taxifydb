@@ -3718,7 +3718,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/coral_traits-737784ecf88b3c1384204de107ccc30c.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/coral_traits-737784ecf88b3c1384204de107ccc30c.vtr",
+      "source_record": "10.6084/m9.figshare.2067414"
     },
     "amniote": {
       "latest": "2026.08",
@@ -3750,7 +3751,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/amniote-37a53c9bb5e725ab3c2a501d59f7a5a0.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/amniote-37a53c9bb5e725ab3c2a501d59f7a5a0.vtr",
+      "source_record": "10.6084/m9.figshare.3563457"
     },
     "combine": {
       "latest": "2026.08",
@@ -3782,7 +3784,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine-81376e1fcdacdc2e8e899f34d653e604.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine-81376e1fcdacdc2e8e899f34d653e604.vtr",
+      "source_record": "10.6084/m9.figshare.13028255"
     },
     "combine_imputed": {
       "latest": "2026.08",
@@ -3814,7 +3817,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine_imputed-955be9c2b95621ff87bcb13a15a733ad.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/combine_imputed-955be9c2b95621ff87bcb13a15a733ad.vtr",
+      "source_record": "10.6084/m9.figshare.13028255"
     },
     "austraits": {
       "latest": "2026.08",
@@ -4014,7 +4018,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/birdbase-b894daa57b700250195b79af6a1dfc0d.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/birdbase-b894daa57b700250195b79af6a1dfc0d.vtr",
+      "source_record": "10.6084/m9.figshare.27051040"
     },
     "useful_plants": {
       "latest": "2026.08",
@@ -4372,7 +4377,7 @@
         "wfo",
         "worms"
       ],
-      "upstream_id": "6565454",
+      "upstream_id": "6565455",
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/pottier-5bf61ca43e8727247b2954686b2b505d.vtr"
     },
     "quimbayo": {
@@ -4662,7 +4667,7 @@
         "wfo",
         "worms"
       ],
-      "upstream_id": "8102913",
+      "upstream_id": "8377969",
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/zooplankton-b633740edc84e1b29e2eaecc946dc56c.vtr"
     },
     "eupolltrait": {

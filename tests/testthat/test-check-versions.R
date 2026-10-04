@@ -33,7 +33,7 @@ test_that("an unprobed host resolves to no identity at all", {
 test_that("the recorded identity decides freshness", {
   entry <- list(source_url = "https://api.figshare.com/v2/file/download/1",
                 source_version = "2020.1", upstream_id = "4")
-  probe <- function(url) list(id = "6", version = "6", url = "u")
+  probe <- function(url, record) list(id = "6", version = "6", url = "u")
 
   res <- check_enrichment_source_version(entry, probe = probe)
   expect_true(res$outdated)
@@ -49,7 +49,7 @@ test_that("a pinned source answers without a recorded identity", {
   # still checkable: the pinned record is the identity it read.
   entry <- list(source_url = "https://zenodo.org/api/records/14056760/files/x",
                 source_version = "2024.1")
-  probe <- function(url) list(id = "16959762", version = "2025-08-27",
+  probe <- function(url, record) list(id = "16959762", version = "2025-08-27",
                               pinned = "14056760", url = "u")
 
   res <- check_enrichment_source_version(entry, probe = probe)
@@ -60,7 +60,7 @@ test_that("a pinned source answers without a recorded identity", {
 test_that("an entry with nothing to compare reports unknown, not outdated", {
   entry <- list(source_url = "https://api.figshare.com/v2/file/download/1",
                 source_version = "2020.1")
-  probe <- function(url) list(id = "6", version = "6", url = "u")
+  probe <- function(url, record) list(id = "6", version = "6", url = "u")
 
   res <- check_enrichment_source_version(entry, probe = probe)
   expect_true(is.na(res$outdated))
@@ -74,14 +74,14 @@ test_that("a host with no probe is reported apart from one that failed", {
   # recorded URL looked at (a Figshare download id the API no longer knows).
   uncovered <- list(source_url = "https://example.org/traits.csv",
                     source_version = "2020.1", upstream_id = "4")
-  res <- check_enrichment_source_version(uncovered, probe = function(url) NULL)
+  res <- check_enrichment_source_version(uncovered, probe = function(url, record) NULL)
   expect_true(is.na(res$outdated))
   expect_match(res$note, "no version check for source host")
   expect_equal(res$built_id, "4")
 
   unreadable <- list(source_url = "https://ndownloader.figshare.com/files/8828578",
                      source_version = "1.0")
-  res <- check_enrichment_source_version(unreadable, probe = function(url) NULL)
+  res <- check_enrichment_source_version(unreadable, probe = function(url, record) NULL)
   expect_true(is.na(res$outdated))
   expect_match(res$note, "could not be read")
 })
@@ -89,7 +89,7 @@ test_that("a host with no probe is reported apart from one that failed", {
 test_that("a static entry is skipped without reaching the network", {
   entry <- list(source_url = "https://zenodo.org/api/records/1/files/x",
                 source_version = "2020.1", static = TRUE)
-  probe <- function(url) stop("the network must not be reached here")
+  probe <- function(url, record) stop("the network must not be reached here")
 
   res <- check_enrichment_source_version(entry, probe = probe)
   expect_false(res$outdated)
@@ -186,4 +186,73 @@ test_that("a build with no upstream identity writes no field to carry", {
   meta <- jsonlite::read_json(file.path(dir, "meta.json"),
                               simplifyVector = FALSE)
   expect_false("upstream_id" %in% names(meta))
+})
+
+test_that("GitHub raw files and bare Dryad DOIs have probes", {
+  expect_equal(
+    .upstream_probe_for("https://raw.githubusercontent.com/o/r/main/x.csv"),
+    "check_github_version")
+  expect_equal(.upstream_probe_for("10.5061/dryad.1cv08"),
+               "check_dryad_version")
+  expect_equal(.upstream_probe_for("https://doi.org/10.5061/dryad.fn2z34tq1"),
+               "check_dryad_version")
+})
+
+test_that("a pinned identity outranks a recorded one", {
+  # A URL that names a fixed file is what the build read, so an upstream_id
+  # recorded under an older identity scheme cannot make it look stale.
+  entry <- list(source_url = "https://zenodo.org/api/records/1/files/a.csv",
+                source_version = "2.2", upstream_id = "1")
+  probe <- function(url, record) {
+    list(id = "md5:aa", version = "v2.2", pinned = "md5:aa", url = "u")
+  }
+  expect_false(check_enrichment_source_version(entry, probe = probe)$outdated)
+})
+
+test_that("a floating source older than its build is current", {
+  entry <- list(source_url = "https://raw.githubusercontent.com/o/r/main/x.csv",
+                source_version = "1.0", latest = "2026.08")
+  old <- function(url, record) {
+    list(id = "abc", version = "abc", date = "2022-05-23", url = "u")
+  }
+  res <- check_enrichment_source_version(entry, probe = old)
+  expect_false(res$outdated)
+  expect_match(res$note, "predates the 2026.08 build")
+
+  # Published after the build month began: the build may have read an older
+  # version, so nothing is inferred.
+  new <- function(url, record) {
+    list(id = "abc", version = "abc", date = "2026-08-20", url = "u")
+  }
+  res <- check_enrichment_source_version(entry, probe = new)
+  expect_true(is.na(res$outdated))
+  expect_match(res$note, "no upstream identity recorded")
+})
+
+test_that("a frozen snapshot is skipped without reaching the network", {
+  entry <- list(
+    source_url = paste0("https://github.com/gcol33/taxifydb/releases/download/",
+                        "crawl-snapshots-2026.07/italic.jsonl"),
+    source_version = "2026.07")
+  probe <- function(url, record) stop("the network must not be reached here")
+  res <- check_enrichment_source_version(entry, probe = probe)
+  expect_false(res$outdated)
+  expect_match(res$note, "frozen snapshot")
+})
+
+test_that("the host record reaches the probe, source_record first", {
+  seen <- NULL
+  probe <- function(url, record) {
+    seen <<- record
+    NULL
+  }
+  entry <- list(source_url = "https://ndownloader.figshare.com/files/1",
+                source_doi = "10.1890/paper",
+                source_record = "10.6084/m9.figshare.2")
+  check_enrichment_source_version(entry, probe = probe)
+  expect_equal(seen, "10.6084/m9.figshare.2")
+
+  entry$source_record <- NULL
+  check_enrichment_source_version(entry, probe = probe)
+  expect_equal(seen, "10.1890/paper")
 })

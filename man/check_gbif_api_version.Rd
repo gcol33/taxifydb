@@ -4,15 +4,17 @@
 \alias{check_gbif_api_version}
 \title{Check the GBIF backbone API for the latest update date}
 \usage{
-check_gbif_api_version(source_url)
+check_gbif_api_version(source_url, record = NULL)
 }
 \arguments{
 \item{source_url}{Character. (Unused; the GBIF backbone dataset ID is fixed.)}
+
+\item{record}{Unused.}
 }
 \value{
 Named list with \code{id} (the dataset's \code{modified} timestamp), \code{version}
-(that timestamp as \code{YYYY.MM}), and \code{url}; \code{NULL} if the dataset cannot be
-read.
+(that timestamp as \code{YYYY.MM}), \code{date}, and \code{url}; \code{NULL} if the dataset
+cannot be read.
 }
 \description{
 Check the GBIF backbone API for the latest update date

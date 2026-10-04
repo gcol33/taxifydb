@@ -8,10 +8,11 @@ check_enrichment_source_version(entry, probe = probe_upstream_identity)
 }
 \arguments{
 \item{entry}{List. Manifest enrichment entry with \code{source_url},
-\code{source_version}, \code{upstream_id}, \code{static}.}
+\code{source_version}, \code{upstream_id}, \code{latest}, \code{static}, and optionally
+\code{source_record} / \code{source_doi}.}
 
-\item{probe}{Function taking a URL and returning an upstream identity.
-Defaults to \code{\link[=probe_upstream_identity]{probe_upstream_identity()}}.}
+\item{probe}{Function taking a URL and a host record and returning an
+upstream identity. Defaults to \code{\link[=probe_upstream_identity]{probe_upstream_identity()}}.}
 }
 \value{
 Named list with \code{source_version}, \code{built_id}, \code{upstream_version},
@@ -19,15 +20,19 @@ Named list with \code{source_version}, \code{built_id}, \code{upstream_version},
 }
 \description{
 Freshness is decided by comparing the upstream identity the build read
-against the one upstream carries now. The build's identity comes from
-\code{upstream_id}, written into the entry when the \code{.vtr} was built; for a Zenodo
-source the pinned record number in the URL says the same thing, so those are
-answerable without it.
+against the one upstream carries now. Where the source URL pins a version,
+that pinned identity is what the build read, whatever was recorded. Where
+it floats, the build's identity comes from \code{upstream_id}, written into the
+entry when the \code{.vtr} was built.
 }
 \details{
-Where neither is available the answer is \code{NA}, not a guess: the recorded
+A floating source with no recorded identity is still answerable when the
+newest upstream version is older than the build: the entry's release tag
+(\code{latest}, \code{YYYY.MM}) bounds the build date from below, and a build reads the
+newest version there is, so the build read that version.
+
+Where none of these holds the answer is \code{NA}, not a guess: the recorded
 \code{source_version} is this package's own release string and the upstream
 version is whatever the host counts in, so comparing the two answers a
-different question than the one asked. An entry built before \code{upstream_id}
-was recorded reports \code{NA} until its next rebuild.
+different question than the one asked.
 }

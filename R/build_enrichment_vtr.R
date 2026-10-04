@@ -33,6 +33,9 @@ enrichment_trait_cols <- function(columns, group_col = NULL) {
 #' @param version Character. Version string (e.g., "2026.04").
 #' @param source_url Character. URL the source data was downloaded from.
 #' @param source_doi Character or NULL. DOI of the source dataset.
+#' @param source_record Character or NULL. The host record a download URL
+#'   belongs to, where neither the URL nor `source_doi` names it (a Figshare
+#'   file URL beside a journal DOI). Read by [check_figshare_version()].
 #' @param upstream_id Character or NULL. The identity the source host gives the
 #'   version this build read -- a Zenodo record number, a Figshare or Dryad
 #'   version number, a `Last-Modified` stamp. Recorded so the weekly freshness
@@ -67,7 +70,8 @@ enrichment_trait_cols <- function(columns, group_col = NULL) {
 #' @return The path to the .vtr file (invisibly).
 #' @export
 build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
-                                 source_doi = NULL, upstream_id = NULL,
+                                 source_doi = NULL, source_record = NULL,
+                                 upstream_id = NULL,
                                  license = "unknown",
                                  attribution = NULL, group_col = NULL,
                                  species_col = NULL, static = TRUE,
@@ -124,6 +128,7 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     version          = version,
     source_url       = source_url,
     source_doi       = source_doi,
+    source_record    = source_record,
     # What the source host called this version on the day it was read. The
     # version above is this package's own release string, so it answers a
     # different question than an upstream counter does; recording both is what

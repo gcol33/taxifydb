@@ -830,6 +830,7 @@
 
   coral_traits = list(
     source_url  = "https://ndownloader.figshare.com/files/3678603",
+    source_record = "10.6084/m9.figshare.2067414",
     source_doi  = "10.1038/sdata.2016.17",
     version     = "1.1.1",
     license     = "CC BY 4.0",
@@ -876,6 +877,7 @@
 
   amniote = list(
     source_url  = "https://ndownloader.figshare.com/files/8067269",
+    source_record = "10.6084/m9.figshare.3563457",
     source_doi  = "10.1890/15-0846R.1",
     version     = "2015.1",
     license     = "CC0",
@@ -896,6 +898,7 @@
 
   combine = list(
     source_url  = "https://ndownloader.figshare.com/files/27703263",
+    source_record = "10.6084/m9.figshare.13028255",
     source_doi  = "10.1002/ecy.3344",
     version     = "1.0",
     license     = "CC0",
@@ -917,6 +920,7 @@
 
   combine_imputed = list(
     source_url  = "https://ndownloader.figshare.com/files/27703266",
+    source_record = "10.6084/m9.figshare.13028255",
     source_doi  = "10.1002/ecy.3344",
     version     = "1.0",
     license     = "CC0",
@@ -1043,6 +1047,7 @@
 
   birdbase = list(
     source_url  = "https://ndownloader.figshare.com/files/55634729",
+    source_record = "10.6084/m9.figshare.27051040",
     source_doi  = "10.1038/s41597-025-05615-3",
     version     = "2025.1",
     license     = "CC BY 4.0",

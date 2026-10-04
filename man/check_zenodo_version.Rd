@@ -4,19 +4,27 @@
 \alias{check_zenodo_version}
 \title{Check a Zenodo record for the latest version}
 \usage{
-check_zenodo_version(source_url)
+check_zenodo_version(source_url, record = NULL)
 }
 \arguments{
-\item{source_url}{Character. Zenodo download URL.}
+\item{source_url}{Character. Zenodo record or file download URL.}
+
+\item{record}{Unused; the URL names the record.}
 }
 \value{
-Named list with \code{id} (the latest record's number), \code{version} (its
-publication date), \code{pinned} (the record number the URL names), and \code{url};
-\code{NULL} if the record cannot be read.
+Named list with \code{id}, \code{version}, \code{date}, \code{pinned} (absent for a
+concept record), and \code{url}; \code{NULL} if the record cannot be read.
 }
 \description{
 A Zenodo record is immutable, so querying the pinned record reports the day
 that record was published however many newer versions its concept has since
 gained. The \code{versions/latest} endpoint resolves the pinned record to the
-newest one in the same concept.
+newest one in the same concept. A URL naming the concept record itself
+floats: Zenodo serves its newest version, so it pins nothing.
+}
+\details{
+Where the URL names one file of the record, the identity is that file's
+checksum, read from the pinned and the newest record alike: a new version
+that only adds a metadata file leaves the data the build reads unchanged. A
+file the newest record no longer carries reads as \verb{missing:<key>}.
 }

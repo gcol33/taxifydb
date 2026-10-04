@@ -739,6 +739,7 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
     entry$source_url <- check_source_url(meta$source_url, name)
   }
   if (!is.null(meta$source_doi)) entry$source_doi <- meta$source_doi
+  if (!is.null(meta$source_record)) entry$source_record <- meta$source_record
   # The identity the source host gave the version this build read. The weekly
   # freshness check compares it against what the host offers now, which is the
   # only comparison that answers whether the enrichment has gone stale.

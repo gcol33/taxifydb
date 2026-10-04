@@ -4,16 +4,27 @@
 \alias{check_figshare_version}
 \title{Check a Figshare article for the latest version}
 \usage{
-check_figshare_version(source_url)
+check_figshare_version(source_url, record = NULL)
 }
 \arguments{
-\item{source_url}{Character. Figshare article or download URL.}
+\item{source_url}{Character. Figshare article or file download URL.}
+
+\item{record}{Character or NULL. The source's host record, as above.}
 }
 \value{
-Named list with \code{id} and \code{version} (both the newest version number)
+Named list with \code{id}, \code{version}, \code{date}, \code{pinned} (file URLs only),
 and \code{url}; \code{NULL} if the article cannot be read.
 }
 \description{
-Sources point either at an article or at one file within it; an article URL
-names the article directly, a file URL is resolved to its article first.
+An article URL is compared by the article's version number. A file download
+URL (\verb{ndownloader.figshare.com/files/<id>}) names one immutable file, so it
+is compared by content: the file's md5 is the pinned identity, and the
+newest version's file of the same name is the upstream one (\verb{missing:<name>}
+when the newest version dropped it).
+}
+\details{
+Nothing in a file URL names its article, so the article comes from the
+source's host record: a Figshare DOI (\verb{10.6084/m9.figshare.<id>}), a
+collection DOI (\verb{10.6084/m9.figshare.c.<id>}, whose articles are searched for
+the file), or a Figshare article URL.
 }

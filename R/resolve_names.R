@@ -75,6 +75,9 @@ resolve_enrichment_names <- function(df,
   out <- if (nrow(agg_df) > 0L) {
     agg_df$canonical_name <-
       taxify::normalize_aggregate_name(agg_df$canonical_name)
+    # Reduced on their own first, so they carry any column the reducer adds
+    # (a rank, a reduced value) before rejoining the resolved rows.
+    agg_df <- reducer(agg_df, group_cols)
     combined <- rbind(resolved, agg_df[names(resolved)])
     reducer(combined, group_cols)
   } else {

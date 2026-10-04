@@ -1,11 +1,10 @@
-# The build keeps one common name per taxon and language. Every candidate is
-# equally populated, so without a rule of its own the pick follows row order,
-# which moves with every lookup rebuild and churned 209,701 of 1.2M names
-# between two builds of identical sources.
+# The build keeps every common name a taxon carries in a language, ranked.
+# Every candidate is equally populated, so without a rule of its own the order
+# follows rows, which move with every lookup rebuild: two builds of identical
+# sources once differed in 209,701 of 1.2M names.
 
 cands <- data.frame(
-  canonical_name = c("Abaeis nicippe", "Abaeis nicippe", "Abaeis nicippe",
-                     "Abaeis nicippe", "Abaeis nicippe"),
+  canonical_name = rep("Abaeis nicippe", 5L),
   lang = c("en", "en", "en", "es", NA),
   common_name = c("Sleepy Orange", "Orange-tip", "sleepy orange",
                   "Naranja dormilona", "sleepy orange"),
@@ -15,16 +14,21 @@ cands <- data.frame(
   stringsAsFactors = FALSE
 )
 
-test_that("the most supported name wins, in its most frequent spelling", {
+test_that("every distinct name is kept, the best supported ranked first", {
   out <- .reduce_common_names(cands, "lang")
-  expect_equal(nrow(out), 3L)
-  expect_equal(out$common_name[out$lang %in% "en"], "Sleepy Orange")
-  expect_equal(out$common_name[out$lang %in% "es"], "Naranja dormilona")
+  en <- out[out$lang %in% "en", ]
+  expect_equal(en$common_name[order(en$name_rank)], c("Sleepy Orange", "Orange-tip"))
+  expect_equal(out$name_rank[out$lang %in% "es"], 1L)
   expect_equal(out$common_name[is.na(out$lang)], "sleepy orange")
   expect_false(any(c("n_support", "n_spelling") %in% names(out)))
 })
 
-test_that("the pick does not depend on row order", {
+test_that("case variants of one name collapse to its most frequent spelling", {
+  out <- .reduce_common_names(cands, "lang")
+  expect_equal(sum(tolower(out$common_name[out$lang %in% "en"]) == "sleepy orange"), 1L)
+})
+
+test_that("the ranking does not depend on row order", {
   ref <- .reduce_common_names(cands, "lang")
   for (seed in 1:20) {
     set.seed(seed)
@@ -37,11 +41,15 @@ test_that("equal support falls back to byte order, not position", {
   tie <- data.frame(canonical_name = "X y", lang = "en",
                     common_name = c("Beta", "Alpha"), source = "gbif",
                     n_support = 1L, n_spelling = 1L, stringsAsFactors = FALSE)
-  expect_equal(.reduce_common_names(tie, "lang")$common_name, "Alpha")
-  expect_equal(.reduce_common_names(tie[2:1, ], "lang")$common_name, "Alpha")
+  for (d in list(tie, tie[2:1, ])) {
+    out <- .reduce_common_names(d, "lang")
+    expect_equal(out$common_name[out$name_rank == 1L], "Alpha")
+  }
 })
 
-test_that("rows without counts (a second reducer pass) still reduce", {
-  out <- .reduce_common_names(cands[, 1:4], "lang")
-  expect_equal(nrow(out), 3L)
+test_that("a second pass keeps the ranks the first pass gave", {
+  first <- .reduce_common_names(cands, "lang")
+  again <- .reduce_common_names(first[nrow(first):1, ], "lang")
+  key <- function(d) paste(d$lang, d$common_name, d$name_rank)
+  expect_setequal(key(again), key(first))
 })

@@ -51,8 +51,8 @@ parse_common_names <- function(dir_path) {
   # How many records give each name for a taxon and language: GBIF's
   # vernaculars come from many source checklists, so a name several of them
   # agree on is the taxon's usual name. Counted before the duplicates go;
-  # .reduce_common_names() reads the counts to pick one name per taxon and
-  # language, then drops them.
+  # .reduce_common_names() reads the counts to rank the names of each taxon
+  # and language, then drops them.
   lang_key <- ifelse(is.na(out$lang), "", out$lang)
   out$n_support <- stats::ave(rep(1L, nrow(out)),
                               out$canonical_name, lang_key, tolower(out$common_name),
@@ -70,31 +70,40 @@ parse_common_names <- function(dir_path) {
 }
 
 
-#' Pick one common name per accepted name and language
+#' Rank the common names of each accepted name and language
 #'
-#' The build keeps one name per taxon and language, and every candidate is
-#' equally populated, so the default trait-richest reducer leaves the choice to
-#' row order, which moves whenever the name lookups do. The name most records
-#' give wins (case-insensitive), then its most frequent spelling, then the
-#' first in byte order, so a rebuild from the same sources picks the same name.
+#' Every distinct name (case-insensitive) a taxon carries in a language is
+#' kept, ranked in `name_rank`: the name most records give is 1, then by its
+#' most frequent spelling, then byte order. All candidates are equally
+#' populated, so the default trait-richest reducer kept one name by row order,
+#' which moves whenever the name lookups do, and dropped the rest, so
+#' `taxify::comm2sci()` could not resolve an alternate name.
+#' `add_common_names()` reports rank 1; the reverse lookups read every rank.
 #'
 #' @param expanded data.frame from the cross-backbone expansion, carrying the
-#'   `n_support` / `n_spelling` counts from [parse_common_names()].
+#'   `n_support` / `n_spelling` counts from [parse_common_names()]. A second
+#'   pass over its own output (no counts) keeps the ranks it was given.
 #' @param group_cols Character. Grouping columns (`"lang"`).
-#' @return One row per `canonical_name` + `group_cols`, without the counts.
+#' @return One row per `canonical_name` + `group_cols` + distinct name, with
+#'   `name_rank` and without the counts.
 #' @noRd
 .reduce_common_names <- function(expanded, group_cols = NULL) {
-  count <- function(col) {
-    if (col %in% names(expanded)) expanded[[col]] else rep(0L, nrow(expanded))
+  column <- function(col, default) {
+    if (col %in% names(expanded)) expanded[[col]] else rep(default, nrow(expanded))
   }
   keys <- c("canonical_name", group_cols)
   key <- do.call(paste, c(lapply(expanded[keys], function(x) {
     ifelse(is.na(x), "", x)
   }), list(sep = "\x1f")))
-  ord <- order(key, -count("n_support"), -count("n_spelling"),
-               expanded$common_name, method = "radix")
+  ord <- order(key, -column("n_support", 0L), -column("n_spelling", 0L),
+               column("name_rank", NA_integer_), expanded$common_name,
+               method = "radix", na.last = TRUE)
   expanded <- expanded[ord, , drop = FALSE]
-  expanded <- expanded[!duplicated(key[ord]), , drop = FALSE]
+  key <- key[ord]
+  keep <- !duplicated(paste(key, tolower(expanded$common_name), sep = "\x1f"))
+  expanded <- expanded[keep, , drop = FALSE]
+  key <- key[keep]
+  expanded$name_rank <- stats::ave(seq_along(key), key, FUN = seq_along)
   expanded$n_support <- NULL
   expanded$n_spelling <- NULL
   rownames(expanded) <- NULL

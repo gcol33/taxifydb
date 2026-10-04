@@ -11,7 +11,7 @@ check_all_enrichment_versions(manifest_path = "manifest/manifest.json")
 }
 \value{
 Data.frame with columns: name, source_version, built_id,
-upstream_version, outdated, check_url, note.
+upstream_id, upstream_version, outdated, check_url, note.
 }
 \description{
 Check all non-static enrichments in a manifest for version freshness

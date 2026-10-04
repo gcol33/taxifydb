@@ -15,8 +15,8 @@ check_enrichment_source_version(entry, probe = probe_upstream_identity)
 upstream identity. Defaults to \code{\link[=probe_upstream_identity]{probe_upstream_identity()}}.}
 }
 \value{
-Named list with \code{source_version}, \code{built_id}, \code{upstream_version},
-\code{outdated}, \code{check_url}, and optionally \code{note}.
+Named list with \code{source_version}, \code{built_id}, \code{upstream_id},
+\code{upstream_version}, \code{outdated}, \code{check_url}, and optionally \code{note}.
 }
 \description{
 Freshness is decided by comparing the upstream identity the build read

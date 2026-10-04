@@ -375,7 +375,10 @@
   common_names = list(
     source_url  = paste(
       "https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip",
-      "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz",
+      # NCBI's monthly archive, not the rolling new_taxdump that is rewritten
+      # daily: a build then names the dump it read, and the freshness check
+      # reports one new dump a month. Move the date to take a newer one.
+      "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/new_taxdump_2026-10-01.zip",
       "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
       sep = " ; "
     ),
@@ -417,8 +420,8 @@
       ncbi_dir <- file.path(dest, "ncbi")
       if (!dir.exists(ncbi_dir)) {
         dir.create(ncbi_dir, recursive = TRUE)
-        tar_path <- download_curl_file(ncbi_url, dest, "taxdump.tar.gz")
-        utils::untar(tar_path, files = "names.dmp", exdir = ncbi_dir)
+        zip_path <- download_curl_file(ncbi_url, dest, "taxdump.zip")
+        utils::unzip(zip_path, files = "names.dmp", exdir = ncbi_dir)
       }
 
       ott_dir <- file.path(dest, "ott")
@@ -460,6 +463,7 @@
       dest
     },
     parse_fn    = function(path) parse_common_names(path),
+    reduce_fn   = .reduce_common_names,
     group_col   = "lang",
     requires    = character(0)
   ),

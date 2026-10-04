@@ -48,12 +48,57 @@ parse_common_names <- function(dir_path) {
 
   out <- do.call(rbind, parts)
 
+  # How many records give each name for a taxon and language: GBIF's
+  # vernaculars come from many source checklists, so a name several of them
+  # agree on is the taxon's usual name. Counted before the duplicates go;
+  # .reduce_common_names() reads the counts to pick one name per taxon and
+  # language, then drops them.
+  lang_key <- ifelse(is.na(out$lang), "", out$lang)
+  out$n_support <- stats::ave(rep(1L, nrow(out)),
+                              out$canonical_name, lang_key, tolower(out$common_name),
+                              FUN = length)
+  out$n_spelling <- stats::ave(rep(1L, nrow(out)),
+                               out$canonical_name, lang_key, out$common_name,
+                               FUN = length)
+
   # Prefer rows with a language tag (GBIF) over NA (NCBI/OTT)
   out <- out[order(!is.na(out$lang), decreasing = TRUE), ]
   out <- out[!duplicated(paste(out$canonical_name, out$common_name)), ]
 
   # Keep the provenance column (which database supplied the vernacular name).
   out
+}
+
+
+#' Pick one common name per accepted name and language
+#'
+#' The build keeps one name per taxon and language, and every candidate is
+#' equally populated, so the default trait-richest reducer leaves the choice to
+#' row order, which moves whenever the name lookups do. The name most records
+#' give wins (case-insensitive), then its most frequent spelling, then the
+#' first in byte order, so a rebuild from the same sources picks the same name.
+#'
+#' @param expanded data.frame from the cross-backbone expansion, carrying the
+#'   `n_support` / `n_spelling` counts from [parse_common_names()].
+#' @param group_cols Character. Grouping columns (`"lang"`).
+#' @return One row per `canonical_name` + `group_cols`, without the counts.
+#' @noRd
+.reduce_common_names <- function(expanded, group_cols = NULL) {
+  count <- function(col) {
+    if (col %in% names(expanded)) expanded[[col]] else rep(0L, nrow(expanded))
+  }
+  keys <- c("canonical_name", group_cols)
+  key <- do.call(paste, c(lapply(expanded[keys], function(x) {
+    ifelse(is.na(x), "", x)
+  }), list(sep = "\x1f")))
+  ord <- order(key, -count("n_support"), -count("n_spelling"),
+               expanded$common_name, method = "radix")
+  expanded <- expanded[ord, , drop = FALSE]
+  expanded <- expanded[!duplicated(key[ord]), , drop = FALSE]
+  expanded$n_support <- NULL
+  expanded$n_spelling <- NULL
+  rownames(expanded) <- NULL
+  expanded
 }
 
 

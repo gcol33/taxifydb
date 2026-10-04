@@ -224,6 +224,9 @@ enrichment_emergency_fallback <- function(name, verbose = TRUE) {
   if (identical(reg$name_col, "genus") && "canonical_name" %in% names(df)) {
     df <- .genus_grain_key(df, name)
   }
+  # An entry's own reducer decides which source row a key keeps, here as in
+  # the build, so the fallback reports the value the published asset would.
+  if (is.function(reg$reduce_fn)) df <- reg$reduce_fn(df, reg$group_col)
 
   if (verbose) {
     message(sprintf(

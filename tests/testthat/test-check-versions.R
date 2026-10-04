@@ -308,7 +308,7 @@ test_that("live and challenge-walled sources report why, without the network", {
          source_version = "14.3"),
     probe = probe)
   expect_true(is.na(walled$outdated))
-  expect_match(walled$note, "JavaScript challenge")
+  expect_match(walled$note, "human-verification checkbox")
 })
 
 test_that("a multi-URL source joins its parts' identities", {

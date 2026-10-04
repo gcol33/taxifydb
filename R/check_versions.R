@@ -898,6 +898,40 @@ check_ott_version <- function(source_url, record = NULL) {
 }
 
 
+#' Check the NCBI Taxonomy monthly archive for a newer dump
+#'
+#' NCBI rewrites its rolling `new_taxdump` daily, and keeps one dump a month in
+#' `taxdump_archive/` as `new_taxdump_<YYYY-MM-DD>.zip`. A source pinned to an
+#' archived dump compares its date against the newest one there.
+#'
+#' @param source_url Character. Archive URL naming its dump date.
+#' @param record Unused.
+#' @return Named list with `id`, `version` and `date` (the newest dump's
+#'   date), `pinned` (the date the URL names), and `url`; `NULL` if the archive
+#'   listing cannot be read.
+#' @export
+check_ncbi_archive_version <- function(source_url, record = NULL) {
+  listing <- "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/"
+  html <- tryCatch(paste(suppressWarnings(readLines(listing, warn = FALSE)),
+                         collapse = "\n"),
+                   error = function(e) NULL)
+  if (is.null(html)) return(NULL)
+
+  dumps <- unique(regmatches(html, gregexpr(
+    "(?<=new_taxdump_)[0-9]{4}-[0-9]{2}-[0-9]{2}(?=\\.zip)", html, perl = TRUE))[[1L]])
+  if (length(dumps) == 0L) return(NULL)
+  newest <- max(dumps)
+  pinned <- regmatches(source_url, regexpr("[0-9]{4}-[0-9]{2}-[0-9]{2}", source_url))
+  list(
+    id = newest,
+    version = newest,
+    date = newest,
+    pinned = if (length(pinned)) pinned,
+    url = listing
+  )
+}
+
+
 #' Check a PANGAEA dataset for changes and successors
 #'
 #' A PANGAEA DOI names one dataset, which is replaced by a new DOI rather than
@@ -1029,6 +1063,8 @@ check_lcvp_version <- function(source_url) {
   list(host = "seanoe\\.org/data/",             probe = "check_seanoe_version"),
   list(host = "opentreeoflife\\.org/ott/",      probe = "check_ott_version"),
   list(host = "doi\\.pangaea\\.de",             probe = "check_pangaea_version"),
+  list(host = "ncbi\\.nlm\\.nih\\.gov/pub/taxonomy/taxdump_archive/",
+       probe = "check_ncbi_archive_version"),
   list(host = "spidertraits\\.sci\\.muni\\.cz", probe = "check_wst_version"),
   list(host = "stbates\\.org|ofmpub\\.epa\\.gov|mda\\.vliz\\.be",
        probe = "check_content_md5"),
@@ -1047,9 +1083,11 @@ check_lcvp_version <- function(source_url) {
 # lacks a probe.
 .live_sources <- "ser-sid\\.org|bien\\.nceas\\.ucsb\\.edu"
 
-# Hosts that answer an unattended request with a JavaScript challenge only a
-# real browser clears (taxifydb's cf_fetch.py browser rung), so the weekly CI
-# check cannot reach them; a build records what it read.
+# Hosts that answer an unattended request with an interactive human-verification
+# checkbox (Cloudflare Turnstile), which neither headless nor automated Chrome
+# clears. Their metadata mirrors carry no file or edition identity either: the
+# FishTraits FGDC record on data.usgs.gov states `update: Unknown` and names no
+# file, and the item's file list is served only behind the checkbox.
 .challenge_sources <- "sciencebase\\.gov"
 
 # Several sources download from more than one URL, written `url ; url ; ...`.
@@ -1188,8 +1226,8 @@ check_enrichment_source_version <- function(entry,
                          "a rebuild records the access month as the version")))
   }
   if (grepl(.challenge_sources, url)) {
-    return(unknown(paste("host serves a browser-only JavaScript challenge;",
-                         "only a rebuild can read it")))
+    return(unknown(paste("host serves an interactive human-verification",
+                         "checkbox; no automated client reaches it")))
   }
 
   result <- probe(url, entry$source_record %||% entry$source_doi)

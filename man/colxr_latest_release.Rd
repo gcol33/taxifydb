@@ -4,13 +4,22 @@
 \alias{colxr_latest_release}
 \title{Resolve the latest Catalogue of Life Extended Release}
 \usage{
-colxr_latest_release(verbose = TRUE, export_ready = colxr_export_ready)
+colxr_latest_release(
+  verbose = TRUE,
+  export_ready = colxr_export_ready,
+  request_export = function(key) {
+     colxr_request_export(key, verbose = verbose)
+ }
+)
 }
 \arguments{
 \item{verbose}{Logical.}
 
 \item{export_ready}{Function of a dataset key returning \code{TRUE} when its
 export can be downloaded.}
+
+\item{request_export}{Function of a dataset key that requests its export
+and returns \code{TRUE} once it can be downloaded.}
 }
 \value{
 A list with \code{key}, \code{alias}, \code{version} and \code{issued}.
@@ -19,7 +28,8 @@ A list with \code{key}, \code{alias}, \code{version} and \code{issued}.
 Queries ChecklistBank for the most recently issued COL XR dataset whose
 Darwin Core export can be downloaded. Each monthly release carries its own
 dataset key, so the key is looked up rather than hard-coded. ChecklistBank
-lists a release before it has generated the export (COL26.9 XR answered 404
-nine days after it was issued), so a release without one is skipped and the
-previous release is built.
+generates an export only when a logged-in account asks for one, so when the
+newest release has none, one is requested with \code{\link[=colxr_request_export]{colxr_request_export()}}.
+When that cannot run (no \code{GBIF_USER} / \code{GBIF_PWD}) or does not finish, the
+newest release with an export is built instead.
 }

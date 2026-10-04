@@ -74,17 +74,23 @@
 #' Queries ChecklistBank for the most recently issued COL XR dataset whose
 #' Darwin Core export can be downloaded. Each monthly release carries its own
 #' dataset key, so the key is looked up rather than hard-coded. ChecklistBank
-#' lists a release before it has generated the export (COL26.9 XR answered 404
-#' nine days after it was issued), so a release without one is skipped and the
-#' previous release is built.
+#' generates an export only when a logged-in account asks for one, so when the
+#' newest release has none, one is requested with [colxr_request_export()].
+#' When that cannot run (no `GBIF_USER` / `GBIF_PWD`) or does not finish, the
+#' newest release with an export is built instead.
 #'
 #' @param verbose Logical.
 #' @param export_ready Function of a dataset key returning `TRUE` when its
 #'   export can be downloaded.
+#' @param request_export Function of a dataset key that requests its export
+#'   and returns `TRUE` once it can be downloaded.
 #' @return A list with `key`, `alias`, `version` and `issued`.
 #' @export
 colxr_latest_release <- function(verbose = TRUE,
-                                 export_ready = colxr_export_ready) {
+                                 export_ready = colxr_export_ready,
+                                 request_export = function(key) {
+                                   colxr_request_export(key, verbose = verbose)
+                                 }) {
   url <- paste0(.colxr_api_base, "/dataset?origin=xrelease&limit=200")
   txt <- tryCatch(
     paste(readLines(url, warn = FALSE), collapse = ""),
@@ -105,13 +111,25 @@ colxr_latest_release <- function(verbose = TRUE,
   issued <- vapply(keep, function(d) d$issued %||% "", character(1L))
   keep <- keep[order(as.Date(issued), decreasing = TRUE)]
   best <- NULL
-  for (d in keep) {
-    if (isTRUE(export_ready(as.character(d$key)))) {
+  for (i in seq_along(keep)) {
+    d <- keep[[i]]
+    key <- as.character(d$key)
+    if (isTRUE(export_ready(key))) {
       best <- d
       break
     }
+    if (i == 1L) {
+      if (verbose) {
+        message(sprintf("%s has no export on ChecklistBank; requesting one.",
+                        d$alias))
+      }
+      if (isTRUE(request_export(key))) {
+        best <- d
+        break
+      }
+    }
     if (verbose) {
-      message(sprintf("%s has no export on ChecklistBank yet; skipping.",
+      message(sprintf("%s has no export on ChecklistBank; skipping.",
                       d$alias))
     }
   }
@@ -180,18 +198,90 @@ colxr_export_url <- function(key) {
 
 #' Whether a ChecklistBank export can be downloaded
 #'
-#' The export URL redirects to the generated archive once it exists and
-#' answers 404 before then; only the status of that first response is read.
+#' A dataset's export URL serves the archive of a finished export job over the
+#' whole dataset. The URL already redirects while that job is running, so the
+#' job list is read instead: a finished DwCA job with synonyms and no taxon
+#' filter.
 #'
 #' @param key Character. ChecklistBank dataset key.
-#' @return `TRUE` when the export answers with a redirect or 200.
+#' @return `TRUE` when such a job exists.
 #' @noRd
 colxr_export_ready <- function(key) {
-  h <- curl::new_handle(nobody = TRUE, followlocation = FALSE,
-                        connecttimeout = 30)
-  res <- tryCatch(curl::curl_fetch_memory(colxr_export_url(key), handle = h),
-                  error = function(e) NULL)
-  !is.null(res) && res$status_code %in% c(200L, 301L, 302L, 303L, 307L)
+  url <- sprintf("%s/export?datasetKey=%s&format=DWCA&status=FINISHED&limit=50",
+                 .colxr_api_base, key)
+  res <- tryCatch(curl::curl_fetch_memory(url), error = function(e) NULL)
+  if (is.null(res) || res$status_code != 200L) return(FALSE)
+  jobs <- jsonlite::fromJSON(rawToChar(res$content),
+                             simplifyDataFrame = FALSE)$result
+  any(vapply(jobs, function(j) {
+    r <- j$request
+    isTRUE(r$synonyms) && is.null(r$root) && is.null(r$taxonID)
+  }, logical(1L)))
+}
+
+
+#' Request a ChecklistBank export and wait for it
+#'
+#' ChecklistBank generates a dataset's export only when a logged-in GBIF
+#' account asks for one, so a release can be issued and never become
+#' downloadable. This starts a DwCA export job with the account in
+#' `GBIF_USER` / `GBIF_PWD` and polls it until it finishes.
+#'
+#' @param key Character. ChecklistBank dataset key.
+#' @param poll Seconds between status checks.
+#' @param timeout Seconds before giving up.
+#' @param verbose Logical.
+#' @return `TRUE` when the export finished, `FALSE` when no account is
+#'   configured or the job did not finish.
+#' @export
+colxr_request_export <- function(key, poll = 30, timeout = 3600,
+                                 verbose = TRUE) {
+  user <- Sys.getenv("GBIF_USER")
+  pwd <- Sys.getenv("GBIF_PWD")
+  if (!nzchar(user) || !nzchar(pwd)) {
+    if (verbose) {
+      message("GBIF_USER / GBIF_PWD not set; cannot request an export of ",
+              "dataset ", key, ".")
+    }
+    return(FALSE)
+  }
+
+  h <- curl::new_handle(httpauth = 1L, userpwd = paste0(user, ":", pwd),
+                        customrequest = "POST",
+                        postfields = '{"format":"DwCA","synonyms":true}')
+  curl::handle_setheaders(h, "Content-Type" = "application/json",
+                          "Accept" = "application/json")
+  res <- curl::curl_fetch_memory(
+    sprintf("%s/dataset/%s/export", .colxr_api_base, key), handle = h
+  )
+  if (!res$status_code %in% c(200L, 201L, 202L)) {
+    stop("ChecklistBank refused the export request for dataset ", key,
+         " (HTTP ", res$status_code, "): ", rawToChar(res$content),
+         call. = FALSE)
+  }
+  job <- jsonlite::fromJSON(rawToChar(res$content), simplifyDataFrame = FALSE)
+  job <- if (is.list(job)) job$key else as.character(job)
+  if (verbose) message("Requested DwCA export of dataset ", key, ": job ", job)
+
+  deadline <- Sys.time() + timeout
+  while (Sys.time() < deadline) {
+    Sys.sleep(poll)
+    st <- tryCatch(
+      jsonlite::fromJSON(sprintf("%s/export/%s", .colxr_api_base, job),
+                         simplifyDataFrame = FALSE),
+      error = function(e) list(status = NA_character_)
+    )
+    if (verbose) message(format(Sys.time(), "%H:%M:%S"), " export ", st$status)
+    if (identical(st$status, "finished")) return(TRUE)
+    if (st$status %in% c("failed", "canceled")) {
+      warning("Export job ", job, " ", st$status, ": ", st$error %||% "",
+              call. = FALSE)
+      return(FALSE)
+    }
+  }
+  warning("Export job ", job, " did not finish within ", timeout, " s.",
+          call. = FALSE)
+  FALSE
 }
 
 

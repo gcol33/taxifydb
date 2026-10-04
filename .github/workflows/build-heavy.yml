@@ -68,6 +68,11 @@ jobs:
         run: |
           "${{ steps.rscript.outputs.path }}" -e "taxifydb::build_backend('${{ matrix.backend }}', output_dir = file.path('output', '${{ matrix.backend }}'))"
         shell: bash
+        # COL XR requests the ChecklistBank export of a new release with this
+        # account (colxr_request_export()).
+        env:
+          GBIF_USER: ${{ secrets.GBIF_USER }}
+          GBIF_PWD: ${{ secrets.GBIF_PWD }}
 
       # The release is named for the source release the build read, which the
       # build recorded in its .meta, never for the month the job ran: this

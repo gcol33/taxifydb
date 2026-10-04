@@ -310,3 +310,18 @@ test_that("live and challenge-walled sources report why, without the network", {
   expect_true(is.na(walled$outdated))
   expect_match(walled$note, "JavaScript challenge")
 })
+
+test_that("a multi-URL source joins its parts' identities", {
+  local_mocked_bindings(
+    check_last_modified = function(source_url, record = NULL) {
+      list(id = sub("^.*/", "", source_url), version = "v",
+           date = "2020-01-01", pinned = paste0("p-", sub("^.*/", "", source_url)),
+           url = source_url)
+    })
+  res <- probe_upstream_identity(paste("https://hosted-datasets.gbif.org/a",
+                                       "https://hosted-datasets.gbif.org/b",
+                                       sep = " ; "))
+  expect_equal(res$id, "a + b")
+  expect_equal(res$pinned, "p-a + p-b")
+  expect_equal(res$date, "2020-01-01")
+})

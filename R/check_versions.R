@@ -1120,7 +1120,10 @@ probe_upstream_identity <- function(source_url, record = NULL) {
 
   probe <- .upstream_probe_for(url)
   if (is.null(probe)) return(NULL)
-  tryCatch(match.fun(probe)(url, record), error = function(e) NULL)
+  # The probes live beside this function. match.fun() would search the
+  # caller's caller, which for the multi-URL branch is lapply() in base.
+  fn <- get(probe, envir = environment(probe_upstream_identity), mode = "function")
+  tryCatch(fn(url, record), error = function(e) NULL)
 }
 
 

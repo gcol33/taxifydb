@@ -1424,7 +1424,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/funguild-ebec67cb9e0826f118a560fd8d28a10b.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/funguild-ebec67cb9e0826f118a560fd8d28a10b.vtr",
+      "upstream_id": "53861e426a5d4f17e4514f34c09eecac"
     },
     "fishbase": {
       "latest": "2026.08",
@@ -1557,7 +1558,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/algae_traits-d192762595462dbc8f419606bda0d94c.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/algae_traits-d192762595462dbc8f419606bda0d94c.vtr",
+      "upstream_id": "988ade5bfc1205f292ab49610a8c45ef"
     },
     "fishmorph": {
       "latest": "2026.08",
@@ -4507,7 +4509,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.10/frugivoria-da73a185dca6bfac95c492a5a69316e6.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.10/frugivoria-da73a185dca6bfac95c492a5a69316e6.vtr",
+      "upstream_id": "cf6a3657c92f53cf8b00a8888f880c4e0d8bef5c + 5986b4193fbbbab7cf9de2fc4494d0c1f3a077ff"
     },
     "parravicini": {
       "latest": "2026.08",
@@ -5454,7 +5457,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/epa_freshwater-7696d586d0433e84ce3ed9bce216ec34.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/epa_freshwater-7696d586d0433e84ce3ed9bce216ec34.vtr",
+      "upstream_id": "56ef644b88b4930b3e538c143ea4f83a"
     },
     "cefas_btrait": {
       "latest": "2026.08",

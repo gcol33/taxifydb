@@ -1110,10 +1110,10 @@ probe_upstream_identity <- function(source_url, record = NULL) {
     pinned <- field("pinned")
     dates <- field("date")
     return(list(
-      id = paste(field("id"), collapse = " | "),
-      version = paste(field("version"), collapse = " | "),
+      id = paste(field("id"), collapse = " + "),
+      version = paste(field("version"), collapse = " + "),
       date = if (anyNA(dates)) NA_character_ else max(dates),
-      pinned = if (!anyNA(pinned)) paste(pinned, collapse = " | "),
+      pinned = if (!anyNA(pinned)) paste(pinned, collapse = " + "),
       url = paste(field("url"), collapse = .source_sep)
     ))
   }
@@ -1147,8 +1147,8 @@ probe_upstream_identity <- function(source_url, record = NULL) {
 #'   `source_record` / `source_doi`.
 #' @param probe Function taking a URL and a host record and returning an
 #'   upstream identity. Defaults to [probe_upstream_identity()].
-#' @return Named list with `source_version`, `built_id`, `upstream_version`,
-#'   `outdated`, `check_url`, and optionally `note`.
+#' @return Named list with `source_version`, `built_id`, `upstream_id`,
+#'   `upstream_version`, `outdated`, `check_url`, and optionally `note`.
 #' @export
 check_enrichment_source_version <- function(entry,
                                             probe = probe_upstream_identity) {
@@ -1230,6 +1230,7 @@ check_enrichment_source_version <- function(entry,
   res <- list(
     source_version = entry$source_version,
     built_id = as.character(built_id),
+    upstream_id = as.character(result$id),
     upstream_version = result$version,
     outdated = !identical(as.character(built_id), as.character(result$id)),
     check_url = result$url
@@ -1243,7 +1244,7 @@ check_enrichment_source_version <- function(entry,
 #'
 #' @param manifest_path Character. Path to manifest.json.
 #' @return Data.frame with columns: name, source_version, built_id,
-#'   upstream_version, outdated, check_url, note.
+#'   upstream_id, upstream_version, outdated, check_url, note.
 #' @export
 check_all_enrichment_versions <- function(
     manifest_path = "manifest/manifest.json") {
@@ -1280,6 +1281,7 @@ check_all_enrichment_versions <- function(
       name = r$name,
       source_version = r$source_version %||% NA_character_,
       built_id = r$built_id %||% NA_character_,
+      upstream_id = r$upstream_id %||% NA_character_,
       upstream_version = r$upstream_version %||% NA_character_,
       outdated = r$outdated %||% NA,
       check_url = r$check_url %||% NA_character_,

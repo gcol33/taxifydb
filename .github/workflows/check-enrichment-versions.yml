@@ -29,16 +29,17 @@ jobs:
       - name: Install version-check dependencies
         # The full package has a private Remote (gcol33/taxify) that
         # setup-r-dependencies cannot resolve without a cross-repo PAT,
-        # so we install only the two CRAN packages this workflow needs.
+        # so we install only the CRAN packages this workflow needs (digest:
+        # the Anubis proof-of-work in .anubis_fetch()).
         # use-public-rspm on setup-r already configured RSPM as the
         # default repo, so this pulls Ubuntu Noble binaries directly.
-        run: install.packages(c("jsonlite", "curl"))
+        run: install.packages(c("jsonlite", "curl", "digest"))
         shell: Rscript {0}
 
       - name: Check enrichment versions
         id: check
         run: |
-          # The version checker uses only base R, jsonlite, and curl.
+          # The version checker uses only base R, jsonlite, curl and digest.
           # We source it directly rather than installing the full taxifydb
           # package: the package's Imports include taxify (private repo)
           # which would require a cross-repo PAT, but this workflow only
@@ -68,26 +69,36 @@ jobs:
             "",
             "The following enrichment sources have newer versions available upstream.",
             "",
-            "| Enrichment | Local Version | Built From | Upstream Now | Check URL |",
-            "|---|---|---|---|---|"
+            "| Enrichment | Local Version | Built From | Upstream Now | Upstream Version | Check URL |",
+            "|---|---|---|---|---|---|"
           )
 
           # `Built From` and `Upstream Now` are both the source host's own
           # identity for a version -- a Zenodo record, a Figshare version
           # counter, a Last-Modified stamp -- so the two are comparable. The
-          # local version beside them is this package's release string.
+          # local version beside them is this package's release string. A
+          # multi-URL source joins its parts with " + "; long hashes are
+          # shortened per part, and a pipe would end the table cell.
+          cell <- function(x) {
+            if (is.na(x)) return("-")
+            parts <- strsplit(x, " + ", fixed = TRUE)[[1L]]
+            parts <- ifelse(nchar(parts) > 16L, paste0(substr(parts, 1L, 12L), "..."), parts)
+            gsub("|", "\\|", paste(parts, collapse = " + "), fixed = TRUE)
+          }
           for (i in seq_len(nrow(outdated))) {
             url <- if (!is.na(outdated$check_url[i])) {
-              sprintf("[link](%s)", outdated$check_url[i])
+              sprintf("[link](%s)", strsplit(outdated$check_url[i], " ; ",
+                                             fixed = TRUE)[[1L]][1L])
             } else {
               "-"
             }
             lines <- c(lines, sprintf(
-              "| `%s` | %s | %s | **%s** | %s |",
+              "| `%s` | %s | %s | **%s** | %s | %s |",
               outdated$name[i],
               outdated$source_version[i],
-              outdated$built_id[i],
-              outdated$upstream_version[i],
+              cell(outdated$built_id[i]),
+              cell(outdated$upstream_id[i]),
+              cell(outdated$upstream_version[i]),
               url
             ))
           }

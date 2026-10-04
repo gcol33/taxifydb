@@ -67,14 +67,20 @@
 
 #' Resolve the latest Catalogue of Life Extended Release
 #'
-#' Queries ChecklistBank for the most recently issued COL XR dataset. Each
-#' monthly release carries its own dataset key, so the key is looked up rather
-#' than hard-coded.
+#' Queries ChecklistBank for the most recently issued COL XR dataset whose
+#' Darwin Core export can be downloaded. Each monthly release carries its own
+#' dataset key, so the key is looked up rather than hard-coded. ChecklistBank
+#' lists a release before it has generated the export (COL26.9 XR answered 404
+#' nine days after it was issued), so a release without one is skipped and the
+#' previous release is built.
 #'
 #' @param verbose Logical.
+#' @param export_ready Function of a dataset key returning `TRUE` when its
+#'   export can be downloaded.
 #' @return A list with `key`, `alias`, `version` and `issued`.
 #' @export
-colxr_latest_release <- function(verbose = TRUE) {
+colxr_latest_release <- function(verbose = TRUE,
+                                 export_ready = colxr_export_ready) {
   url <- paste0(.colxr_api_base, "/dataset?origin=xrelease&limit=200")
   txt <- tryCatch(
     paste(readLines(url, warn = FALSE), collapse = ""),
@@ -93,7 +99,22 @@ colxr_latest_release <- function(verbose = TRUE) {
   }
 
   issued <- vapply(keep, function(d) d$issued %||% "", character(1L))
-  best <- keep[[which.max(as.Date(issued))]]
+  keep <- keep[order(as.Date(issued), decreasing = TRUE)]
+  best <- NULL
+  for (d in keep) {
+    if (isTRUE(export_ready(as.character(d$key)))) {
+      best <- d
+      break
+    }
+    if (verbose) {
+      message(sprintf("%s has no export on ChecklistBank yet; skipping.",
+                      d$alias))
+    }
+  }
+  if (is.null(best)) {
+    stop("No Catalogue of Life Extended Release on ChecklistBank has a ",
+         "downloadable export.", call. = FALSE)
+  }
 
   out <- list(
     key     = as.character(best$key),
@@ -150,6 +171,23 @@ download_colxr <- function(dest = tempdir(), key = NULL, verbose = TRUE) {
 #' @noRd
 colxr_export_url <- function(key) {
   sprintf("%s/dataset/%s/export.zip?format=DwCA", .colxr_api_base, key)
+}
+
+
+#' Whether a ChecklistBank export can be downloaded
+#'
+#' The export URL redirects to the generated archive once it exists and
+#' answers 404 before then; only the status of that first response is read.
+#'
+#' @param key Character. ChecklistBank dataset key.
+#' @return `TRUE` when the export answers with a redirect or 200.
+#' @noRd
+colxr_export_ready <- function(key) {
+  h <- curl::new_handle(nobody = TRUE, followlocation = FALSE,
+                        connecttimeout = 30)
+  res <- tryCatch(curl::curl_fetch_memory(colxr_export_url(key), handle = h),
+                  error = function(e) NULL)
+  !is.null(res) && res$status_code %in% c(200L, 301L, 302L, 303L, 307L)
 }
 
 

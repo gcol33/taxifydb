@@ -2337,9 +2337,13 @@
     requires    = "openxlsx2"
   ),
 
+  # ScienceBase answers unattended requests with an interactive Cloudflare
+  # Turnstile checkbox, so the item is read from the Wayback capture of its
+  # whole-item zip (`file/get/<item>`), which holds FishTraits_14.3.xls.
   fishtraits = list(
-    source_url  = paste0("https://www.sciencebase.gov/catalog/file/get/",
-                         "5a7c6e8ce4b00f54eb2318c0?name=FishTraits_14.3.xls"),
+    source_url  = paste0("https://web.archive.org/web/20250204085643id_/",
+                         "https://www.sciencebase.gov/catalog/file/get/",
+                         "5a7c6e8ce4b00f54eb2318c0"),
     source_doi  = NULL,
     version     = "14.3",
     license     = "Public domain (U.S. Government work)",
@@ -2347,12 +2351,13 @@
       "Frimpong EA, Angermeier PL (2009) FishTraits: a database of ecological ",
       "and life-history traits of freshwater fishes of the United States. ",
       "Fisheries 34:487-495. Data: USGS ScienceBase, FishTraits v14.3 (item ",
-      "5a7c6e8ce4b00f54eb2318c0), public domain. Species-level trophic-guild, ",
+      "5a7c6e8ce4b00f54eb2318c0), public domain; archived snapshot ",
+      "2025-02-04 of the item's file archive. Species-level trophic-guild, ",
       "life-history, temperature and salinity tolerance and conservation ",
       "traits for United States freshwater fishes."
     ),
     download_fn = function(url, dest) {
-      download_cf_file(url, dest, "FishTraits_14.3.xls")
+      download_and_unzip(url, dest, "^FishTraits_14\\.3\\.xls$")
     },
     parse_fn    = function(path) parse_fishtraits(path),
     group_col   = NULL,

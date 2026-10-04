@@ -5404,7 +5404,7 @@
       "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/fishtraits.vtr",
       "nrow": 1144,
       "content_id": "8d4dad2e1c72bcbeb8722602d0bcd04e",
-      "source_url": "https://www.sciencebase.gov/catalog/file/get/5a7c6e8ce4b00f54eb2318c0?name=FishTraits_14.3.xls",
+      "source_url": "https://web.archive.org/web/20250204085643id_/https://www.sciencebase.gov/catalog/file/get/5a7c6e8ce4b00f54eb2318c0",
       "license": "Public domain (U.S. Government work)",
       "resolved_backbones": [
         "algaebase",

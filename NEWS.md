@@ -1,5 +1,15 @@
 # taxifydb (development version)
 
+## FishTraits builds again
+
+* `fishtraits` reads the Wayback capture (2025-02-04) of the ScienceBase item's
+  whole-item zip and extracts `FishTraits_14.3.xls` with
+  `download_and_unzip()`. ScienceBase now answers with an interactive
+  Cloudflare Turnstile checkbox that refuses automated browsers, so the
+  `download_cf_file()` route could no longer fetch it. The archived file parses
+  to the same values as the published `fishtraits.vtr` on all 773 shared
+  names.
+
 ## Publication year on every backbone that has one
 
 * `normalize_backbone()` writes a source's publication reference under one

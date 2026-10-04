@@ -460,7 +460,7 @@ download_dryad_file <- function(doi, dest_dir, filename,
   with_curl <- Filter(function(py) has(py, "curl_cffi"), cands)
   if (!length(with_curl)) {
     stop("No Python with curl_cffi found. Cloudflare-gated enrichments ",
-         "(hosts, usda_fungus_host, clopla, fishtraits) need it at build time.\n",
+         "(hosts, usda_fungus_host, clopla) need it at build time.\n",
          "Tried:\n  ", paste(cands, collapse = "\n  "), "\n",
          "Install with:\n  pip install curl_cffi nodriver\n",
          "or point TAXIFYDB_PYTHON at a suitable interpreter.", call. = FALSE)

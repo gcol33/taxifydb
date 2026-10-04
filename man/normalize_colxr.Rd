@@ -4,7 +4,7 @@
 \alias{normalize_colxr}
 \title{Normalize one block of COL XR rows to the unified schema}
 \usage{
-normalize_colxr(df, gbif_crosswalk = NULL, verbose = TRUE)
+normalize_colxr(df, gbif_crosswalk = NULL, publications = NULL, verbose = TRUE)
 }
 \arguments{
 \item{df}{A data.frame of raw COL XR rows, with the export's own column
@@ -12,6 +12,9 @@ names.}
 
 \item{gbif_crosswalk}{A \code{\link[=colxr_gbif_crosswalk]{colxr_gbif_crosswalk()}}, or \code{NULL} to leave
 \code{gbif_key} unset.}
+
+\item{publications}{A \code{\link[=colxr_col_publications]{colxr_col_publications()}} table, or \code{NULL} to carry
+no publication columns.}
 
 \item{verbose}{Logical.}
 }

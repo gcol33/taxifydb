@@ -37,8 +37,7 @@ Path to \code{genus_register.vtr} (invisibly).
 Reads genus-rank rows from each of \code{\link[=register_backbones]{register_backbones()}} (resolved via
 \code{resolve_register_backbone_paths()}), unions them, resolves classification
 conflicts, normalizes non-standard kingdom names, assigns \code{kingdom_group} /
-\code{taxon_group} / \code{life_form} (via \code{assign_life_form()}, falling back to a
-GBIF parent-key hierarchy walk for genera still unresolved), and writes
+\code{taxon_group} / \code{life_form} (via \code{assign_life_form()}), and writes
 \code{genus_register.vtr}.
 }
 \details{

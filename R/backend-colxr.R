@@ -26,6 +26,12 @@
 # neither the export nor ChecklistBank's usage records carry a mapping to them,
 # so the build derives one from the GBIF backbone (see colxr_gbif_crosswalk())
 # and stores it beside the COL XR identifier as `gbif_key`.
+#
+# The export also carries no publication reference: ChecklistBank flattens an
+# export this large to one table, in DwC-A and ColDP alike, and drops the
+# reference table. COL XR keeps the Base Release's identifiers, so the build
+# takes `name_published_in` and `year` from the COL build for every usage whose
+# ID, name and authorship agree there (see colxr_col_publications()).
 
 .colxr_api_base <- "https://api.checklistbank.org"
 
@@ -59,9 +65,7 @@
   "subtribe",
   "subgenus",
   "higherClassification",
-  "taxGroup",
-  "namePublishedIn",
-  "namePublishedInYear"
+  "taxGroup"
 )
 
 
@@ -232,10 +236,13 @@ read_colxr <- function(tsv_path, verbose = TRUE) {
 #'   names.
 #' @param gbif_crosswalk A [colxr_gbif_crosswalk()], or `NULL` to leave
 #'   `gbif_key` unset.
+#' @param publications A [colxr_col_publications()] table, or `NULL` to carry
+#'   no publication columns.
 #' @param verbose Logical.
 #' @return A normalized data.frame.
 #' @export
-normalize_colxr <- function(df, gbif_crosswalk = NULL, verbose = TRUE) {
+normalize_colxr <- function(df, gbif_crosswalk = NULL, publications = NULL,
+                            verbose = TRUE) {
   # Strip namespace prefixes (dwc:taxonID -> taxonID, clb:taxGroup -> taxGroup)
   names(df) <- sub("^[a-z]+:", "", names(df))
 
@@ -278,6 +285,9 @@ normalize_colxr <- function(df, gbif_crosswalk = NULL, verbose = TRUE) {
   }
 
   out <- normalize_backbone(df, col_map, extra_cols)
+  if (!is.null(publications)) {
+    out <- colxr_attach_publications(out, publications)
+  }
   out$gbif_key <- if (is.null(gbif_crosswalk)) {
     rep(NA_character_, nrow(out))
   } else {
@@ -440,6 +450,84 @@ colxr_gbif_path <- function(gbif_path, output_dir, manifest_path, verbose) {
 }
 
 
+#' Publication references of the COL Base Release, keyed for COL XR
+#'
+#' COL XR keeps the Base Release's identifiers, so a usage's publication
+#' reference can be read from the COL build by `taxon_id`. Only rows carrying a
+#' reference are kept.
+#'
+#' @param col_path Path to a COL `.vtr` carrying `name_published_in`.
+#' @return A data.frame of `taxon_id`, `canonical_name`, `authorship`,
+#'   `name_published_in` and `year`.
+#' @export
+colxr_col_publications <- function(col_path) {
+  cols <- c("taxon_id", "canonical_name", "authorship", "name_published_in",
+            "year")
+  schema <- names(vectra::collect(vectra::slice_head(vectra::tbl(col_path),
+                                                     n = 1L)))
+  if (!all(cols %in% schema)) {
+    stop("The COL build at ", col_path, " carries no name_published_in; ",
+         "rebuild COL first.", call. = FALSE)
+  }
+  pub <- vectra::tbl(col_path) |>
+    vectra::select(!!!lapply(cols, as.name)) |>
+    vectra::collect()
+  pub[!is.na(pub$name_published_in), , drop = FALSE]
+}
+
+
+#' Attach COL publication references to normalized COL XR rows
+#'
+#' A row takes the reference of the COL usage with its `taxon_id` only when
+#' the canonical name and authorship agree, so an identifier COL XR reuses for
+#' a corrected spelling (99.7% agree on COL26.8 XR) never carries another
+#' name's citation.
+#'
+#' @param out Normalized COL XR rows.
+#' @param publications A [colxr_col_publications()] table.
+#' @return `out` with `name_published_in` and `year`.
+#' @noRd
+colxr_attach_publications <- function(out, publications) {
+  m <- match(out$taxon_id, publications$taxon_id)
+  same <- !is.na(m) &
+    out$canonical_name == publications$canonical_name[m] &
+    ((is.na(out$authorship) & is.na(publications$authorship[m])) |
+       (!is.na(out$authorship) & out$authorship == publications$authorship[m]))
+  same[is.na(same)] <- FALSE
+  out$name_published_in <- ifelse(same, publications$name_published_in[m],
+                                  NA_character_)
+  out$year <- ifelse(same, as.integer(publications$year[m]), NA_integer_)
+  out
+}
+
+
+#' Path to the COL build COL XR reads its publication references from
+#'
+#' The published COL build named in the manifest, else a local build.
+#' @noRd
+colxr_col_path <- function(col_path, output_dir, manifest_path, verbose) {
+  manifest <- if (file.exists(manifest_path)) {
+    jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  } else {
+    list(backends = list())
+  }
+  path <- .resolve_one_backbone_path(
+    "col", if (is.null(col_path)) list() else list(col = col_path),
+    file.path(output_dir, "_col"), manifest, verbose, prefer_local = FALSE
+  )
+  if (is.null(path)) {
+    path <- .resolve_one_backbone_path("col", list(), output_dir, manifest,
+                                       verbose)
+  }
+  if (is.null(path)) {
+    stop("COL XR takes its publication references from the COL build, which ",
+         "was found neither at `col_path`, nor in the manifest, nor in ",
+         "output/col. Build or publish `col` first.", call. = FALSE)
+  }
+  path
+}
+
+
 #' Build the COL XR backbone .vtr
 #'
 #' @param output_dir Character. Output directory.
@@ -449,12 +537,15 @@ colxr_gbif_path <- function(gbif_path, output_dir, manifest_path, verbose) {
 #' @param gbif_path Character or NULL. The `gbif` `.vtr` the `gbif_key` column
 #'   is derived from. Defaults to the published build named in
 #'   `manifest_path`, else `output/gbif/gbif.vtr`.
+#' @param col_path Character or NULL. The `col` `.vtr` the publication
+#'   references are read from. Defaults to the published build named in
+#'   `manifest_path`, else `output/col/col.vtr`.
 #' @param manifest_path Character. Path to `manifest.json`.
 #' @param verbose Logical.
 #' @return Path to the .vtr file (invisibly).
 #' @export
 build_colxr <- function(output_dir = "output/colxr", version = NULL,
-                        gbif_path = NULL,
+                        gbif_path = NULL, col_path = NULL,
                         manifest_path = "manifest/manifest.json",
                         verbose = TRUE) {
   release <- colxr_latest_release(verbose = verbose)
@@ -463,6 +554,10 @@ build_colxr <- function(output_dir = "output/colxr", version = NULL,
   gbif_path <- colxr_gbif_path(gbif_path, output_dir, manifest_path, verbose)
   if (verbose) message("Building the GBIF key crosswalk from ", gbif_path)
   crosswalk <- colxr_gbif_crosswalk(gbif_path)
+
+  col_path <- colxr_col_path(col_path, output_dir, manifest_path, verbose)
+  if (verbose) message("Reading publication references from ", col_path)
+  publications <- colxr_col_publications(col_path)
 
   tmp <- tempfile("colxr_")
   dir.create(tmp, recursive = TRUE)
@@ -480,12 +575,14 @@ build_colxr <- function(output_dir = "output/colxr", version = NULL,
     delim_chunk_feed(tsv_path,
                      normalize = function(chunk) {
                        normalize_colxr(chunk, gbif_crosswalk = crosswalk,
+                                       publications = publications,
                                        verbose = FALSE)
                      },
                      verbose = verbose),
     vtr_path, "colxr", version, colxr_export_url(release$key), release$date,
     synonym_pattern = "SYNONYM|MISAPPLIED",
-    meta_extra = c(gbif_key_source = unname(tools::md5sum(gbif_path))),
+    meta_extra = c(gbif_key_source = unname(tools::md5sum(gbif_path)),
+                   publication_source = unname(tools::md5sum(col_path))),
     verbose = verbose
   )
 

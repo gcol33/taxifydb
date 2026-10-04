@@ -4,16 +4,22 @@
 \alias{colxr_latest_release}
 \title{Resolve the latest Catalogue of Life Extended Release}
 \usage{
-colxr_latest_release(verbose = TRUE)
+colxr_latest_release(verbose = TRUE, export_ready = colxr_export_ready)
 }
 \arguments{
 \item{verbose}{Logical.}
+
+\item{export_ready}{Function of a dataset key returning \code{TRUE} when its
+export can be downloaded.}
 }
 \value{
 A list with \code{key}, \code{alias}, \code{version} and \code{issued}.
 }
 \description{
-Queries ChecklistBank for the most recently issued COL XR dataset. Each
-monthly release carries its own dataset key, so the key is looked up rather
-than hard-coded.
+Queries ChecklistBank for the most recently issued COL XR dataset whose
+Darwin Core export can be downloaded. Each monthly release carries its own
+dataset key, so the key is looked up rather than hard-coded. ChecklistBank
+lists a release before it has generated the export (COL26.9 XR answered 404
+nine days after it was issued), so a release without one is skipped and the
+previous release is built.
 }

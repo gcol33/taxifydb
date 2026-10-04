@@ -8,6 +8,7 @@ build_colxr(
   output_dir = "output/colxr",
   version = NULL,
   gbif_path = NULL,
+  col_path = NULL,
   manifest_path = "manifest/manifest.json",
   verbose = TRUE
 )
@@ -22,6 +23,10 @@ rather than the date of the build.}
 \item{gbif_path}{Character or NULL. The \code{gbif} \code{.vtr} the \code{gbif_key} column
 is derived from. Defaults to the published build named in
 \code{manifest_path}, else \code{output/gbif/gbif.vtr}.}
+
+\item{col_path}{Character or NULL. The \code{col} \code{.vtr} the publication
+references are read from. Defaults to the published build named in
+\code{manifest_path}, else \code{output/col/col.vtr}.}
 
 \item{manifest_path}{Character. Path to \code{manifest.json}.}
 

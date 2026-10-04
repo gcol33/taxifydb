@@ -17,7 +17,9 @@ and by outer authorship, for \code{\link[=colxr_gbif_lookup]{colxr_gbif_lookup()
 COL XR replaced the taxonomy behind GBIF.org, but GBIF serves occurrence
 records only for the numeric keys of its legacy backbone. This reads the
 \code{gbif} backbone and groups its usages by canonical name, rank and
-authorship (see \code{crosswalk_authorship()}). A name several GBIF usages share
-(a homonym, or one name GBIF split itself) maps to the set of their keys,
-\code{|}-delimited in ascending order.
+authorship (see \code{crosswalk_authorship()}). GBIF files the records of a
+synonym under its accepted taxon, so a synonym usage contributes its
+accepted taxon's key. A name several GBIF usages share (a homonym, or one
+name GBIF split itself) maps to the set of their keys, \code{|}-delimited in
+ascending order.
 }

@@ -18,6 +18,9 @@ Path to the downloaded file.
 }
 \description{
 Downloads \code{url} into \code{dest_dir/filename} with a browser TLS impersonation
-that passes Cloudflare's "Just a moment" challenge. Cached: skips if the
+that passes Cloudflare's "Just a moment" challenge. A host running a
+JavaScript challenge, which no impersonation can satisfy, is instead cleared
+once in a visible Chrome window and the resulting cookies reused for 12h;
+that rung needs the Python package nodriver. Cached: skips if the
 destination exists and is non-empty.
 }

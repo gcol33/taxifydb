@@ -59,7 +59,9 @@
   "subtribe",
   "subgenus",
   "higherClassification",
-  "taxGroup"
+  "taxGroup",
+  "namePublishedIn",
+  "namePublishedInYear"
 )
 
 

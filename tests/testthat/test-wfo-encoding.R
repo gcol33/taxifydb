@@ -43,7 +43,7 @@ test_that("read_wfo decodes the UTF-8 source once in every text column", {
 
   expect_equal(charToRaw(df$authorship[1L]), c(
     charToRaw("(H.Y.Liu) Ba"), as.raw(c(0xC3, 0xB1)), charToRaw("ares")))
-  expect_equal(charToRaw(df$namePublishedIn[1L]), c(
+  expect_equal(charToRaw(df$name_published_in[1L]), c(
     charToRaw("Bull. Acad. Imp. Sci. Saint-P"), as.raw(c(0xC3, 0xA9)),
     charToRaw("tersbourg")))
   expect_equal(charToRaw(df$canonical_name[2L]), c(
@@ -80,6 +80,8 @@ test_that("the streamed WFO read matches the whole-file read byte for byte", {
   }
   streamed <- do.call(rbind, blocks)
 
-  expect_identical(lapply(streamed, function(v) lapply(v, charToRaw)),
-                   lapply(whole, function(v) lapply(v, charToRaw)))
+  bytes <- function(df) lapply(df, function(v) {
+    if (is.character(v)) lapply(v, charToRaw) else v
+  })
+  expect_identical(bytes(streamed), bytes(whole))
 })

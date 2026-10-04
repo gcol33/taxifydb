@@ -17,6 +17,30 @@
                             "convar.", "proles", "race", "grex", "subf.",
                             "nothovar.", "nothof.")
 
+# Source columns that carry a name's publication, under the one unified name
+# taxify's pick reads. WFO and COL write the Darwin Core `namePublishedIn`,
+# WCVP `first_published`, a ChecklistBank export also `namePublishedInYear`.
+.publication_aliases <- c(namePublishedIn     = "name_published_in",
+                          first_published     = "name_published_in",
+                          namePublishedInYear = "year")
+
+#' Year in a publication reference
+#'
+#' The first four-digit year between 1500 and 2099 in the reference
+#' ("Fl. Hautes-Pyrenees 502 (1867).").
+#'
+#' @param ref Character vector of publication references.
+#' @return Integer vector, `NA` where the reference names no year.
+#' @noRd
+reference_year <- function(ref) {
+  ref <- as.character(ref)
+  pat <- "(1[5-9][0-9]{2}|20[0-9]{2})"
+  out <- rep(NA_integer_, length(ref))
+  hit <- !is.na(ref) & grepl(pat, ref)
+  out[hit] <- as.integer(regmatches(ref[hit], regexpr(pat, ref[hit])))
+  out
+}
+
 #' Normalize a raw backbone data.frame to the unified schema
 #'
 #' Renames source-specific columns to canonical names and ensures consistent
@@ -46,6 +70,8 @@ normalize_backbone <- function(df, col_map, extra_cols = NULL) {
 
   n <- nrow(df)
   all_cols <- c(col_map, extra_cols)
+  alias <- names(all_cols) %in% names(.publication_aliases)
+  names(all_cols)[alias] <- .publication_aliases[names(all_cols)[alias]]
 
   col_list <- lapply(names(all_cols), function(canon_name) {
     src_name <- all_cols[[canon_name]]
@@ -74,6 +100,21 @@ normalize_backbone <- function(df, col_map, extra_cols = NULL) {
   }
 
   out$canonical_name <- drop_infrageneric(out$canonical_name, out$genus)
+
+  # A publication year as an integer, from the source's own year where it has
+  # one and from the reference otherwise.
+  if ("name_published_in" %in% names(out) || "year" %in% names(out)) {
+    yr <- if ("year" %in% names(out)) {
+      suppressWarnings(as.integer(substr(as.character(out$year), 1L, 4L)))
+    } else {
+      rep(NA_integer_, n)
+    }
+    if ("name_published_in" %in% names(out)) {
+      need <- is.na(yr)
+      yr[need] <- reference_year(out$name_published_in[need])
+    }
+    out$year <- yr
+  }
 
   out
 }

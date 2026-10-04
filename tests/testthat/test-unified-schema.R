@@ -199,3 +199,29 @@ test_that("WFO and COL keep the basionym link as original_name_usage_id", {
   df <- read_col(col_dir, verbose = FALSE)
   expect_equal(df$original_name_usage_id, c(NA, "col-9"))
 })
+
+test_that("every source's publication reference lands in name_published_in with a year", {
+  df <- data.frame(id = c("1", "2", "3"), nm = c("A b", "A c", "A d"),
+                   rk = "species", st = "accepted", acc = NA_character_,
+                   fam = "F", gen = "A", ep = c("b", "c", "d"),
+                   namePublishedIn = c("Fl. Hautes-Pyr. 502 (1867).",
+                                       "Lam. Fl. Franc.", NA),
+                   stringsAsFactors = FALSE)
+  cm <- list(taxon_id = "id", canonical_name = "nm", taxon_rank = "rk",
+             taxonomic_status = "st", accepted_name_usage_id = "acc",
+             family = "fam", genus = "gen", specific_epithet = "ep")
+  out <- normalize_backbone(df, cm, list(namePublishedIn = "namePublishedIn"))
+  expect_false("namePublishedIn" %in% names(out))
+  expect_equal(out$name_published_in[1L], "Fl. Hautes-Pyr. 502 (1867).")
+  expect_identical(out$year, c(1867L, NA, NA))
+
+  names(df)[names(df) == "namePublishedIn"] <- "first_published"
+  df$namePublishedInYear <- c(NA, "1779", NA)
+  out <- normalize_backbone(df, cm, list(first_published = "first_published",
+                                         namePublishedInYear = "namePublishedInYear"))
+  expect_identical(out$year, c(1867L, 1779L, NA))
+
+  plain <- normalize_backbone(df[, c("id", "nm", "rk", "st", "acc", "fam",
+                                     "gen", "ep")], cm)
+  expect_false(any(c("year", "name_published_in") %in% names(plain)))
+})

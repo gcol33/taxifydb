@@ -1,5 +1,17 @@
 # taxifydb (development version)
 
+## Publication year on every backbone that has one
+
+* `normalize_backbone()` writes a source's publication reference under one
+  name, `name_published_in` (WFO and COL `namePublishedIn`, WCVP
+  `first_published`), plus an integer `year`, from the source's own year where
+  it has one and else from the reference. The COL XR reader keeps the export's
+  `namePublishedIn` / `namePublishedInYear`. taxify's homonym pick read these
+  only on GBIF before, so on every other backbone the step was silent
+  (#60, gcol33/taxify#91).
+* `build_name_lookup()` no longer selects `bracket_year`, which the pick no
+  longer reads: a recombination is dated by its own publication.
+
 ## Genus register: one occupant per genus, synonyms no longer decide
 
 * The genus extractors carry each genus row's taxonomic status and the number

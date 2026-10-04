@@ -174,6 +174,34 @@ test_that("a curated citation survives a release that keeps its source", {
   expect_equal(entry$citation, "Zanne et al. (2014), curated by hand.")
 })
 
+test_that("a composite source keeps its citation while a part is unchanged", {
+  dir <- withr::local_tempdir()
+  vtr <- file.path(dir, "names.vtr")
+  build_enrichment_vtr(
+    data.frame(canonical_name = "Quercus robur", common_name = "oak"),
+    vtr, name = "names", version = "2026.10",
+    source_url = "https://a.org/gbif.zip ; https://b.org/ncbi_2026-10-01.zip",
+    license = "CC0", attribution = "Generated attribution.")
+
+  write_entry <- function(url) {
+    mf <- file.path(dir, "manifest.json")
+    jsonlite::write_json(
+      list(schema_version = 2L, backends = list(),
+           enrichments = list(names = list(
+             source_url = url,
+             citation = list(key = "gbif", doi = "10.15468/39omei")))),
+      mf, pretty = TRUE, auto_unbox = TRUE)
+    update_enrichment_manifest(mf, "names", vtr, release_version = "2026.10",
+                               runtime = TRUE)
+    jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$names$citation
+  }
+
+  kept <- write_entry("https://a.org/gbif.zip ; https://b.org/ncbi_2026-09-01.zip")
+  expect_equal(kept$doi, "10.15468/39omei")
+  moved <- write_entry("https://c.org/other.zip ; https://b.org/ncbi_2026-09-01.zip")
+  expect_equal(moved, "Generated attribution.")
+})
+
 test_that("a build with no upstream identity writes no field to carry", {
   dir <- withr::local_tempdir()
   vtr <- file.path(dir, "local.vtr")

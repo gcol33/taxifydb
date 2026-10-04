@@ -1174,12 +1174,12 @@
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/amphibio-54374c0ae423061695dcfbc7fea03f72.vtr"
     },
     "common_names": {
-      "latest": "2026.08",
-      "source_version": "2026.09",
-      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/common_names.vtr",
-      "nrow": 1198444,
-      "content_id": "4a9f568de7ad9e61c8821a32c9f4dd55",
-      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip ; https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz ; https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
+      "latest": "2026.10",
+      "source_version": "2026.10",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.10/common_names.vtr",
+      "nrow": 2012878,
+      "content_id": "7ef86a264bda9fea62ed2bf2772371aa",
+      "source_url": "https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip ; https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/new_taxdump_2026-10-01.zip ; https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
       "license": "CC0 (GBIF, OTT) / public domain (NCBI)",
       "group_col": "lang",
       "available_groups": [
@@ -1360,7 +1360,8 @@
         "wfo",
         "worms"
       ],
-      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.08/common_names-4a9f568de7ad9e61c8821a32c9f4dd55.vtr"
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.10/common_names-7ef86a264bda9fea62ed2bf2772371aa.vtr",
+      "upstream_id": "Mon, 28 Aug 2023 15:18:30 GMT + 2026-10-01 + 3.7.3"
     },
     "anage": {
       "latest": "2026.08",

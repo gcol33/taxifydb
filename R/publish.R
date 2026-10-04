@@ -731,7 +731,16 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   cites_same_work <- !is.null(cited_doi) &&
     identical(cited_doi, meta$source_doi %||% entry$source_doi %||% NULL)
 
-  source_moved <- (!identical(entry$source_url %||% NULL, meta$source_url) ||
+  # A composite source (parts joined by .source_sep) keeps the works its
+  # citation names while any part is unchanged: common_names re-pins its NCBI
+  # archive every month, and its curated block cites the GBIF part.
+  url_parts <- function(u) if (is.null(u)) character() else strsplit(u, .source_sep, fixed = TRUE)[[1]]
+  url_moved <- if (is.null(entry$source_url) || is.null(meta$source_url)) {
+    !identical(entry$source_url %||% NULL, meta$source_url)
+  } else {
+    !length(intersect(url_parts(entry$source_url), url_parts(meta$source_url)))
+  }
+  source_moved <- (url_moved ||
     !identical(entry$source_doi %||% NULL, meta$source_doi)) &&
     !cites_same_work
 

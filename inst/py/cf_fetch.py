@@ -12,7 +12,12 @@ A fingerprint is not enough for every wall. A source that answers
 impersonation identity can satisfy because curl_cffi executes no JS; USGS
 ScienceBase serves that tier. Those are cleared once in a visible Chrome whose
 cookies and User-Agent the curl_cffi session then reuses, cached per host for
-12h under ~/.cache/taxifydb/clearance.
+12h under ~/.cache/taxifydb/clearance. An interactive Turnstile checkbox is
+clicked by position. On Windows the window has to open on the user's desktop:
+from session 0 (a shell under a service or background agent) Chrome is started
+through a one-shot interactive scheduled task and driven over its DevTools
+port, because Turnstile re-issues its challenge after every click in a
+session-0 Chrome.
 
 Invoked from R via `download_cf_file()` / `harvest_ckan_datastore()` in
 R/enrichment-helpers.R. curl_cffi is the only hard requirement; nodriver is
@@ -28,7 +33,11 @@ Usage:
 """
 import json
 import os
+import random
 import re
+import shutil
+import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -147,6 +156,105 @@ def _clear_wall(url):
     return True
 
 
+def _in_service_session():
+    """True when this process runs in Windows session 0, the non-interactive
+    services session. A Chrome started there renders on an invisible desktop
+    with no GPU, and an interactive Turnstile never accepts its click."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    sid = ctypes.c_ulong()
+    ok = ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(sid))
+    return bool(ok) and sid.value == 0
+
+
+# Registers and starts a one-shot scheduled task that runs Chrome as the user
+# owning the desktop (explorer.exe), with an interactive logon, so the window
+# opens in that user's session. Arguments arrive through environment variables.
+_INTERACTIVE_CHROME_PS = r"""
+$o = Get-CimInstance Win32_Process -Filter "Name='explorer.exe'" |
+  Select-Object -First 1 | Invoke-CimMethod -MethodName GetOwner
+$a = New-ScheduledTaskAction -Execute $env:CF_CHROME -Argument $env:CF_ARGS
+$p = New-ScheduledTaskPrincipal -UserId "$($o.Domain)\$($o.User)" -LogonType Interactive -RunLevel Limited
+Register-ScheduledTask -TaskName $env:CF_TASK -Action $a -Principal $p -Force | Out-Null
+Start-ScheduledTask -TaskName $env:CF_TASK
+Unregister-ScheduledTask -TaskName $env:CF_TASK -Confirm:$false
+"""
+
+# Bounding box of an interactive Turnstile widget, or null. The checkbox sits
+# in a closed shadow root, so it is clicked by position near the widget's left
+# edge. A match can be the widget's hidden zero-size response input
+# (`cf-chl-widget-*_response`), so each match walks up to its first rendered
+# ancestor.
+_TURNSTILE_BOX_JS = """(() => {
+  for (let e of document.querySelectorAll('#captcha-box, .cf-turnstile, [id^=cf-chl-widget]')) {
+    while (e && e !== document.body) {
+      const b = e.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0)
+        return JSON.stringify([b.left, b.top, b.height]);
+      e = e.parentElement;
+    }
+  }
+  return null;
+})()"""
+
+
+def _free_port():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+async def _start_browser(uc, profile, attached):
+    """A visible Chrome on `profile`: started directly, or, when `attached`,
+    on the interactive desktop through the scheduled task and attached to over
+    its DevTools port."""
+    import asyncio
+    if not attached:
+        return await uc.start(headless=False, user_data_dir=profile)
+    port = _free_port()
+    chrome = str(uc.core.config.find_chrome_executable())
+    args = (f"--remote-debugging-port={port} --user-data-dir=\"{profile}\" "
+            "--no-first-run --no-default-browser-check about:blank")
+    env = dict(os.environ, CF_CHROME=chrome, CF_ARGS=args,
+               CF_TASK=f"cf_fetch_chrome_{port}")
+    subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                    _INTERACTIVE_CHROME_PS], env=env, check=True,
+                   capture_output=True, timeout=60)
+    for _ in range(60):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=1):
+                break
+        except OSError:
+            await asyncio.sleep(0.5)
+    else:
+        raise RuntimeError("Chrome on the interactive desktop did not open "
+                           f"its DevTools port {port}")
+    return await uc.start(host="127.0.0.1", port=port)
+
+
+async def _pointer_click(tab, x, y):
+    """Click at (x, y) the way a pointer does: a run of mouseMoved events up to
+    the target, then press and release with a short hold. Turnstile ignores a
+    bare press/release pair."""
+    import asyncio
+    from nodriver import cdp
+    sx, sy = x - 180, y + 90
+    for k in range(1, 13):
+        t = k / 12
+        await tab.send(cdp.input_.dispatch_mouse_event(
+            "mouseMoved", x=sx + (x - sx) * t + random.uniform(-1.5, 1.5),
+            y=sy + (y - sy) * t + random.uniform(-1.5, 1.5)))
+        await asyncio.sleep(random.uniform(0.015, 0.04))
+    await tab.send(cdp.input_.dispatch_mouse_event("mouseMoved", x=x, y=y))
+    await asyncio.sleep(random.uniform(0.08, 0.2))
+    for kind in ("mousePressed", "mouseReleased"):
+        await tab.send(cdp.input_.dispatch_mouse_event(
+            kind, x=x, y=y, button=cdp.input_.MouseButton("left"),
+            buttons=1, click_count=1))
+        await asyncio.sleep(random.uniform(0.06, 0.14))
+
+
 def _browser_clear(url, wall_timeout=BROWSER_TIMEOUT):
     """Run the JS challenge on `url` in a visible Chrome, return {ua, cookies}.
 
@@ -175,14 +283,20 @@ def _browser_clear(url, wall_timeout=BROWSER_TIMEOUT):
                    ("Just a moment", "Checking", "Verifying", "DDoS-Guard"))
 
     async def _run():
-        browser = await uc.start(headless=False,
-                                 user_data_dir=tempfile.mkdtemp(prefix="cf_fetch-"))
+        profile = tempfile.mkdtemp(prefix="cf_fetch-")
+        attached = _in_service_session()
+        browser = await _start_browser(uc, profile, attached)
         try:
             tab = await browser.get(url)
-            for _ in range(wall_timeout):
+            for i in range(wall_timeout):
                 await asyncio.sleep(1)
                 if not _walled(await tab.evaluate("document.title") or ""):
                     break
+                if i % 8 == 4:  # let the widget render, then retry the click
+                    box = await tab.evaluate(_TURNSTILE_BOX_JS)
+                    if box:
+                        left, top, height = json.loads(box)
+                        await _pointer_click(tab, left + 21, top + height / 2)
             await asyncio.sleep(3)
             # The title clears before the challenge has finished writing its
             # cookies, so reload and let the cookie count settle before
@@ -198,7 +312,19 @@ def _browser_clear(url, wall_timeout=BROWSER_TIMEOUT):
             return {"ua": await tab.evaluate("navigator.userAgent"),
                     "cookies": cookies, "ts": time.time()}
         finally:
+            if attached:
+                from nodriver import cdp
+                try:
+                    await asyncio.wait_for(
+                        browser.connection.send(cdp.browser.close()), 10)
+                except Exception:
+                    pass
             browser.stop()
+            for _ in range(10):
+                shutil.rmtree(profile, ignore_errors=True)
+                if not os.path.exists(profile):
+                    break
+                await asyncio.sleep(0.5)
 
     sys.stderr.write(f"cf_fetch: clearing a browser wall on {urlsplit(url).netloc} "
                      f"(a Chrome window will open briefly)\n")

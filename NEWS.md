@@ -5,10 +5,18 @@
 * `fishtraits` reads the Wayback capture (2025-02-04) of the ScienceBase item's
   whole-item zip and extracts `FishTraits_14.3.xls` with
   `download_and_unzip()`. ScienceBase now answers with an interactive
-  Cloudflare Turnstile checkbox that refuses automated browsers, so the
-  `download_cf_file()` route could no longer fetch it. The archived file parses
+  Cloudflare Turnstile checkbox, which clears only in a visible Chrome on a
+  logged-in desktop, so an unattended build cannot fetch it. The archived
+  file is byte-identical to the one ScienceBase serves (SHA-1
+  `a5d18bc605e1cd5d237e124ebb61abad2f3ed263`, uploaded 2018-02-08) and parses
   to the same values as the published `fishtraits.vtr` on all 773 shared
   names.
+
+* `cf_fetch.py` clicks an interactive Turnstile checkbox, and on Windows opens
+  its clearing Chrome on the user's desktop when it runs from session 0 (a
+  shell under a service or background agent). A Chrome started in session 0
+  renders on an invisible desktop, and Turnstile re-issued its challenge after
+  every click there.
 
 ## Publication year on every backbone that has one
 

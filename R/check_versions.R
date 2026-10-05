@@ -1084,8 +1084,8 @@ check_lcvp_version <- function(source_url) {
 .live_sources <- "ser-sid\\.org|bien\\.nceas\\.ucsb\\.edu"
 
 # Hosts that answer an unattended request with an interactive human-verification
-# checkbox (Cloudflare Turnstile), which neither headless nor automated Chrome
-# clears. Their metadata mirrors carry no file or edition identity either: the
+# checkbox (Cloudflare Turnstile), which clears only in a visible Chrome on a
+# logged-in desktop, never in an unattended check. Their metadata mirrors carry no file or edition identity either: the
 # FishTraits FGDC record on data.usgs.gov states `update: Unknown` and names no
 # file, and the item's file list is served only behind the checkbox.
 .challenge_sources <- "sciencebase\\.gov"

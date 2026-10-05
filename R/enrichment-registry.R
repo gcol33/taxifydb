@@ -2337,9 +2337,10 @@
     requires    = "openxlsx2"
   ),
 
-  # ScienceBase answers unattended requests with an interactive Cloudflare
-  # Turnstile checkbox, so the item is read from the Wayback capture of its
-  # whole-item zip (`file/get/<item>`), which holds FishTraits_14.3.xls.
+  # ScienceBase answers with an interactive Cloudflare Turnstile checkbox,
+  # which clears only in a visible Chrome on a logged-in desktop, so the item
+  # is read from the Wayback capture of its whole-item zip (`file/get/<item>`),
+  # which holds FishTraits_14.3.xls byte for byte as ScienceBase serves it.
   fishtraits = list(
     source_url  = paste0("https://web.archive.org/web/20250204085643id_/",
                          "https://www.sciencebase.gov/catalog/file/get/",

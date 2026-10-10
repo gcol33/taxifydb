@@ -2,6 +2,7 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![R >= 4.1](https://img.shields.io/badge/R-%3E%3D%204.1-blue)
+[![Codecov test coverage](https://codecov.io/gh/gcol33/taxifydb/graph/badge.svg)](https://app.codecov.io/gh/gcol33/taxifydb)
 
 Build pipeline for [**taxify**](https://github.com/gcol33/taxify). taxifydb
 downloads raw taxonomic and trait data from official providers, normalizes it to

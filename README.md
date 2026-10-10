@@ -11,6 +11,18 @@ the taxify runtime consumes. All network access, parsing, and schema
 normalization live here, so taxify itself ships without heavy build
 dependencies.
 
+## Installation
+
+```r
+# pak resolves the taxify dependency (declared in Remotes) automatically
+pak::pak("gcol33/taxifydb")
+
+# or
+remotes::install_github("gcol33/taxifydb")
+```
+
+taxifydb is a build companion distributed from GitHub; it is not on CRAN.
+
 ## When you need it
 
 taxify works on its own. It downloads pre-built `.vtr` backbones and enrichments
@@ -23,18 +35,6 @@ Install taxifydb when you want to:
   snapshot than the published release);
 * add a new backbone or trait dataset to the taxify ecosystem;
 * maintain or republish the hosted `.vtr` data.
-
-## Installation
-
-```r
-# pak resolves the taxify dependency (declared in Remotes) automatically
-pak::pak("gcol33/taxifydb")
-
-# or
-remotes::install_github("gcol33/taxifydb")
-```
-
-taxifydb is a build companion distributed from GitHub; it is not on CRAN.
 
 ## What it builds
 

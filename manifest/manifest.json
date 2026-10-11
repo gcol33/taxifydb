@@ -342,6 +342,28 @@
       "nrow": 8479599,
       "source_url": "https://api.checklistbank.org/dataset/316441/export.zip?format=DwCA",
       "content_url": "https://github.com/gcol33/taxifydb/releases/download/colxr-2026.09/colxr-d745272af67c07d7395e9ed97a1bdb73.vtr"
+    },
+    "evc": {
+      "latest": "4",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/evc-4/evc.vtr",
+      "full_size": 1837139,
+      "full_sha256": "0d472de06860abd7d3060e70938d2103b0f7fc2560f2d46d6cea5cea1002e83b",
+      "content_id": "c6e559518cdf9143bb59169b3ec2327e",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/evc-4/evc-c6e559518cdf9143bb59169b3ec2327e.vtr",
+      "nrow": 7542,
+      "source_url": "https://floraveg.eu/vegetation/",
+      "source_date": "2026-10-12"
+    },
+    "vegcz": {
+      "latest": "2026.10",
+      "full_url": "https://github.com/gcol33/taxifydb/releases/download/vegcz-2026.10/vegcz.vtr",
+      "full_size": 537578,
+      "full_sha256": "668d5eabcf61988e42c28e8983f5c3f1f3308d30eba423b2a8b9fa910e23e213",
+      "content_id": "68db83169e57ca167c8407f50508abb6",
+      "content_url": "https://github.com/gcol33/taxifydb/releases/download/vegcz-2026.10/vegcz-68db83169e57ca167c8407f50508abb6.vtr",
+      "nrow": 2258,
+      "source_url": "https://pladias.cz/en/vegetation/",
+      "source_date": "2026-10-12"
     }
   },
   "enrichments": {

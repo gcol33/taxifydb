@@ -29,6 +29,8 @@ on:
           - mdd
           - avilist
           - lpsn
+          - evc
+          - vegcz
           - wgsrpd
           - meow
 
@@ -56,11 +58,15 @@ jobs:
         # LPSN (45k) are the smallest of the set and had a builder but no
         # workflow, so until now they could only be cut by hand.
         #
+        # evc (the EuroVegChecklist) and vegcz (the Czech national
+        # classification) are syntaxon backbones of vegetation units, each
+        # built from a frozen snapshot of the unit list and its synonymy.
+        #
         # wgsrpd and meow are reference geometry rather than backbones (polygon
         # vertices, no names), but they publish, version and byte-gate exactly
         # like one, so they build here too. Both read a frozen GeoJSON snapshot,
         # so a run over unchanged input stops at the byte gate and cuts nothing.
-        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms", "fishbase", "sealifebase", "reptiledb", "wfo", "wcvp", "lcvp", "fungorum", "algaebase", "euromed", "mdd", "avilist", "lpsn", "wgsrpd", "meow"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
+        backend: ${{ github.event.inputs.backend == 'all' && fromJSON('["itis", "ncbi", "ott", "worms", "fishbase", "sealifebase", "reptiledb", "wfo", "wcvp", "lcvp", "fungorum", "algaebase", "euromed", "mdd", "avilist", "lpsn", "evc", "vegcz", "wgsrpd", "meow"]') || fromJSON(format('["{0}"]', github.event.inputs.backend || 'itis')) }}
 
     steps:
       - name: Checkout

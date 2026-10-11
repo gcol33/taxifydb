@@ -50,9 +50,22 @@
 )
 
 
-#' Every buildable artifact, backbones and reference geometry alike
+# Syntaxon backbones: vegetation units under the phytosociological code
+# (taxify matches them with `taxify(backbone = "evc")`). Published and
+# downloaded like a taxon backbone, but outside .backend_builders for the
+# same reason as the geometry: a name lookup built from vegetation units holds
+# no taxon names, and enrichment resolution through it would match nothing.
+.syntaxon_builders <- list(
+  evc   = function(...) build_evc(...),
+  vegcz = function(...) build_vegcz(...)
+)
+
+
+#' Every buildable artifact: taxon and syntaxon backbones, reference geometry
 #' @noRd
-.all_builders <- function() c(.backend_builders, .geometry_builders)
+.all_builders <- function() {
+  c(.backend_builders, .syntaxon_builders, .geometry_builders)
+}
 
 
 #' Build a taxify backbone `.vtr` file from source

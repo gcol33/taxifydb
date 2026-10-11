@@ -11,7 +11,9 @@ build_vtr(
   version,
   source_url,
   source_date,
-  batch_size = 50000L
+  batch_size = 50000L,
+  block_col = NULL,
+  extra = NULL
 )
 }
 \arguments{
@@ -30,6 +32,13 @@ built from (\code{YYYY-MM-DD}, or \code{YYYY-MM} / \code{YYYY} where the source 
 no finer), recorded in the \code{.meta} sidecar and from there in the manifest.}
 
 \item{batch_size}{Integer. Row group size for vectra (default 50000).}
+
+\item{block_col}{Character or NULL. The column the fuzzy pass blocks
+candidates by, which the store is sorted and indexed on: \code{NULL} takes the
+genus column of a taxon backbone; a syntaxon backbone passes
+\code{"block_key"}.}
+
+\item{extra}{Named character vector of further \code{.meta} fields, or \code{NULL}.}
 }
 \value{
 The path to the .vtr file (invisibly).

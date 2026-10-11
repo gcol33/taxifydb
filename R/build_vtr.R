@@ -14,11 +14,18 @@
 #'   built from (`YYYY-MM-DD`, or `YYYY-MM` / `YYYY` where the source dates it
 #'   no finer), recorded in the `.meta` sidecar and from there in the manifest.
 #' @param batch_size Integer. Row group size for vectra (default 50000).
+#' @param block_col Character or NULL. The column the fuzzy pass blocks
+#'   candidates by, which the store is sorted and indexed on: `NULL` takes the
+#'   genus column of a taxon backbone; a syntaxon backbone passes
+#'   `"block_key"`.
+#' @param extra Named character vector of further `.meta` fields, or `NULL`.
 #' @return The path to the .vtr file (invisibly).
 #' @export
 build_vtr <- function(df, vtr_path, backend_name, version, source_url,
-                      source_date, batch_size = 50000L) {
-  genus_col <- if ("genus" %in% names(df)) "genus" else "resolved_genus"
+                      source_date, batch_size = 50000L, block_col = NULL,
+                      extra = NULL) {
+  genus_col <- block_col %||%
+    (if ("genus" %in% names(df)) "genus" else "resolved_genus")
   df <- df[order(df[[genus_col]], na.last = TRUE), ]
   rownames(df) <- NULL
 
@@ -27,7 +34,7 @@ build_vtr <- function(df, vtr_path, backend_name, version, source_url,
 
   index_backbone_vtr(vtr_path, genus_col)
   write_backbone_meta(vtr_path, backend_name, version, source_url, nrow(df),
-                      source_date = source_date)
+                      source_date = source_date, extra = extra)
   report_built_backbone(vtr_path, backend_name, nrow(df))
 
   invisible(vtr_path)

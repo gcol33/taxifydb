@@ -70,8 +70,9 @@ R/enrichment-registry.R    — .enrichment_build_registry
 R/build_enrichment.R       — build_enrichment(name, ...) dispatcher,
                               list_enrichments(),
                               enrichment_emergency_fallback()
-R/tsita-vocab.R            — T-SITA controlled-vocabulary crosswalk: tsita_vocab(),
-                              tsita_crosswalk(), .tsita_enrichment_meta() (#42)
+R/trait-vocab.R            — controlled trait vocabularies (T-SITA, freshwater
+                              fwt) and crosswalks: trait_vocab(scheme),
+                              trait_crosswalk(scheme), .vocab_enrichment_meta() (#42)
 R/betsi-recovery.R         — BETSI recovery: published BETSI-derived matrices ->
                               per-taxon enrichment assets. gen_spe(),
                               parse_betsi_recovery(), build_betsi_recovery(),
@@ -190,7 +191,7 @@ BETSI Pearson r = 0.906; Ellers vs the BETSI body-length floor r = 0.96).
 **T-SITA trait vocabulary (#42).** The soil-fauna enrichments (Ellers,
 ecomorphosis, the mined monographs, the BETSI body-length floor, and the
 planned INRAE / monograph-payload multi-trait assets) each name their traits
-their own way. `R/tsita-vocab.R` gives them one shared controlled vocabulary:
+their own way. `R/trait-vocab.R` gives them one shared controlled vocabulary:
 T-SITA (Pey et al. 2014, CC BY -- the thesaurus BETSI itself is built on, 71
 traits + 24 ecological preferences with stable ARK URIs). Two `inst/extdata`
 assets back it: `tsita_vocab.csv` (the frozen thesaurus, one row per concept,
@@ -203,7 +204,7 @@ dead -- it 301-redirects to the same squatter that swallowed `betsi.cesab.org`
 CEFE/CNRS ARK `ark:/66666/th558` (`opentheso.huma-num.fr`), and mirrored on
 AgroPortal (slug `T-SITA`). `build_enrichment_vtr()` attaches a `tsita` block to
 each built `meta.json` (per column: `trait_label` / `trait_uri`, plus a
-`values` map for categorical traits) via `.tsita_enrichment_meta(name)`, keyed
+`values` map for categorical traits) via `.vocab_enrichment_meta("tsita", name)`, keyed
 on the enrichment name in the crosswalk -- O(1) per new enrichment, no
 per-parser code. A trait axis with no faithful T-SITA concept (Ellers'
 biogeographic temperature-zone class and thermal-niche breadth; pigmentation;
@@ -211,6 +212,24 @@ pseudocelli) is left out of the crosswalk rather than forced onto a near-miss:
 the column keeps its own name and carries no T-SITA identifier. taxify reads
 `meta$tsita` to expose canonical trait names; an enrichment with no crosswalk
 row simply writes no `tsita` field.
+
+**Freshwater trait vocabulary (`fwt`).** The freshwater enrichments
+(`epa_freshwater`, `freshwater_insects_conus`, `disperse`, `thermofresh`,
+`fishtraits`, `beukhof`, `fishbase`, `cefas_btrait`, `copepod_traits`) map
+onto a second vocabulary through the same engine: `.vocab_schemes` in
+`R/trait-vocab.R` registers each vocabulary (files, key and identifier
+columns, meta field names), so a new vocabulary is one registry entry and
+`build_enrichment_vtr()` writes one meta block per vocabulary with rows for
+the enrichment (`meta$tsita`, `meta$fwt`). `fwt_vocab.csv` holds 25 trait
+axes, each tagged `cross_group` (body size, thermal/current/pH/salinity/
+trophic preference, thermal limits) or `within_group` with the organism
+groups it applies to, and under each axis the classes of every definition
+source (Tachet 2010, DS-187, FAA 2017, Barinova 2025, DISPERSE, Balon, ...)
+with the source's own wording and, where stated, bounds on the axis's
+canonical unit. Classes from different sources are compared by bounds or
+linked by `exact_match` / `broader`, never merged. Both files are generated
+by `scripts/vocab/build_fwt_vocab.py` in the OFT workspace, which reads the
+Tachet/FAA/Barinova classes from its extraction keys; edit there, not here.
 
 **BETSI recovery (#42).** BETSI's live portal is offline and no complete export
 is recoverable, so `R/betsi-recovery.R` rebuilds the trait matrices individual

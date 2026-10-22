@@ -127,7 +127,7 @@ test_that(".betsi_recovery_provenance tiers each column, fuzzy and hard", {
 # ---- Earthworm (fuzzy) -----------------------------------------------------
 
 test_that("betsi_earthworm_traits maps only body length and carbon to T-SITA", {
-  m <- taxifydb:::.tsita_enrichment_meta("betsi_earthworm_traits")
+  m <- taxifydb:::.vocab_enrichment_meta("tsita", "betsi_earthworm_traits")
   expect_equal(m$columns$body_length_mm__50_100$trait_label, "Body_length")
   expect_equal(m$columns$carbon_pref_mgkg__lt20$trait_label, "Carbon")
   expect_match(m$columns$body_length_mm__50_100$trait_uri, "TSITA_")
@@ -187,7 +187,7 @@ test_that("the frozen Lu matrix parses to per-species hard values", {
 })
 
 test_that("betsi_collembola_traits maps its BETSI axes to T-SITA", {
-  m <- taxifydb:::.tsita_enrichment_meta("betsi_collembola_traits")
+  m <- taxifydb:::.vocab_enrichment_meta("tsita", "betsi_collembola_traits")
   expect_equal(m$columns$body_length_mm$trait_label, "Body_length")
   expect_equal(m$columns$reproduction$trait_label, "Reproduction_type")
   expect_equal(m$columns$furca$trait_label, "Furcula_length")
@@ -273,7 +273,7 @@ test_that("the frozen INRAE matrix parses to sparse per-species fuzzy vectors", 
 })
 
 test_that("inrae_collembola_traits maps its shared BETSI axes to T-SITA, not pigmentation", {
-  m <- taxifydb:::.tsita_enrichment_meta("inrae_collembola_traits")
+  m <- taxifydb:::.vocab_enrichment_meta("tsita", "inrae_collembola_traits")
   expect_equal(m$columns$ocelli__8$trait_label, "Max_number_of_visual_organs")
   expect_equal(m$columns$furca__present$trait_label, "Furcula_length")
   expect_equal(m$columns$post_antennal_organ__present$trait_label, "Postantennal_organ")

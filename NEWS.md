@@ -1,5 +1,21 @@
 # taxifydb (development version)
 
+## Freshwater trait vocabulary
+
+* `trait_vocab()` and `trait_crosswalk()` take the vocabulary name as their
+  first argument (`"tsita"` or the new `"fwt"`) and replace `tsita_vocab()`
+  and `tsita_crosswalk()`. The crosswalk's key column is now `concept`, its
+  resolved identifier `concept_id`.
+
+* New freshwater trait vocabulary `fwt`: 25 trait axes for freshwater
+  organisms, split into cross-group axes (body size, thermal, current, pH,
+  salinity and trophic preference, thermal limits) and within-group ones,
+  with every source's own classes kept under each axis together with their
+  bounds on the axis unit. `epa_freshwater`, `freshwater_insects_conus`,
+  `disperse`, `thermofresh`, `fishtraits`, `beukhof`, `fishbase`,
+  `cefas_btrait` and `copepod_traits` are crosswalked onto it, and their
+  built `meta.json` carries an `fwt` block beside `tsita`.
+
 ## FishTraits builds again
 
 * `fishtraits` reads the Wayback capture (2025-02-04) of the ScienceBase item's

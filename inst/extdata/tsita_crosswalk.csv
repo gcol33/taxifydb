@@ -1,4 +1,4 @@
-enrichment,column,raw_value,tsita_label
+enrichment,column,raw_value,concept
 betsi_collembola_body_length,betsi_body_length_mm,,Body_length
 betsi_collembola_body_length,betsi_body_length_min_mm,,Body_length
 betsi_collembola_body_length,betsi_body_length_max_mm,,Body_length

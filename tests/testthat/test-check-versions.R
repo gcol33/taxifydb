@@ -102,7 +102,8 @@ test_that("the built identity travels from meta.json into the manifest entry", {
 
   build_enrichment_vtr(
     data.frame(canonical_name = c("Salmo trutta", "Perca fluviatilis"),
-               ctmax = c(26.5, 33.1)),
+               ctmax = c(26.5, 33.1), ctmin = c(0.5, 1.2),
+               ltmax = c(27.0, 34.0), ltmin = c(0.1, 0.8)),
     vtr, name = "thermofresh", version = "2025.1",
     source_url = "https://zenodo.org/api/records/16959762/files/x/content",
     upstream_id = "16959762", license = "CC BY 4.0")
@@ -125,7 +126,8 @@ test_that("a runtime citation is rewritten when the build changes source", {
   dir <- withr::local_tempdir()
   vtr <- file.path(dir, "thermofresh.vtr")
   build_enrichment_vtr(
-    data.frame(canonical_name = "Salmo trutta", ctmax = 26.5),
+    data.frame(canonical_name = "Salmo trutta", ctmax = 26.5, ctmin = 0.5,
+               ltmax = 27.0, ltmin = 0.1),
     vtr, name = "thermofresh", version = "2025.1",
     source_url = "https://zenodo.org/api/records/16959762/files/x/content",
     source_doi = "10.5281/zenodo.16959762", upstream_id = "16959762",

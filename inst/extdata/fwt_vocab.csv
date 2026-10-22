@@ -1,0 +1,283 @@
+id,label,kind,axis,scheme,scope,groups,value_type,unit,lower,upper,broader,exact_match,definition,source
+body_size,Body size,axis,,,cross_group,macroinvertebrates;fish;zooplankton,numeric_or_class,mm,,,,,Body length; maximum or typical as the source states.,
+thermal_preference,Thermal preference,axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,class,degC,,,,,Water temperature range the taxon prefers or is found in.,
+current_preference,Current preference (rheophily),axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,class,cm/s,,,,,Water current the taxon prefers.,
+ph_preference,pH preference,axis,,,cross_group,macroinvertebrates;diatoms;phytoplankton;phytobenthos,numeric_or_class,pH,,,,,Water pH the taxon prefers or occurs at.,
+salinity_preference,Salinity preference,axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,class,g/L,,,,,Water salinity the taxon prefers or tolerates; bounds as NaCl in g/L.,
+trophic_preference,Trophic state preference,axis,,,cross_group,macroinvertebrates;diatoms;phytoplankton;phytobenthos,class,,,,,,Nutrient status of the water the taxon prefers (oligotrophic to eutrophic).,
+upper_thermal_limit,Upper thermal limit,axis,,,cross_group,macroinvertebrates;fish,numeric,degC,,,,,Upper critical or lethal temperature measured in a test.,
+lower_thermal_limit,Lower thermal limit,axis,,,cross_group,macroinvertebrates;fish,numeric,degC,,,,,Lower critical or lethal temperature measured in a test.,
+feeding_group,Functional feeding group,axis,,,within_group,macroinvertebrates,class,,,,,,Mechanism by which the taxon acquires food.,
+food_type,Food type,axis,,,within_group,macroinvertebrates,class,,,,,,What the taxon eats.,
+life_cycle_duration,Life cycle duration,axis,,,within_group,macroinvertebrates,class,year,,,,,Duration of one life cycle.,
+voltinism,Voltinism,axis,,,within_group,macroinvertebrates,class,generations/year,,,,,Number of generations per year.,
+aquatic_stages,Aquatic stages,axis,,,within_group,macroinvertebrates,class,,,,,,Life stages spent in water.,
+reproduction,Reproduction,axis,,,within_group,macroinvertebrates,class,,,,,,Reproductive mode and egg deposition.,
+oviposition_site,Oviposition site,axis,,,within_group,macroinvertebrates,class,,,,,,Where eggs are laid.,
+dispersal,Dispersal,axis,,,within_group,macroinvertebrates,class,,,,,,Medium and mode of dispersal.,
+resistance_forms,Resistance forms,axis,,,within_group,macroinvertebrates,class,,,,,,Structures or states that let the taxon survive adverse conditions.,
+respiration,Respiration,axis,,,within_group,macroinvertebrates,class,,,,,,Respiratory organ or mode.,
+locomotion_substrate_relation,Locomotion and substrate relation,axis,,,within_group,macroinvertebrates,class,,,,,,How the taxon moves and relates to the substrate.,
+substrate_preference,Substrate preference,axis,,,within_group,macroinvertebrates,class,,,,,,Substrate (microhabitat) the taxon prefers.,
+transversal_distribution,Transversal distribution,axis,,,within_group,macroinvertebrates,class,,,,,,Position across the river corridor or water-body type.,
+altitude,Altitude,axis,,,within_group,macroinvertebrates,class,m,,,,,Altitude at which the taxon occurs.,
+biogeographic_region,Biogeographic region,axis,,,within_group,macroinvertebrates,class,,,,,,Biogeographic region of occurrence.,
+reproductive_guild,Reproductive guild,axis,,,within_group,fish,class,,,,,,Spawning and parental-care guild (Balon's system).,
+algal_habitat,Habitat position,axis,,,within_group,diatoms;phytoplankton;phytobenthos,class,,,,,,"Where in the water body the alga lives (plankton, benthos, epiphyte, ...).",
+body_size/tachet/lt_2_5_mm,<2.5 mm,class,body_size,tachet,,,,mm,,2.5,,,Maximum size (mm): <2.5 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+body_size/tachet/2_5_5_mm,2.5-5 mm,class,body_size,tachet,,,,mm,2.5,5,,,Maximum size (mm): 2.5-5 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+body_size/tachet/5_10_mm,5-10 mm,class,body_size,tachet,,,,mm,5,10,,,Maximum size (mm): 5-10 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+body_size/tachet/10_20_mm,10-20 mm,class,body_size,tachet,,,,mm,10,20,,,Maximum size (mm): 10-20 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+body_size/tachet/20_40_mm,20-40 mm,class,body_size,tachet,,,,mm,20,40,,,Maximum size (mm): 20-40 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+body_size/tachet/40_80_mm,40-80 mm,class,body_size,tachet,,,,mm,40,80,,,Maximum size (mm): 40-80 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+body_size/tachet/gt_80_mm,>80 mm,class,body_size,tachet,,,,mm,80,,,,Maximum size (mm): >80 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+life_cycle_duration/tachet/le_1_year,<=1 year,class,life_cycle_duration,tachet,,,,year,,1,,,Life cycle duration (years): <=1 year,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+life_cycle_duration/tachet/gt_1_year,>1 year,class,life_cycle_duration,tachet,,,,year,1,,,,Life cycle duration (years): >1 year,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+voltinism/tachet/lt_1_semivoltine,<1 (semivoltine),class,voltinism,tachet,,,,generations/year,,1,,,Generations per year (voltinism): <1 (semivoltine),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+voltinism/tachet/1_univoltine,1 (univoltine),class,voltinism,tachet,,,,generations/year,1,1,,,Generations per year (voltinism): 1 (univoltine),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+voltinism/tachet/gt_1_multivoltine,>1 (multivoltine),class,voltinism,tachet,,,,generations/year,1,,,,Generations per year (voltinism): >1 (multivoltine),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+aquatic_stages/tachet/egg,egg,class,aquatic_stages,tachet,,,,,,,,,Aquatic stages: egg,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+aquatic_stages/tachet/larva,larva,class,aquatic_stages,tachet,,,,,,,,,Aquatic stages: larva,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+aquatic_stages/tachet/nymph,nymph,class,aquatic_stages,tachet,,,,,,,,,Aquatic stages: nymph,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+aquatic_stages/tachet/adult,adult,class,aquatic_stages,tachet,,,,,,,,,Aquatic stages: adult,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/ovoviviparity_viviparity_and_brood_care,ovoviviparity / viviparity + brood care,class,reproduction,tachet,,,,,,,,,Reproduction (sexual and asexual): ovoviviparity / viviparity + brood care,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/isolated_free_eggs_free,"isolated (free) eggs, free",class,reproduction,tachet,,,,,,,,,"Reproduction (sexual and asexual): isolated (free) eggs, free","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/isolated_eggs_cemented_fixed,"isolated eggs, cemented/fixed",class,reproduction,tachet,,,,,,,,,"Reproduction (sexual and asexual): isolated eggs, cemented/fixed","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/clutches_cemented_or_fixed,"clutches, cemented or fixed",class,reproduction,tachet,,,,,,,,,"Reproduction (sexual and asexual): clutches, cemented or fixed","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/clutches_free,"clutches, free",class,reproduction,tachet,,,,,,,,,"Reproduction (sexual and asexual): clutches, free","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/clutches_in_vegetation,"clutches, in vegetation",class,reproduction,tachet,,,,,,,,,"Reproduction (sexual and asexual): clutches, in vegetation","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/clutches_terrestrial,"clutches, terrestrial",class,reproduction,tachet,,,,,,,,,"Reproduction (sexual and asexual): clutches, terrestrial","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/asexual_reproduction,asexual reproduction,class,reproduction,tachet,,,,,,,,,Reproduction (sexual and asexual): asexual reproduction,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+reproduction/tachet/parthenogenesis,parthenogenesis,class,reproduction,tachet,,,,,,,,,Reproduction (sexual and asexual): parthenogenesis,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+dispersal/tachet/aquatic_passive,aquatic passive,class,dispersal,tachet,,,,,,,,,Dispersal: aquatic passive,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+dispersal/tachet/aquatic_active,aquatic active,class,dispersal,tachet,,,,,,,,,Dispersal: aquatic active,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+dispersal/tachet/aerial_passive,aerial passive,class,dispersal,tachet,,,,,,,,,Dispersal: aerial passive,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+dispersal/tachet/aerial_active,aerial active,class,dispersal,tachet,,,,,,,,,Dispersal: aerial active,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+resistance_forms/tachet/eggs_statoblasts_gemmules_cysts_shells,"eggs, statoblasts, gemmules, cysts, shells",class,resistance_forms,tachet,,,,,,,,,"Resistance forms: eggs, statoblasts, gemmules, cysts, shells","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+resistance_forms/tachet/cocoons,cocoons,class,resistance_forms,tachet,,,,,,,,,Resistance forms: cocoons,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+resistance_forms/tachet/housings_against_desiccation,housings against desiccation,class,resistance_forms,tachet,,,,,,,,,Resistance forms: housings against desiccation,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+resistance_forms/tachet/diapause_or_dormancy,diapause or dormancy,class,resistance_forms,tachet,,,,,,,,,Resistance forms: diapause or dormancy,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+resistance_forms/tachet/none,none,class,resistance_forms,tachet,,,,,,,,,Resistance forms: none,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/fine_sediment_and_microorganisms,fine sediment + microorganisms,class,food_type,tachet,,,,,,,,,Food type: fine sediment + microorganisms,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/detritus_lt_1_mm,detritus <1 mm,class,food_type,tachet,,,,,,,,,Food type: detritus <1 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/plant_detritus_ge_1_mm,plant detritus >=1 mm,class,food_type,tachet,,,,,,,,,Food type: plant detritus >=1 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/living_microphytes,living microphytes,class,food_type,tachet,,,,,,,,,Food type: living microphytes,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/living_macrophytes,living macrophytes,class,food_type,tachet,,,,,,,,,Food type: living macrophytes,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/dead_animal_ge_1_mm,dead animal >=1 mm,class,food_type,tachet,,,,,,,,,Food type: dead animal >=1 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/living_microinvertebrates,living microinvertebrates,class,food_type,tachet,,,,,,,,,Food type: living microinvertebrates,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/living_macroinvertebrates,living macroinvertebrates,class,food_type,tachet,,,,,,,,,Food type: living macroinvertebrates,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+food_type/tachet/vertebrates,vertebrates,class,food_type,tachet,,,,,,,,,Food type: vertebrates,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/absorber_through_cuticle,absorber (through cuticle),class,feeding_group,tachet,,,,,,,,,Feeding habits: absorber (through cuticle),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/deposit_feeder,deposit feeder,class,feeding_group,tachet,,,,,,,,,Feeding habits: deposit feeder,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/shredder,shredder,class,feeding_group,tachet,,,,,,,,,Feeding habits: shredder,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/scraper_grazer,"scraper, grazer",class,feeding_group,tachet,,,,,,,,,"Feeding habits: scraper, grazer","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/filter_feeder,filter feeder,class,feeding_group,tachet,,,,,,,,,Feeding habits: filter feeder,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/piercer_plant_or_animal_fluids,piercer (plant or animal fluids),class,feeding_group,tachet,,,,,,,,,Feeding habits: piercer (plant or animal fluids),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/predator_engulfer_swallower,predator (engulfer/swallower),class,feeding_group,tachet,,,,,,,,,Feeding habits: predator (engulfer/swallower),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/tachet/parasite,parasite,class,feeding_group,tachet,,,,,,,,,Feeding habits: parasite,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+respiration/tachet/tegument,tegument,class,respiration,tachet,,,,,,,,,Respiration: tegument,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+respiration/tachet/gill,gill,class,respiration,tachet,,,,,,,,,Respiration: gill,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+respiration/tachet/plastron,plastron,class,respiration,tachet,,,,,,,,,Respiration: plastron,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+respiration/tachet/spiracle_aerial,spiracle (aerial),class,respiration,tachet,,,,,,,,,Respiration: spiracle (aerial),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+respiration/tachet/hydrostatic_vesicle,hydrostatic vesicle,class,respiration,tachet,,,,,,,,,Respiration: hydrostatic vesicle,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+thermal_preference/tachet/stenothermic_cold_lt_15_c,stenothermic: cold (<15 C),class,thermal_preference,tachet,,,,degC,,15,,,Thermal preference: stenothermic: cold (<15 C),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+thermal_preference/tachet/stenothermic_warm_ge_15_c,stenothermic: warm (>=15 C),class,thermal_preference,tachet,,,,degC,15,,,,Thermal preference: stenothermic: warm (>=15 C),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+thermal_preference/tachet/eurythermic,eurythermic,class,thermal_preference,tachet,,,,,,,,,Thermal preference: eurythermic,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+ph_preference/tachet/lt_4,<4,class,ph_preference,tachet,,,,pH,,4,,,pH: <4,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+ph_preference/tachet/4_4_5,4-4.5,class,ph_preference,tachet,,,,pH,4,4.5,,,pH: 4-4.5,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+ph_preference/tachet/4_5_5,4.5-5,class,ph_preference,tachet,,,,pH,4.5,5,,,pH: 4.5-5,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+ph_preference/tachet/5_5_5,5-5.5,class,ph_preference,tachet,,,,pH,5,5.5,,,pH: 5-5.5,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+ph_preference/tachet/5_5_6,5.5-6,class,ph_preference,tachet,,,,pH,5.5,6,,,pH: 5.5-6,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+ph_preference/tachet/gt_6,>6,class,ph_preference,tachet,,,,pH,6,,,,pH: >6,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+trophic_preference/tachet/oligotrophic,oligotrophic,class,trophic_preference,tachet,,,,,,,,,Trophic status: oligotrophic,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+trophic_preference/tachet/mesotrophic,mesotrophic,class,trophic_preference,tachet,,,,,,,,,Trophic status: mesotrophic,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+trophic_preference/tachet/eutrophic,eutrophic,class,trophic_preference,tachet,,,,,,,,,Trophic status: eutrophic,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+salinity_preference/tachet/freshwater,freshwater,class,salinity_preference,tachet,,,,,,,,,Salinity: freshwater,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+salinity_preference/tachet/brackish_saline,brackish/saline,class,salinity_preference,tachet,,,,,,,,,Salinity: brackish/saline,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+biogeographic_region/tachet/pyrenees,Pyrenees,class,biogeographic_region,tachet,,,,,,,,,Biogeographic region (European fauna): Pyrenees,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+biogeographic_region/tachet/alps_and_jura,Alps and Jura,class,biogeographic_region,tachet,,,,,,,,,Biogeographic region (European fauna): Alps and Jura,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+biogeographic_region/tachet/massif_central_and_vosges,Massif Central and Vosges,class,biogeographic_region,tachet,,,,,,,,,Biogeographic region (European fauna): Massif Central and Vosges,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+biogeographic_region/tachet/lowlands_atlantic,lowlands (Atlantic),class,biogeographic_region,tachet,,,,,,,,,Biogeographic region (European fauna): lowlands (Atlantic),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+biogeographic_region/tachet/lowlands_mediterranean,lowlands (Mediterranean),class,biogeographic_region,tachet,,,,,,,,,Biogeographic region (European fauna): lowlands (Mediterranean),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+altitude/tachet/plains_and_hills_lt_1000_m,plains + hills (<1000 m),class,altitude,tachet,,,,m,,1000,,,Altitude: plains + hills (<1000 m),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+altitude/tachet/mountains_1000_2000_m,mountains (1000-2000 m),class,altitude,tachet,,,,m,1000,2000,,,Altitude: mountains (1000-2000 m),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+altitude/tachet/high_mountains_gt_2000_m,high mountains (>2000 m),class,altitude,tachet,,,,m,2000,,,,Altitude: high mountains (>2000 m),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/main_channel,main channel,class,transversal_distribution,tachet,,,,,,,,,Transversal distribution (relative to channel): main channel,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/bank_secondary_channel,bank / secondary channel,class,transversal_distribution,tachet,,,,,,,,,Transversal distribution (relative to channel): bank / secondary channel,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/pool_backwater_oxbow,"pool, backwater, oxbow",class,transversal_distribution,tachet,,,,,,,,,"Transversal distribution (relative to channel): pool, backwater, oxbow","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/swamp_bog,"swamp, bog",class,transversal_distribution,tachet,,,,,,,,,"Transversal distribution (relative to channel): swamp, bog","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/temporary_waters,temporary waters,class,transversal_distribution,tachet,,,,,,,,,Transversal distribution (relative to channel): temporary waters,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/lake,lake,class,transversal_distribution,tachet,,,,,,,,,Transversal distribution (relative to channel): lake,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+transversal_distribution/tachet/groundwater_habitat,groundwater habitat,class,transversal_distribution,tachet,,,,,,,,,Transversal distribution (relative to channel): groundwater habitat,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/slab_boulder_cobble_pebble,"slab, boulder, cobble, pebble",class,substrate_preference,tachet,,,,,,,,,"Microhabitat (substrate preference): slab, boulder, cobble, pebble","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/gravel,gravel,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): gravel,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/sand,sand,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): sand,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/silt_clay,silt/clay,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): silt/clay,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/macrophyte_filamentous_algae,"macrophyte, filamentous algae",class,substrate_preference,tachet,,,,,,,,,"Microhabitat (substrate preference): macrophyte, filamentous algae","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/microphyte,microphyte,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): microphyte,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/twigs_roots,twigs/roots,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): twigs/roots,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/leaf_litter,leaf litter,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): leaf litter,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+substrate_preference/tachet/mud_sludge,mud/sludge,class,substrate_preference,tachet,,,,,,,,,Microhabitat (substrate preference): mud/sludge,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/flier,flier,class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: flier,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/surface_swimmer,surface swimmer,class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: surface swimmer,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/full_water_swimmer_plankton_nekton,"full water swimmer (plankton, nekton)",class,locomotion_substrate_relation,tachet,,,,,,,,,"Locomotion and substrate relation: full water swimmer (plankton, nekton)","Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/crawler,crawler,class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: crawler,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/burrower_epibenthic,burrower (epibenthic),class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: burrower (epibenthic),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/interstitial,interstitial,class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: interstitial,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/temporarily_attached,temporarily attached,class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: temporarily attached,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+locomotion_substrate_relation/tachet/permanently_attached,permanently attached,class,locomotion_substrate_relation,tachet,,,,,,,,,Locomotion and substrate relation: permanently attached,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+current_preference/tachet/null_none,null / none,class,current_preference,tachet,,,,cm/s,0,0,,,Current velocity preference: null / none,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+current_preference/tachet/slow_lt_25_cm_s,slow (<25 cm/s),class,current_preference,tachet,,,,cm/s,0,25,,,Current velocity preference: slow (<25 cm/s),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+current_preference/tachet/moderate_25_50_cm_s,moderate (25-50 cm/s),class,current_preference,tachet,,,,cm/s,25,50,,,Current velocity preference: moderate (25-50 cm/s),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+current_preference/tachet/fast_gt_50_cm_s,fast (>50 cm/s),class,current_preference,tachet,,,,cm/s,50,,,,Current velocity preference: fast (>50 cm/s),"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
+feeding_group/faa/shredder,shredder,class,feeding_group,faa,,,,,,,,feeding_group/tachet/shredder,FAA functional feeding guild SHR: shredder,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/grazer_scraper,grazer_scraper,class,feeding_group,faa,,,,,,,,feeding_group/tachet/scraper_grazer,FAA functional feeding guild GRA: grazer scraper,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/active_filter_feeder,active_filter_feeder,class,feeding_group,faa,,,,,,,feeding_group/tachet/filter_feeder,,FAA functional feeding guild AFIL: active filter feeder,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/passive_filter_feeder,passive_filter_feeder,class,feeding_group,faa,,,,,,,feeding_group/tachet/filter_feeder,,FAA functional feeding guild PFIL: passive filter feeder,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/detritus_feeder,detritus_feeder,class,feeding_group,faa,,,,,,,,feeding_group/tachet/deposit_feeder,FAA functional feeding guild DET: detritus feeder,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/miner,miner,class,feeding_group,faa,,,,,,,,,FAA functional feeding guild MIN: miner,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/xylophage,xylophage,class,feeding_group,faa,,,,,,,,,FAA functional feeding guild XYL: xylophage,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/predator,predator,class,feeding_group,faa,,,,,,,,feeding_group/tachet/predator_engulfer_swallower,FAA functional feeding guild PRE: predator,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/parasite,parasite,class,feeding_group,faa,,,,,,,,feeding_group/tachet/parasite,FAA functional feeding guild PAR: parasite,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+feeding_group/faa/other,other,class,feeding_group,faa,,,,,,,,,FAA functional feeding guild OTH: other,"Moog 2017, Fauna Aquatica Austriaca, 3rd edition"
+algal_habitat/barinova/aerophil,aerophil,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group aer: aerophil,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/benthic,benthic,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group B: benthic,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/epiphyte_epibiont,epiphyte_epibiont,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group Ep: epiphyte epibiont,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/fossil_bottom_sediment,fossil_bottom_sediment,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group R: fossil bottom sediment,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/phycobiont,phycobiont,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group pb: phycobiont,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/plankto_benthic,plankto_benthic,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group P-B: plankto benthic,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/planktonic,planktonic,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group P: planktonic,"Barinova 2025, Ecology and Diversity 2:10003"
+algal_habitat/barinova/soil_moist_terrestrial,soil_moist_terrestrial,class,algal_habitat,barinova,,,,,,,,,Barinova 2025 Table 7 group S: soil moist terrestrial,"Barinova 2025, Ecology and Diversity 2:10003"
+thermal_preference/barinova/cryophilic,cryophilic,class,thermal_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group cool: cryophilic,"Barinova 2025, Ecology and Diversity 2:10003"
+thermal_preference/barinova/eurythermic,eurythermic,class,thermal_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group eterm: eurythermic,"Barinova 2025, Ecology and Diversity 2:10003"
+thermal_preference/barinova/temperate,temperate,class,thermal_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group temp: temperate,"Barinova 2025, Ecology and Diversity 2:10003"
+thermal_preference/barinova/warm_water,warm_water,class,thermal_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group warm: warm water,"Barinova 2025, Ecology and Diversity 2:10003"
+current_preference/barinova/rheophil,rheophil,class,current_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group reoph: rheophil,"Barinova 2025, Ecology and Diversity 2:10003"
+current_preference/barinova/standing_streaming,standing_streaming,class,current_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group st-str: standing streaming,"Barinova 2025, Ecology and Diversity 2:10003"
+current_preference/barinova/standing_water,standing_water,class,current_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group st: standing water,"Barinova 2025, Ecology and Diversity 2:10003"
+current_preference/barinova/streaming_water,streaming_water,class,current_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group str: streaming water,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/oligohalob,oligohalob,class,salinity_preference,barinova,,,,g/L,0,5,,,Barinova 2025 Table 7 group oh: oligohalob,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/euhalob,euhalob,class,salinity_preference,barinova,,,,g/L,30,40,,,"Barinova 2025 Table 7 group eh, eu: euhalob","Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/euryhaline,euryhaline,class,salinity_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group euhl: euryhaline,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/mesohalob,mesohalob,class,salinity_preference,barinova,,,,g/L,5,20,,,Barinova 2025 Table 7 group mh: mesohalob,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/oligohalob_halophil,oligohalob_halophil,class,salinity_preference,barinova,,,,g/L,0,5,salinity_preference/barinova/oligohalob,,Barinova 2025 Table 7 group hl: oligohalob halophil,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/oligohalob_halophob,oligohalob_halophob,class,salinity_preference,barinova,,,,g/L,0,5,salinity_preference/barinova/oligohalob,,Barinova 2025 Table 7 group hb: oligohalob halophob,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/oligohalob_indifferent,oligohalob_indifferent,class,salinity_preference,barinova,,,,g/L,0,5,salinity_preference/barinova/oligohalob,,Barinova 2025 Table 7 group i: oligohalob indifferent,"Barinova 2025, Ecology and Diversity 2:10003"
+salinity_preference/barinova/polyhalob,polyhalob,class,salinity_preference,barinova,,,,g/L,40,300,,,Barinova 2025 Table 7 group ph: polyhalob,"Barinova 2025, Ecology and Diversity 2:10003"
+ph_preference/barinova/acidobiont,acidobiont,class,ph_preference,barinova,,,,pH,,5.5,,,Barinova 2025 Table 7 group acb: acidobiont,"Barinova 2025, Ecology and Diversity 2:10003"
+ph_preference/barinova/acidophil,acidophil,class,ph_preference,barinova,,,,pH,,7,,,Barinova 2025 Table 7 group acf: acidophil,"Barinova 2025, Ecology and Diversity 2:10003"
+ph_preference/barinova/alkalibiont,alkalibiont,class,ph_preference,barinova,,,,pH,7,,,,Barinova 2025 Table 7 group alb: alkalibiont,"Barinova 2025, Ecology and Diversity 2:10003"
+ph_preference/barinova/alkaliphil,alkaliphil,class,ph_preference,barinova,,,,pH,7,,,,Barinova 2025 Table 7 group alf: alkaliphil,"Barinova 2025, Ecology and Diversity 2:10003"
+ph_preference/barinova/indifferent,indifferent,class,ph_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group ind: indifferent,"Barinova 2025, Ecology and Diversity 2:10003"
+ph_preference/barinova/neutrophil,neutrophil,class,ph_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group neu: neutrophil,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/eutraphentic,eutraphentic,class,trophic_preference,barinova,,,,,,,,trophic_preference/tachet/eutrophic,Barinova 2025 Table 7 group e: eutraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/hypereutraphentic,hypereutraphentic,class,trophic_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group he: hypereutraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/meso_eutraphentic,meso_eutraphentic,class,trophic_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group me: meso eutraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/mesotraphentic,mesotraphentic,class,trophic_preference,barinova,,,,,,,,trophic_preference/tachet/mesotrophic,Barinova 2025 Table 7 group m: mesotraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/oligo_mesotraphentic,oligo_mesotraphentic,class,trophic_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group om: oligo mesotraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/oligo_to_eutraphentic,oligo_to_eutraphentic,class,trophic_preference,barinova,,,,,,,,,Barinova 2025 Table 7 group o-e: oligo to eutraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+trophic_preference/barinova/oligotraphentic,oligotraphentic,class,trophic_preference,barinova,,,,,,,,trophic_preference/tachet/oligotrophic,Barinova 2025 Table 7 group ot: oligotraphentic,"Barinova 2025, Ecology and Diversity 2:10003"
+feeding_group/ds187/collector_filterer,Collector-filterer,class,feeding_group,ds187,,,,,,,,feeding_group/tachet/filter_feeder,DS-187: Collector-filterer,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/collector_gatherer,Collector-gatherer,class,feeding_group,ds187,,,,,,,,feeding_group/tachet/deposit_feeder,DS-187: Collector-gatherer,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/herbivore,Herbivore,class,feeding_group,ds187,,,,,,,,,DS-187: Herbivore,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/parasite,Parasite,class,feeding_group,ds187,,,,,,,,feeding_group/tachet/parasite,DS-187: Parasite,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/piercer_herbivore,Piercer herbivore,class,feeding_group,ds187,,,,,,,feeding_group/tachet/piercer_plant_or_animal_fluids,,DS-187: Piercer herbivore,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/predator,Predator,class,feeding_group,ds187,,,,,,,,feeding_group/tachet/predator_engulfer_swallower,DS-187: Predator,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/scraper_grazer,Scraper/grazer,class,feeding_group,ds187,,,,,,,,feeding_group/tachet/scraper_grazer,DS-187: Scraper/grazer,"Vieira et al. 2006, USGS Data Series 187"
+feeding_group/ds187/shredder,Shredder,class,feeding_group,ds187,,,,,,,,feeding_group/tachet/shredder,DS-187: Shredder,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/attached_fixed,Attached/fixed,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Attached/fixed,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/burrower,Burrower,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Burrower,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/climber,Climber,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Climber,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/clinger,Clinger,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Clinger,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/planktonic,Planktonic,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Planktonic,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/skater,Skater,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Skater,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/sprawler,Sprawler,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Sprawler,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/ds187/swimmer,Swimmer,class,locomotion_substrate_relation,ds187,,,,,,,,,DS-187: Swimmer,"Vieira et al. 2006, USGS Data Series 187"
+voltinism/ds187/lt_1_generation_per_year,< 1 Generation per year,class,voltinism,ds187,,,,generations/year,,1,,voltinism/tachet/lt_1_semivoltine,DS-187: < 1 Generation per year,"Vieira et al. 2006, USGS Data Series 187"
+voltinism/ds187/1_generation_per_year,1 Generation per year,class,voltinism,ds187,,,,generations/year,1,1,,voltinism/tachet/1_univoltine,DS-187: 1 Generation per year,"Vieira et al. 2006, USGS Data Series 187"
+voltinism/ds187/gt_1_generation_per_year,> 1 Generation per year,class,voltinism,ds187,,,,generations/year,1,,,voltinism/tachet/gt_1_multivoltine,DS-187: > 1 Generation per year,"Vieira et al. 2006, USGS Data Series 187"
+thermal_preference/ds187/cold_stenothermal_lt_5_c,Cold stenothermal (<5 C),class,thermal_preference,ds187,,,,degC,,5,,,DS-187: Cold stenothermal (<5 C),"Vieira et al. 2006, USGS Data Series 187"
+thermal_preference/ds187/cold_cool_eurythermal_0_15_c,Cold-cool eurythermal (0-15 C),class,thermal_preference,ds187,,,,degC,0,15,,,DS-187: Cold-cool eurythermal (0-15 C),"Vieira et al. 2006, USGS Data Series 187"
+thermal_preference/ds187/cool_warm_eurythermal_5_30_c,Cool-warm eurythermal (5-30 C),class,thermal_preference,ds187,,,,degC,5,30,,,DS-187: Cool-warm eurythermal (5-30 C),"Vieira et al. 2006, USGS Data Series 187"
+thermal_preference/ds187/warm_eurythermal_15_30_c,Warm eurythermal (15-30 C),class,thermal_preference,ds187,,,,degC,15,30,,,DS-187: Warm eurythermal (15-30 C),"Vieira et al. 2006, USGS Data Series 187"
+thermal_preference/ds187/hot_euthermal_gt_30_c,Hot euthermal (>30 C),class,thermal_preference,ds187,,,,degC,30,,,,DS-187: Hot euthermal (>30 C),"Vieira et al. 2006, USGS Data Series 187"
+thermal_preference/ds187/no_strong_preference,No strong preference,class,thermal_preference,ds187,,,,,,,,,DS-187: No strong preference,"Vieira et al. 2006, USGS Data Series 187"
+body_size/ds187/small_length_lt_9_mm,Small (length < 9 mm),class,body_size,ds187,,,,mm,,9,,,DS-187: Small (length < 9 mm),"Vieira et al. 2006, USGS Data Series 187"
+body_size/ds187/medium_length_9_16_mm,Medium (length 9-16 mm),class,body_size,ds187,,,,mm,9,16,,,DS-187: Medium (length 9-16 mm),"Vieira et al. 2006, USGS Data Series 187"
+body_size/ds187/large_length_gt_16_mm,Large (length > 16 mm),class,body_size,ds187,,,,mm,16,,,,DS-187: Large (length > 16 mm),"Vieira et al. 2006, USGS Data Series 187"
+current_preference/ds187/depo,Depo,class,current_preference,ds187,,,,,,,,,DS-187: Depo,"Vieira et al. 2006, USGS Data Series 187"
+current_preference/ds187/depo_eros,Depo_eros,class,current_preference,ds187,,,,,,,,,DS-187: Depo_eros,"Vieira et al. 2006, USGS Data Series 187"
+current_preference/ds187/eros,Eros,class,current_preference,ds187,,,,,,,,,DS-187: Eros,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/algal_mats,Algal mats,class,oviposition_site,ds187,,,,,,,,,DS-187: Algal mats,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/bank_soil,Bank soil,class,oviposition_site,ds187,,,,,,,,,DS-187: Bank soil,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/bottom_sediments,Bottom sediments,class,oviposition_site,ds187,,,,,,,,,DS-187: Bottom sediments,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/floating_debris,Floating debris,class,oviposition_site,ds187,,,,,,,,,DS-187: Floating debris,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/free_floating,Free-floating,class,oviposition_site,ds187,,,,,,,,,DS-187: Free-floating,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/in_moss_macrophytes_submerged,In moss/macrophytes (submerged),class,oviposition_site,ds187,,,,,,,,,DS-187: In moss/macrophytes (submerged),"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/in_wet_wood,In wet wood,class,oviposition_site,ds187,,,,,,,,,DS-187: In wet wood,"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/on_under_stones_submerged,On/under stones (submerged),class,oviposition_site,ds187,,,,,,,,,DS-187: On/under stones (submerged),"Vieira et al. 2006, USGS Data Series 187"
+oviposition_site/ds187/overhanging_substrate_dry,Overhanging substrate (dry),class,oviposition_site,ds187,,,,,,,,,DS-187: Overhanging substrate (dry),"Vieira et al. 2006, USGS Data Series 187"
+resistance_forms/ds187/diapause,Diapause,class,resistance_forms,ds187,,,,,,,,resistance_forms/tachet/diapause_or_dormancy,DS-187: Diapause,"Vieira et al. 2006, USGS Data Series 187"
+locomotion_substrate_relation/conus/crawler,Crawler,class,locomotion_substrate_relation,conus,,,,,,,,,freshwater_insects_conus habit: Crawler,freshwater_insects_conus enrichment source table
+respiration/conus/gills,Gills,class,respiration,conus,,,,,,,,respiration/tachet/gill,freshwater_insects_conus respiration: Gills,freshwater_insects_conus enrichment source table
+respiration/conus/tegument,Tegument,class,respiration,conus,,,,,,,,respiration/tachet/tegument,freshwater_insects_conus respiration: Tegument,freshwater_insects_conus enrichment source table
+respiration/conus/plastron_spiracle,Plastron_spiracle,class,respiration,conus,,,,,,,,,freshwater_insects_conus respiration: Plastron_spiracle,freshwater_insects_conus enrichment source table
+body_size/disperse/le_25_cm,<= .25 cm,class,body_size,disperse,,,,mm,,2.5,,body_size/tachet/lt_2_5_mm,DISPERSE body size: <= .25 cm,DISPERSE (Sarremejane et al. 2020)
+body_size/disperse/gt_25_5_cm,> .25-.5 cm,class,body_size,disperse,,,,mm,2.5,5,,body_size/tachet/2_5_5_mm,DISPERSE body size: > .25-.5 cm,DISPERSE (Sarremejane et al. 2020)
+body_size/disperse/gt_5_1_cm,> .5-1 cm,class,body_size,disperse,,,,mm,5,10,,body_size/tachet/5_10_mm,DISPERSE body size: > .5-1 cm,DISPERSE (Sarremejane et al. 2020)
+body_size/disperse/gt_1_2_cm,> 1-2 cm,class,body_size,disperse,,,,mm,10,20,,body_size/tachet/10_20_mm,DISPERSE body size: > 1-2 cm,DISPERSE (Sarremejane et al. 2020)
+body_size/disperse/gt_2_4_cm,> 2-4 cm,class,body_size,disperse,,,,mm,20,40,,body_size/tachet/20_40_mm,DISPERSE body size: > 2-4 cm,DISPERSE (Sarremejane et al. 2020)
+body_size/disperse/gt_4_8_cm,> 4-8 cm,class,body_size,disperse,,,,mm,40,80,,body_size/tachet/40_80_mm,DISPERSE body size: > 4-8 cm,DISPERSE (Sarremejane et al. 2020)
+body_size/disperse/gt_8_cm,> 8 cm,class,body_size,disperse,,,,mm,80,,,body_size/tachet/gt_80_mm,DISPERSE body size: > 8 cm,DISPERSE (Sarremejane et al. 2020)
+life_cycle_duration/disperse/le_1_year,<= 1 year,class,life_cycle_duration,disperse,,,,year,,1,,life_cycle_duration/tachet/le_1_year,DISPERSE life cycle: <= 1 year,DISPERSE (Sarremejane et al. 2020)
+life_cycle_duration/disperse/gt_1_year,> 1 year,class,life_cycle_duration,disperse,,,,year,1,,,life_cycle_duration/tachet/gt_1_year,DISPERSE life cycle: > 1 year,DISPERSE (Sarremejane et al. 2020)
+dispersal/disperse/aquatic_passive,Aquatic passive,class,dispersal,disperse,,,,,,,,dispersal/tachet/aquatic_passive,DISPERSE dispersal: Aquatic passive,DISPERSE (Sarremejane et al. 2020)
+dispersal/disperse/aquatic_active,Aquatic active,class,dispersal,disperse,,,,,,,,dispersal/tachet/aquatic_active,DISPERSE dispersal: Aquatic active,DISPERSE (Sarremejane et al. 2020)
+dispersal/disperse/aerial_passive,Aerial passive,class,dispersal,disperse,,,,,,,,dispersal/tachet/aerial_passive,DISPERSE dispersal: Aerial passive,DISPERSE (Sarremejane et al. 2020)
+dispersal/disperse/aerial_active,Aerial active,class,dispersal,disperse,,,,,,,,dispersal/tachet/aerial_active,DISPERSE dispersal: Aerial active,DISPERSE (Sarremejane et al. 2020)
+reproductive_guild/balon/nonguarders,Nonguarders,class,reproductive_guild,balon,,,,,,,,,Balon ethological section A: nonguarders,"Balon 1975, reproductive guilds of fishes"
+reproductive_guild/balon/guarders,Guarders,class,reproductive_guild,balon,,,,,,,,,Balon ethological section B: guarders,"Balon 1975, reproductive guilds of fishes"
+reproductive_guild/balon/bearers,Bearers,class,reproductive_guild,balon,,,,,,,,,Balon ethological section C: bearers,"Balon 1975, reproductive guilds of fishes"
+reproductive_guild/fishtraits/a_1_1,A_1_1,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_1 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_2,A_1_2,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_2 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_3a,A_1_3A,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_3A (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_3b,A_1_3B,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_3B (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_3c,A_1_3C,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_3C (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_4,A_1_4,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_4 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_5,A_1_5,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_5 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_1_6,A_1_6,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_1_6 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_2_3a,A_2_3A,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_2_3A (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_2_3b,A_2_3B,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_2_3B (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_2_3c,A_2_3C,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_2_3C (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_2_4a,A_2_4A,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_2_4A (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/a_2_4c,A_2_4C,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/nonguarders,,FishTraits reproductive guild column A_2_4C (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_1_3a,B_1_3A,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_1_3A (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_1_4,B_1_4,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_1_4 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_2,B_2_2,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_2 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_3a,B_2_3A,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_3A (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_3b,B_2_3B,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_3B (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_4,B_2_4,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_4 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_5,B_2_5,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_5 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_6,B_2_6,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_6 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_7a,B_2_7A,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_7A (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_7b,B_2_7B,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_7B (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/b_2_7c,B_2_7C,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/guarders,,FishTraits reproductive guild column B_2_7C (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/fishtraits/c1_3_4_c24,C1_3_4_C24,class,reproductive_guild,fishtraits,,,,,,,reproductive_guild/balon/bearers,,FishTraits reproductive guild column C1_3_4_C24 (Balon code),FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproductive_guild/beukhof/non_guarder,non-guarder,class,reproductive_guild,beukhof,,,,,,,,reproductive_guild/balon/nonguarders,Beukhof spawning type: non-guarder,Beukhof et al. 2019 fish trait collection
+reproductive_guild/beukhof/guarder,guarder,class,reproductive_guild,beukhof,,,,,,,,reproductive_guild/balon/guarders,Beukhof spawning type: guarder,Beukhof et al. 2019 fish trait collection
+reproductive_guild/beukhof/bearer,bearer,class,reproductive_guild,beukhof,,,,,,,,reproductive_guild/balon/bearers,Beukhof spawning type: bearer,Beukhof et al. 2019 fish trait collection
+salinity_preference/fishtraits/euryhaline,euryhaline,class,salinity_preference,fishtraits,,,,,,,,,FishTraits flag EURYHALINE = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
+current_preference/fishtraits/prefers_lotic,prefers_lotic,class,current_preference,fishtraits,,,,,,,,,FishTraits flag PREFERS_LOTIC = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
+current_preference/fishtraits/prefers_lentic,prefers_lentic,class,current_preference,fishtraits,,,,,,,,,FishTraits flag PREFERS_LENTIC = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
+body_size/cefas/less_than_10,Less than 10,class,body_size,cefas,,,,mm,,10,,,Cefas body size class (mm): Less than 10,Cefas benthic trait database (cefas_btrait)
+body_size/cefas/11_to_20,11 to 20,class,body_size,cefas,,,,mm,11,20,,,Cefas body size class (mm): 11 to 20,Cefas benthic trait database (cefas_btrait)
+body_size/cefas/21_to_100,21 to 100,class,body_size,cefas,,,,mm,21,100,,,Cefas body size class (mm): 21 to 100,Cefas benthic trait database (cefas_btrait)
+body_size/cefas/101_to_200,101 to 200,class,body_size,cefas,,,,mm,101,200,,,Cefas body size class (mm): 101 to 200,Cefas benthic trait database (cefas_btrait)
+body_size/cefas/201_to_500,201 to 500,class,body_size,cefas,,,,mm,201,500,,,Cefas body size class (mm): 201 to 500,Cefas benthic trait database (cefas_btrait)
+body_size/cefas/more_than_500,More than 500,class,body_size,cefas,,,,mm,500,,,,Cefas body size class (mm): More than 500,Cefas benthic trait database (cefas_btrait)
+feeding_group/cefas/suspension,Suspension,class,feeding_group,cefas,,,,,,,,feeding_group/tachet/filter_feeder,Cefas feeding mode: Suspension,Cefas benthic trait database (cefas_btrait)
+feeding_group/cefas/surface_deposit,Surface deposit,class,feeding_group,cefas,,,,,,,,,Cefas feeding mode: Surface deposit,Cefas benthic trait database (cefas_btrait)
+feeding_group/cefas/subsurface_deposit,Subsurface deposit,class,feeding_group,cefas,,,,,,,,,Cefas feeding mode: Subsurface deposit,Cefas benthic trait database (cefas_btrait)
+feeding_group/cefas/predator,Predator,class,feeding_group,cefas,,,,,,,,feeding_group/tachet/predator_engulfer_swallower,Cefas feeding mode: Predator,Cefas benthic trait database (cefas_btrait)
+feeding_group/cefas/scavenger,Scavenger,class,feeding_group,cefas,,,,,,,,,Cefas feeding mode: Scavenger,Cefas benthic trait database (cefas_btrait)
+feeding_group/cefas/parasite,Parasite,class,feeding_group,cefas,,,,,,,,feeding_group/tachet/parasite,Cefas feeding mode: Parasite,Cefas benthic trait database (cefas_btrait)

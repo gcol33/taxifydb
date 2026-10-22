@@ -117,10 +117,11 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
   # build, with no manual curation step.
   trait_cols <- enrichment_trait_cols(names(df), group_col)
 
-  # Canonical T-SITA vocabulary for the trait columns and their values, so the
-  # sidecar names each trait the way BETSI and the wider soil-fauna community do.
-  # NULL for an enrichment with no crosswalk; drop_empty_fields() then omits it.
-  tsita <- .tsita_enrichment_meta(name, columns = trait_cols)
+  # Controlled-vocabulary names for the trait columns and their values (T-SITA
+  # for soil fauna, the freshwater vocabulary for freshwater organisms), one
+  # block per vocabulary the crosswalks map this enrichment into. A vocabulary
+  # with no rows for it is absent and drop_empty_fields() omits its field.
+  vocab <- .vocab_meta_blocks(name, columns = trait_cols)
 
   meta <- list(
     type             = "enrichment",
@@ -139,7 +140,8 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
     group_col        = group_col,
     available_groups = available_groups,
     trait_cols       = as.list(trait_cols),
-    tsita            = tsita,
+    tsita            = vocab$tsita,
+    fwt              = vocab$fwt,
     provenance       = provenance,
     references       = references_meta,
     species_col      = species_col,

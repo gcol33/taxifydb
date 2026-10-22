@@ -19,3 +19,5 @@
 ^dev_notes$
 ^todo\.md$
 ^coverage_results\.json$
+^README\.Rmd$
+^sidecars$

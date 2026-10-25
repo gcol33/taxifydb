@@ -1,6 +1,6 @@
 # Verify that every backbone and enrichment released on gcol33/taxifydb has a
 # matching, current entry in taxify's runtime manifest
-# (gcol33/taxify inst/manifest.json).
+# (gcol33/taxify inst/manifest_v3.json).
 #
 # Backbones: compared against their per-backend release tags. Shape-A manifest
 # sync (build-heavy/build-light open a PR to taxify after each release) should
@@ -47,7 +47,7 @@
 REPO           <- Sys.getenv("TAXIFYDB_REPO", "gcol33/taxifydb")
 TAXIFY_MANIFEST <- Sys.getenv(
   "TAXIFY_MANIFEST_URL",
-  "https://raw.githubusercontent.com/gcol33/taxify/main/inst/manifest.json"
+  "https://raw.githubusercontent.com/gcol33/taxify/main/inst/manifest_v3.json"
 )
 
 # Backbones taxify can match against, read from `.register_extractors` in the

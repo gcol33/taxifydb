@@ -2,13 +2,13 @@
 #
 # After running build_enrichments.R, this script propagates nrow,
 # available_groups, and group_col from each enrichment's meta.json sidecar
-# into the taxify package's inst/manifest.json.
+# into the taxify package's inst/manifest_v3.json.
 #
 # Usage:
 #   Rscript sync_manifest.R [taxify_manifest_path] [output_dir]
 #
 # Defaults:
-#   taxify_manifest_path = ../taxify/inst/manifest.json
+#   taxify_manifest_path = ../taxify/inst/manifest_v3.json
 #   output_dir           = output/enrichment
 
 # The manifest writer, read from the package's own helpers rather than called
@@ -18,7 +18,7 @@
 source("R/utils.R")
 
 args <- commandArgs(trailingOnly = TRUE)
-taxify_manifest <- if (length(args) >= 1L) args[1L] else "../taxify/inst/manifest.json"
+taxify_manifest <- if (length(args) >= 1L) args[1L] else "../taxify/inst/manifest_v3.json"
 output_dir      <- if (length(args) >= 2L) args[2L] else "output/enrichment"
 
 if (!file.exists(taxify_manifest)) {

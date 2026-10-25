@@ -1,6 +1,6 @@
 # Re-encode every published backbone and enrichment in vectra 0.14.0's TDCF
 # format, upload the stores beside the legacy assets under the same tags, and
-# write manifest_v3.json in taxify and taxifydb. Resumes from work/done/.
+# write taxify's inst/manifest_v3.json and rewrite taxifydb's manifest. Resumes from work/done/.
 #
 #   Rscript scripts/republish_tdcf_2026_10.R [entry ...]
 #
@@ -18,8 +18,10 @@ tryCatch({
   stopifnot(packageVersion("vectra") >= "0.14.0")
   message("vectra ", packageVersion("vectra"), ", started ", Sys.time())
   only <- commandArgs(trailingOnly = TRUE)
+  # taxify < 0.7.0 fetches inst/manifest.json, so taxify's legacy manifest stays;
+  # no released client reads taxifydb's, which is rewritten in place.
   manifests <- c(file.path(rt, "manifest_v3.json"),
-                 file.path(repo, "manifest", "manifest_v3.json"))
+                 file.path(repo, "manifest", "manifest.json"))
   names(manifests) <- c(file.path(rt, "manifest.json"),
                         file.path(repo, "manifest", "manifest.json"))
   republish_store_format(

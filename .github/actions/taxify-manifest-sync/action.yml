@@ -1,7 +1,7 @@
 name: 'taxify runtime manifest sync'
 description: >
   Open a PR on the taxify runtime repo recording a freshly published backbone
-  release in inst/manifest.json. Fails loudly when the token is missing or no
+  release in inst/manifest_v3.json. Fails loudly when the token is missing or no
   longer works, so a lapsed secret cannot drift the manifest behind a green
   build.
 
@@ -53,7 +53,7 @@ runs:
         # failing costs no artifact, and a green build carrying a drifted
         # manifest is only caught by the weekly coverage cron.
         if [ -z "${TAXIFY_MANIFEST_TOKEN:-}" ]; then
-          echo "::error title=taxify manifest not synced::TAXIFY_MANIFEST_TOKEN is unset, so $BE v$VER is published but $REPO still points at the previous release. Set the secret and re-run this step, or update inst/manifest.json by hand."
+          echo "::error title=taxify manifest not synced::TAXIFY_MANIFEST_TOKEN is unset, so $BE v$VER is published but $REPO still points at the previous release. Set the secret and re-run this step, or update inst/manifest_v3.json by hand."
           exit 1
         fi
 
@@ -88,9 +88,9 @@ runs:
         git checkout -B "$BR" origin/main
 
         "${{ inputs.rscript }}" "$UPDATER" \
-          inst/manifest.json "$BE" "$OUT" "${{ inputs.delta_from }}"
+          inst/manifest_v3.json "$BE" "$OUT" "${{ inputs.delta_from }}"
 
-        git add inst/manifest.json
+        git add inst/manifest_v3.json
         if git diff --staged --quiet; then
           echo "$REPO manifest already current for $BE v$VER."
           exit 0

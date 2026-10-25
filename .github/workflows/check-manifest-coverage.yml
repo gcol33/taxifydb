@@ -57,7 +57,7 @@ jobs:
             "The entries below differ between what `gcol33/taxifydb` has released",
             "(build-side `manifest/manifest.json`, per-backbone release tags and",
             "the release assets themselves) and taxify's runtime",
-            "`inst/manifest.json`. Backbone drift silently degrades users to",
+            "`inst/manifest_v3.json`. Backbone drift silently degrades users to",
             "build-from-source; asset drift means the manifest describes bytes",
             "that are no longer served; enrichment drift leaves one of the two",
             "manifests a stale second source of truth.",

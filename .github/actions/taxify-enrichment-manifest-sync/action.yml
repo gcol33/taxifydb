@@ -1,7 +1,7 @@
 name: 'taxify runtime enrichment manifest sync'
 description: >
   Open a PR on the taxify runtime repo recording a freshly published enrichment
-  release in inst/manifest.json. Mirrors taxify-manifest-sync for the rolling
+  release in inst/manifest_v3.json. Mirrors taxify-manifest-sync for the rolling
   enrichment-<version> tag: mechanical fields are written by
   taxifydb::update_enrichment_manifest(), curated fields (trait_cols, citation,
   static, species_col) are merged and preserved. Fails loudly when the token is
@@ -49,7 +49,7 @@ runs:
         # manifests drifted (issue #20). The .vtr and the taxifydb manifest are
         # both committed before this step runs, so failing costs no artifact.
         if [ -z "${TAXIFY_MANIFEST_TOKEN:-}" ]; then
-          echo "::error title=taxify enrichment manifest not synced::TAXIFY_MANIFEST_TOKEN is unset, so $ENR (enrichment-$VER) is published but $REPO still points at the previous release. Set the secret and re-run this step, or update inst/manifest.json by hand."
+          echo "::error title=taxify enrichment manifest not synced::TAXIFY_MANIFEST_TOKEN is unset, so $ENR (enrichment-$VER) is published but $REPO still points at the previous release. Set the secret and re-run this step, or update inst/manifest_v3.json by hand."
           exit 1
         fi
 
@@ -85,9 +85,9 @@ runs:
         BR="auto/enrichment-manifest-$ENR"
         git checkout -B "$BR" origin/main
 
-        "${{ inputs.rscript }}" -e "taxifydb::update_enrichment_manifest('inst/manifest.json', '$ENR', '$VTR', release_version = '$VER', runtime = TRUE)"
+        "${{ inputs.rscript }}" -e "taxifydb::update_enrichment_manifest('inst/manifest_v3.json', '$ENR', '$VTR', release_version = '$VER', runtime = TRUE)"
 
-        git add inst/manifest.json
+        git add inst/manifest_v3.json
         if git diff --staged --quiet; then
           echo "$REPO manifest already current for $ENR (enrichment-$VER)."
           exit 0

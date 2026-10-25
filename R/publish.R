@@ -547,7 +547,7 @@ update_manifest <- function(manifest_path, backend_name, version,
   )
 
   # Merge into the existing entry: preserve any fields we don't set
-  # (e.g., citation blocks in taxify/inst/manifest.json).
+  # (e.g., citation blocks in taxify/inst/manifest_v3.json).
   entry <- manifest$backends[[backend_name]]
   if (is.null(entry)) entry <- list()
 
@@ -674,7 +674,7 @@ update_manifest <- function(manifest_path, backend_name, version,
 #'   `trait_cols` is always taken from the build ([enrichment_trait_cols()]),
 #'   since the runtime exposes whatever the `.vtr` carries. Used when
 #'   writing
-#'   taxify's `inst/manifest.json`; left `FALSE` for this repo's lean build-side
+#'   taxify's `inst/manifest_v3.json`; left `FALSE` for this repo's lean build-side
 #'   manifest. A new enrichment's runtime entry is then complete from the build
 #'   alone, with no manual curation step.
 #' @return The updated manifest (invisibly).

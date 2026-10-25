@@ -2,7 +2,7 @@ name: Publish Enrichment
 
 # Build one enrichment, upload its .vtr to the rolling enrichment-<version>
 # release, and update BOTH manifests together: this repo's build-side
-# manifest/manifest.json (committed here) and taxify's runtime inst/manifest.json
+# manifest/manifest.json (committed here) and taxify's runtime inst/manifest_v3.json
 # (synced via PR). Publishing through this workflow is what keeps the two
 # manifests from drifting -- the failure behind issue #20, where an enrichment
 # publish updated only taxify's copy.

@@ -1,5 +1,11 @@
 # Shared build pipeline: normalized df -> .vtr backbone.
 
+# Compression of every store taxifydb publishes (backbones, enrichments). A
+# published store is written once and downloaded by every user, so the slow
+# encode of vectra's "small" sweep is paid once for every byte it saves on
+# their disks; intermediate staging stores keep vectra's default.
+.published_vtr_compress <- "small"
+
 #' Write a backbone .vtr file from a precomputed data.frame
 #'
 #' Sorts by genus (for zone-map pruning), writes the .vtr, creates hash indexes,
@@ -30,7 +36,8 @@ build_vtr <- function(df, vtr_path, backend_name, version, source_url,
   rownames(df) <- NULL
 
   dir.create(dirname(vtr_path), recursive = TRUE, showWarnings = FALSE)
-  vectra::write_vtr(df, vtr_path, batch_size = batch_size)
+  vectra::write_vtr(df, vtr_path, compress = .published_vtr_compress,
+                    batch_size = batch_size)
 
   index_backbone_vtr(vtr_path, genus_col)
   write_backbone_meta(vtr_path, backend_name, version, source_url, nrow(df),

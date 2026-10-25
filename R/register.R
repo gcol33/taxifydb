@@ -1101,7 +1101,7 @@ build_genus_register <- function(backbone_paths = NULL, output_dir = NULL,
   rownames(resolved) <- NULL
 
   vtr_path <- file.path(output_dir, "genus_register.vtr")
-  vectra::write_vtr(resolved, vtr_path)
+  vectra::write_vtr(resolved, vtr_path, compress = .published_vtr_compress)
   vectra::create_index(vtr_path, "genus")
 
   write_backbone_meta(vtr_path, "genus_register", version,
@@ -1206,7 +1206,7 @@ build_backend_coverage <- function(backbone_paths = NULL, output_dir = NULL,
   rownames(coverage) <- NULL
 
   vtr_path <- file.path(output_dir, "backend_coverage.vtr")
-  vectra::write_vtr(coverage, vtr_path)
+  vectra::write_vtr(coverage, vtr_path, compress = .published_vtr_compress)
   vectra::create_index(vtr_path, "genus")
 
   write_backbone_meta(vtr_path, "backend_coverage", version,

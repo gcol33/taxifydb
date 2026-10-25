@@ -26,7 +26,7 @@ Imports:
     jsonlite,
     taxify (>= 0.6.0.9000),
     utils,
-    vectra (>= 0.12.4)
+    vectra (>= 0.14.0)
 Suggests:
     data.table,
     DBI,

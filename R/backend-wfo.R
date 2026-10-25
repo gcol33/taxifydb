@@ -192,9 +192,6 @@ normalize_wfo <- function(df, verbose = TRUE) {
     df[[col]] <- trimws(df[[col]])
   }
 
-  # WFO-specific: extra normalized name column kept alongside canonical
-  df$normalizedName <- taxify::normalize_epithets(df$scientificName)
-
   if (verbose) message("Normalizing to unified schema...")
   col_map <- list(
     taxon_id                = "taxonID",
@@ -211,7 +208,7 @@ normalize_wfo <- function(df, verbose = TRUE) {
   )
 
   extra_cols <- list()
-  for (col in c(.wfo_extra_cols, "normalizedName")) {
+  for (col in .wfo_extra_cols) {
     if (col %in% names(df)) extra_cols[[col]] <- col
   }
 

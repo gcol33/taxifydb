@@ -141,7 +141,8 @@ build_meow <- function(output_dir = NULL, version = NULL,
   df <- read_meow(gj_path)
 
   vtr_path <- file.path(output_dir, "meow.vtr")
-  vectra::write_vtr(df, vtr_path, batch_size = 100000L)
+  vectra::write_vtr(df, vtr_path, compress = .published_vtr_compress,
+                    batch_size = 100000L)
   vectra::create_index(vtr_path, "code")
 
   write_backbone_meta(vtr_path, "meow", version, .meow_url, nrow(df))

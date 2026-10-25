@@ -296,7 +296,7 @@ build_col <- function(output_dir = "output/col", version = NULL,
     )
     names(sp_df) <- sub("^[a-z]+:", "", names(sp_df))
     sp_vtr <- file.path(output_dir, "col_species_profile.vtr")
-    vectra::write_vtr(sp_df, sp_vtr)
+    vectra::write_vtr(sp_df, sp_vtr, compress = .published_vtr_compress)
     if (verbose) message(sprintf("  SpeciesProfile: %s rows",
                                  format(nrow(sp_df), big.mark = ",")))
   }

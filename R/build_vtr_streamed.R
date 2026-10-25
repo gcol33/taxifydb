@@ -195,7 +195,8 @@ build_vtr_streamed <- function(feed, vtr_path, backend_name, version,
   node <- eval(bquote(vectra::arrange(node, .(as.name(genus_col)))))
 
   dir.create(dirname(vtr_path), recursive = TRUE, showWarnings = FALSE)
-  vectra::write_vtr(node, vtr_path, batch_size = batch_size)
+  vectra::write_vtr(node, vtr_path, compress = .published_vtr_compress,
+                    batch_size = batch_size)
 
   if (n_links != n_rows) {
     stop(sprintf(

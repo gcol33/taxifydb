@@ -92,7 +92,8 @@ build_enrichment_vtr <- function(df, vtr_path, name, version, source_url,
   df <- df[!is.na(df$canonical_name), ]
 
   dir.create(dirname(vtr_path), recursive = TRUE, showWarnings = FALSE)
-  vectra::write_vtr(df, vtr_path, batch_size = batch_size)
+  vectra::write_vtr(df, vtr_path, compress = .published_vtr_compress,
+                    batch_size = batch_size)
 
   vectra::create_index(vtr_path, "canonical_name")
   if (!is.null(group_col) && group_col %in% names(df)) {

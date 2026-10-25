@@ -214,7 +214,7 @@ attach_references <- function(df, references) {
   rownames(refs) <- NULL
 
   ref_path <- file.path(dirname(vtr_path), paste0(name, "_references.vtr"))
-  vectra::write_vtr(refs, ref_path)
+  vectra::write_vtr(refs, ref_path, compress = .published_vtr_compress)
   vectra::create_index(ref_path, "ref_id")
   message(sprintf("[enrichment/%s] %d references behind %d provenance columns",
                   name, nrow(refs), length(prov)))

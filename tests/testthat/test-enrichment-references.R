@@ -211,7 +211,7 @@ test_that("the runtime manifest records the reference table, and a build without
   got <- jsonlite::read_json(mf, simplifyVector = FALSE)$enrichments$demo
   cid <- unname(tools::md5sum(file.path(dir, "demo_references.vtr")))
   base <- "https://github.com/gcol33/taxifydb/releases/download/enrichment-2026.09"
-  expect_equal(got$references$url, paste0(base, "/demo_references.vtr"))
+  expect_equal(got$references$url, paste0(base, "/demo_references.tdcf.vtr"))
   expect_equal(got$references$content_id, cid)
   expect_equal(got$references$content_url,
                sprintf("%s/demo_references-%s.vtr", base, cid))

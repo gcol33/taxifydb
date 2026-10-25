@@ -104,8 +104,9 @@ test_that("publish_release uploads the content-addressed copy content_url names"
   up <- uploads(calls)
   expect_length(up, 2L)
 
+  # Stores go up under their format-qualified names; the .meta does not.
   expect_setequal(uploaded_names(up[[1L]]),
-                  c("wfo.vtr", "wfo.meta", "wfo_profile.vtr"))
+                  c("wfo.tdcf.vtr", "wfo.meta", "wfo_profile.tdcf.vtr"))
   expect_true("--clobber" %in% up[[1L]])
 
   cid <- unname(tools::md5sum(vtr))
@@ -118,7 +119,7 @@ test_that("re-publishing an existing tag keeps it and skips a copy already there
   vtr <- touch(dir, "wfo.vtr", "wfo bytes")
   cid <- unname(tools::md5sum(vtr))
   gh <- fake_gh(exists = TRUE,
-                assets = c("wfo.vtr", sprintf("wfo-%s.vtr", cid)))
+                assets = c("wfo.tdcf.vtr", sprintf("wfo-%s.vtr", cid)))
   local_mocked_bindings(.gh = gh$fn)
 
   expect_message(
@@ -129,14 +130,14 @@ test_that("re-publishing an existing tag keeps it and skips a copy already there
   expect_false(any(verbs %in% c("create", "delete")))
   up <- uploads(gh$calls())
   expect_length(up, 1L)
-  expect_equal(uploaded_names(up[[1L]]), "wfo.vtr")
+  expect_equal(uploaded_names(up[[1L]]), "wfo.tdcf.vtr")
 })
 
 test_that("a re-cut under an existing tag adds its own content-addressed copy", {
   dir <- withr::local_tempdir()
   vtr <- touch(dir, "wfo.vtr", "new wfo bytes")
   gh <- fake_gh(exists = TRUE,
-                assets = c("wfo.vtr", "wfo-0123456789abcdef0123456789abcdef.vtr"))
+                assets = c("wfo.tdcf.vtr", "wfo-0123456789abcdef0123456789abcdef.vtr"))
   local_mocked_bindings(.gh = gh$fn)
 
   suppressMessages(publish_release("wfo", "2026.09", vtr, repo = "o/r",
@@ -149,11 +150,11 @@ test_that("a re-cut under an existing tag adds its own content-addressed copy", 
 })
 
 test_that("a rolling .vtr with no content-addressed copy is preserved before it is replaced", {
-  # wfo-2026.06 was cut as a June build of WFO 2024-12, before content-addressed
-  # copies existed; the WFO June 2026 edition publishes under the same tag.
+  # A rolling asset uploaded without its content-addressed copy (a run that
+  # failed between the two uploads) is fetched and kept before it is replaced.
   dir <- withr::local_tempdir()
   vtr <- touch(dir, "wfo.vtr", "wfo 2026-06 edition")
-  gh <- fake_gh(exists = TRUE, assets = c("wfo.vtr", "wfo.meta"),
+  gh <- fake_gh(exists = TRUE, assets = c("wfo.tdcf.vtr", "wfo.meta"),
                 download_bytes = "wfo 2024-12 bytes")
   local_mocked_bindings(.gh = gh$fn)
 
@@ -174,8 +175,26 @@ test_that("a rolling .vtr with no content-addressed copy is preserved before it 
   expect_lt(match("download", verbs),
             which(verbs == "upload" & vapply(calls, function(a) "--clobber" %in% a,
                                              logical(1L))))
-  expect_equal(uploaded_names(up[[2L]]), "wfo.vtr")
+  expect_equal(uploaded_names(up[[2L]]), "wfo.tdcf.vtr")
   expect_true("--clobber" %in% up[[2L]])
+})
+
+test_that("a store in an earlier format under the same tag is left in place", {
+  # The rolling wfo.vtr a legacy manifest points at is not the asset a publish
+  # writes, so it is neither fetched nor replaced.
+  dir <- withr::local_tempdir()
+  vtr <- touch(dir, "wfo.vtr", "wfo re-encoded")
+  gh <- fake_gh(exists = TRUE, assets = c("wfo.vtr", "wfo.meta"))
+  local_mocked_bindings(.gh = gh$fn)
+
+  suppressMessages(publish_release("wfo", "2026.06", vtr, repo = "o/r",
+                                   notes = "n"))
+  calls <- gh$calls()
+  verbs <- vapply(calls, function(a) a[[2L]], character(1L))
+  expect_false("download" %in% verbs)
+  uploaded <- unlist(lapply(uploads(calls), uploaded_names))
+  expect_false("wfo.vtr" %in% uploaded)
+  expect_true("wfo.tdcf.vtr" %in% uploaded)
 })
 
 test_that("a release with no rolling .vtr yet fetches nothing", {
@@ -229,7 +248,7 @@ test_that("publish_enrichment_release uploads a content-addressed copy per .vtr"
 
   up <- uploads(gh$calls())
   expect_length(up, 2L)
-  expect_setequal(uploaded_names(up[[1L]]), c("anage.vtr", "leda.vtr"))
+  expect_setequal(uploaded_names(up[[1L]]), c("anage.tdcf.vtr", "leda.tdcf.vtr"))
   expect_setequal(uploaded_names(up[[2L]]), c(
     sprintf("anage-%s.vtr", unname(tools::md5sum(a))),
     sprintf("leda-%s.vtr", unname(tools::md5sum(b)))))

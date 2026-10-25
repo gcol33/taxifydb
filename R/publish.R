@@ -1,6 +1,28 @@
 # Publish backbone releases to GitHub and update the manifest.
 
 
+#' Copy files into a temp dir under their published asset names
+#'
+#' gh names an asset by the file's basename, so a file is uploaded under its
+#' published name by staging it under that name first. A hard link is tried
+#' before a copy, since a backbone runs to gigabytes.
+#' @return Paths of the staged files.
+#' @noRd
+.stage_published <- function(paths) {
+  if (!length(paths)) return(character(0L))
+  dir <- tempfile("taxifydb_published_")
+  dir.create(dir)
+  dest <- file.path(dir, .published_asset_name(paths))
+  for (i in seq_along(paths)) {
+    linked <- suppressWarnings(file.link(paths[[i]], dest[[i]]))
+    if (!linked && !file.copy(paths[[i]], dest[[i]], overwrite = TRUE)) {
+      stop(sprintf("Could not stage %s for upload.", paths[[i]]), call. = FALSE)
+    }
+  }
+  dest
+}
+
+
 #' Run the gh CLI
 #'
 #' Every release operation reaches `gh` through here, with [system2()]'s
@@ -242,8 +264,8 @@
 #' @noRd
 .preserve_uncopied_rolling_vtr <- function(tag, vtr_path, repo) {
   existing <- .release_asset_names(tag, repo)
-  rolling <- basename(vtr_path)
-  nm <- tools::file_path_sans_ext(rolling)
+  rolling <- .published_asset_name(vtr_path)
+  nm <- tools::file_path_sans_ext(basename(vtr_path))
   copied <- grepl(sprintf("^%s-[0-9a-f]{32}\\.vtr$", nm), existing)
   if (!rolling %in% existing || any(copied)) return(invisible(character(0L)))
 
@@ -317,12 +339,9 @@ publish_release <- function(backend_name, version, vtr_path,
   .ensure_release(tag, sprintf("%s v%s", toupper(backend_name), version),
                   notes, repo)
 
-  artifacts <- vtr_path
+  stores <- vtr_path
   if (!is.null(delta_path) && file.exists(delta_path)) {
-    artifacts <- c(artifacts, delta_path)
-  }
-  if (!is.null(meta_path) && file.exists(meta_path)) {
-    artifacts <- c(artifacts, meta_path)
+    stores <- c(stores, delta_path)
   }
   if (length(extras) > 0L) {
     missing <- extras[!file.exists(extras)]
@@ -330,7 +349,13 @@ publish_release <- function(backend_name, version, vtr_path,
       stop("Missing extras files: ", paste(missing, collapse = ", "),
            call. = FALSE)
     }
-    artifacts <- c(artifacts, extras)
+    stores <- c(stores, extras)
+  }
+  staged <- .stage_published(stores)
+  on.exit(unlink(unique(dirname(staged)), recursive = TRUE), add = TRUE)
+  artifacts <- staged
+  if (!is.null(meta_path) && file.exists(meta_path)) {
+    artifacts <- c(artifacts, meta_path)
   }
 
   .preserve_uncopied_rolling_vtr(tag, vtr_path, repo)
@@ -383,7 +408,9 @@ publish_enrichment_release <- function(version, vtr_paths,
   # The shared release is never deleted -- doing so would drop every other
   # enrichment's asset from the tag.
   .ensure_release(tag, sprintf("Enrichments %s", version), notes, repo)
-  .upload_assets(tag, vtr_paths, repo, clobber = TRUE)
+  staged <- .stage_published(vtr_paths)
+  on.exit(unlink(unique(dirname(staged)), recursive = TRUE), add = TRUE)
+  .upload_assets(tag, staged, repo, clobber = TRUE)
 
   # Preserve each build's bytes under a content-addressed name so re-cutting one
   # enrichment under the shared rolling tag cannot make a prior build's bytes
@@ -525,7 +552,8 @@ update_manifest <- function(manifest_path, backend_name, version,
   if (is.null(entry)) entry <- list()
 
   entry$latest      <- version
-  entry$full_url    <- sprintf("%s/%s.vtr", base_url, backend_name)
+  entry$full_url    <- sprintf("%s/%s", base_url,
+                               .published_asset_name(paste0(backend_name, ".vtr")))
   entry$full_size   <- file.size(vtr_path)
   entry$full_sha256 <- sha256(vtr_path)
   # md5 of the .vtr; taxify's runtime uses this (base-R tools::md5sum) as the
@@ -570,7 +598,8 @@ update_manifest <- function(manifest_path, backend_name, version,
   if (!is.null(delta_path) && file.exists(delta_path)) {
     entry$delta_from <- delta_from
     entry$delta_from_content_id <- delta_from_content_id
-    entry$delta_url  <- sprintf("%s/%s.xdelta", base_url, backend_name)
+    entry$delta_url  <- sprintf("%s/%s", base_url,
+                                .published_asset_name(paste0(backend_name, ".xdelta")))
     entry$delta_size <- file.size(delta_path)
   } else {
     # Drop stale delta fields if a previous version had them
@@ -596,7 +625,7 @@ update_manifest <- function(manifest_path, backend_name, version,
         name <- basename(p)
         list(
           name   = name,
-          url    = sprintf("%s/%s", base_url, name),
+          url    = sprintf("%s/%s", base_url, .published_asset_name(p)),
           size   = file.size(p),
           sha256 = sha256(p)
         )
@@ -688,7 +717,8 @@ update_enrichment_manifest <- function(manifest_path, name, vtr_path,
   # only fires when a new release is cut -- keeping the two versions distinct.
   entry$latest         <- release_tag_version
   entry$source_version <- meta$version
-  entry$full_url       <- sprintf("%s/%s.vtr", base_url, name)
+  entry$full_url       <- sprintf("%s/%s", base_url,
+                                  .published_asset_name(paste0(name, ".vtr")))
   entry$nrow           <- meta$nrow
   # md5 of the .vtr (from the build sidecar); taxify's runtime uses it to detect
   # a same-tag republish and refresh an otherwise version-locked enrichment cache

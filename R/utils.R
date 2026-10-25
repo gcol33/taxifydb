@@ -126,9 +126,31 @@ strip_authorship <- function(sci_name, authorship) {
   if (is.null(refs) || is.null(refs$file)) return(NULL)
   stem <- tools::file_path_sans_ext(refs$file)
   list(
-    url         = sprintf("%s/%s", base_url, refs$file),
+    url         = sprintf("%s/%s", base_url, .published_asset_name(refs$file)),
     content_id  = refs$content_id,
     content_url = sprintf("%s/%s-%s.vtr", base_url, stem, refs$content_id),
     nrow        = refs$nrow
   )
+}
+
+
+# The store format every published asset is written in, carried in its asset
+# name. A release tag names the data (`<backbone>-<version>`), not its
+# encoding, so a store re-published in a newer format keeps its tag; the
+# format goes into the asset name instead, and the asset an older manifest
+# points at stays in place for installs whose vectra cannot read the newer
+# format. "tdcf" is tdc's 'TDCF' container, written by vectra >= 0.14.0.
+.published_format <- "tdcf"
+
+
+#' Release asset name of a published file
+#'
+#' `wfo.vtr` -> `wfo.tdcf.vtr`, `wfo.xdelta` -> `wfo.tdcf.xdelta`. The local
+#' file keeps its plain name; only the release asset carries the format.
+#' Content-addressed copies (`<name>-<content_id>.vtr`) do not: the content id
+#' already names the bytes.
+#' @noRd
+.published_asset_name <- function(file) {
+  sub("(\\.[A-Za-z0-9]+)$", paste0(".", .published_format, "\\1"),
+      basename(file))
 }

@@ -58,7 +58,7 @@ test_that("a release carrying sidecars records them against its own tag", {
   got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
 
   expect_length(got$extras, 1L)
-  expect_match(got$extras[[1L]]$url, "worms-2026.08/worms_species_profile.vtr",
+  expect_match(got$extras[[1L]]$url, "worms-2026.08/worms_species_profile.tdcf.vtr",
                fixed = TRUE)
   expect_equal(got$extras[[1L]]$size, file.size(sidecar))
 })
@@ -108,7 +108,7 @@ test_that("latest is the build's source release and no source_version is kept", 
   got <- jsonlite::read_json(mf, simplifyVector = FALSE)$backends$worms
   expect_equal(got$latest, "2026.09")
   expect_null(got$source_version)
-  expect_match(got$full_url, "/worms-2026.09/worms.vtr", fixed = TRUE)
+  expect_match(got$full_url, "/worms-2026.09/worms.tdcf.vtr", fixed = TRUE)
 
   expect_error(update_manifest(mf, "worms", "2026.10", vtr),
                "but the build recorded version 2026.09")

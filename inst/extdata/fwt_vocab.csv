@@ -2,7 +2,7 @@ id,label,kind,axis,scheme,scope,groups,value_type,unit,lower,upper,broader,exact
 body_size,Body size,axis,,,cross_group,macroinvertebrates;fish;zooplankton,numeric_or_class,mm,,,,,Body length; maximum or typical as the source states.,
 thermal_preference,Thermal preference,axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,class,degC,,,,,Water temperature range the taxon prefers or is found in.,
 current_preference,Current preference (rheophily),axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,class,cm/s,,,,,Water current the taxon prefers.,
-ph_preference,pH preference,axis,,,cross_group,macroinvertebrates;diatoms;phytoplankton;phytobenthos,numeric_or_class,pH,,,,,Water pH the taxon prefers or occurs at.,
+ph_preference,pH preference,axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,numeric_or_class,pH,,,,,Water pH the taxon prefers or occurs at.,
 salinity_preference,Salinity preference,axis,,,cross_group,macroinvertebrates;fish;diatoms;phytoplankton;phytobenthos,class,g/L,,,,,Water salinity the taxon prefers or tolerates; bounds as NaCl in g/L.,
 trophic_preference,Trophic state preference,axis,,,cross_group,macroinvertebrates;diatoms;phytoplankton;phytobenthos,class,,,,,,Nutrient status of the water the taxon prefers (oligotrophic to eutrophic).,
 upper_thermal_limit,Upper thermal limit,axis,,,cross_group,macroinvertebrates;fish,numeric,degC,,,,,Upper critical or lethal temperature measured in a test.,
@@ -13,13 +13,13 @@ life_cycle_duration,Life cycle duration,axis,,,within_group,macroinvertebrates,c
 voltinism,Voltinism,axis,,,within_group,macroinvertebrates,class,generations/year,,,,,Number of generations per year.,
 aquatic_stages,Aquatic stages,axis,,,within_group,macroinvertebrates,class,,,,,,Life stages spent in water.,
 reproduction,Reproduction,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Reproductive mode and egg deposition.,
-oviposition_site,Oviposition site,axis,,,within_group,macroinvertebrates,class,,,,,,Where eggs are laid.,
+oviposition_site,Oviposition site,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Where eggs are laid.,
 dispersal,Dispersal,axis,,,within_group,macroinvertebrates,class,,,,,,Medium and mode of dispersal.,
 resistance_forms,Resistance forms,axis,,,within_group,macroinvertebrates,class,,,,,,Structures or states that let the taxon survive adverse conditions.,
 respiration,Respiration,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Respiratory organ or mode.,
-locomotion_substrate_relation,Locomotion and substrate relation,axis,,,within_group,macroinvertebrates,class,,,,,,How the taxon moves and relates to the substrate.,
-substrate_preference,Substrate preference,axis,,,within_group,macroinvertebrates,class,,,,,,Substrate (microhabitat) the taxon prefers.,
-transversal_distribution,Transversal distribution,axis,,,within_group,macroinvertebrates,class,,,,,,Position across the river corridor or water-body type.,
+locomotion_substrate_relation,Locomotion and substrate relation,axis,,,within_group,macroinvertebrates;fish,class,,,,,,How the taxon moves and relates to the substrate.,
+substrate_preference,Substrate preference,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Substrate (microhabitat) the taxon prefers.,
+transversal_distribution,Transversal distribution,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Position across the river corridor or water-body type.,
 altitude,Altitude,axis,,,within_group,macroinvertebrates,class,m,,,,,Altitude at which the taxon occurs.,
 biogeographic_region,Biogeographic region,axis,,,within_group,macroinvertebrates,class,,,,,,Biogeographic region of occurrence.,
 reproductive_guild,Reproductive guild,axis,,,within_group,fish,class,,,,,,Spawning and parental-care guild (Balon's system).,
@@ -32,6 +32,7 @@ age_at_maturity,Age at maturity,axis,,,within_group,fish,numeric,year,,,,,First 
 longevity,Longevity,axis,,,within_group,fish,numeric,year,,,,,Maximum age reached.,
 fecundity,Fecundity,axis,,,within_group,fish,numeric,offspring,,,,,"Number of offspring per female, per batch, per year or maximum as the source states.",
 spawning_season_length,Spawning season length,axis,,,within_group,fish,numeric,month,,,,,Length of the spawning season.,
+spawning_period,Spawning period,axis,,,within_group,fish,class,,,,,,Months or season in which the taxon spawns.,
 offspring_size,Offspring size,axis,,,within_group,fish,numeric,mm,,,,,"Diameter of the released egg, length of the egg case or length of the young.",
 algal_habitat,Habitat position,axis,,,within_group,diatoms;phytoplankton;phytobenthos,class,,,,,,"Where in the water body the alga lives (plankton, benthos, epiphyte, ...).",
 body_size/tachet/lt_2_5_mm,<2.5 mm,class,body_size,tachet,,,,mm,,2.5,,,Maximum size (mm): <2.5 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
@@ -339,6 +340,41 @@ trophic_guild/fishbase/other,other,class,trophic_guild,fishbase,,,,,,,,,FishBase
 trophic_level/fishbase/mainly_plants_detritus_troph_2_2_19,mainly plants/detritus (troph. 2-2.19),class,trophic_level,fishbase,,,,,2,2.19,,,FishBase herbivory: mainly plants/detritus (troph. 2-2.19),"FishBase (Froese & Pauly), species and ecology tables"
 trophic_level/fishbase/plants_detritus_and_animals_troph_2_2_2_79,plants/detritus+animals (troph. 2.2-2.79),class,trophic_level,fishbase,,,,,2.2,2.79,,,FishBase herbivory: plants/detritus+animals (troph. 2.2-2.79),"FishBase (Froese & Pauly), species and ecology tables"
 trophic_level/fishbase/mainly_animals_troph_2_8_and_up,mainly animals (troph. 2.8 and up),class,trophic_level,fishbase,,,,,2.8,,,,FishBase herbivory: mainly animals (troph. 2.8 and up),"FishBase (Froese & Pauly), species and ecology tables"
+reproductive_guild/fibs/lithophil,lithophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: lithophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/phytophil,phytophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: phytophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/phyto_lithophil,phyto-lithophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: phyto-lithophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/litho_pelagophil,litho-pelagophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: litho-pelagophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/pelagophil,pelagophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: pelagophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/psammophil,psammophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: psammophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/ostracophil,ostracophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: ostracophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/speleophil,speleophil,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: speleophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/fibs/marin,marin,class,reproductive_guild,fibs,,,,,,,,,fiBS reproduction guild: marin,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+reproductive_guild/pont2006/lith,LITH,class,reproductive_guild,pont2006,,,,,,,,reproductive_guild/fibs/lithophil,Pont et al. 2006 guild LITH,"Pont et al. 2006, fish functional guild codes"
+reproductive_guild/pont2006/phyt,PHYT,class,reproductive_guild,pont2006,,,,,,,,reproductive_guild/fibs/phytophil,Pont et al. 2006 guild PHYT,"Pont et al. 2006, fish functional guild codes"
+migration/fibs/potamodrom,potamodrom,class,migration,fibs,,,,,,,,migration/fishbase/potamodromous,fiBS migration type: potamodrom,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/anadrom,anadrom,class,migration,fibs,,,,,,,,migration/fishbase/anadromous,fiBS migration type: anadrom,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/katadrom,katadrom,class,migration,fibs,,,,,,,,migration/fishbase/catadromous,fiBS migration type: katadrom,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/anadromer_langdistanzwanderer,anadromer Langdistanzwanderer,class,migration,fibs,,,,,,,migration/fibs/anadrom,,fiBS migration type: anadromous long-distance migrant,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/distance_kurz,distance kurz,class,migration,fibs,,,,,,,,,fiBS migration distance: kurz,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/distance_kurz_mittel,distance kurz-mittel,class,migration,fibs,,,,,,,,,fiBS migration distance: kurz-mittel,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/distance_mittel,distance mittel,class,migration,fibs,,,,,,,,,fiBS migration distance: mittel,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/distance_mittel_lang,distance mittel-lang,class,migration,fibs,,,,,,,,,fiBS migration distance: mittel-lang,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/fibs/distance_lang,distance lang,class,migration,fibs,,,,,,,,,fiBS migration distance: lang,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+migration/pont2006/pota,POTA,class,migration,pont2006,,,,,,,,migration/fibs/potamodrom,Pont et al. 2006 guild POTA: potamodromous,"Pont et al. 2006, fish functional guild codes"
+migration/pont2006/long,LONG,class,migration,pont2006,,,,,,,,migration/fibs/distance_lang,Pont et al. 2006 guild LONG: long-distance migrant,"Pont et al. 2006, fish functional guild codes"
+current_preference/fibs/rheophil,rheophil,class,current_preference,fibs,,,,,,,,,fiBS habitat guild: rheophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+current_preference/fibs/stagnophil,stagnophil,class,current_preference,fibs,,,,,,,,,fiBS habitat guild: stagnophil,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+current_preference/fibs/indifferent,indifferent,class,current_preference,fibs,,,,,,,,,fiBS habitat guild: indifferent,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+current_preference/pont2006/rheo,RHEO,class,current_preference,pont2006,,,,,,,,current_preference/fibs/rheophil,Pont et al. 2006 guild RHEO: rheophilic,"Pont et al. 2006, fish functional guild codes"
+trophic_guild/fibs/planktivor,planktivor,class,trophic_guild,fibs,,,,,,,,trophic_guild/beukhof/planktivorous,fiBS trophic guild: planktivor,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/fibs/invertivor,invertivor,class,trophic_guild,fibs,,,,,,,,,fiBS trophic guild: invertivor,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/fibs/piscivor,piscivor,class,trophic_guild,fibs,,,,,,,,trophic_guild/beukhof/piscivorous,fiBS trophic guild: piscivor,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/fibs/omnivor,omnivor,class,trophic_guild,fibs,,,,,,,,,fiBS trophic guild: omnivor,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/fibs/herbivor,herbivor,class,trophic_guild,fibs,,,,,,,,trophic_guild/beukhof/herbivorous,fiBS trophic guild: herbivor,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/fibs/inverti_piscivor,inverti-piscivor,class,trophic_guild,fibs,,,,,,,,,fiBS trophic guild: inverti-piscivor,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/fibs/filtrierer,Filtrierer,class,trophic_guild,fibs,,,,,,,,,fiBS trophic guild: Filtrierer,"fiBS fish-based assessment system, VDFF Handbuch 2025"
+trophic_guild/pont2006/omni,OMNI,class,trophic_guild,pont2006,,,,,,,,trophic_guild/fibs/omnivor,Pont et al. 2006 guild OMNI: omnivorous,"Pont et al. 2006, fish functional guild codes"
+trophic_guild/pont2006/inse,INSE,class,trophic_guild,pont2006,,,,,,,,,Pont et al. 2006 guild INSE: insectivorous,"Pont et al. 2006, fish functional guild codes"
 body_size/cefas/less_than_10,Less than 10,class,body_size,cefas,,,,mm,,10,,,Cefas body size class (mm): Less than 10,Cefas benthic trait database (cefas_btrait)
 body_size/cefas/11_to_20,11 to 20,class,body_size,cefas,,,,mm,11,20,,,Cefas body size class (mm): 11 to 20,Cefas benthic trait database (cefas_btrait)
 body_size/cefas/21_to_100,21 to 100,class,body_size,cefas,,,,mm,21,100,,,Cefas body size class (mm): 21 to 100,Cefas benthic trait database (cefas_btrait)

@@ -8,21 +8,31 @@ trophic_preference,Trophic state preference,axis,,,cross_group,macroinvertebrate
 upper_thermal_limit,Upper thermal limit,axis,,,cross_group,macroinvertebrates;fish,numeric,degC,,,,,Upper critical or lethal temperature measured in a test.,
 lower_thermal_limit,Lower thermal limit,axis,,,cross_group,macroinvertebrates;fish,numeric,degC,,,,,Lower critical or lethal temperature measured in a test.,
 feeding_group,Functional feeding group,axis,,,within_group,macroinvertebrates,class,,,,,,Mechanism by which the taxon acquires food.,
-food_type,Food type,axis,,,within_group,macroinvertebrates,class,,,,,,What the taxon eats.,
+food_type,Food type,axis,,,within_group,macroinvertebrates;fish,class,,,,,,What the taxon eats.,
 life_cycle_duration,Life cycle duration,axis,,,within_group,macroinvertebrates,class,year,,,,,Duration of one life cycle.,
 voltinism,Voltinism,axis,,,within_group,macroinvertebrates,class,generations/year,,,,,Number of generations per year.,
 aquatic_stages,Aquatic stages,axis,,,within_group,macroinvertebrates,class,,,,,,Life stages spent in water.,
-reproduction,Reproduction,axis,,,within_group,macroinvertebrates,class,,,,,,Reproductive mode and egg deposition.,
+reproduction,Reproduction,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Reproductive mode and egg deposition.,
 oviposition_site,Oviposition site,axis,,,within_group,macroinvertebrates,class,,,,,,Where eggs are laid.,
 dispersal,Dispersal,axis,,,within_group,macroinvertebrates,class,,,,,,Medium and mode of dispersal.,
 resistance_forms,Resistance forms,axis,,,within_group,macroinvertebrates,class,,,,,,Structures or states that let the taxon survive adverse conditions.,
-respiration,Respiration,axis,,,within_group,macroinvertebrates,class,,,,,,Respiratory organ or mode.,
+respiration,Respiration,axis,,,within_group,macroinvertebrates;fish,class,,,,,,Respiratory organ or mode.,
 locomotion_substrate_relation,Locomotion and substrate relation,axis,,,within_group,macroinvertebrates,class,,,,,,How the taxon moves and relates to the substrate.,
 substrate_preference,Substrate preference,axis,,,within_group,macroinvertebrates,class,,,,,,Substrate (microhabitat) the taxon prefers.,
 transversal_distribution,Transversal distribution,axis,,,within_group,macroinvertebrates,class,,,,,,Position across the river corridor or water-body type.,
 altitude,Altitude,axis,,,within_group,macroinvertebrates,class,m,,,,,Altitude at which the taxon occurs.,
 biogeographic_region,Biogeographic region,axis,,,within_group,macroinvertebrates,class,,,,,,Biogeographic region of occurrence.,
 reproductive_guild,Reproductive guild,axis,,,within_group,fish,class,,,,,,Spawning and parental-care guild (Balon's system).,
+trophic_guild,Trophic guild,axis,,,within_group,fish,class,,,,,,Main food source or feeding type of the adult.,
+trophic_level,Trophic level,axis,,,within_group,fish,numeric_or_class,,,,,,"Position in the food web, from 2 (plants and detritus) upward.",
+feeding_position,Feeding position,axis,,,within_group,fish,class,,,,,,Where in the water body the fish takes its food.,
+water_column_position,Water column position,axis,,,within_group,fish,class,,,,,,Zone of the water column the fish lives in.,
+migration,Migration,axis,,,within_group,fish,class,,,,,,Migratory behaviour between or within water bodies.,
+age_at_maturity,Age at maturity,axis,,,within_group,fish,numeric,year,,,,,First age at which the individual can reproduce.,
+longevity,Longevity,axis,,,within_group,fish,numeric,year,,,,,Maximum age reached.,
+fecundity,Fecundity,axis,,,within_group,fish,numeric,offspring,,,,,"Number of offspring per female, per batch, per year or maximum as the source states.",
+spawning_season_length,Spawning season length,axis,,,within_group,fish,numeric,month,,,,,Length of the spawning season.,
+offspring_size,Offspring size,axis,,,within_group,fish,numeric,mm,,,,,"Diameter of the released egg, length of the egg case or length of the young.",
 algal_habitat,Habitat position,axis,,,within_group,diatoms;phytoplankton;phytobenthos,class,,,,,,"Where in the water body the alga lives (plankton, benthos, epiphyte, ...).",
 body_size/tachet/lt_2_5_mm,<2.5 mm,class,body_size,tachet,,,,mm,,2.5,,,Maximum size (mm): <2.5 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
 body_size/tachet/2_5_5_mm,2.5-5 mm,class,body_size,tachet,,,,mm,2.5,5,,,Maximum size (mm): 2.5-5 mm,"Tachet et al. 2010, Invertebres d'eau douce, CNRS Editions"
@@ -269,6 +279,66 @@ reproductive_guild/beukhof/bearer,bearer,class,reproductive_guild,beukhof,,,,,,,
 salinity_preference/fishtraits/euryhaline,euryhaline,class,salinity_preference,fishtraits,,,,,,,,,FishTraits flag EURYHALINE = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
 current_preference/fishtraits/prefers_lotic,prefers_lotic,class,current_preference,fishtraits,,,,,,,,,FishTraits flag PREFERS_LOTIC = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
 current_preference/fishtraits/prefers_lentic,prefers_lentic,class,current_preference,fishtraits,,,,,,,,,FishTraits flag PREFERS_LENTIC = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/algae_and_phytoplankton,algae and phytoplankton,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_algae_phyto = 1: algae and phytoplankton,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/vascular_macrophytes,vascular macrophytes,class,food_type,fishtraits,,,,,,,,food_type/tachet/living_macrophytes,FishTraits flag diet_macrophyte = 1: vascular macrophytes,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/detritus,detritus,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_detritus = 1: detritus,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/invertebrates,invertebrates,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_invertebrates = 1: invertebrates,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/fish_and_large_crustaceans,fish and large crustaceans,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_fish_crustacea = 1: fish and large crustaceans,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/blood,blood,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_blood = 1: blood,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/fish_eggs,fish eggs,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_eggs = 1: fish eggs,FishTraits 14.3 (Frimpong & Angermeier 2009)
+food_type/fishtraits/non_feeding_adult,non-feeding adult,class,food_type,fishtraits,,,,,,,,,FishTraits flag diet_nonfeeding = 1: non-feeding adult,FishTraits 14.3 (Frimpong & Angermeier 2009)
+feeding_position/fishtraits/benthic,benthic,class,feeding_position,fishtraits,,,,,,,,,FishTraits flag diet_benthic = 1: benthic,FishTraits 14.3 (Frimpong & Angermeier 2009)
+feeding_position/fishtraits/surface_and_water_column,surface and water column,class,feeding_position,fishtraits,,,,,,,,,FishTraits flag diet_surface_watercolumn = 1: surface and water column,FishTraits 14.3 (Frimpong & Angermeier 2009)
+reproduction/fishtraits/serial_spawner,serial spawner,class,reproduction,fishtraits,,,,,,,,,FishTraits flag serial_spawner = 1: spawns repeatedly within a season,FishTraits 14.3 (Frimpong & Angermeier 2009)
+migration/fishtraits/potamodromous_or_anadromous,potamodromous or anadromous,class,migration,fishtraits,,,,,,,,,FishTraits flag potamodromous_anadromous = 1,FishTraits 14.3 (Frimpong & Angermeier 2009)
+migration/fishbase/diadromous,diadromous,class,migration,fishbase,,,,,,,,,"FishBase migration: diadromous, between fresh water and the sea","FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/non_migratory,non-migratory,class,migration,fishbase,,,,,,,,,FishBase migration: non-migratory,"FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/potamodromous,potamodromous,class,migration,fishbase,,,,,,,,,FishBase migration: potamodromous,"FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/oceanodromous,oceanodromous,class,migration,fishbase,,,,,,,,,FishBase migration: oceanodromous,"FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/oceano_estuarine,oceano-estuarine,class,migration,fishbase,,,,,,,,,FishBase migration: oceano-estuarine,"FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/anadromous,anadromous,class,migration,fishbase,,,,,,,migration/fishbase/diadromous,,FishBase migration: anadromous,"FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/catadromous,catadromous,class,migration,fishbase,,,,,,,migration/fishbase/diadromous,,FishBase migration: catadromous,"FishBase (Froese & Pauly), species and ecology tables"
+migration/fishbase/amphidromous,amphidromous,class,migration,fishbase,,,,,,,migration/fishbase/diadromous,,FishBase migration: amphidromous,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/benthopelagic,benthopelagic,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: benthopelagic,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/demersal,demersal,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: demersal,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/reef_associated,reef-associated,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: reef-associated,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/bathydemersal,bathydemersal,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: bathydemersal,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/bathypelagic,bathypelagic,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: bathypelagic,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/pelagic,pelagic,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: pelagic,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/pelagic_neritic,pelagic-neritic,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: pelagic-neritic,"FishBase (Froese & Pauly), species and ecology tables"
+water_column_position/fishbase/pelagic_oceanic,pelagic-oceanic,class,water_column_position,fishbase,,,,,,,,,FishBase habitat: pelagic-oceanic,"FishBase (Froese & Pauly), species and ecology tables"
+salinity_preference/fishbase/freshwater,freshwater,class,salinity_preference,fishbase,,,,,,,,salinity_preference/tachet/freshwater,FishBase environment: fresh water,"FishBase (Froese & Pauly), species and ecology tables"
+salinity_preference/fishbase/brackish_water,brackish water,class,salinity_preference,fishbase,,,,,,,salinity_preference/tachet/brackish_saline,,FishBase environment: brackish water,"FishBase (Froese & Pauly), species and ecology tables"
+salinity_preference/fishbase/marine_water,marine water,class,salinity_preference,fishbase,,,,,,,salinity_preference/tachet/brackish_saline,,FishBase environment: marine water,"FishBase (Froese & Pauly), species and ecology tables"
+current_preference/fishbase/streams,streams,class,current_preference,fishbase,,,,,,,,current_preference/fishtraits/prefers_lotic,FishBase ecology: occurs in streams,"FishBase (Froese & Pauly), species and ecology tables"
+current_preference/fishbase/lakes,lakes,class,current_preference,fishbase,,,,,,,,current_preference/fishtraits/prefers_lentic,FishBase ecology: occurs in lakes,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/water_breathing,water breathing,class,respiration,fishbase,,,,,,,,respiration/tachet/gill,FishBase air breathing: Water,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/water_breathing_assumed,"water breathing, assumed",class,respiration,fishbase,,,,,,,,,FishBase air breathing: WaterAssumed,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/facultative_air_breathing,facultative air breathing,class,respiration,fishbase,,,,,,,,,FishBase air breathing: Facultative,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/facultative_air_breathing_from_genus,"facultative air breathing, from genus",class,respiration,fishbase,,,,,,,,,FishBase air breathing: FacultativeGenus,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/facultative_to_obligate_air_breathing,facultative to obligate air breathing,class,respiration,fishbase,,,,,,,,,FishBase air breathing: FacultativeObligate,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/obligate_air_breathing,obligate air breathing,class,respiration,fishbase,,,,,,,,,FishBase air breathing: Obligate,"FishBase (Froese & Pauly), species and ecology tables"
+respiration/fishbase/obligate_air_breathing_from_genus,"obligate air breathing, from genus",class,respiration,fishbase,,,,,,,,,FishBase air breathing: ObligateGenus,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/beukhof/generalist,generalist,class,trophic_guild,beukhof,,,,,,,,,Beukhof feeding mode: generalist,Beukhof et al. 2019 fish trait collection
+trophic_guild/beukhof/benthivorous,benthivorous,class,trophic_guild,beukhof,,,,,,,,,Beukhof feeding mode: benthivorous,Beukhof et al. 2019 fish trait collection
+trophic_guild/beukhof/planktivorous,planktivorous,class,trophic_guild,beukhof,,,,,,,,,Beukhof feeding mode: planktivorous,Beukhof et al. 2019 fish trait collection
+trophic_guild/beukhof/piscivorous,piscivorous,class,trophic_guild,beukhof,,,,,,,,,Beukhof feeding mode: piscivorous,Beukhof et al. 2019 fish trait collection
+trophic_guild/beukhof/herbivorous,herbivorous,class,trophic_guild,beukhof,,,,,,,,,Beukhof feeding mode: herbivorous,Beukhof et al. 2019 fish trait collection
+trophic_guild/fishbase/hunting_macrofauna_predator,hunting macrofauna (predator),class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: hunting macrofauna (predator),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/variable,variable,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: variable,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/grazing_on_aquatic_plants,grazing on aquatic plants,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: grazing on aquatic plants,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/selective_plankton_feeding,selective plankton feeding,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: selective plankton feeding,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/browsing_on_substrate,browsing on substrate,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: browsing on substrate,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/filtering_plankton,filtering plankton,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: filtering plankton,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/feeding_on_a_host_parasite,feeding on a host (parasite),class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: feeding on a host (parasite),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/picking_parasites_off_a_host_cleaner,picking parasites off a host (cleaner),class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: picking parasites off a host (cleaner),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/feeding_on_dead_animals_scavenger,feeding on dead animals (scavenger),class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: feeding on dead animals (scavenger),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/sucking_food_containing_material,sucking food-containing material,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: sucking food-containing material,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/feeding_on_the_prey_of_a_host_commensal,feeding on the prey of a host (commensal),class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: feeding on the prey of a host (commensal),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_guild/fishbase/other,other,class,trophic_guild,fishbase,,,,,,,,,FishBase feeding type: other,"FishBase (Froese & Pauly), species and ecology tables"
+trophic_level/fishbase/mainly_plants_detritus_troph_2_2_19,mainly plants/detritus (troph. 2-2.19),class,trophic_level,fishbase,,,,,2,2.19,,,FishBase herbivory: mainly plants/detritus (troph. 2-2.19),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_level/fishbase/plants_detritus_and_animals_troph_2_2_2_79,plants/detritus+animals (troph. 2.2-2.79),class,trophic_level,fishbase,,,,,2.2,2.79,,,FishBase herbivory: plants/detritus+animals (troph. 2.2-2.79),"FishBase (Froese & Pauly), species and ecology tables"
+trophic_level/fishbase/mainly_animals_troph_2_8_and_up,mainly animals (troph. 2.8 and up),class,trophic_level,fishbase,,,,,2.8,,,,FishBase herbivory: mainly animals (troph. 2.8 and up),"FishBase (Froese & Pauly), species and ecology tables"
 body_size/cefas/less_than_10,Less than 10,class,body_size,cefas,,,,mm,,10,,,Cefas body size class (mm): Less than 10,Cefas benthic trait database (cefas_btrait)
 body_size/cefas/11_to_20,11 to 20,class,body_size,cefas,,,,mm,11,20,,,Cefas body size class (mm): 11 to 20,Cefas benthic trait database (cefas_btrait)
 body_size/cefas/21_to_100,21 to 100,class,body_size,cefas,,,,mm,21,100,,,Cefas body size class (mm): 21 to 100,Cefas benthic trait database (cefas_btrait)

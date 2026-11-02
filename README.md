@@ -22,8 +22,8 @@ file, the on-disk table format of
 [vectra](https://gillescolling.com/vectra/). taxify downloads these
 files ready-built, so name matching never needs taxifydb. You install
 taxifydb when you want to build a file yourself, from a newer snapshot
-or offline, add a backbone or dataset, or republish the hosted files.
-taxifydb supports:
+or for a source taxify does not host, add a backbone or dataset, or
+republish the hosted files. taxifydb supports:
 
 - **Taxonomic backbones.** 19 backbones, from global checklists to the
   authorities of single groups, are built through `build_backend()` and
@@ -38,8 +38,12 @@ taxifydb supports:
   to a region.
 - **Publishing releases.** `publish_release()` and
   `publish_enrichment_release()` upload built files as GitHub release
-  assets, and the manifest that taxify reads records the version,
-  address and content identifier of each.
+  assets and record each one in the manifest that taxify reads.
+
+The manifest records each published file with its version and the hash
+of its bytes. taxify reads it to find its downloads and to tell a stale
+copy from a current one, and a weekly workflow in the repository reports
+a release, an asset or a manifest entry that has fallen out of step.
 
 ## Installation
 
@@ -50,61 +54,52 @@ pak::pak("gcol33/taxifydb")
 
 ## Usage
 
-1.  List what can be built with `list_backends()`, `list_geometry()` and
-    `list_enrichments()`.
-2.  Build a backbone with `build_backend()` or a dataset with
-    `build_enrichment()`.
+1.  Build a backbone with `build_backend()`.
+2.  Build a dataset with `build_enrichment()`.
 3.  Rebuild the tables that resolve dataset names across backbones with
     `build_all_name_lookups()`.
 
 ``` r
 library(taxifydb)
 
-list_backends()
-#>  [1] "itis"        "ncbi"        "ott"         "worms"       "wfo"        
-#>  [6] "col"         "colxr"       "gbif"        "euromed"     "fungorum"   
-#> [11] "algaebase"   "fishbase"    "sealifebase" "reptiledb"   "wcvp"       
-#> [16] "lcvp"        "mdd"         "avilist"     "lpsn"
-```
-
-Each build downloads the full source from its provider:
-
-``` r
-gbif_vtr <- build_backend("gbif")
+itis_vtr <- build_backend("itis")
 clopla_vtr <- build_enrichment("clopla")
 build_all_name_lookups()
 ```
 
-Each builder returns the path of the `.vtr` file it wrote. taxify finds
-the files in its data directory, and builds through taxifydb when a
-ready-built download is not available.
+Each build downloads the full source from its provider and returns the
+path of the `.vtr` file it wrote, under `output/` in the working
+directory. taxify builds through taxifydb when a ready-built download is
+not available. `list_backends()`, `list_geometry()` and
+`list_enrichments()` list what can be built.
 
 ## Backbones
 
-| Backbone         | Scope                                                  |
-|------------------|--------------------------------------------------------|
-| WFO              | World Flora Online (plants)                            |
-| COL              | Catalogue of Life (all kingdoms)                       |
-| COL XR           | Catalogue of Life Extended Release (all kingdoms)      |
-| GBIF             | GBIF Backbone Taxonomy (all kingdoms)                  |
-| ITIS             | Integrated Taxonomic Information System                |
-| NCBI             | NCBI Taxonomy                                          |
-| OTT              | Open Tree of Life synthesis                            |
-| WoRMS            | World Register of Marine Species                       |
-| Euro+Med         | Euro+Med PlantBase (European and Mediterranean plants) |
-| Index Fungorum   | Fungi                                                  |
-| AlgaeBase        | Algae                                                  |
-| FishBase         | Fishes                                                 |
-| SeaLifeBase      | Aquatic species other than fishes                      |
-| Reptile Database | Reptiles                                               |
-| WCVP             | World Checklist of Vascular Plants (Kew)               |
-| LCVP             | Leipzig Catalogue of Vascular Plants                   |
-| MDD              | Mammal Diversity Database                              |
-| AviList          | Birds                                                  |
-| LPSN             | Prokaryotes (Bacteria and Archaea)                     |
+| Backbone | Scope |
+|----|----|
+| WFO | World Flora Online (plants) |
+| COL | Catalogue of Life (all kingdoms) |
+| COL XR | Catalogue of Life Extended Release (all kingdoms) |
+| GBIF | Backbone Taxonomy of the Global Biodiversity Information Facility (all kingdoms) |
+| ITIS | Integrated Taxonomic Information System |
+| NCBI | Taxonomy of the US National Center for Biotechnology Information |
+| OTT | Open Tree of Life synthesis |
+| WoRMS | World Register of Marine Species |
+| Euro+Med | Euro+Med PlantBase (European and Mediterranean plants) |
+| Index Fungorum | Fungi |
+| AlgaeBase | Algae |
+| FishBase | Fishes |
+| SeaLifeBase | Aquatic species other than fishes |
+| Reptile Database | Reptiles |
+| WCVP | World Checklist of Vascular Plants (Kew) |
+| LCVP | Leipzig Catalogue of Vascular Plants |
+| MDD | Mammal Diversity Database |
+| AviList | Birds |
+| LPSN | List of Prokaryotic names with Standing in Nomenclature (Bacteria and Archaea) |
 
-The region polygons are the TDWG Level 3 botanical regions (WGSRPD) and
-the Marine Ecoregions of the World (MEOW). They hold polygon vertices
+The region polygons are the botanical regions of the World Geographical
+Scheme for Recording Plant Distributions (WGSRPD, level 3) and the
+Marine Ecoregions of the World (MEOW). They hold polygon vertices
 instead of names, so `list_geometry()` lists them apart from the
 backbones. [The backbones and
 datasets](https://gillescolling.com/taxify/articles/databases.html) in
@@ -113,47 +108,40 @@ version, licence and reference.
 
 ## Hosting the built files
 
-    providers  --download-->  taxifydb   --.vtr-->  GitHub Releases
-    (WFO, GBIF,               parse,                 hosted assets +
-     GRIIS, GIFT,             normalize,             manifest.json
-     ...)                     index                        |
-                                                           | download
-                                                           v
-                                                     taxify (runtime)
-                                                     match / enrich, offline
-
 Built files are published as GitHub release assets: one tag per backbone
-version, such as `gbif-2026.06`, and one rolling `enrichment-<version>`
-tag for all datasets. `manifest/manifest.json` records each asset’s
-version, address and content identifier, and taxify reads it to find its
-downloads. `update_manifest()` and `update_enrichment_manifest()` keep
-the build-side and runtime manifests in step.
+release, such as `gbif-2026.08`, and one tag per enrichment release,
+such as `enrichment-2026.10`, that holds every dataset.
+`manifest/manifest.json` records each asset’s version, address and
+content hash, and taxify reads it to find its downloads.
+`update_manifest()` and `update_enrichment_manifest()` keep the
+build-side and runtime manifests in step.
 
 ## Sources that need extra software
 
-Some builders need an optional package: RSQLite for ITIS, openxlsx2 for
-Excel sources, rfishbase for FishBase and SeaLifeBase, GIFT, and others.
-A builder that needs one stops with a message naming the package to
+Some builders need an optional package:
+[RSQLite](https://cran.r-project.org/package=RSQLite) for ITIS,
+[openxlsx2](https://cran.r-project.org/package=openxlsx2) for Excel
+sources, [rfishbase](https://cran.r-project.org/package=rfishbase) for
+FishBase and SeaLifeBase,
+[GIFT](https://cran.r-project.org/package=GIFT) for the GIFT database. A
+builder that needs one stops with a message naming the package to
 install.
 
 A few sources sit behind Cloudflare or a publisher’s bot check and are
-fetched with a bundled Python helper that uses `curl_cffi`. taxifydb
-looks for a suitable interpreter in pyenv, the Windows `py` launcher and
-then the `PATH`; the environment variable `TAXIFYDB_PYTHON` sets one
-directly.
+fetched with a bundled Python helper. The interpreter is taken from the
+environment variable `TAXIFYDB_PYTHON` when it is set, and otherwise
+found among the pyenv and system installations.
 
 ## Adding a backbone or dataset
 
-A backbone needs a `build_<name>()` function in `R/backend-<name>.R`,
-registered in `build_backend()`. A dataset needs a `parse_<name>()`
-function and an entry in `.enrichment_build_registry`. `CLAUDE.md` in
-the repository lists every step, the column layout each file must follow
-and the step that resolves dataset names across backbones.
+A backbone needs a builder registered in `build_backend()`, a dataset a
+parser and a registry entry. `CLAUDE.md` in the repository lists every
+step and the column layout each file must follow.
 
 ## Documentation
 
-Every exported function has a help page; `help(package = "taxifydb")`
-lists them.
+Start with the help page of `build_backend()`: what a build downloads,
+where it writes the file and what it returns.
 
 - [The backbones and
   datasets](https://gillescolling.com/taxify/articles/databases.html):
@@ -162,6 +150,8 @@ lists them.
 - [Choosing and combining
   backbones](https://gillescolling.com/taxify/articles/backbones.html):
   how taxify downloads, chains and pins the files built here.
+- `help(package = "taxifydb")`: every exported builder, checker and
+  publisher.
 
 ## Getting help
 
@@ -187,9 +177,9 @@ Coffee](https://img.shields.io/badge/-Buy%20me%20a%20coffee-FFDD00?logo=buymeaco
 ## License
 
 The code of taxifydb is licensed under MIT. Each source dataset keeps
-its own licence. Only openly licensed data is redistributed through
-taxify’s releases; sources that require citation only or carry no
-licence are built locally and never redistributed. When you use a
+its own licence. Only openly licensed data is redistributed through the
+releases of this repository; sources that permit citation only or carry
+no licence are built locally and never redistributed. When you use a
 dataset’s data, cite the original dataset.
 
 ## Citation

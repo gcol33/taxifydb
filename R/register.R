@@ -959,9 +959,7 @@ resolve_register_backbone_paths <- function(backbone_paths = NULL,
 #'
 #' Every call unions the same fixed backbone set, so the built register is
 #' reproducible: it does not depend on which backbones happen to be installed
-#' on the machine running the build (contrast taxify's runtime
-#' `taxify_build_register()`, which unions whichever backbones the caller has
-#' installed).
+#' on the machine running the build.
 #'
 #' @param backbone_paths Named list/character vector or `NULL`. Explicit
 #'   `.vtr` path overrides for one or more of [register_backbones()].

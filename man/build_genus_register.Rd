@@ -43,7 +43,5 @@ conflicts, normalizes non-standard kingdom names, assigns \code{kingdom_group} /
 \details{
 Every call unions the same fixed backbone set, so the built register is
 reproducible: it does not depend on which backbones happen to be installed
-on the machine running the build (contrast taxify's runtime
-\code{taxify_build_register()}, which unions whichever backbones the caller has
-installed).
+on the machine running the build.
 }

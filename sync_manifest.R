@@ -1,4 +1,4 @@
-# Sync enrichment metadata from built output to taxify's bundled manifest.json.
+# Sync enrichment metadata from built output to taxify's bundled manifest_v3.json.
 #
 # After running build_enrichments.R, this script propagates nrow,
 # available_groups, and group_col from each enrichment's meta.json sidecar

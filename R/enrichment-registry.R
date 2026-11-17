@@ -378,7 +378,7 @@
       # NCBI's monthly archive, not the rolling new_taxdump that is rewritten
       # daily: a build then names the dump it read, and the freshness check
       # reports one new dump a month. Move the date to take a newer one.
-      "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/new_taxdump_2026-10-01.zip",
+      "https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/new_taxdump_2026-11-01.zip",
       "https://files.opentreeoflife.org/ott/ott3.7.3/ott3.7.3.tgz",
       sep = " ; "
     ),

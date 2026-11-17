@@ -23,7 +23,7 @@
 # The `publish` action builds the enrichment(s), uploads the .vtr to the rolling
 # enrichment-<version> release, and updates BOTH manifests in one step: this
 # repo's build-side manifest/manifest.json and (when ../taxify is checked out
-# alongside) taxify's runtime inst/manifest.json. Updating both together is the
+# alongside) taxify's runtime inst/manifest_v3.json. Updating both together is the
 # point -- a publish that touches only one leaves the two drifting (issue #20).
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -90,7 +90,7 @@ if (action == "publish") {
   # with the build-side copy, while the runtime fields (trait_cols, species_col,
   # citation, static, source_format) are populated from the build for a new
   # enrichment and preserved for an existing one -- no manual curation step.
-  tx_manifest <- "../taxify/inst/manifest.json"
+  tx_manifest <- "../taxify/inst/manifest_v3.json"
 
   # Set TAXIFYDB_PUBLISH_RESUME=1 to reuse an enrichment's already-built .vtr
   # instead of rebuilding it, so a publish run interrupted partway resumes
@@ -138,7 +138,7 @@ if (action == "publish") {
   if (file.exists(tx_manifest)) {
     message("\nUpdated both manifests. Commit + push each repo:")
     message("  taxifydb: git add manifest/manifest.json")
-    message("  taxify:   git add inst/manifest.json")
+    message("  taxify:   git add inst/manifest_v3.json")
   } else {
     message("\nUpdated manifest/manifest.json. ../taxify not found -- sync its ",
             "runtime manifest separately (CI does this via a PR).")
